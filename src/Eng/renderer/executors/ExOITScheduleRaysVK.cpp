@@ -15,20 +15,19 @@ uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, cons
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 }
 
-void Eng::ExOITScheduleRays::DrawTransparent(FgBuilder &builder, FgAllocTex &depth_tex) {
+void Eng::ExOITScheduleRays::DrawTransparent(FgContext &ctx, FgAllocTex &depth_tex) {
     using namespace ExSharedInternal;
 
-    auto &ctx = builder.ctx();
-    auto *api_ctx = ctx.api_ctx();
+    auto *api_ctx = ctx.ren_ctx().api_ctx();
 
-    FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
-    FgAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
-    FgAllocBuf &oit_depth_buf = builder.GetReadBuffer(oit_depth_buf_);
-    FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(ray_counter_);
-    FgAllocBuf &ray_list_buf = builder.GetWriteBuffer(ray_list_);
+    FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
+    FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
+    FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
+    FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
+    FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
+    FgAllocBuf &oit_depth_buf = ctx.AccessROBuffer(oit_depth_buf_);
+    FgAllocBuf &ray_counter_buf = ctx.AccessRWBuffer(ray_counter_);
+    FgAllocBuf &ray_list_buf = ctx.AccessRWBuffer(ray_list_);
 
     if ((*p_list_)->alpha_blend_start_index == -1) {
         return;
@@ -46,7 +45,7 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgBuilder &builder, FgAllocTex &dep
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[0]->prog()->descr_set_layouts()[0], bindings,
-                                         ctx.default_descr_alloc(), ctx.log());
+                                         ctx.descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->textures_descr_sets[0];
 
     using BDB = basic_draw_batch_t;

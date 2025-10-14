@@ -30,7 +30,7 @@ uint32_t Ren::GLBindTarget(const Texture &tex, const int view) {
 }
 
 void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
-                          const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
+                          const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc &descr_alloc, ILog *log) {
     for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex || b.trg == eBindTarget::TexSampled) {
             auto texture_id = GLuint(b.handle.tex->id());
@@ -94,13 +94,13 @@ void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u gr
 }
 
 void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
-                          const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
+                          const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc &descr_alloc, ILog *log) {
     DispatchCompute({}, comp_pipeline, grp_count, bindings, uniform_data, uniform_data_len, descr_alloc, log);
 }
 
 void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, const Buffer &indir_buf,
                                   const uint32_t indir_buf_offset, Span<const Binding> bindings,
-                                  const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
+                                  const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc &descr_alloc,
                                   ILog *log) {
     for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex || b.trg == eBindTarget::TexSampled) {
@@ -168,7 +168,7 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
 
 void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf,
                                   const uint32_t indir_buf_offset, Span<const Binding> bindings,
-                                  const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
+                                  const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc &descr_alloc,
                                   ILog *log) {
     DispatchComputeIndirect({}, comp_pipeline, indir_buf, indir_buf_offset, bindings, uniform_data, uniform_data_len,
                             descr_alloc, log);

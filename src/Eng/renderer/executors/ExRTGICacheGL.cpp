@@ -6,41 +6,38 @@
 #include "../../utils/ShaderLoader.h"
 #include "../shaders/rt_gi_cache_interface.h"
 
-void Eng::ExRTGICache::Execute_HWRT(FgBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::ExRTGICache::Execute_HWRT(FgContext &ctx) { assert(false && "Not implemented!"); }
 
-void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
-    FgAllocBuf &geo_data_buf = builder.GetReadBuffer(args_->geo_data);
-    FgAllocBuf &materials_buf = builder.GetReadBuffer(args_->materials);
-    FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(args_->vtx_buf1);
-    FgAllocBuf &ndx_buf = builder.GetReadBuffer(args_->ndx_buf);
-    FgAllocBuf &rt_blas_buf = builder.GetReadBuffer(args_->swrt.rt_blas_buf);
-    FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
-    FgAllocTex &env_tex = builder.GetReadTexture(args_->env_tex);
-    FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
-    FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
-    FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
-    FgAllocBuf &textures_buf = builder.GetReadBuffer(args_->swrt.textures_buf);
-    FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
-    FgAllocTex &shadow_depth_tex = builder.GetReadTexture(args_->shadow_depth_tex);
-    FgAllocTex &shadow_color_tex = builder.GetReadTexture(args_->shadow_color_tex);
-    FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
-    FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
-    FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
-    FgAllocTex &irr_tex = builder.GetReadTexture(args_->irradiance_tex);
-    FgAllocTex &dist_tex = builder.GetReadTexture(args_->distance_tex);
-    FgAllocTex &off_tex = builder.GetReadTexture(args_->offset_tex);
+void Eng::ExRTGICache::Execute_SWRT(FgContext &ctx) {
+    FgAllocBuf &geo_data_buf = ctx.AccessROBuffer(args_->geo_data);
+    FgAllocBuf &materials_buf = ctx.AccessROBuffer(args_->materials);
+    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(args_->vtx_buf1);
+    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(args_->ndx_buf);
+    FgAllocBuf &rt_blas_buf = ctx.AccessROBuffer(args_->swrt.rt_blas_buf);
+    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
+    FgAllocTex &env_tex = ctx.AccessROTexture(args_->env_tex);
+    FgAllocBuf &rt_tlas_buf = ctx.AccessROBuffer(args_->tlas_buf);
+    FgAllocBuf &prim_ndx_buf = ctx.AccessROBuffer(args_->swrt.prim_ndx_buf);
+    FgAllocBuf &mesh_instances_buf = ctx.AccessROBuffer(args_->swrt.mesh_instances_buf);
+    FgAllocBuf &textures_buf = ctx.AccessROBuffer(args_->swrt.textures_buf);
+    FgAllocBuf &lights_buf = ctx.AccessROBuffer(args_->lights_buf);
+    FgAllocTex &shadow_depth_tex = ctx.AccessROTexture(args_->shadow_depth_tex);
+    FgAllocTex &shadow_color_tex = ctx.AccessROTexture(args_->shadow_color_tex);
+    FgAllocTex &ltc_luts_tex = ctx.AccessROTexture(args_->ltc_luts_tex);
+    FgAllocBuf &cells_buf = ctx.AccessROBuffer(args_->cells_buf);
+    FgAllocBuf &items_buf = ctx.AccessROBuffer(args_->items_buf);
+    FgAllocTex &irr_tex = ctx.AccessROTexture(args_->irradiance_tex);
+    FgAllocTex &dist_tex = ctx.AccessROTexture(args_->distance_tex);
+    FgAllocTex &off_tex = ctx.AccessROTexture(args_->offset_tex);
 
     FgAllocBuf *random_seq_buf = nullptr, *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
     if (args_->stoch_lights_buf) {
-        random_seq_buf = &builder.GetReadBuffer(args_->random_seq);
-        stoch_lights_buf = &builder.GetReadBuffer(args_->stoch_lights_buf);
-        light_nodes_buf = &builder.GetReadBuffer(args_->light_nodes_buf);
+        random_seq_buf = &ctx.AccessROBuffer(args_->random_seq);
+        stoch_lights_buf = &ctx.AccessROBuffer(args_->stoch_lights_buf);
+        light_nodes_buf = &ctx.AccessROBuffer(args_->light_nodes_buf);
     }
 
-    FgAllocTex &out_gi_tex = builder.GetWriteTexture(args_->out_ray_data_tex);
-
-    Ren::Context &ctx = builder.ctx();
-    Ren::ApiContext *api_ctx = ctx.api_ctx();
+    FgAllocTex &out_gi_tex = ctx.AccessRWTexture(args_->out_ray_data_tex);
 
     Ren::SmallVector<Ren::Binding, 16> bindings = {
         {Ren::eBindTarget::SBufRO, BIND_BINDLESS_TEX, *textures_buf.ref},
@@ -92,5 +89,5 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
     DispatchCompute(*pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update],
                     Ren::Vec3u{(PROBE_TOTAL_RAYS_COUNT / RTGICache::GRP_SIZE_X),
                                PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y},
-                    bindings, &uniform_params, sizeof(uniform_params), ctx.default_descr_alloc(), ctx.log());
+                    bindings, &uniform_params, sizeof(uniform_params), ctx.descr_alloc(), ctx.log());
 }

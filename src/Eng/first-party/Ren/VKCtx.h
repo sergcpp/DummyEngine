@@ -22,7 +22,7 @@ struct ApiContext {
     VkPhysicalDeviceProperties device_properties = {};
     VkPhysicalDeviceMemoryProperties mem_properties = {};
     VkPipelineCache pipeline_cache = {};
-    uint32_t present_family_index = 0, graphics_family_index = 0;
+    uint32_t present_family_index = 0, graphics_family_index = 0, compute_family_index = 0;
 
     VkDevice device = {};
     VkExtent2D res = {};
@@ -35,7 +35,7 @@ struct ApiContext {
 
     uint32_t active_present_image = 0;
 
-    VkQueue present_queue = {}, graphics_queue = {};
+    VkQueue present_queue = {}, graphics_queue = {}, compute_queue = {};
 
     VkCommandPool command_pool = {}, temp_command_pool = {};
     VkCommandBuffer draw_cmd_buf[MaxFramesInFlight] = {};

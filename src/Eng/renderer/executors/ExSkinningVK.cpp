@@ -8,26 +8,25 @@
 #include "../Renderer_Structs.h"
 #include "../shaders/skinning_interface.h"
 
-void Eng::ExSkinning::Execute(FgBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+void Eng::ExSkinning::Execute(FgContext &ctx) {
+    LazyInit(ctx.ren_ctx(), ctx.sh());
 
-    FgAllocBuf &skin_vtx_buf = builder.GetReadBuffer(skin_vtx_buf_);
-    FgAllocBuf &skin_transforms_buf = builder.GetReadBuffer(skin_transforms_buf_);
-    FgAllocBuf &shape_keys_buf = builder.GetReadBuffer(shape_keys_buf_);
-    FgAllocBuf &delta_buf = builder.GetReadBuffer(delta_buf_);
+    FgAllocBuf &skin_vtx_buf = ctx.AccessROBuffer(skin_vtx_buf_);
+    FgAllocBuf &skin_transforms_buf = ctx.AccessROBuffer(skin_transforms_buf_);
+    FgAllocBuf &shape_keys_buf = ctx.AccessROBuffer(shape_keys_buf_);
+    FgAllocBuf &delta_buf = ctx.AccessROBuffer(delta_buf_);
 
-    FgAllocBuf &vtx_buf1 = builder.GetWriteBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = builder.GetWriteBuffer(vtx_buf2_);
+    FgAllocBuf &vtx_buf1 = ctx.AccessRWBuffer(vtx_buf1_);
+    FgAllocBuf &vtx_buf2 = ctx.AccessRWBuffer(vtx_buf2_);
 
     if (!p_list_->skin_regions.empty()) {
-        Ren::Context &ctx = builder.ctx();
-        Ren::ApiContext *api_ctx = ctx.api_ctx();
+        Ren::ApiContext *api_ctx = ctx.ren_ctx().api_ctx();
         VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
         VkDescriptorSetLayout descr_set_layout = pi_skinning_->prog()->descr_set_layouts()[0];
         Ren::DescrSizes descr_sizes;
         descr_sizes.sbuf_count = 6;
-        VkDescriptorSet descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
+        VkDescriptorSet descr_set = ctx.descr_alloc().Alloc(descr_sizes, descr_set_layout);
 
         { // update descriptor set
             const VkDescriptorBufferInfo buf_infos[6] = {

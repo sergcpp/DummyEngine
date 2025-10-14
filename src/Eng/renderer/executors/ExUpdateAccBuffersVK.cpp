@@ -2,11 +2,9 @@
 
 #include <Ren/Context.h>
 
-void Eng::ExUpdateAccBuffers::Execute_HWRT(FgBuilder &builder) {
-    FgAllocBuf &rt_geo_instances_buf = builder.GetWriteBuffer(rt_geo_instances_buf_);
-    FgAllocBuf &rt_obj_instances_buf = builder.GetWriteBuffer(rt_obj_instances_buf_);
-
-    Ren::Context &ctx = builder.ctx();
+void Eng::ExUpdateAccBuffers::Execute_HWRT(FgContext &ctx) {
+    FgAllocBuf &rt_geo_instances_buf = ctx.AccessRWBuffer(rt_geo_instances_buf_);
+    FgAllocBuf &rt_obj_instances_buf = ctx.AccessRWBuffer(rt_obj_instances_buf_);
 
     const auto &rt_geo_instances = p_list_->rt_geo_instances[rt_index_];
     auto &rt_geo_instances_stage_buf = p_list_->rt_geo_instances_stage_buf[rt_index_];
@@ -21,7 +19,7 @@ void Eng::ExUpdateAccBuffers::Execute_HWRT(FgBuilder &builder) {
         rt_geo_instances_stage_buf->Unmap();
 
         CopyBufferToBuffer(*rt_geo_instances_stage_buf, ctx.backend_frame() * RTGeoInstancesBufChunkSize,
-                           *rt_geo_instances_buf.ref, 0, rt_geo_instances_mem_size, ctx.current_cmd_buf());
+                           *rt_geo_instances_buf.ref, 0, rt_geo_instances_mem_size, ctx.cmd_buf());
     }
 
     const auto &rt_obj_instances = p_list_->rt_obj_instances[rt_index_];
@@ -48,10 +46,10 @@ void Eng::ExUpdateAccBuffers::Execute_HWRT(FgBuilder &builder) {
 
             rt_obj_instances_stage_buf->Unmap();
         } else {
-            builder.log()->Error("ExUpdateAccBuffers: Failed to map rt obj instance buffer!");
+            ctx.log()->Error("ExUpdateAccBuffers: Failed to map rt obj instance buffer!");
         }
 
         CopyBufferToBuffer(*rt_obj_instances_stage_buf, ctx.backend_frame() * HWRTObjInstancesBufChunkSize,
-                           *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, ctx.current_cmd_buf());
+                           *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, ctx.cmd_buf());
     }
 }

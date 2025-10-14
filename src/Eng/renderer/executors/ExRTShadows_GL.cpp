@@ -10,31 +10,28 @@
 
 #include "../shaders/rt_shadows_interface.h"
 
-void Eng::ExRTShadows::Execute_HWRT_Pipeline(FgBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::ExRTShadows::Execute_HWRT_Pipeline(FgContext &ctx) { assert(false && "Not implemented!"); }
 
-void Eng::ExRTShadows::Execute_HWRT_Inline(FgBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::ExRTShadows::Execute_HWRT_Inline(FgContext &ctx) { assert(false && "Not implemented!"); }
 
-void Eng::ExRTShadows::Execute_SWRT(FgBuilder &builder) {
-    FgAllocBuf &geo_data_buf = builder.GetReadBuffer(args_->geo_data);
-    FgAllocBuf &materials_buf = builder.GetReadBuffer(args_->materials);
-    FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(args_->vtx_buf1);
-    FgAllocBuf &ndx_buf = builder.GetReadBuffer(args_->ndx_buf);
-    FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
-    FgAllocTex &noise_tex = builder.GetReadTexture(args_->noise_tex);
-    FgAllocTex &depth_tex = builder.GetReadTexture(args_->depth_tex);
-    FgAllocTex &normal_tex = builder.GetReadTexture(args_->normal_tex);
-    FgAllocBuf &rt_blas_buf = builder.GetReadBuffer(args_->swrt.blas_buf);
-    FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
-    FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
-    FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
-    FgAllocBuf &textures_buf = builder.GetReadBuffer(args_->swrt.textures_buf);
-    FgAllocBuf &tile_list_buf = builder.GetReadBuffer(args_->tile_list_buf);
-    FgAllocBuf &indir_args_buf = builder.GetReadBuffer(args_->indir_args);
+void Eng::ExRTShadows::Execute_SWRT(FgContext &ctx) {
+    FgAllocBuf &geo_data_buf = ctx.AccessROBuffer(args_->geo_data);
+    FgAllocBuf &materials_buf = ctx.AccessROBuffer(args_->materials);
+    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(args_->vtx_buf1);
+    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(args_->ndx_buf);
+    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
+    FgAllocTex &noise_tex = ctx.AccessROTexture(args_->noise_tex);
+    FgAllocTex &depth_tex = ctx.AccessROTexture(args_->depth_tex);
+    FgAllocTex &normal_tex = ctx.AccessROTexture(args_->normal_tex);
+    FgAllocBuf &rt_blas_buf = ctx.AccessROBuffer(args_->swrt.blas_buf);
+    FgAllocBuf &rt_tlas_buf = ctx.AccessROBuffer(args_->tlas_buf);
+    FgAllocBuf &prim_ndx_buf = ctx.AccessROBuffer(args_->swrt.prim_ndx_buf);
+    FgAllocBuf &mesh_instances_buf = ctx.AccessROBuffer(args_->swrt.mesh_instances_buf);
+    FgAllocBuf &textures_buf = ctx.AccessROBuffer(args_->swrt.textures_buf);
+    FgAllocBuf &tile_list_buf = ctx.AccessROBuffer(args_->tile_list_buf);
+    FgAllocBuf &indir_args_buf = ctx.AccessROBuffer(args_->indir_args);
 
-    FgAllocTex &out_shadow_tex = builder.GetWriteTexture(args_->out_shadow_tex);
-
-    Ren::Context &ctx = builder.ctx();
-    Ren::ApiContext *api_ctx = ctx.api_ctx();
+    FgAllocTex &out_shadow_tex = ctx.AccessRWTexture(args_->out_shadow_tex);
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::SBufRO, BIND_BINDLESS_TEX, *textures_buf.ref},
@@ -58,5 +55,5 @@ void Eng::ExRTShadows::Execute_SWRT(FgBuilder &builder) {
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
     DispatchComputeIndirect(*pi_rt_shadows_, *indir_args_buf.ref, 0, bindings, &uniform_params, sizeof(uniform_params),
-                            nullptr, ctx.log());
+                            ctx.descr_alloc(), ctx.log());
 }

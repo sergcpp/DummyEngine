@@ -7,12 +7,12 @@
 #include "../../utils/ShaderLoader.h"
 #include "../shaders/vol_interface.h"
 
-void Eng::ExVolVoxelize::Execute(FgBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
-    if (builder.ctx().capabilities.hwrt) {
-        Execute_HWRT(builder);
+void Eng::ExVolVoxelize::Execute(FgContext &ctx) {
+    LazyInit(ctx.ren_ctx(), ctx.sh());
+    if (ctx.ren_ctx().capabilities.hwrt) {
+        Execute_HWRT(ctx);
     } else {
-        Execute_SWRT(builder);
+        Execute_SWRT(ctx);
     }
 }
 
@@ -27,23 +27,23 @@ void Eng::ExVolVoxelize::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     }
 }
 
-void Eng::ExVolVoxelize::Execute_SWRT(FgBuilder &builder) {
-    FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
-    FgAllocTex &stbn_tex = builder.GetReadTexture(args_->stbn_tex);
+void Eng::ExVolVoxelize::Execute_SWRT(FgContext &ctx) {
+    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
+    FgAllocTex &stbn_tex = ctx.AccessROTexture(args_->stbn_tex);
 
-    FgAllocBuf &geo_data_buf = builder.GetReadBuffer(args_->geo_data);
-    FgAllocBuf &materials_buf = builder.GetReadBuffer(args_->materials);
-    FgAllocBuf &tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
+    FgAllocBuf &geo_data_buf = ctx.AccessROBuffer(args_->geo_data);
+    FgAllocBuf &materials_buf = ctx.AccessROBuffer(args_->materials);
+    FgAllocBuf &tlas_buf = ctx.AccessROBuffer(args_->tlas_buf);
 
-    FgAllocBuf &blas_buf = builder.GetReadBuffer(args_->swrt.rt_blas_buf);
-    FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
-    FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
+    FgAllocBuf &blas_buf = ctx.AccessROBuffer(args_->swrt.rt_blas_buf);
+    FgAllocBuf &prim_ndx_buf = ctx.AccessROBuffer(args_->swrt.prim_ndx_buf);
+    FgAllocBuf &mesh_instances_buf = ctx.AccessROBuffer(args_->swrt.mesh_instances_buf);
 
-    FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(args_->swrt.vtx_buf1);
-    FgAllocBuf &ndx_buf = builder.GetReadBuffer(args_->swrt.ndx_buf);
+    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(args_->swrt.vtx_buf1);
+    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(args_->swrt.ndx_buf);
 
-    FgAllocTex &out_emission_tex = builder.GetWriteTexture(args_->out_emission_tex);
-    FgAllocTex &out_scatter_tex = builder.GetWriteTexture(args_->out_scatter_tex);
+    FgAllocTex &out_emission_tex = ctx.AccessRWTexture(args_->out_emission_tex);
+    FgAllocTex &out_scatter_tex = ctx.AccessRWTexture(args_->out_scatter_tex);
 
     if (view_state_->skip_volumetrics) {
         return;
@@ -65,9 +65,8 @@ void Eng::ExVolVoxelize::Execute_SWRT(FgBuilder &builder) {
     const auto froxel_res =
         Ren::Vec4i{out_emission_tex.ref->params.w, out_emission_tex.ref->params.h, out_emission_tex.ref->params.d, 0};
 
-    const Ren::Vec3u grp_count =
-        Ren::Vec3u{(froxel_res[0] + Fog::GRP_SIZE_X - 1u) / Fog::GRP_SIZE_X,
-                   (froxel_res[1] + Fog::GRP_SIZE_Y - 1u) / Fog::GRP_SIZE_Y, 1u};
+    const Ren::Vec3u grp_count = Ren::Vec3u{(froxel_res[0] + Fog::GRP_SIZE_X - 1u) / Fog::GRP_SIZE_X,
+                                            (froxel_res[1] + Fog::GRP_SIZE_Y - 1u) / Fog::GRP_SIZE_Y, 1u};
 
     Fog::Params uniform_params;
     uniform_params.froxel_res = froxel_res;
@@ -81,10 +80,10 @@ void Eng::ExVolVoxelize::Execute_SWRT(FgBuilder &builder) {
     uniform_params.frame_index = view_state_->frame_index;
     uniform_params.hist_weight = (view_state_->pre_exposure / view_state_->prev_pre_exposure);
 
-    DispatchCompute(*pi_vol_voxelize_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                    builder.ctx().default_descr_alloc(), builder.ctx().log());
+    DispatchCompute(*pi_vol_voxelize_, grp_count, bindings, &uniform_params, sizeof(uniform_params), ctx.descr_alloc(),
+                    ctx.log());
 }
 
 #if defined(REN_GL_BACKEND)
-void Eng::ExVolVoxelize::Execute_HWRT(FgBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::ExVolVoxelize::Execute_HWRT(FgContext &ctx) { assert(false && "Not implemented!"); }
 #endif

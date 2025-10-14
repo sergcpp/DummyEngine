@@ -22,10 +22,10 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture, const R
 
         histogram = histogram_clear.AddClearImageOutput("Exposure Histogram", params);
 
-        histogram_clear.set_execute_cb([histogram](FgBuilder &builder) {
-            FgAllocTex &histogram_tex = builder.GetWriteTexture(histogram);
+        histogram_clear.set_execute_cb([histogram](FgContext &ctx) {
+            FgAllocTex &histogram_tex = ctx.AccessRWTexture(histogram);
 
-            Ren::ClearImage(*histogram_tex.ref, {}, builder.ctx().current_cmd_buf());
+            Ren::ClearImage(*histogram_tex.ref, {}, ctx.cmd_buf());
         });
     }
     { // Sample histogram
@@ -34,9 +34,9 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture, const R
         FgResRef input = histogram_sample.AddTextureInput(hdr_texture, Ren::eStage::ComputeShader);
         histogram = histogram_sample.AddStorageImageOutput(histogram, Ren::eStage::ComputeShader);
 
-        histogram_sample.set_execute_cb([this, input, histogram](FgBuilder &builder) {
-            FgAllocTex &input_tex = builder.GetReadTexture(input);
-            FgAllocTex &output_tex = builder.GetWriteTexture(histogram);
+        histogram_sample.set_execute_cb([this, input, histogram](FgContext &ctx) {
+            FgAllocTex &input_tex = ctx.AccessROTexture(input);
+            FgAllocTex &output_tex = ctx.AccessRWTexture(histogram);
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::TexSampled, HistogramSample::HDR_TEX_SLOT, {*input_tex.ref, *linear_sampler_}},
@@ -46,7 +46,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture, const R
             uniform_params.pre_exposure = view_state_.pre_exposure;
 
             DispatchCompute(*pi_histogram_sample_, Ren::Vec3u{16, 8, 1}, bindings, &uniform_params,
-                            sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
+                            sizeof(uniform_params), ctx.descr_alloc(), ctx.log());
         });
     }
     FgResRef exposure;
@@ -71,10 +71,10 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture, const R
             histogram_exposure.AddStorageImageOutput(EXPOSURE_TEX, params, Ren::eStage::ComputeShader);
         data->exposure_prev = histogram_exposure.AddHistoryTextureInput(exposure, Ren::eStage::ComputeShader);
 
-        histogram_exposure.set_execute_cb([this, data, adaptation_speed](FgBuilder &builder) {
-            FgAllocTex &histogram_tex = builder.GetReadTexture(data->histogram);
-            FgAllocTex &exposure_prev_tex = builder.GetReadTexture(data->exposure_prev);
-            FgAllocTex &exposure_tex = builder.GetWriteTexture(data->exposure);
+        histogram_exposure.set_execute_cb([this, data, adaptation_speed](FgContext &ctx) {
+            FgAllocTex &histogram_tex = ctx.AccessROTexture(data->histogram);
+            FgAllocTex &exposure_prev_tex = ctx.AccessROTexture(data->exposure_prev);
+            FgAllocTex &exposure_tex = ctx.AccessRWTexture(data->exposure);
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::TexSampled, HistogramExposure::HISTOGRAM_TEX_SLOT, *histogram_tex.ref},
@@ -89,7 +89,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture, const R
             uniform_params.adaptation_speed_min = adaptation_speed[1];
 
             DispatchCompute(*pi_histogram_exposure_, Ren::Vec3u{1}, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.log());
+                            ctx.descr_alloc(), ctx.log());
         });
     }
     return exposure;
@@ -130,10 +130,10 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                 bloom_downsample.AddStorageImageOutput(output_name, params, Ren::eStage::ComputeShader);
         }
 
-        bloom_downsample.set_execute_cb([this, data, mip, compressed](FgBuilder &builder) {
-            FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
-            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
-            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+        bloom_downsample.set_execute_cb([this, data, mip, compressed](FgContext &ctx) {
+            FgAllocTex &input_tex = ctx.AccessROTexture(data->input_tex);
+            FgAllocTex &exposure_tex = ctx.AccessROTexture(data->exposure_tex);
+            FgAllocTex &output_tex = ctx.AccessRWTexture(data->output_tex);
 
             Bloom::Params uniform_params;
             uniform_params.img_size[0] = output_tex.ref->params.w;
@@ -150,7 +150,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                            (uniform_params.img_size[1] + Bloom::GRP_SIZE_Y - 1u) / Bloom::GRP_SIZE_Y, 1u};
 
             DispatchCompute(*pi_bloom_downsample_[compressed][mip == 0], grp_count, bindings, &uniform_params,
-                            sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
+                            sizeof(uniform_params), ctx.descr_alloc(), ctx.log());
         });
     }
     Eng::FgResRef upsampled[BloomMipCount - 1];
@@ -185,10 +185,10 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                 bloom_upsample.AddStorageImageOutput(output_name, params, Ren::eStage::ComputeShader);
         }
 
-        bloom_upsample.set_execute_cb([this, data, mip, compressed](FgBuilder &builder) {
-            FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
-            FgAllocTex &blend_tex = builder.GetReadTexture(data->blend_tex);
-            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+        bloom_upsample.set_execute_cb([this, data, mip, compressed](FgContext &ctx) {
+            FgAllocTex &input_tex = ctx.AccessROTexture(data->input_tex);
+            FgAllocTex &blend_tex = ctx.AccessROTexture(data->blend_tex);
+            FgAllocTex &output_tex = ctx.AccessRWTexture(data->output_tex);
 
             Bloom::Params uniform_params;
             uniform_params.img_size[0] = output_tex.ref->params.w;
@@ -204,7 +204,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                            (uniform_params.img_size[1] + Bloom::GRP_SIZE_Y - 1u) / Bloom::GRP_SIZE_Y, 1u};
 
             DispatchCompute(*pi_bloom_upsample_[compressed], grp_count, bindings, &uniform_params,
-                            sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
+                            sizeof(uniform_params), ctx.descr_alloc(), ctx.log());
         });
     }
 
@@ -237,10 +237,10 @@ Eng::FgResRef Eng::Renderer::AddSharpenPass(FgResRef input_tex, FgResRef exposur
             sharpen.AddStorageImageOutput("Sharpen Output", params, Ren::eStage::ComputeShader);
     }
 
-    sharpen.set_execute_cb([this, data, compressed](FgBuilder &builder) {
-        FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
-        FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
-        FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+    sharpen.set_execute_cb([this, data, compressed](FgContext &ctx) {
+        FgAllocTex &input_tex = ctx.AccessROTexture(data->input_tex);
+        FgAllocTex &exposure_tex = ctx.AccessROTexture(data->exposure_tex);
+        FgAllocTex &output_tex = ctx.AccessRWTexture(data->output_tex);
 
         Sharpen::Params uniform_params;
         uniform_params.img_size[0] = output_tex.ref->params.w;
@@ -258,7 +258,7 @@ Eng::FgResRef Eng::Renderer::AddSharpenPass(FgResRef input_tex, FgResRef exposur
                        (uniform_params.img_size[1] + Sharpen::GRP_SIZE_Y - 1u) / Sharpen::GRP_SIZE_Y, 1u};
 
         DispatchCompute(*pi_sharpen_[compressed], grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                        builder.ctx().default_descr_alloc(), builder.log());
+                        ctx.descr_alloc(), ctx.log());
     });
 
     return output_tex;

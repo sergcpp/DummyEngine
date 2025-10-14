@@ -4,12 +4,12 @@
 
 #include "../../utils/ShaderLoader.h"
 
-void Eng::ExRTGICache::Execute(FgBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
-    if (builder.ctx().capabilities.hwrt) {
-        Execute_HWRT(builder);
+void Eng::ExRTGICache::Execute(FgContext &ctx) {
+    LazyInit(ctx.ren_ctx(), ctx.sh());
+    if (ctx.ren_ctx().capabilities.hwrt) {
+        Execute_HWRT(ctx);
     } else {
-        Execute_SWRT(builder);
+        Execute_SWRT(ctx);
     }
 }
 

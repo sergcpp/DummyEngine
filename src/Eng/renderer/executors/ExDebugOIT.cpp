@@ -6,15 +6,15 @@
 #include "../../utils/ShaderLoader.h"
 #include "../shaders/oit_debug_interface.h"
 
-Eng::ExDebugOIT::ExDebugOIT(FgBuilder &builder, const view_state_t *view_state, const Args *pass_data) {
+Eng::ExDebugOIT::ExDebugOIT(FgContext &ctx, const view_state_t *view_state, const Args *pass_data) {
     view_state_ = view_state;
     args_ = pass_data;
-    pi_debug_oit_ = builder.sh().LoadPipeline("internal/oit_debug.comp.glsl");
+    pi_debug_oit_ = ctx.sh().LoadPipeline("internal/oit_debug.comp.glsl");
 }
 
-void Eng::ExDebugOIT::Execute(FgBuilder &builder) {
-    FgAllocBuf &oit_depth_buf = builder.GetReadBuffer(args_->oit_depth_buf);
-    FgAllocTex &output_tex = builder.GetWriteTexture(args_->output_tex);
+void Eng::ExDebugOIT::Execute(FgContext &ctx) {
+    FgAllocBuf &oit_depth_buf = ctx.AccessROBuffer(args_->oit_depth_buf);
+    FgAllocTex &output_tex = ctx.AccessRWTexture(args_->output_tex);
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UTBuf, OITDebug::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.ref},
                                      {Ren::eBindTarget::ImageRW, OITDebug::OUT_IMG_SLOT, *output_tex.ref}};
@@ -28,6 +28,6 @@ void Eng::ExDebugOIT::Execute(FgBuilder &builder) {
     uniform_params.img_size[1] = view_state_->ren_res[1];
     uniform_params.layer_index = args_->layer_index;
 
-    DispatchCompute(*pi_debug_oit_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                    builder.ctx().default_descr_alloc(), builder.ctx().log());
+    DispatchCompute(*pi_debug_oit_, grp_count, bindings, &uniform_params, sizeof(uniform_params), ctx.descr_alloc(),
+                    ctx.log());
 }

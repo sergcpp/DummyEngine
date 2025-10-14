@@ -5,18 +5,18 @@
 #include "../../utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void Eng::ExGBufferFill::Execute(FgBuilder &builder) {
-    FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
-    FgAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
+void Eng::ExGBufferFill::Execute(FgContext &ctx) {
+    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(vtx_buf1_);
+    FgAllocBuf &vtx_buf2 = ctx.AccessROBuffer(vtx_buf2_);
+    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(ndx_buf_);
 
-    FgAllocTex &albedo_tex = builder.GetWriteTexture(out_albedo_tex_);
-    FgAllocTex &normal_tex = builder.GetWriteTexture(out_normal_tex_);
-    FgAllocTex &spec_tex = builder.GetWriteTexture(out_spec_tex_);
-    FgAllocTex &depth_tex = builder.GetWriteTexture(out_depth_tex_);
+    FgAllocTex &albedo_tex = ctx.AccessRWTexture(out_albedo_tex_);
+    FgAllocTex &normal_tex = ctx.AccessRWTexture(out_normal_tex_);
+    FgAllocTex &spec_tex = ctx.AccessRWTexture(out_spec_tex_);
+    FgAllocTex &depth_tex = ctx.AccessRWTexture(out_depth_tex_);
 
-    LazyInit(builder.ctx(), builder.sh(), vtx_buf1, vtx_buf2, ndx_buf, albedo_tex, normal_tex, spec_tex, depth_tex);
-    DrawOpaque(builder);
+    LazyInit(ctx.ren_ctx(), ctx.sh(), vtx_buf1, vtx_buf2, ndx_buf, albedo_tex, normal_tex, spec_tex, depth_tex);
+    DrawOpaque(ctx);
 }
 
 void Eng::ExGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,

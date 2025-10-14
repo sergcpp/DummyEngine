@@ -109,12 +109,14 @@ struct FgAllocTex : public FgAllocRes {
     Ren::TexRef strong_ref;
 };
 
+enum class eFgQueueType : uint8_t { Graphics, Compute, Transfer };
+
 class FgNode;
 
-class FgBuilder {
+class FgContext {
+  protected:
     Ren::Context &ctx_;
     ShaderLoader &sh_;
-    PrimDraw &prim_draw_; // needed to clear rendertargets
 
     Ren::RastState rast_state_;
 
@@ -123,6 +125,31 @@ class FgBuilder {
 
     Ren::SparseArray<FgAllocTex> textures_;
     Ren::HashMap32<std::string, uint16_t> name_to_texture_;
+
+    FgContext(Ren::Context &ctx, ShaderLoader &sh) : ctx_(ctx), sh_(sh) {}
+
+  public:
+    Ren::SmallVector<Ren::SamplerRef, 64> temp_samplers;
+
+    Ren::Context &ren_ctx() { return ctx_; }
+    ShaderLoader &sh() { return sh_; }
+    Ren::RastState &rast_state() { return rast_state_; }
+
+    Ren::CommandBuffer cmd_buf();
+    Ren::ILog *log();
+    Ren::DescrMultiPoolAlloc &descr_alloc();
+
+    int backend_frame() const;
+
+    FgAllocBuf &AccessROBuffer(FgResRef handle);
+    FgAllocTex &AccessROTexture(FgResRef handle);
+
+    FgAllocBuf &AccessRWBuffer(FgResRef handle);
+    FgAllocTex &AccessRWTexture(FgResRef handle);
+};
+
+class FgBuilder : public FgContext {
+    PrimDraw &prim_draw_; // needed to clear rendertargets
 
     void InsertResourceTransitions(FgNode &node);
     void HandleResourceTransition(const FgResource &res, Ren::SmallVectorImpl<Ren::TransitionInfo> &res_transitions,
@@ -173,15 +200,9 @@ class FgBuilder {
     FgBuilder(Ren::Context &ctx, ShaderLoader &sh, PrimDraw &prim_draw);
     ~FgBuilder() { Reset(); }
 
-    Ren::Context &ctx() { return ctx_; }
-    Ren::ILog *log();
-    ShaderLoader &sh() { return sh_; }
-
-    Ren::RastState &rast_state() { return rast_state_; }
-
     bool ready() const { return !reordered_nodes_.empty(); }
 
-    FgNode &AddNode(std::string_view name);
+    FgNode &AddNode(std::string_view name, eFgQueueType queue = eFgQueueType::Graphics);
     FgNode *FindNode(std::string_view name);
     FgNode *GetReorderedNode(const int i) { return reordered_nodes_[i]; }
 
@@ -232,17 +253,9 @@ class FgBuilder {
 
     FgResRef MakeTextureResource(const Ren::WeakTexRef &ref);
 
-    FgAllocBuf &GetReadBuffer(FgResRef handle);
-    FgAllocTex &GetReadTexture(FgResRef handle);
-
-    FgAllocBuf &GetWriteBuffer(FgResRef handle);
-    FgAllocTex &GetWriteTexture(FgResRef handle);
-
     void Reset();
     void Compile(Ren::Span<const FgResRef> backbuffer_sources = {});
     void Execute();
-
-    Ren::SmallVector<Ren::SamplerRef, 64> temp_samplers;
 
     struct node_timing_t {
         std::string_view name;

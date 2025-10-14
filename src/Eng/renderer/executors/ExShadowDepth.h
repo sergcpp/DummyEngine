@@ -36,7 +36,7 @@ class ExShadowDepth final : public FgExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
                   FgAllocBuf &ndx_buf, FgAllocTex &shadow_depth_tex);
-    void DrawShadowMaps(FgBuilder &builder);
+    void DrawShadowMaps(FgContext &ctx);
 
   public:
     ExShadowDepth(const int w, const int h, const DrawList **p_list, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
@@ -61,6 +61,6 @@ class ExShadowDepth final : public FgExecutor {
         shadow_depth_tex_ = shadow_depth_tex;
     }
 
-    void Execute(FgBuilder &builder) override;
+    void Execute(FgContext &ctx) override;
 };
 } // namespace Eng

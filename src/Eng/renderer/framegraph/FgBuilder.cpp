@@ -23,8 +23,51 @@ void insert_sorted(Ren::SmallVectorImpl<int16_t> &vec, const int16_t val) {
 }
 } // namespace FgBuilderInternal
 
+Ren::CommandBuffer Eng::FgContext::cmd_buf() { return ctx_.current_cmd_buf(); }
+
+Ren::ILog *Eng::FgContext::log() { return ctx_.log(); }
+
+Ren::DescrMultiPoolAlloc &Eng::FgContext::descr_alloc() { return ctx_.default_descr_alloc(); }
+
+int Eng::FgContext::backend_frame() const { return ctx_.backend_frame(); }
+
+Eng::FgAllocBuf &Eng::FgContext::AccessROBuffer(const FgResRef handle) {
+    assert(handle.type == eFgResType::Buffer);
+    FgAllocBuf &buf = buffers_.at(handle.index);
+    assert(buf.write_count == handle.write_count);
+    ++buf.read_count;
+    return buf;
+}
+
+Eng::FgAllocTex &Eng::FgContext::AccessROTexture(const FgResRef handle) {
+    assert(handle.type == eFgResType::Texture);
+    FgAllocTex &tex = textures_.at(handle.index);
+    assert(tex.write_count == handle.write_count);
+    // assert(tex.ref->resource_state == handle.desired_state);
+    ++tex.read_count;
+    return tex;
+}
+
+Eng::FgAllocBuf &Eng::FgContext::AccessRWBuffer(const FgResRef handle) {
+    assert(handle.type == eFgResType::Buffer);
+    FgAllocBuf &buf = buffers_.at(handle.index);
+    assert(buf.write_count + 1 == handle.write_count);
+    // assert(buf.ref->resource_state == handle.desired_state);
+    ++buf.write_count;
+    return buf;
+}
+
+Eng::FgAllocTex &Eng::FgContext::AccessRWTexture(const FgResRef handle) {
+    assert(handle.type == eFgResType::Texture);
+    FgAllocTex &tex = textures_.at(handle.index);
+    assert(tex.write_count + 1 == handle.write_count);
+    // assert(tex.ref->resource_state == handle.desired_state);
+    ++tex.write_count;
+    return tex;
+}
+
 Eng::FgBuilder::FgBuilder(Ren::Context &ctx, Eng::ShaderLoader &sh, PrimDraw &prim_draw)
-    : ctx_(ctx), sh_(sh), prim_draw_(prim_draw), alloc_buf_(new char[AllocBufSize]),
+    : FgContext(ctx, sh), prim_draw_(prim_draw), alloc_buf_(new char[AllocBufSize]),
       alloc_(alloc_buf_.get(), AllocBufSize) {
     // 2D Image
     pi_clear_image_[0][int(Ren::eTexFormat::RGBA8)] = sh.LoadPipeline("internal/clear_image@RGBA8.comp.glsl");
@@ -68,12 +111,10 @@ Eng::FgBuilder::FgBuilder(Ren::Context &ctx, Eng::ShaderLoader &sh, PrimDraw &pr
     pi_clear_buffer_ = sh.LoadPipeline("internal/clear_buffer.comp.glsl");
 }
 
-Ren::ILog *Eng::FgBuilder::log() { return ctx_.log(); }
-
-Eng::FgNode &Eng::FgBuilder::AddNode(std::string_view name) {
+Eng::FgNode &Eng::FgBuilder::AddNode(const std::string_view name, const eFgQueueType queue) {
     char *mem = alloc_.allocate(sizeof(FgNode) + alignof(FgNode));
     auto *new_rp = reinterpret_cast<FgNode *>(mem + alignof(FgNode) - (uintptr_t(mem) % alignof(FgNode)));
-    alloc_.construct(new_rp, int(nodes_.size()), name, *this);
+    alloc_.construct(new_rp, name, int(nodes_.size()), queue, *this);
     nodes_.emplace_back(new_rp);
     return *nodes_.back();
 }
@@ -613,41 +654,6 @@ Eng::FgResRef Eng::FgBuilder::MakeTextureResource(const Ren::WeakTexRef &ref) {
     ret._generation = tex._generation;
 
     return ret;
-}
-
-Eng::FgAllocBuf &Eng::FgBuilder::GetReadBuffer(const FgResRef handle) {
-    assert(handle.type == eFgResType::Buffer);
-    FgAllocBuf &buf = buffers_.at(handle.index);
-    assert(buf.write_count == handle.write_count);
-    ++buf.read_count;
-    return buf;
-}
-
-Eng::FgAllocTex &Eng::FgBuilder::GetReadTexture(const FgResRef handle) {
-    assert(handle.type == eFgResType::Texture);
-    FgAllocTex &tex = textures_.at(handle.index);
-    assert(tex.write_count == handle.write_count);
-    // assert(tex.ref->resource_state == handle.desired_state);
-    ++tex.read_count;
-    return tex;
-}
-
-Eng::FgAllocBuf &Eng::FgBuilder::GetWriteBuffer(const FgResRef handle) {
-    assert(handle.type == eFgResType::Buffer);
-    FgAllocBuf &buf = buffers_.at(handle.index);
-    assert(buf.write_count + 1 == handle.write_count);
-    // assert(buf.ref->resource_state == handle.desired_state);
-    ++buf.write_count;
-    return buf;
-}
-
-Eng::FgAllocTex &Eng::FgBuilder::GetWriteTexture(const FgResRef handle) {
-    assert(handle.type == eFgResType::Texture);
-    FgAllocTex &tex = textures_.at(handle.index);
-    assert(tex.write_count + 1 == handle.write_count);
-    // assert(tex.ref->resource_state == handle.desired_state);
-    ++tex.write_count;
-    return tex;
 }
 
 void Eng::FgBuilder::AllocateNeededResources_Simple() {
@@ -1666,8 +1672,8 @@ void Eng::FgBuilder::ClearBuffer_AsStorage(Ren::BufRef &buf, Ren::CommandBuffer 
 
     assert((buf->size() % 4) == 0);
 
-    const Ren::Vec3u grp_count = Ren::Vec3u{
-        ((buf->size() / 4) + ClearBuffer::GRP_SIZE_X - 1u) / ClearBuffer::GRP_SIZE_X, 1u, 1u};
+    const Ren::Vec3u grp_count =
+        Ren::Vec3u{((buf->size() / 4) + ClearBuffer::GRP_SIZE_X - 1u) / ClearBuffer::GRP_SIZE_X, 1u, 1u};
 
     ClearBuffer::Params uniform_params;
     uniform_params.data_len = (buf->size() / 4);
@@ -1690,9 +1696,9 @@ void Eng::FgBuilder::ClearImage_AsStorage(Ren::TexRef &tex, Ren::CommandBuffer c
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::ImageRW, ClearImage::OUT_IMG_SLOT, *tex}};
 
-    const Ren::Vec3u grp_count = Ren::Vec3u{
-        (p.w + ClearImage::GRP_SIZE_X - 1u) / ClearImage::GRP_SIZE_X,
-        (p.h + ClearImage::GRP_SIZE_Y - 1u) / ClearImage::GRP_SIZE_Y, std::max<uint32_t>(p.d, 1)};
+    const Ren::Vec3u grp_count =
+        Ren::Vec3u{(p.w + ClearImage::GRP_SIZE_X - 1u) / ClearImage::GRP_SIZE_X,
+                   (p.h + ClearImage::GRP_SIZE_Y - 1u) / ClearImage::GRP_SIZE_Y, std::max<uint32_t>(p.d, 1)};
 
     Ren::DispatchCompute(cmd_buf, *pi, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(), ctx_.log());
 }

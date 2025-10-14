@@ -65,20 +65,19 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             oit_rays_counter = data->oit_rays_counter = oit_clear.AddTransferOutput("OIT Ray Counter", desc);
         }
 
-        oit_clear.set_execute_cb([this, data](FgBuilder &builder) {
-            FgAllocBuf &out_depth_buf = builder.GetWriteBuffer(data->oit_depth_buf);
-            FgAllocBuf &out_rays_counter_buf = builder.GetWriteBuffer(data->oit_rays_counter);
+        oit_clear.set_execute_cb([this, data](FgContext &ctx) {
+            FgAllocBuf &out_depth_buf = ctx.AccessRWBuffer(data->oit_depth_buf);
+            FgAllocBuf &out_rays_counter_buf = ctx.AccessRWBuffer(data->oit_rays_counter);
 
-            Ren::Context &ctx = builder.ctx();
-            out_rays_counter_buf.ref->Fill(0, out_rays_counter_buf.ref->size(), 0, ctx.current_cmd_buf());
+            out_rays_counter_buf.ref->Fill(0, out_rays_counter_buf.ref->size(), 0, ctx.cmd_buf());
 
             if (p_list_->alpha_blend_start_index != -1) {
-                out_depth_buf.ref->Fill(0, out_depth_buf.ref->size(), 0, ctx.current_cmd_buf());
+                out_depth_buf.ref->Fill(0, out_depth_buf.ref->size(), 0, ctx.cmd_buf());
             }
             for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
-                FgAllocTex &oit_specular = builder.GetWriteTexture(data->oit_specular[i]);
+                FgAllocTex &oit_specular = ctx.AccessRWTexture(data->oit_specular[i]);
                 if (p_list_->alpha_blend_start_index != -1) {
-                    Ren::ClearImage(*oit_specular.ref, {}, ctx.current_cmd_buf());
+                    Ren::ClearImage(*oit_specular.ref, {}, ctx.cmd_buf());
                 }
             }
         });
@@ -188,17 +187,17 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 write_indir.AddStorageOutput("OIT Intersect Args", desc, Stg::ComputeShader);
         }
 
-        write_indir.set_execute_cb([this, data](FgBuilder &builder) {
+        write_indir.set_execute_cb([this, data](FgContext &ctx) {
             using namespace SSRWriteIndirectArgs;
 
-            FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
-            FgAllocBuf &indir_args = builder.GetWriteBuffer(data->indir_disp_buf);
+            FgAllocBuf &ray_counter_buf = ctx.AccessRWBuffer(data->ray_counter);
+            FgAllocBuf &indir_args = ctx.AccessRWBuffer(data->indir_disp_buf);
 
             const Ren::Binding bindings[] = {{Trg::SBufRW, RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                                              {Trg::SBufRW, INDIR_ARGS_SLOT, *indir_args.ref}};
 
-            DispatchCompute(*pi_ssr_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+            DispatchCompute(*pi_ssr_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0, ctx.descr_alloc(),
+                            ctx.log());
         });
     }
 
@@ -253,35 +252,35 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 ssr_trace_hq.AddStorageOutput("OIT RT Ray List", desc, Stg::ComputeShader);
         }
 
-        ssr_trace_hq.set_execute_cb([this, data](FgBuilder &builder) {
+        ssr_trace_hq.set_execute_cb([this, data](FgContext &ctx) {
             using namespace SSRTraceHQ;
 
-            FgAllocBuf &oit_depth_buf = builder.GetReadBuffer(data->oit_depth_buf);
-            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            FgAllocTex &color_tex = builder.GetReadTexture(data->color_tex);
-            FgAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
-            FgAllocTex &depth_hierarchy_tex = builder.GetReadTexture(data->depth_hierarchy);
-            FgAllocBuf &in_ray_list_buf = builder.GetReadBuffer(data->in_ray_list);
-            FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+            FgAllocBuf &oit_depth_buf = ctx.AccessROBuffer(data->oit_depth_buf);
+            FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(data->shared_data);
+            FgAllocTex &color_tex = ctx.AccessROTexture(data->color_tex);
+            FgAllocTex &normal_tex = ctx.AccessROTexture(data->normal_tex);
+            FgAllocTex &depth_hierarchy_tex = ctx.AccessROTexture(data->depth_hierarchy);
+            FgAllocBuf &in_ray_list_buf = ctx.AccessROBuffer(data->in_ray_list);
+            FgAllocBuf &indir_args_buf = ctx.AccessROBuffer(data->indir_args);
 
             FgAllocTex *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr, *irr_tex = nullptr,
                        *dist_tex = nullptr, *off_tex = nullptr;
             if (data->irradiance_tex) {
-                albedo_tex = &builder.GetReadTexture(data->albedo_tex);
-                specular_tex = &builder.GetReadTexture(data->specular_tex);
-                ltc_luts_tex = &builder.GetReadTexture(data->ltc_luts_tex);
+                albedo_tex = &ctx.AccessROTexture(data->albedo_tex);
+                specular_tex = &ctx.AccessROTexture(data->specular_tex);
+                ltc_luts_tex = &ctx.AccessROTexture(data->ltc_luts_tex);
 
-                irr_tex = &builder.GetReadTexture(data->irradiance_tex);
-                dist_tex = &builder.GetReadTexture(data->distance_tex);
-                off_tex = &builder.GetReadTexture(data->offset_tex);
+                irr_tex = &ctx.AccessROTexture(data->irradiance_tex);
+                dist_tex = &ctx.AccessROTexture(data->distance_tex);
+                off_tex = &ctx.AccessROTexture(data->offset_tex);
             }
 
             FgAllocTex *out_refl_tex[OIT_REFLECTION_LAYERS] = {};
             for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
-                out_refl_tex[i] = &builder.GetWriteTexture(data->out_ssr_tex[i]);
+                out_refl_tex[i] = &ctx.AccessRWTexture(data->out_ssr_tex[i]);
             }
-            FgAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
-            FgAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
+            FgAllocBuf &inout_ray_counter_buf = ctx.AccessRWBuffer(data->inout_ray_counter);
+            FgAllocBuf &out_ray_list_buf = ctx.AccessRWBuffer(data->out_ray_list);
 
             Ren::SmallVector<Ren::Binding, 24> bindings = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -309,8 +308,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             uniform_params.resolution = Ren::Vec4u(view_state_.ren_res[0], view_state_.ren_res[1], 0, 0);
 
             DispatchComputeIndirect(*pi_ssr_trace_hq_[1][irr_tex != nullptr], *indir_args_buf.ref, 0, bindings,
-                                    &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                    builder.ctx().log());
+                                    &uniform_params, sizeof(uniform_params), ctx.descr_alloc(), ctx.log());
         });
     }
 
@@ -338,11 +336,11 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                     rt_disp_args.AddStorageOutput("OIT RT Dispatch Args", desc, Stg::ComputeShader);
             }
 
-            rt_disp_args.set_execute_cb([this, data](FgBuilder &builder) {
+            rt_disp_args.set_execute_cb([this, data](FgContext &ctx) {
                 using namespace SSRWriteIndirRTDispatch;
 
-                FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
-                FgAllocBuf &indir_disp_buf = builder.GetWriteBuffer(data->indir_disp_buf);
+                FgAllocBuf &ray_counter_buf = ctx.AccessRWBuffer(data->ray_counter);
+                FgAllocBuf &indir_disp_buf = ctx.AccessRWBuffer(data->indir_disp_buf);
 
                 const Ren::Binding bindings[] = {{Trg::SBufRW, RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                                                  {Trg::SBufRW, INDIR_ARGS_SLOT, *indir_disp_buf.ref}};
@@ -351,7 +349,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 params.counter_index = (settings.reflections_quality == eReflectionsQuality::Raytraced_High) ? 1 : 6;
 
                 DispatchCompute(*pi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, &params, sizeof(params),
-                                builder.ctx().default_descr_alloc(), builder.ctx().log());
+                                ctx.descr_alloc(), ctx.log());
             });
         }
 
@@ -451,21 +449,21 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 }
             }
 
-            oit_back.set_execute_cb([this, data, i](FgBuilder &builder) {
-                FgAllocTex &in_back_color_tex = builder.GetReadTexture(data->in_back_color);
-                FgAllocTex &in_back_depth_tex = builder.GetReadTexture(data->in_back_depth);
-                FgAllocTex &out_back_color_tex = builder.GetWriteTexture(data->out_back_color);
-                FgAllocTex &out_back_depth_tex = builder.GetWriteTexture(data->out_back_depth);
+            oit_back.set_execute_cb([this, data, i](FgContext &ctx) {
+                FgAllocTex &in_back_color_tex = ctx.AccessROTexture(data->in_back_color);
+                FgAllocTex &in_back_depth_tex = ctx.AccessROTexture(data->in_back_depth);
+                FgAllocTex &out_back_color_tex = ctx.AccessRWTexture(data->out_back_color);
+                FgAllocTex &out_back_depth_tex = ctx.AccessRWTexture(data->out_back_depth);
 
                 const int w = in_back_color_tex.ref->params.w, h = in_back_color_tex.ref->params.h;
 
                 if (p_list_->alpha_blend_start_index != -1) {
-                    CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_color_tex.ref, 0, 0, 0, 0,
-                                     *out_back_color_tex.ref, 0, 0, 0, 0, 0, w, h, 1);
+                    CopyImageToImage(ctx.cmd_buf(), *in_back_color_tex.ref, 0, 0, 0, 0, *out_back_color_tex.ref, 0, 0,
+                                     0, 0, 0, w, h, 1);
                 }
                 if (i == 0 || p_list_->alpha_blend_start_index != -1) {
-                    CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_depth_tex.ref, 0, 0, 0, 0,
-                                     *out_back_depth_tex.ref, 0, 0, 0, 0, 0, w, h, 1);
+                    CopyImageToImage(ctx.cmd_buf(), *in_back_depth_tex.ref, 0, 0, 0, 0, *out_back_depth_tex.ref, 0, 0,
+                                     0, 0, 0, w, h, 1);
                 }
             });
         }

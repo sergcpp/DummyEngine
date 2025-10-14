@@ -15,25 +15,24 @@ uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const En
                      uint32_t i, uint64_t mask);
 } // namespace ExSharedInternal
 
-void Eng::ExGBufferFill::DrawOpaque(FgBuilder &builder) {
+void Eng::ExGBufferFill::DrawOpaque(FgContext &ctx) {
     using namespace ExSharedInternal;
 
-    auto &ctx = builder.ctx();
-    auto *api_ctx = ctx.api_ctx();
+    auto *api_ctx = ctx.ren_ctx().api_ctx();
 
     //
     // Prepare descriptor sets
     //
-    FgAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
-    FgAllocBuf &cells_buf = builder.GetReadBuffer(cells_buf_);
-    FgAllocBuf &items_buf = builder.GetReadBuffer(items_buf_);
-    FgAllocBuf &decals_buf = builder.GetReadBuffer(decals_buf_);
+    FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
+    FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
+    FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
+    FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
+    FgAllocBuf &cells_buf = ctx.AccessROBuffer(cells_buf_);
+    FgAllocBuf &items_buf = ctx.AccessROBuffer(items_buf_);
+    FgAllocBuf &decals_buf = ctx.AccessROBuffer(decals_buf_);
 
-    FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
-    FgAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
+    FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
+    FgAllocTex &dummy_black = ctx.AccessROTexture(dummy_black_);
 
     VkDescriptorSet descr_sets[2];
 
@@ -48,7 +47,7 @@ void Eng::ExGBufferFill::DrawOpaque(FgBuilder &builder) {
                                          {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref},
                                          {Ren::eBindTarget::TexSampled, BIND_DECAL_TEX, *dummy_black.ref}};
         descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[0]->prog()->descr_set_layouts()[0], bindings,
-                                             ctx.default_descr_alloc(), ctx.log());
+                                             ctx.descr_alloc(), ctx.log());
         descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 

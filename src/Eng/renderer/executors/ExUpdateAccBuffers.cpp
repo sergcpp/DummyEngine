@@ -2,20 +2,18 @@
 
 #include <Ren/Context.h>
 
-void Eng::ExUpdateAccBuffers::Execute(FgBuilder &builder) {
-    if (builder.ctx().capabilities.hwrt) {
+void Eng::ExUpdateAccBuffers::Execute(FgContext &ctx) {
+    if (ctx.ren_ctx().capabilities.hwrt) {
 #if !defined(REN_GL_BACKEND)
-        Execute_HWRT(builder);
+        Execute_HWRT(ctx);
 #endif
     } else {
-        Execute_SWRT(builder);
+        Execute_SWRT(ctx);
     }
 }
 
-void Eng::ExUpdateAccBuffers::Execute_SWRT(FgBuilder &builder) {
-    FgAllocBuf &rt_geo_instances_buf = builder.GetWriteBuffer(rt_geo_instances_buf_);
-
-    Ren::Context &ctx = builder.ctx();
+void Eng::ExUpdateAccBuffers::Execute_SWRT(FgContext &ctx) {
+    FgAllocBuf &rt_geo_instances_buf = ctx.AccessRWBuffer(rt_geo_instances_buf_);
 
     const auto &rt_geo_instances = p_list_->rt_geo_instances[rt_index_];
     auto &rt_geo_instances_stage_buf = p_list_->rt_geo_instances_stage_buf[rt_index_];
@@ -29,6 +27,6 @@ void Eng::ExUpdateAccBuffers::Execute_SWRT(FgBuilder &builder) {
         rt_geo_instances_stage_buf->Unmap();
 
         CopyBufferToBuffer(*rt_geo_instances_stage_buf, ctx.backend_frame() * RTGeoInstancesBufChunkSize,
-                           *rt_geo_instances_buf.ref, 0, rt_geo_instances_mem_size, ctx.current_cmd_buf());
+                           *rt_geo_instances_buf.ref, 0, rt_geo_instances_mem_size, ctx.cmd_buf());
     }
 }

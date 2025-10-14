@@ -380,7 +380,7 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, Ren::S
         ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
         DestroyDeferredResources(api_ctx, api_ctx->backend_frame);
 
-        const bool reset_result = ren_ctx.default_descr_alloc()->Reset();
+        const bool reset_result = ren_ctx.default_descr_alloc().Reset();
         require_fatal(reset_result);
 
         ///////////////////////////////////////////////////////////////

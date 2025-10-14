@@ -4,16 +4,16 @@
 
 #include "../../utils/ShaderLoader.h"
 
-void Eng::ExEmissive::Execute(FgBuilder &builder) {
-    FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
-    FgAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
+void Eng::ExEmissive::Execute(FgContext &ctx) {
+    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(vtx_buf1_);
+    FgAllocBuf &vtx_buf2 = ctx.AccessROBuffer(vtx_buf2_);
+    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(ndx_buf_);
 
-    FgAllocTex &color_tex = builder.GetWriteTexture(out_color_tex_);
-    FgAllocTex &depth_tex = builder.GetWriteTexture(out_depth_tex_);
+    FgAllocTex &color_tex = ctx.AccessRWTexture(out_color_tex_);
+    FgAllocTex &depth_tex = ctx.AccessRWTexture(out_depth_tex_);
 
-    LazyInit(builder.ctx(), builder.sh(), vtx_buf1, vtx_buf2, ndx_buf, color_tex, depth_tex);
-    DrawOpaque(builder);
+    LazyInit(ctx.ren_ctx(), ctx.sh(), vtx_buf1, vtx_buf2, ndx_buf, color_tex, depth_tex);
+    DrawOpaque(ctx);
 }
 
 void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,

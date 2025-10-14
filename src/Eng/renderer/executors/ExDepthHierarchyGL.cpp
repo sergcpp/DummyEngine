@@ -9,9 +9,9 @@
 
 #include "../shaders/depth_hierarchy_interface.h"
 
-void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
-    FgAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
-    FgAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
+void Eng::ExDepthHierarchy::Execute(FgContext &ctx) {
+    FgAllocTex &depth_tex = ctx.AccessROTexture(depth_tex_);
+    FgAllocTex &output_tex = ctx.AccessRWTexture(output_tex_);
 
     glUseProgram(pi_depth_hierarchy_->prog()->id());
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, DepthHierarchy::DEPTH_TEX_SLOT, depth_tex.ref->id());

@@ -11,6 +11,8 @@
 #endif
 
 namespace Ren {
+class DescrMultiPoolAlloc {};
+
 void APIENTRY DebugCallback(const GLenum source, const GLenum type, const GLuint id, const GLenum severity,
                             const GLsizei length, const GLchar *message, const void *userParam) {
     auto *self = reinterpret_cast<const Context *>(userParam);
@@ -219,7 +221,10 @@ void Ren::CheckError(const char *op, ILog *log) {
     }
 }
 
-Ren::DescrMultiPoolAlloc *Ren::Context::default_descr_alloc() const { return nullptr; }
+Ren::DescrMultiPoolAlloc &Ren::Context::default_descr_alloc() const {
+    static DescrMultiPoolAlloc stub;
+    return stub;
+}
 
 void Ren::Context::BegSingleTimeCommands(CommandBuffer cmd_buf) {}
 Ren::CommandBuffer Ren::Context::BegTempSingleTimeCommands() { return nullptr; }

@@ -9,7 +9,7 @@
 #include "VKCtx.h"
 
 VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout,
-                                          Span<const Binding> bindings, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
+                                          Span<const Binding> bindings, DescrMultiPoolAlloc &descr_alloc, ILog *log) {
     VkDescriptorImageInfo sampler_infos[16] = {};
     VkDescriptorImageInfo img_sampler_infos[24];
     VkDescriptorImageInfo img_storage_infos[24];
@@ -149,7 +149,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
         }
     }
 
-    VkDescriptorSet descr_set = descr_alloc->Alloc(descr_sizes, layout);
+    VkDescriptorSet descr_set = descr_alloc.Alloc(descr_sizes, layout);
     if (!descr_set) {
         log->Error("Failed to allocate descriptor set!");
         return VK_NULL_HANDLE;
@@ -166,8 +166,8 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
 void Ren::DispatchCompute(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, const Vec3u grp_count,
                           Span<const Binding> bindings, const void *uniform_data, const int uniform_data_len,
-                          DescrMultiPoolAlloc *descr_alloc, ILog *log) {
-    ApiContext *api_ctx = descr_alloc->api_ctx();
+                          DescrMultiPoolAlloc &descr_alloc, ILog *log) {
+    ApiContext *api_ctx = descr_alloc.api_ctx();
 
     VkDescriptorSet descr_set =
         PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings, descr_alloc, log);
@@ -189,18 +189,18 @@ void Ren::DispatchCompute(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, 
 }
 
 void Ren::DispatchCompute(const Pipeline &comp_pipeline, const Vec3u grp_count, Span<const Binding> bindings,
-                          const void *uniform_data, const int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
+                          const void *uniform_data, const int uniform_data_len, DescrMultiPoolAlloc &descr_alloc,
                           ILog *log) {
-    ApiContext *api_ctx = descr_alloc->api_ctx();
+    ApiContext *api_ctx = descr_alloc.api_ctx();
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
     DispatchCompute(cmd_buf, comp_pipeline, grp_count, bindings, uniform_data, uniform_data_len, descr_alloc, log);
 }
 
 void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, const Buffer &indir_buf,
                                   const uint32_t indir_buf_offset, Span<const Binding> bindings,
-                                  const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
+                                  const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc &descr_alloc,
                                   ILog *log) {
-    ApiContext *api_ctx = descr_alloc->api_ctx();
+    ApiContext *api_ctx = descr_alloc.api_ctx();
 
     VkDescriptorSet descr_set =
         PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings, descr_alloc, log);
@@ -223,9 +223,9 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
 
 void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf,
                                   const uint32_t indir_buf_offset, Span<const Binding> bindings,
-                                  const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
+                                  const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc &descr_alloc,
                                   ILog *log) {
-    ApiContext *api_ctx = descr_alloc->api_ctx();
+    ApiContext *api_ctx = descr_alloc.api_ctx();
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
     DispatchComputeIndirect(cmd_buf, comp_pipeline, indir_buf, indir_buf_offset, bindings, uniform_data,
                             uniform_data_len, descr_alloc, log);

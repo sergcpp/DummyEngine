@@ -222,7 +222,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     VkDescriptorSetLayout descr_set_layout = pipeline_.prog()->descr_set_layouts()[0];
     Ren::DescrSizes descr_sizes;
     descr_sizes.img_sampler_count = 1;
-    VkDescriptorSet descr_set = ctx_.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
+    VkDescriptorSet descr_set = ctx_.default_descr_alloc().Alloc(descr_sizes, descr_set_layout);
 
     VkDescriptorImageInfo img_info = {};
     img_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

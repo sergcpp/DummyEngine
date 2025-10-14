@@ -5,16 +5,16 @@
 #include "../../utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void Eng::ExShadowColor::Execute(FgBuilder &builder) {
-    FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
-    FgAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
+void Eng::ExShadowColor::Execute(FgContext &ctx) {
+    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(vtx_buf1_);
+    FgAllocBuf &vtx_buf2 = ctx.AccessROBuffer(vtx_buf2_);
+    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(ndx_buf_);
 
-    FgAllocTex &shadow_depth_tex = builder.GetWriteTexture(shadow_depth_tex_);
-    FgAllocTex &shadow_color_tex = builder.GetWriteTexture(shadow_color_tex_);
+    FgAllocTex &shadow_depth_tex = ctx.AccessRWTexture(shadow_depth_tex_);
+    FgAllocTex &shadow_color_tex = ctx.AccessRWTexture(shadow_color_tex_);
 
-    LazyInit(builder.ctx(), builder.sh(), vtx_buf1, vtx_buf2, ndx_buf, shadow_depth_tex, shadow_color_tex);
-    DrawShadowMaps(builder);
+    LazyInit(ctx.ren_ctx(), ctx.sh(), vtx_buf1, vtx_buf2, ndx_buf, shadow_depth_tex, shadow_color_tex);
+    DrawShadowMaps(ctx);
 }
 
 void Eng::ExShadowColor::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
@@ -53,8 +53,7 @@ void Eng::ExShadowColor::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
             sh.LoadProgram(bindless ? "internal/shadow_color.vert.glsl" : "internal/shadow_color@NO_BINDLESS.vert.glsl",
                            "internal/shadow_color.frag.glsl");
         Ren::ProgramRef shadow_alpha_prog =
-            sh.LoadProgram(bindless ? "internal/shadow_color.vert.glsl"
-                                    : "internal/shadow_color@NO_BINDLESS.vert.glsl",
+            sh.LoadProgram(bindless ? "internal/shadow_color.vert.glsl" : "internal/shadow_color@NO_BINDLESS.vert.glsl",
                            bindless ? "internal/shadow_color@ALPHATEST.frag.glsl"
                                     : "internal/shadow_color@ALPHATEST;NO_BINDLESS.frag.glsl");
 

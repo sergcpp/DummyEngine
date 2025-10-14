@@ -18,9 +18,9 @@ class ExDebugOIT final : public FgExecutor {
         FgResRef output_tex;
     };
 
-    ExDebugOIT(FgBuilder &builder, const view_state_t *view_state, const Args *pass_data);
+    ExDebugOIT(FgContext &ctx, const view_state_t *view_state, const Args *pass_data);
 
-    void Execute(FgBuilder &builder) override;
+    void Execute(FgContext &ctx) override;
 
   private:
     // lazily initialized data

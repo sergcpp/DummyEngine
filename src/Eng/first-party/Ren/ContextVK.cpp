@@ -139,8 +139,8 @@ Ren::Context::~Context() {
     }
 }
 
-Ren::DescrMultiPoolAlloc *Ren::Context::default_descr_alloc() const {
-    return default_descr_alloc_[api_ctx_->backend_frame].get();
+Ren::DescrMultiPoolAlloc &Ren::Context::default_descr_alloc() const {
+    return *default_descr_alloc_[api_ctx_->backend_frame];
 }
 
 bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_level, const bool nohwrt,

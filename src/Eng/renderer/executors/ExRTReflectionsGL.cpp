@@ -10,56 +10,53 @@
 
 #include "../shaders/rt_reflections_interface.h"
 
-void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::ExRTReflections::Execute_HWRT(FgContext &ctx) { assert(false && "Not implemented!"); }
 
-void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
-    FgAllocBuf &geo_data_buf = builder.GetReadBuffer(args_->geo_data);
-    FgAllocBuf &materials_buf = builder.GetReadBuffer(args_->materials);
-    FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(args_->vtx_buf1);
-    FgAllocBuf &vtx_buf2 = builder.GetReadBuffer(args_->vtx_buf2);
-    FgAllocBuf &ndx_buf = builder.GetReadBuffer(args_->ndx_buf);
-    FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
-    FgAllocBuf &rt_blas_buf = builder.GetReadBuffer(args_->swrt.rt_blas_buf);
-    FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
-    FgAllocTex &depth_tex = builder.GetReadTexture(args_->depth_tex);
-    FgAllocTex &normal_tex = builder.GetReadTexture(args_->normal_tex);
-    FgAllocTex &env_tex = builder.GetReadTexture(args_->env_tex);
-    FgAllocBuf &ray_counter_buf = builder.GetReadBuffer(args_->ray_counter);
-    FgAllocBuf &ray_list_buf = builder.GetReadBuffer(args_->ray_list);
-    FgAllocBuf &indir_args_buf = builder.GetReadBuffer(args_->indir_args);
-    FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
-    FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
-    FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
-    FgAllocBuf &textures_buf = builder.GetReadBuffer(args_->swrt.textures_buf);
-    FgAllocTex &shadow_depth_tex = builder.GetReadTexture(args_->shadow_depth_tex);
-    FgAllocTex &shadow_color_tex = builder.GetReadTexture(args_->shadow_color_tex);
-    FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
-    FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
-    FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
+void Eng::ExRTReflections::Execute_SWRT(FgContext &ctx) {
+    FgAllocBuf &geo_data_buf = ctx.AccessROBuffer(args_->geo_data);
+    FgAllocBuf &materials_buf = ctx.AccessROBuffer(args_->materials);
+    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(args_->vtx_buf1);
+    FgAllocBuf &vtx_buf2 = ctx.AccessROBuffer(args_->vtx_buf2);
+    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(args_->ndx_buf);
+    FgAllocBuf &lights_buf = ctx.AccessROBuffer(args_->lights_buf);
+    FgAllocBuf &rt_blas_buf = ctx.AccessROBuffer(args_->swrt.rt_blas_buf);
+    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
+    FgAllocTex &depth_tex = ctx.AccessROTexture(args_->depth_tex);
+    FgAllocTex &normal_tex = ctx.AccessROTexture(args_->normal_tex);
+    FgAllocTex &env_tex = ctx.AccessROTexture(args_->env_tex);
+    FgAllocBuf &ray_counter_buf = ctx.AccessROBuffer(args_->ray_counter);
+    FgAllocBuf &ray_list_buf = ctx.AccessROBuffer(args_->ray_list);
+    FgAllocBuf &indir_args_buf = ctx.AccessROBuffer(args_->indir_args);
+    FgAllocBuf &rt_tlas_buf = ctx.AccessROBuffer(args_->tlas_buf);
+    FgAllocBuf &prim_ndx_buf = ctx.AccessROBuffer(args_->swrt.prim_ndx_buf);
+    FgAllocBuf &mesh_instances_buf = ctx.AccessROBuffer(args_->swrt.mesh_instances_buf);
+    FgAllocBuf &textures_buf = ctx.AccessROBuffer(args_->swrt.textures_buf);
+    FgAllocTex &shadow_depth_tex = ctx.AccessROTexture(args_->shadow_depth_tex);
+    FgAllocTex &shadow_color_tex = ctx.AccessROTexture(args_->shadow_color_tex);
+    FgAllocTex &ltc_luts_tex = ctx.AccessROTexture(args_->ltc_luts_tex);
+    FgAllocBuf &cells_buf = ctx.AccessROBuffer(args_->cells_buf);
+    FgAllocBuf &items_buf = ctx.AccessROBuffer(args_->items_buf);
 
     FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (args_->irradiance_tex) {
-        irr_tex = &builder.GetReadTexture(args_->irradiance_tex);
-        dist_tex = &builder.GetReadTexture(args_->distance_tex);
-        off_tex = &builder.GetReadTexture(args_->offset_tex);
+        irr_tex = &ctx.AccessROTexture(args_->irradiance_tex);
+        dist_tex = &ctx.AccessROTexture(args_->distance_tex);
+        off_tex = &ctx.AccessROTexture(args_->offset_tex);
     }
 
     FgAllocBuf *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
     if (args_->stoch_lights_buf) {
-        stoch_lights_buf = &builder.GetReadBuffer(args_->stoch_lights_buf);
-        light_nodes_buf = &builder.GetReadBuffer(args_->light_nodes_buf);
+        stoch_lights_buf = &ctx.AccessROBuffer(args_->stoch_lights_buf);
+        light_nodes_buf = &ctx.AccessROBuffer(args_->light_nodes_buf);
     }
 
     FgAllocBuf *oit_depth_buf = nullptr;
     FgAllocTex *noise_tex = nullptr;
     if (args_->oit_depth_buf) {
-        oit_depth_buf = &builder.GetReadBuffer(args_->oit_depth_buf);
+        oit_depth_buf = &ctx.AccessROBuffer(args_->oit_depth_buf);
     } else {
-        noise_tex = &builder.GetReadTexture(args_->noise_tex);
+        noise_tex = &ctx.AccessROTexture(args_->noise_tex);
     }
-
-    Ren::Context &ctx = builder.ctx();
-    Ren::ApiContext *api_ctx = ctx.api_ctx();
 
     Ren::SmallVector<Ren::Binding, 24> bindings = {
         {Ren::eBindTarget::SBufRO, BIND_BINDLESS_TEX, *textures_buf.ref},
@@ -100,7 +97,7 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::OIT_DEPTH_BUF_SLOT, *oit_depth_buf->ref);
     }
     for (int i = 0; i < OIT_REFLECTION_LAYERS && args_->out_refl_tex[i]; ++i) {
-        FgAllocTex &out_refl_tex = builder.GetWriteTexture(args_->out_refl_tex[i]);
+        FgAllocTex &out_refl_tex = ctx.AccessRWTexture(args_->out_refl_tex[i]);
         bindings.emplace_back(Ren::eBindTarget::ImageRW, RTReflections::OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex.ref);
     }
 
@@ -121,5 +118,5 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     uniform_params.lights_count = view_state_->stochastic_lights_count;
 
     DispatchComputeIndirect(*pi, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR), bindings, &uniform_params,
-                            sizeof(uniform_params), nullptr, ctx.log());
+                            sizeof(uniform_params), ctx.descr_alloc(), ctx.log());
 }

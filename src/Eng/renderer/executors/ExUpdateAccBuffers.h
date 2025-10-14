@@ -13,8 +13,8 @@ class ExUpdateAccBuffers final : public FgExecutor {
     FgResRef rt_geo_instances_buf_;
     FgResRef rt_obj_instances_buf_;
 
-    void Execute_HWRT(FgBuilder &builder);
-    void Execute_SWRT(FgBuilder &builder);
+    void Execute_HWRT(FgContext &ctx);
+    void Execute_SWRT(FgContext &ctx);
 
   public:
     ExUpdateAccBuffers(const DrawList *&p_list, int rt_index, const FgResRef rt_geo_instances_buf,
@@ -22,6 +22,6 @@ class ExUpdateAccBuffers final : public FgExecutor {
         : p_list_(p_list), rt_index_(rt_index), rt_geo_instances_buf_(rt_geo_instances_buf),
           rt_obj_instances_buf_(rt_obj_instances_buf) {}
 
-    void Execute(FgBuilder &builder) override;
+    void Execute(FgContext &ctx) override;
 };
 } // namespace Eng

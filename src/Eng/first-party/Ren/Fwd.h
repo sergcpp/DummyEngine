@@ -46,6 +46,7 @@ class Buffer;
 class Camera;
 class Context;
 class DescrPool;
+class DescrMultiPoolAlloc;
 class IAccStructure;
 class ILog;
 class Material;

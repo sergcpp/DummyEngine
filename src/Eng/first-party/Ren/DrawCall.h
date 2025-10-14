@@ -76,20 +76,20 @@ static_assert(sizeof(Binding) == sizeof(void *) + 8 + 8 + sizeof(void *));
 
 #if defined(REN_VK_BACKEND)
 [[nodiscard]] VkDescriptorSet PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout,
-                                                   Span<const Binding> bindings, DescrMultiPoolAlloc *descr_alloc,
+                                                   Span<const Binding> bindings, DescrMultiPoolAlloc &descr_alloc,
                                                    ILog *log);
 #endif
 
 void DispatchCompute(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, Vec3u grp_count,
                      Span<const Binding> bindings, const void *uniform_data, int uniform_data_len,
-                     DescrMultiPoolAlloc *descr_alloc, ILog *log);
+                     DescrMultiPoolAlloc &descr_alloc, ILog *log);
 void DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
-                     const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log);
+                     const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc &descr_alloc, ILog *log);
 
 void DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, const Buffer &indir_buf,
                              uint32_t indir_buf_offset, Span<const Binding> bindings, const void *uniform_data,
-                             int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log);
+                             int uniform_data_len, DescrMultiPoolAlloc &descr_alloc, ILog *log);
 void DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf, uint32_t indir_buf_offset,
                              Span<const Binding> bindings, const void *uniform_data, int uniform_data_len,
-                             DescrMultiPoolAlloc *descr_alloc, ILog *log);
+                             DescrMultiPoolAlloc &descr_alloc, ILog *log);
 } // namespace Ren

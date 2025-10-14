@@ -8,23 +8,22 @@
 #include <Ren/RastState.h>
 #include <Ren/VKCtx.h>
 
-void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &instances_buf,
+void Eng::ExTransparent::DrawTransparent_Simple(FgContext &ctx, FgAllocBuf &instances_buf,
                                                 FgAllocBuf &instance_indices_buf, FgAllocBuf &unif_shared_data_buf,
                                                 FgAllocBuf &materials_buf, FgAllocBuf &cells_buf, FgAllocBuf &items_buf,
                                                 FgAllocBuf &lights_buf, FgAllocBuf &decals_buf, FgAllocTex &shad_tex,
                                                 FgAllocTex &color_tex, FgAllocTex &ssao_tex) {
-    auto &ctx = builder.ctx();
-    auto *api_ctx = ctx.api_ctx();
+    auto *api_ctx = ctx.ren_ctx().api_ctx();
 
-    [[maybe_unused]] FgAllocTex &brdf_lut = builder.GetReadTexture(brdf_lut_);
-    FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
-    [[maybe_unused]] FgAllocTex &cone_rt_lut = builder.GetReadTexture(cone_rt_lut_);
-    FgAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
+    [[maybe_unused]] FgAllocTex &brdf_lut = ctx.AccessROTexture(brdf_lut_);
+    FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
+    [[maybe_unused]] FgAllocTex &cone_rt_lut = ctx.AccessROTexture(cone_rt_lut_);
+    FgAllocTex &dummy_black = ctx.AccessROTexture(dummy_black_);
 
     FgAllocTex *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (lm_tex_[i]) {
-            lm_tex[i] = &builder.GetReadTexture(lm_tex_[i]);
+            lm_tex[i] = &ctx.AccessROTexture(lm_tex_[i]);
         } else {
             lm_tex[i] = &dummy_black;
         }
@@ -39,7 +38,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
     descr_sizes.ubuf_count = 1;
     descr_sizes.utbuf_count = 4;
     descr_sizes.sbuf_count = 3;
-    const VkDescriptorSet res_descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout_);
+    const VkDescriptorSet res_descr_set = ctx.descr_alloc().Alloc(descr_sizes, descr_set_layout_);
 
     { // update descriptor set
         const VkDescriptorImageInfo shad_info = shad_tex.ref->vk_desc_image_info();
@@ -361,11 +360,9 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
     }
 }
 
-void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgContext &ctx) { assert(false && "Not implemented!"); }
 
-void Eng::ExTransparent::DrawTransparent_OIT_WeightedBlended(FgBuilder &builder) {
-    assert(false && "Not implemented!");
-}
+void Eng::ExTransparent::DrawTransparent_OIT_WeightedBlended(FgContext &ctx) { assert(false && "Not implemented!"); }
 
 void Eng::ExTransparent::InitDescrSetLayout() {
     VkDescriptorSetLayoutBinding bindings[] = {

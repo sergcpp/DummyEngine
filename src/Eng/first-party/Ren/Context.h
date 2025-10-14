@@ -125,7 +125,7 @@ class Context {
     BufRef default_delta_buf() const { return default_delta_buf_; }
     BufRef default_indices_buf() const { return default_indices_buf_; }
     MemAllocators *default_mem_allocs() { return default_mem_allocs_.get(); }
-    DescrMultiPoolAlloc *default_descr_alloc() const;
+    DescrMultiPoolAlloc &default_descr_alloc() const;
 
     void BegSingleTimeCommands(CommandBuffer cmd_buf);
     CommandBuffer BegTempSingleTimeCommands();

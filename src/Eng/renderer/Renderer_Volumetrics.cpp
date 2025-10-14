@@ -309,12 +309,12 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                 sky_upsample.AddStorageImageOutput("SKY HIST", params, Stg::ComputeShader);
             data->sky_hist_tex = sky_upsample.AddHistoryTextureInput(sky_upsampled, Stg::ComputeShader);
 
-            sky_upsample.set_execute_cb([data, this](FgBuilder &builder) {
-                FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-                FgAllocTex &env_map_tex = builder.GetReadTexture(data->env_map);
-                FgAllocTex &sky_temp_tex = builder.GetReadTexture(data->sky_temp_tex);
-                FgAllocTex &sky_hist_tex = builder.GetReadTexture(data->sky_hist_tex);
-                FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+            sky_upsample.set_execute_cb([data, this](FgContext &ctx) {
+                FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(data->shared_data);
+                FgAllocTex &env_map_tex = ctx.AccessROTexture(data->env_map);
+                FgAllocTex &sky_temp_tex = ctx.AccessROTexture(data->sky_temp_tex);
+                FgAllocTex &sky_hist_tex = ctx.AccessROTexture(data->sky_hist_tex);
+                FgAllocTex &output_tex = ctx.AccessRWTexture(data->output_tex);
 
                 const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                                                  {Trg::TexSampled, Skydome::ENV_TEX_SLOT, *env_map_tex.ref},
@@ -333,7 +333,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                 uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
 
                 DispatchCompute(*pi_sky_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                                builder.ctx().default_descr_alloc(), builder.ctx().log());
+                                ctx.descr_alloc(), ctx.log());
             });
         }
         { // blit result
@@ -352,10 +352,10 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             frame_textures.color = data->output_tex =
                 sky_blit.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
 
-            sky_blit.set_execute_cb([data, this](FgBuilder &builder) {
-                FgAllocTex &sky_tex = builder.GetReadTexture(data->sky_tex);
-                FgAllocTex &depth_tex = builder.GetWriteTexture(data->depth_tex);
-                FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+            sky_blit.set_execute_cb([data, this](FgContext &ctx) {
+                FgAllocTex &sky_tex = ctx.AccessROTexture(data->sky_tex);
+                FgAllocTex &depth_tex = ctx.AccessRWTexture(data->depth_tex);
+                FgAllocTex &output_tex = ctx.AccessRWTexture(data->output_tex);
 
                 Ren::RastState rast_state;
                 rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -376,7 +376,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                 const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
                 prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_fxaa_prog_, depth_target, render_targets, rast_state,
-                                    builder.rast_state(), bindings, &uniform_params, sizeof(FXAA::Params), 0);
+                                    ctx.rast_state(), bindings, &uniform_params, sizeof(FXAA::Params), 0);
             });
         }
     }
@@ -420,15 +420,15 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
         desc.size = 8 * sizeof(float);
         output = data->output_buf = sun_color.AddStorageOutput("Sun Brightness Result", desc, Stg::ComputeShader);
 
-        sun_color.set_execute_cb([data, this](FgBuilder &builder) {
-            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            FgAllocTex &transmittance_lut = builder.GetReadTexture(data->transmittance_lut);
-            FgAllocTex &multiscatter_lut = builder.GetReadTexture(data->multiscatter_lut);
-            FgAllocTex &moon_tex = builder.GetReadTexture(data->moon_tex);
-            FgAllocTex &weather_tex = builder.GetReadTexture(data->weather_tex);
-            FgAllocTex &cirrus_tex = builder.GetReadTexture(data->cirrus_tex);
-            FgAllocTex &noise3d_tex = builder.GetReadTexture(data->noise3d_tex);
-            FgAllocBuf &output_buf = builder.GetWriteBuffer(data->output_buf);
+        sun_color.set_execute_cb([data, this](FgContext &ctx) {
+            FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(data->shared_data);
+            FgAllocTex &transmittance_lut = ctx.AccessROTexture(data->transmittance_lut);
+            FgAllocTex &multiscatter_lut = ctx.AccessROTexture(data->multiscatter_lut);
+            FgAllocTex &moon_tex = ctx.AccessROTexture(data->moon_tex);
+            FgAllocTex &weather_tex = ctx.AccessROTexture(data->weather_tex);
+            FgAllocTex &cirrus_tex = ctx.AccessROTexture(data->cirrus_tex);
+            FgAllocTex &noise3d_tex = ctx.AccessROTexture(data->noise3d_tex);
+            FgAllocBuf &output_buf = ctx.AccessRWBuffer(data->output_buf);
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -440,8 +440,8 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
                 {Trg::TexSampled, SunBrightness::NOISE3D_TEX_SLOT, *noise3d_tex.ref},
                 {Trg::SBufRW, SunBrightness::OUT_BUF_SLOT, *output_buf.ref}};
 
-            DispatchCompute(*pi_sun_brightness_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+            DispatchCompute(*pi_sun_brightness_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0, ctx.descr_alloc(),
+                            ctx.log());
         });
     }
     { // Update sun color
@@ -457,15 +457,14 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
         data->sample_buf = sun_color.AddTransferInput(output);
         common_buffers.shared_data = data->shared_data = sun_color.AddTransferOutput(common_buffers.shared_data);
 
-        sun_color.set_execute_cb([data](FgBuilder &builder) {
-            FgAllocBuf &sample_buf = builder.GetReadBuffer(data->sample_buf);
-            FgAllocBuf &unif_sh_data_buf = builder.GetWriteBuffer(data->shared_data);
+        sun_color.set_execute_cb([data](FgContext &ctx) {
+            FgAllocBuf &sample_buf = ctx.AccessROBuffer(data->sample_buf);
+            FgAllocBuf &unif_sh_data_buf = ctx.AccessRWBuffer(data->shared_data);
 
             CopyBufferToBuffer(*sample_buf.ref, 0, *unif_sh_data_buf.ref, offsetof(shared_data_t, sun_col),
-                               3 * sizeof(float), builder.ctx().current_cmd_buf());
+                               3 * sizeof(float), ctx.cmd_buf());
             CopyBufferToBuffer(*sample_buf.ref, 4 * sizeof(float), *unif_sh_data_buf.ref,
-                               offsetof(shared_data_t, sun_col_point_sh), 3 * sizeof(float),
-                               builder.ctx().current_cmd_buf());
+                               offsetof(shared_data_t, sun_col_point_sh), 3 * sizeof(float), ctx.cmd_buf());
         });
     }
 }
@@ -564,31 +563,31 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             data->offset_tex = scatter.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
         }
 
-        scatter.set_execute_cb([data, this, AllCascades](FgBuilder &builder) {
-            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+        scatter.set_execute_cb([data, this, AllCascades](FgContext &ctx) {
+            FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(data->shared_data);
 
-            FgAllocTex &stbn_tex = builder.GetReadTexture(data->stbn_tex);
-            FgAllocTex &shad_depth_tex = builder.GetReadTexture(data->shadow_depth_tex);
-            FgAllocTex &shad_color_tex = builder.GetReadTexture(data->shadow_color_tex);
+            FgAllocTex &stbn_tex = ctx.AccessROTexture(data->stbn_tex);
+            FgAllocTex &shad_depth_tex = ctx.AccessROTexture(data->shadow_depth_tex);
+            FgAllocTex &shad_color_tex = ctx.AccessROTexture(data->shadow_color_tex);
 
-            FgAllocTex &fr_emission_tex = builder.GetReadTexture(data->fr_emission_tex);
-            FgAllocTex &fr_scatter_tex = builder.GetReadTexture(data->fr_scatter_tex);
+            FgAllocTex &fr_emission_tex = ctx.AccessROTexture(data->fr_emission_tex);
+            FgAllocTex &fr_scatter_tex = ctx.AccessROTexture(data->fr_scatter_tex);
 
-            FgAllocBuf &cells_buf = builder.GetReadBuffer(data->cells_buf);
-            FgAllocBuf &items_buf = builder.GetReadBuffer(data->items_buf);
-            FgAllocBuf &lights_buf = builder.GetReadBuffer(data->lights_buf);
-            FgAllocBuf &decals_buf = builder.GetReadBuffer(data->decals_buf);
-            FgAllocTex &envmap_tex = builder.GetReadTexture(data->envmap_tex);
+            FgAllocBuf &cells_buf = ctx.AccessROBuffer(data->cells_buf);
+            FgAllocBuf &items_buf = ctx.AccessROBuffer(data->items_buf);
+            FgAllocBuf &lights_buf = ctx.AccessROBuffer(data->lights_buf);
+            FgAllocBuf &decals_buf = ctx.AccessROBuffer(data->decals_buf);
+            FgAllocTex &envmap_tex = ctx.AccessROTexture(data->envmap_tex);
 
             FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
             if (data->irradiance_tex) {
-                irr_tex = &builder.GetReadTexture(data->irradiance_tex);
-                dist_tex = &builder.GetReadTexture(data->distance_tex);
-                off_tex = &builder.GetReadTexture(data->offset_tex);
+                irr_tex = &ctx.AccessROTexture(data->irradiance_tex);
+                dist_tex = &ctx.AccessROTexture(data->distance_tex);
+                off_tex = &ctx.AccessROTexture(data->offset_tex);
             }
 
-            FgAllocTex &out_emission_tex = builder.GetWriteTexture(data->out_emission_tex);
-            FgAllocTex &out_scatter_tex = builder.GetWriteTexture(data->out_scatter_tex);
+            FgAllocTex &out_emission_tex = ctx.AccessRWTexture(data->out_emission_tex);
+            FgAllocTex &out_scatter_tex = ctx.AccessRWTexture(data->out_scatter_tex);
 
             if (view_state_.skip_volumetrics) {
                 return;
@@ -634,7 +633,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
 
             DispatchCompute(*pi_vol_scatter_[AllCascades][irr_tex != nullptr], grp_count, bindings, &uniform_params,
-                            sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            sizeof(uniform_params), ctx.descr_alloc(), ctx.log());
         });
     }
     FgResRef froxel_tex;
@@ -666,12 +665,12 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
                 ray_march.AddStorageImageOutput("Vol Scattering Final", p, Stg::ComputeShader);
         }
 
-        ray_march.set_execute_cb([data, this](FgBuilder &builder) {
-            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            FgAllocTex &fr_emission_tex = builder.GetReadTexture(data->fr_emission_tex);
-            FgAllocTex &fr_scatter_tex = builder.GetReadTexture(data->fr_scatter_tex);
+        ray_march.set_execute_cb([data, this](FgContext &ctx) {
+            FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(data->shared_data);
+            FgAllocTex &fr_emission_tex = ctx.AccessROTexture(data->fr_emission_tex);
+            FgAllocTex &fr_scatter_tex = ctx.AccessROTexture(data->fr_scatter_tex);
 
-            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+            FgAllocTex &output_tex = ctx.AccessRWTexture(data->output_tex);
 
             if (view_state_.skip_volumetrics) {
                 return;
@@ -694,7 +693,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
                 Ren::Saturate(Ren::Vec4f{p_list_->env.fog.scatter_color, p_list_->env.fog.absorption});
 
             DispatchCompute(*pi_vol_ray_march_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            ctx.descr_alloc(), ctx.log());
         });
     }
     { // Apply
@@ -714,12 +713,12 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
 
         frame_textures.color = data->output_tex = apply.AddColorOutput(frame_textures.color);
 
-        apply.set_execute_cb([data, this](FgBuilder &builder) {
-            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+        apply.set_execute_cb([data, this](FgContext &ctx) {
+            FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(data->shared_data);
 
-            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            FgAllocTex &froxel_tex = builder.GetReadTexture(data->froxel_tex);
-            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+            FgAllocTex &depth_tex = ctx.AccessROTexture(data->depth_tex);
+            FgAllocTex &froxel_tex = ctx.AccessROTexture(data->froxel_tex);
+            FgAllocTex &output_tex = ctx.AccessRWTexture(data->output_tex);
 
             if (view_state_.skip_volumetrics) {
                 return;
@@ -753,7 +752,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             uniform_params.froxel_res = Ren::Vec4f(froxel_res);
 
             prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_vol_compose_prog_, {}, render_targets, rast_state,
-                                builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
+                                ctx.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
         });
     }
 }

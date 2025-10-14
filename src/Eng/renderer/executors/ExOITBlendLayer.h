@@ -58,7 +58,7 @@ class ExOITBlendLayer final : public FgExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
                   FgAllocBuf &ndx_buf, FgAllocTex &depth_tex, FgAllocTex &color_tex);
-    void DrawTransparent(FgBuilder &builder, FgAllocTex &depth_tex);
+    void DrawTransparent(FgContext &ctx, FgAllocTex &depth_tex);
 
   public:
     ExOITBlendLayer(PrimDraw &prim_draw, const DrawList **p_list, const view_state_t *view_state, FgResRef vtx_buf1,
@@ -70,6 +70,6 @@ class ExOITBlendLayer final : public FgExecutor {
                     FgResRef oit_depth_buf, FgResRef oit_specular_tex, int depth_layer_index, FgResRef irradiance_tex,
                     FgResRef distance_tex, FgResRef offset_tex, FgResRef back_color_tex, FgResRef back_depth_tex);
 
-    void Execute(FgBuilder &builder) override;
+    void Execute(FgContext &ctx) override;
 };
 } // namespace Eng

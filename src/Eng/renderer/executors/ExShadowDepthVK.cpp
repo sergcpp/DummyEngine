@@ -54,20 +54,19 @@ void _clear_region(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng:
 }
 } // namespace ExShadowDepthInternal
 
-void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
+void Eng::ExShadowDepth::DrawShadowMaps(FgContext &ctx) {
     using namespace ExSharedInternal;
     using namespace ExShadowDepthInternal;
 
     using BDB = basic_draw_batch_t;
 
-    FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
-    FgAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
-    FgAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
-    FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
+    FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
+    FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
+    FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
+    FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
+    FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
 
-    Ren::Context &ctx = builder.ctx();
-    Ren::ApiContext *api_ctx = ctx.api_ctx();
+    Ren::ApiContext *api_ctx = ctx.ren_ctx().api_ctx();
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
@@ -78,7 +77,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
                                          {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref}};
         simple_descr_sets[0] =
-            PrepareDescriptorSet(api_ctx, simple_descr_set_layout, bindings, ctx.default_descr_alloc(), ctx.log());
+            PrepareDescriptorSet(api_ctx, simple_descr_set_layout, bindings, ctx.descr_alloc(), ctx.log());
         simple_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
@@ -91,7 +90,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
                                          {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref}};
         vege_descr_sets[0] =
-            PrepareDescriptorSet(api_ctx, vege_descr_set_layout, bindings, ctx.default_descr_alloc(), ctx.log());
+            PrepareDescriptorSet(api_ctx, vege_descr_set_layout, bindings, ctx.descr_alloc(), ctx.log());
         vege_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
@@ -109,7 +108,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
     Ren::SmallVector<uint32_t, 32> batch_points((*p_list_)->shadow_lists.count, 0);
 
     { // opaque objects
-        Ren::DebugMarker _(api_ctx, ctx.current_cmd_buf(), "STATIC-SOLID");
+        Ren::DebugMarker _(api_ctx, ctx.cmd_buf(), "STATIC-SOLID");
 
         api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_solid_[0]->layout(), 0, 1,
                                          simple_descr_sets, 0, nullptr);
@@ -200,7 +199,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
     }*/
 
     { // alpha-tested objects
-        Ren::DebugMarker _(api_ctx, ctx.current_cmd_buf(), "STATIC-ALPHA");
+        Ren::DebugMarker _(api_ctx, ctx.cmd_buf(), "STATIC-ALPHA");
 
         api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_alpha_[0]->layout(), 0, 2,
                                          simple_descr_sets, 0, nullptr);

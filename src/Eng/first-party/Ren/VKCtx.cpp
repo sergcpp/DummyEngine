@@ -815,7 +815,7 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
         SmallVector<VkQueueFamilyProperties, 8> queue_family_properties(queue_family_count);
         vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i], &queue_family_count, &queue_family_properties[0]);
 
-        uint32_t present_family_index = 0xffffffff, graphics_family_index = 0xffffffff;
+        uint32_t present_family_index = 0xffffffff, graphics_family_index = 0xffffffff, compute_family_index = 0xffffffff;
 
         for (uint32_t j = 0; j < queue_family_count; j++) {
             VkBool32 supports_present = VK_FALSE;
@@ -827,6 +827,9 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                 queue_family_properties[j].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 present_family_index = j;
                 graphics_family_index = j;
+                if (queue_family_properties[j].queueFlags & VK_QUEUE_COMPUTE_BIT) {
+                    compute_family_index = j;
+                }
                 break;
             } else if (supports_present && queue_family_properties[j].queueCount > 0 &&
                        present_family_index == 0xffffffff) {
@@ -835,6 +838,9 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                        (queue_family_properties[j].queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
                        graphics_family_index == 0xffffffff) {
                 graphics_family_index = j;
+                if (queue_family_properties[j].queueFlags & VK_QUEUE_COMPUTE_BIT) {
+                    compute_family_index = j;
+                }
             }
         }
 
@@ -877,6 +883,7 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                 this->device_properties = device_properties;
                 this->present_family_index = present_family_index;
                 this->graphics_family_index = graphics_family_index;
+                this->compute_family_index = compute_family_index;
                 this->raytracing_supported = (acc_struct_supported && raytracing_supported);
                 this->ray_query_supported = ray_query_supported;
                 this->renderpass_loadstore_none_supported = renderpass_loadstore_none_supported;

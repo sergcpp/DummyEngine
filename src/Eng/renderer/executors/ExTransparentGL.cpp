@@ -11,13 +11,13 @@
 namespace ExSharedInternal {
 void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
-uint32_t _draw_list_range_full(Eng::FgBuilder &builder, const Ren::MaterialStorage *materials,
+uint32_t _draw_list_range_full(Eng::FgContext &ctx, const Ren::MaterialStorage *materials,
                                const Ren::Pipeline pipelines[], Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                Eng::backend_info_t &backend_info);
 
-uint32_t _draw_list_range_full_rev(Eng::FgBuilder &builder, const Ren::MaterialStorage *materials,
+uint32_t _draw_list_range_full_rev(Eng::FgContext &ctx, const Ren::MaterialStorage *materials,
                                    const Ren::Pipeline pipelines[],
                                    Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
@@ -25,7 +25,7 @@ uint32_t _draw_list_range_full_rev(Eng::FgBuilder &builder, const Ren::MaterialS
                                    Eng::backend_info_t &backend_info);
 } // namespace ExSharedInternal
 
-void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &instances_buf,
+void Eng::ExTransparent::DrawTransparent_Simple(FgContext &ctx, FgAllocBuf &instances_buf,
                                                 FgAllocBuf &instance_indices_buf, FgAllocBuf &unif_shared_data_buf,
                                                 FgAllocBuf &materials_buf, FgAllocBuf &cells_buf, FgAllocBuf &items_buf,
                                                 FgAllocBuf &lights_buf, FgAllocBuf &decals_buf, FgAllocTex &shad_tex,
@@ -55,23 +55,21 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
     _rast_state.viewport[2] = view_state_->ren_res[0];
     _rast_state.viewport[3] = view_state_->ren_res[1];
 
-    _rast_state.ApplyChanged(builder.rast_state());
-    builder.rast_state() = _rast_state;
+    _rast_state.ApplyChanged(ctx.rast_state());
+    ctx.rast_state() = _rast_state;
 
     glBindVertexArray(draw_pass_vi_->GetVAO());
-
-    auto &ctx = builder.ctx();
 
     //
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
 
-    FgAllocBuf &textures_buf = builder.GetReadBuffer(textures_buf_);
+    FgAllocBuf &textures_buf = ctx.AccessROBuffer(textures_buf_);
 
-    FgAllocTex &brdf_lut = builder.GetReadTexture(brdf_lut_);
-    FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
-    FgAllocTex &cone_rt_lut = builder.GetReadTexture(cone_rt_lut_);
-    FgAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
+    FgAllocTex &brdf_lut = ctx.AccessROTexture(brdf_lut_);
+    FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
+    FgAllocTex &cone_rt_lut = ctx.AccessROTexture(cone_rt_lut_);
+    FgAllocTex &dummy_black = ctx.AccessROTexture(dummy_black_);
 
     if (/*!(*p_list_)->probe_storage ||*/ (*p_list_)->alpha_blend_start_index == -1) {
         return;
@@ -111,7 +109,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
     // ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_CONE_RT_LUT, cone_rt_lut.ref->id());
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
-    if (ctx.capabilities.bindless_texture) {
+    if (ctx.ren_ctx().capabilities.bindless_texture) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX, GLuint(textures_buf.ref->id()));
     }
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.ref->view(0).second));
@@ -135,8 +133,8 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
 
         if (batch.depth_write_bit) {
             _rast_state.depth.write_enabled = true;
-            _rast_state.ApplyChanged(builder.rast_state());
-            builder.rast_state() = _rast_state;
+            _rast_state.ApplyChanged(ctx.rast_state());
+            ctx.rast_state() = _rast_state;
         }
 
         if (cur_pipe_id != batch.pipe_id) {
@@ -148,9 +146,9 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
             }
         }
 
-        if (!ctx.capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
+        if (!ctx.ren_ctx().capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
             const Ren::Material &mat = (*p_list_)->materials->at(batch.mat_id);
-            _bind_textures_and_samplers(builder.ctx(), mat, builder.temp_samplers);
+            _bind_textures_and_samplers(ctx.ren_ctx(), mat, ctx.temp_samplers);
         }
 
         cur_pipe_id = batch.pipe_id;
@@ -168,8 +166,8 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
 
     _rast_state.depth.write_enabled = false;
     _rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-    _rast_state.ApplyChanged(builder.rast_state());
-    builder.rast_state() = _rast_state;
+    _rast_state.ApplyChanged(ctx.rast_state());
+    ctx.rast_state() = _rast_state;
 
     for (int j = int((*p_list_)->custom_batch_indices.size()) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
         const auto &batch = (*p_list_)->custom_batches[(*p_list_)->custom_batch_indices[j]];
@@ -179,8 +177,8 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
 
         if (batch.depth_write_bit) {
             _rast_state.depth.write_enabled = true;
-            _rast_state.ApplyChanged(builder.rast_state());
-            builder.rast_state() = _rast_state;
+            _rast_state.ApplyChanged(ctx.rast_state());
+            ctx.rast_state() = _rast_state;
         }
 
         if (cur_pipe_id != batch.pipe_id) {
@@ -192,9 +190,9 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
             }
         }
 
-        if (!ctx.capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
+        if (!ctx.ren_ctx().capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
             const Ren::Material &mat = (*p_list_)->materials->at(batch.mat_id);
-            _bind_textures_and_samplers(builder.ctx(), mat, builder.temp_samplers);
+            _bind_textures_and_samplers(ctx.ren_ctx(), mat, ctx.temp_samplers);
         }
 
         cur_pipe_id = batch.pipe_id;
@@ -211,7 +209,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
     }
 }
 
-void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgBuilder &builder) {
+void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgContext &ctx) {
     using namespace ExSharedInternal;
 
 #if 0
@@ -230,8 +228,8 @@ void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgBuilder &builder) {
     rast_state.viewport[2] = view_state_->ren_res[0];
     rast_state.viewport[3] = view_state_->ren_res[1];
 
-    rast_state.ApplyChanged(builder.rast_state());
-    builder.rast_state() = rast_state;
+    rast_state.ApplyChanged(ctx.rast_state());
+    ctx.rast_state() = rast_state;
 
     glBindFramebuffer(GL_FRAMEBUFFER, moments_fb_.id());
     glClear(GL_COLOR_BUFFER_BIT);
@@ -240,7 +238,7 @@ void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgBuilder &builder) {
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
 
-    FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
+    FgAllocBuf &unif_shared_data_buf = ctx.GetReadBuffer(shared_data_buf_);
 
     glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf.ref->id());
 
@@ -269,7 +267,6 @@ void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgBuilder &builder) {
         }
     }
 
-    Ren::Context &ctx = builder.ctx();
     BackendInfo backend_info;
 
     { // Draw alpha-blended surfaces
@@ -296,7 +293,7 @@ void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgBuilder &builder) {
             }
 
             if (!ctx.capabilities.bindless_texture && cur_mat != &mat) {
-                _bind_texture0_and_sampler0(builder.ctx(), mat, builder.temp_samplers);
+                _bind_texture0_and_sampler0(ctx.ren_ctx(), mat, ctx.temp_samplers);
                 cur_mat = &mat;
             }
 
@@ -364,7 +361,7 @@ void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgBuilder &builder) {
             }
 
             if (!ctx.capabilities.bindless_texture && cur_mat != &mat) {
-                _bind_texture0_and_sampler0(builder.ctx(), mat, builder.temp_samplers);
+                _bind_texture0_and_sampler0(ctx.ren_ctx(), mat, ctx.temp_samplers);
                 cur_mat = &mat;
             }
 
@@ -383,7 +380,7 @@ void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgBuilder &builder) {
     Ren::GLUnbindSamplers(BIND_MAT_TEX0, 8);
 }
 
-void Eng::ExTransparent::DrawTransparent_OIT_WeightedBlended(FgBuilder &builder) {}
+void Eng::ExTransparent::DrawTransparent_OIT_WeightedBlended(FgContext &ctx) {}
 
 //
 // This is needed for moment-based OIT

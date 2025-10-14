@@ -136,7 +136,7 @@ void Viewer::Frame() {
 
     api_ctx->active_present_image = next_image_index;
 
-    const bool reset_result = ren_ctx()->default_descr_alloc()->Reset();
+    const bool reset_result = ren_ctx()->default_descr_alloc().Reset();
     assert(reset_result);
 
     ///////////////////////////////////////////////////////////////

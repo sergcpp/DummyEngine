@@ -767,7 +767,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         view_state_.jitter = jitter;
 
         jitter = (2.0f * jitter - Ren::Vec2f{1.0f}) / Ren::Vec2f{view_state_.ren_res};
-        //jitter = Ren::Vec2f{0.0f};
+        // jitter = Ren::Vec2f{0.0f};
         list.draw_cam.SetPxOffset(jitter);
     } else {
         view_state_.jitter = Ren::Vec2f{0.0f};
@@ -2055,15 +2055,15 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
                 output_tex_res = update_image.AddTransferImageOutput("Temp Image", params);
             }
 
-            update_image.set_execute_cb([stage_buf_res, output_tex_res](FgBuilder &builder) {
-                FgAllocBuf &stage_buf = builder.GetReadBuffer(stage_buf_res);
-                FgAllocTex &output_image = builder.GetWriteTexture(output_tex_res);
+            update_image.set_execute_cb([stage_buf_res, output_tex_res](FgContext &ctx) {
+                FgAllocBuf &stage_buf = ctx.AccessROBuffer(stage_buf_res);
+                FgAllocTex &output_image = ctx.AccessRWTexture(output_tex_res);
 
                 const int w = output_image.ref->params.w;
                 const int h = output_image.ref->params.h;
 
-                output_image.ref->SetSubImage(0, 0, w, h, Ren::eTexFormat::RGBA32F, *stage_buf.ref,
-                                              builder.ctx().current_cmd_buf(), 0, stage_buf.ref->size());
+                output_image.ref->SetSubImage(0, 0, w, h, Ren::eTexFormat::RGBA32F, *stage_buf.ref, ctx.cmd_buf(), 0,
+                                              stage_buf.ref->size());
             });
         }
 

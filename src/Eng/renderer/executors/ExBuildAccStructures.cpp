@@ -5,21 +5,19 @@
 #include <Phy/BVHSplit.h>
 #include <Ren/Context.h>
 
-void Eng::ExBuildAccStructures::Execute(FgBuilder &builder) {
-    if (builder.ctx().capabilities.hwrt) {
+void Eng::ExBuildAccStructures::Execute(FgContext &ctx) {
+    if (ctx.ren_ctx().capabilities.hwrt) {
 #if !defined(REN_GL_BACKEND)
-        Execute_HWRT(builder);
+        Execute_HWRT(ctx);
 #endif
     } else {
-        Execute_SWRT(builder);
+        Execute_SWRT(ctx);
     }
 }
 
-void Eng::ExBuildAccStructures::Execute_SWRT(FgBuilder &builder) {
-    FgAllocBuf &rt_obj_instances_buf = builder.GetWriteBuffer(rt_obj_instances_buf_);
-    FgAllocBuf &rt_tlas_buf = builder.GetWriteBuffer(rt_tlas_buf_);
-
-    Ren::Context &ctx = builder.ctx();
+void Eng::ExBuildAccStructures::Execute_SWRT(FgContext &ctx) {
+    FgAllocBuf &rt_obj_instances_buf = ctx.AccessRWBuffer(rt_obj_instances_buf_);
+    FgAllocBuf &rt_tlas_buf = ctx.AccessRWBuffer(rt_tlas_buf_);
 
     const auto &rt_obj_instances = p_list_->rt_obj_instances[rt_index_];
     auto &rt_obj_instances_stage_buf = p_list_->rt_obj_instances_stage_buf[rt_index_];
@@ -92,11 +90,11 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgBuilder &builder) {
                 memcpy(stage_mem, mesh_instances.data(), rt_obj_instances_mem_size);
                 rt_obj_instances_stage_buf->Unmap();
             } else {
-                builder.log()->Error("ExBuildAccStructures: Failed to map rt obj instance buffer!");
+                ctx.log()->Error("ExBuildAccStructures: Failed to map rt obj instance buffer!");
             }
 
             CopyBufferToBuffer(*rt_obj_instances_stage_buf, ctx.backend_frame() * SWRTObjInstancesBufChunkSize,
-                               *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, ctx.current_cmd_buf());
+                               *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, ctx.cmd_buf());
         }
 
         { // update nodes buf
@@ -107,15 +105,15 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgBuilder &builder) {
                 memcpy(stage_mem, temp_bvh2_nodes.data(), rt_nodes_mem_size);
                 rt_tlas_stage_buf->Unmap();
             } else {
-                builder.log()->Error("ExBuildAccStructures: Failed to map rt tlas stage buffer!");
+                ctx.log()->Error("ExBuildAccStructures: Failed to map rt tlas stage buffer!");
             }
 
             CopyBufferToBuffer(*rt_tlas_stage_buf, ctx.backend_frame() * SWRTTLASNodesBufChunkSize, *rt_tlas_buf.ref, 0,
-                               rt_nodes_mem_size, ctx.current_cmd_buf());
+                               rt_nodes_mem_size, ctx.cmd_buf());
         }
     } else {
         const gpu_bvh2_node_t dummy_node = {};
-        rt_tlas_buf.ref->UpdateImmediate(0, sizeof(dummy_node), &dummy_node, ctx.current_cmd_buf());
+        rt_tlas_buf.ref->UpdateImmediate(0, sizeof(dummy_node), &dummy_node, ctx.cmd_buf());
     }
 }
 

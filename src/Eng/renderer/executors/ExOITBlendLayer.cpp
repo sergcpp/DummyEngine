@@ -24,15 +24,15 @@ Eng::ExOITBlendLayer::ExOITBlendLayer(
       distance_tex_(distance_tex), offset_tex_(offset_tex), back_color_tex_(back_color_tex),
       back_depth_tex_(back_depth_tex), depth_tex_(depth_tex), color_tex_(color_tex) {}
 
-void Eng::ExOITBlendLayer::Execute(FgBuilder &builder) {
-    FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
-    FgAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
-    FgAllocTex &depth_tex = builder.GetWriteTexture(depth_tex_);
-    FgAllocTex &color_tex = builder.GetWriteTexture(color_tex_);
+void Eng::ExOITBlendLayer::Execute(FgContext &ctx) {
+    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(vtx_buf1_);
+    FgAllocBuf &vtx_buf2 = ctx.AccessROBuffer(vtx_buf2_);
+    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(ndx_buf_);
+    FgAllocTex &depth_tex = ctx.AccessRWTexture(depth_tex_);
+    FgAllocTex &color_tex = ctx.AccessRWTexture(color_tex_);
 
-    LazyInit(builder.ctx(), builder.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex, color_tex);
-    DrawTransparent(builder, depth_tex);
+    LazyInit(ctx.ren_ctx(), ctx.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex, color_tex);
+    DrawTransparent(ctx, depth_tex);
 }
 
 void Eng::ExOITBlendLayer::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1,

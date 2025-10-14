@@ -10,40 +10,37 @@
 
 #include "../shaders/sample_lights_interface.h"
 
-void Eng::ExSampleLights::Execute_HWRT(FgBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::ExSampleLights::Execute_HWRT(FgContext &ctx) { assert(false && "Not implemented!"); }
 
-void Eng::ExSampleLights::Execute_SWRT(FgBuilder &builder) {
-    FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
-    FgAllocBuf &random_seq_buf = builder.GetReadBuffer(args_->random_seq);
+void Eng::ExSampleLights::Execute_SWRT(FgContext &ctx) {
+    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
+    FgAllocBuf &random_seq_buf = ctx.AccessROBuffer(args_->random_seq);
 
-    FgAllocBuf &geo_data_buf = builder.GetReadBuffer(args_->geo_data);
-    FgAllocBuf &materials_buf = builder.GetReadBuffer(args_->materials);
-    FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(args_->vtx_buf1);
-    FgAllocBuf &ndx_buf = builder.GetReadBuffer(args_->ndx_buf);
-    FgAllocBuf &rt_blas_buf = builder.GetReadBuffer(args_->swrt.rt_blas_buf);
+    FgAllocBuf &geo_data_buf = ctx.AccessROBuffer(args_->geo_data);
+    FgAllocBuf &materials_buf = ctx.AccessROBuffer(args_->materials);
+    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(args_->vtx_buf1);
+    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(args_->ndx_buf);
+    FgAllocBuf &rt_blas_buf = ctx.AccessROBuffer(args_->swrt.rt_blas_buf);
 
-    FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
-    FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
-    FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
-    FgAllocBuf &textures_buf = builder.GetReadBuffer(args_->swrt.textures_buf);
+    FgAllocBuf &rt_tlas_buf = ctx.AccessROBuffer(args_->tlas_buf);
+    FgAllocBuf &prim_ndx_buf = ctx.AccessROBuffer(args_->swrt.prim_ndx_buf);
+    FgAllocBuf &mesh_instances_buf = ctx.AccessROBuffer(args_->swrt.mesh_instances_buf);
+    FgAllocBuf &textures_buf = ctx.AccessROBuffer(args_->swrt.textures_buf);
 
-    FgAllocTex &albedo_tex = builder.GetReadTexture(args_->albedo_tex);
-    FgAllocTex &depth_tex = builder.GetReadTexture(args_->depth_tex);
-    FgAllocTex &norm_tex = builder.GetReadTexture(args_->norm_tex);
-    FgAllocTex &spec_tex = builder.GetReadTexture(args_->spec_tex);
+    FgAllocTex &albedo_tex = ctx.AccessROTexture(args_->albedo_tex);
+    FgAllocTex &depth_tex = ctx.AccessROTexture(args_->depth_tex);
+    FgAllocTex &norm_tex = ctx.AccessROTexture(args_->norm_tex);
+    FgAllocTex &spec_tex = ctx.AccessROTexture(args_->spec_tex);
 
-    FgAllocTex &out_diffuse_tex = builder.GetWriteTexture(args_->out_diffuse_tex);
-    FgAllocTex &out_specular_tex = builder.GetWriteTexture(args_->out_specular_tex);
+    FgAllocTex &out_diffuse_tex = ctx.AccessRWTexture(args_->out_diffuse_tex);
+    FgAllocTex &out_specular_tex = ctx.AccessRWTexture(args_->out_specular_tex);
 
     if (!args_->lights_buf) {
         return;
     }
 
-    FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
-    FgAllocBuf &nodes_buf = builder.GetReadBuffer(args_->nodes_buf);
-
-    Ren::Context &ctx = builder.ctx();
-    Ren::ApiContext *api_ctx = ctx.api_ctx();
+    FgAllocBuf &lights_buf = ctx.AccessROBuffer(args_->lights_buf);
+    FgAllocBuf &nodes_buf = ctx.AccessROBuffer(args_->nodes_buf);
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::SBufRO, BIND_BINDLESS_TEX, *textures_buf.ref},
@@ -66,15 +63,15 @@ void Eng::ExSampleLights::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::ImageRW, SampleLights::OUT_DIFFUSE_IMG_SLOT, *out_diffuse_tex.ref},
         {Ren::eBindTarget::ImageRW, SampleLights::OUT_SPECULAR_IMG_SLOT, *out_specular_tex.ref}};
 
-    const Ren::Vec3u grp_count = Ren::Vec3u{
-        (view_state_->ren_res[0] + SampleLights::GRP_SIZE_X - 1u) / SampleLights::GRP_SIZE_X,
-        (view_state_->ren_res[1] + SampleLights::GRP_SIZE_Y - 1u) / SampleLights::GRP_SIZE_Y, 1u};
+    const Ren::Vec3u grp_count =
+        Ren::Vec3u{(view_state_->ren_res[0] + SampleLights::GRP_SIZE_X - 1u) / SampleLights::GRP_SIZE_X,
+                   (view_state_->ren_res[1] + SampleLights::GRP_SIZE_Y - 1u) / SampleLights::GRP_SIZE_Y, 1u};
 
     SampleLights::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};
     uniform_params.lights_count = uint32_t(lights_buf.desc.size / sizeof(light_item_t));
     uniform_params.frame_index = view_state_->frame_index;
 
-    DispatchCompute(*pi_sample_lights_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                    ctx.default_descr_alloc(), ctx.log());
+    DispatchCompute(*pi_sample_lights_, grp_count, bindings, &uniform_params, sizeof(uniform_params), ctx.descr_alloc(),
+                    ctx.log());
 }

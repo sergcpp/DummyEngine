@@ -27,17 +27,17 @@ Eng::ExPostprocess::ExPostprocess(PrimDraw &prim_draw, ShaderLoader &sh, const v
                                                   "internal/blit_postprocess@ABERRATION;LUT;TWO_TARGETS.frag.glsl");
 }
 
-void Eng::ExPostprocess::Execute(FgBuilder &builder) {
-    FgAllocTex &exposure_tex = builder.GetReadTexture(args_->exposure_tex);
-    FgAllocTex &color_tex = builder.GetReadTexture(args_->color_tex);
-    FgAllocTex &bloom_tex = builder.GetReadTexture(args_->bloom_tex);
-    FgAllocTex &output_tex = builder.GetWriteTexture(args_->output_tex);
+void Eng::ExPostprocess::Execute(FgContext &ctx) {
+    FgAllocTex &exposure_tex = ctx.AccessROTexture(args_->exposure_tex);
+    FgAllocTex &color_tex = ctx.AccessROTexture(args_->color_tex);
+    FgAllocTex &bloom_tex = ctx.AccessROTexture(args_->bloom_tex);
+    FgAllocTex &output_tex = ctx.AccessRWTexture(args_->output_tex);
     FgAllocTex *lut_tex = nullptr, *output_tex2 = nullptr;
     if (args_->lut_tex) {
-        lut_tex = &builder.GetReadTexture(args_->lut_tex);
+        lut_tex = &ctx.AccessROTexture(args_->lut_tex);
     }
     if (args_->output_tex2) {
-        output_tex2 = &builder.GetWriteTexture(args_->output_tex2);
+        output_tex2 = &ctx.AccessRWTexture(args_->output_tex2);
     }
 
     Ren::RastState rast_state;
@@ -71,6 +71,6 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
     }
 
     prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_postprocess_prog_[args_->tonemap_mode == 2][output_tex2 != nullptr],
-                        {}, render_targets, rast_state, builder.rast_state(), bindings, &uniform_params,
+                        {}, render_targets, rast_state, ctx.rast_state(), bindings, &uniform_params,
                         sizeof(BlitPostprocess::Params), 0);
 }

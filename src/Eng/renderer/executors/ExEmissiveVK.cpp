@@ -13,21 +13,20 @@ uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, cons
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 } // namespace ExSharedInternal
 
-void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
+void Eng::ExEmissive::DrawOpaque(FgContext &ctx) {
     using namespace ExSharedInternal;
 
-    auto &ctx = builder.ctx();
-    auto *api_ctx = ctx.api_ctx();
+    auto *api_ctx = ctx.ren_ctx().api_ctx();
 
     //
     // Prepare descriptor sets
     //
-    FgAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
+    FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
+    FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
+    FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
+    FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
 
-    FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
+    FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
 
     if ((*p_list_)->emissive_start_index == -1) {
         return;
@@ -42,7 +41,7 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
                                          {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref}};
         descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[0]->prog()->descr_set_layouts()[0], bindings,
-                                             ctx.default_descr_alloc(), ctx.log());
+                                             ctx.descr_alloc(), ctx.log());
         descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 

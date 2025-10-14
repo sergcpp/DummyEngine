@@ -10,29 +10,30 @@ class FgExecutor {
   public:
     virtual ~FgExecutor() {}
 
-    virtual void Execute(FgBuilder &builder) = 0;
+    virtual void Execute(FgContext &ctx) = 0;
 };
 
 class FgNode {
   private:
     friend class FgBuilder;
 
-    int16_t index_ = -1;
     std::string name_;
+    int16_t index_ = -1;
+    eFgQueueType queue_;
     FgBuilder &builder_;
     Ren::SmallVector<FgResource, 16> input_;
     Ren::SmallVector<FgResource, 16> output_;
 
     std::unique_ptr<FgExecutor> executor_;
     FgExecutor *p_executor_ = nullptr;
-    Sys::InplaceFunction<void(FgBuilder &builder), 32> execute_cb_;
+    Sys::InplaceFunction<void(FgContext &ctx), 32> execute_cb_;
 
     mutable Ren::SmallVector<int16_t, 16> depends_on_nodes_;
     mutable bool visited_ = false;
 
   public:
-    FgNode(const int16_t index, std::string_view name, FgBuilder &builder)
-        : index_(index), name_(name), builder_(builder) {}
+    FgNode(std::string_view name, const int16_t index, eFgQueueType queue, FgBuilder &builder)
+        : name_(name), index_(index), queue_(queue), builder_(builder) {}
 
     template <typename T, class... Args> T *AllocNodeData(Args &&...args) {
         return builder_.AllocNodeData<T>(std::forward<Args>(args)...);
@@ -121,11 +122,11 @@ class FgNode {
     FgResRef AddASBuildOutput(const Ren::WeakBufRef &buf);
     FgResRef AddASBuildOutput(std::string_view name, const FgBufDesc &desc);
 
-    void Execute(FgBuilder &builder) {
+    void Execute(FgContext &ctx) {
         if (p_executor_) {
-            p_executor_->Execute(builder);
+            p_executor_->Execute(ctx);
         } else if (execute_cb_) {
-            execute_cb_(builder);
+            execute_cb_(ctx);
         }
     }
 

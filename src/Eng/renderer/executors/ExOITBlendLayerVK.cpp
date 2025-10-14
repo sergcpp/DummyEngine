@@ -16,39 +16,38 @@ uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, cons
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 }
 
-void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth_tex) {
+void Eng::ExOITBlendLayer::DrawTransparent(FgContext &ctx, FgAllocTex &depth_tex) {
     using namespace ExSharedInternal;
 
-    auto &ctx = builder.ctx();
-    auto *api_ctx = ctx.api_ctx();
+    auto *api_ctx = ctx.ren_ctx().api_ctx();
 
-    FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
-    FgAllocTex &shadow_map_tex = builder.GetReadTexture(shadow_map_);
-    FgAllocTex &ltc_luts_tex = builder.GetReadTexture(ltc_luts_tex_);
-    FgAllocTex &env_tex = builder.GetReadTexture(env_tex_);
-    FgAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
-    FgAllocBuf &cells_buf = builder.GetReadBuffer(cells_buf_);
-    FgAllocBuf &items_buf = builder.GetReadBuffer(items_buf_);
-    FgAllocBuf &lights_buf = builder.GetReadBuffer(lights_buf_);
-    FgAllocBuf &decals_buf = builder.GetReadBuffer(decals_buf_);
-    FgAllocBuf &oit_depth_buf = builder.GetReadBuffer(oit_depth_buf_);
+    FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
+    FgAllocTex &shadow_map_tex = ctx.AccessROTexture(shadow_map_);
+    FgAllocTex &ltc_luts_tex = ctx.AccessROTexture(ltc_luts_tex_);
+    FgAllocTex &env_tex = ctx.AccessROTexture(env_tex_);
+    FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
+    FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
+    FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
+    FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
+    FgAllocBuf &cells_buf = ctx.AccessROBuffer(cells_buf_);
+    FgAllocBuf &items_buf = ctx.AccessROBuffer(items_buf_);
+    FgAllocBuf &lights_buf = ctx.AccessROBuffer(lights_buf_);
+    FgAllocBuf &decals_buf = ctx.AccessROBuffer(decals_buf_);
+    FgAllocBuf &oit_depth_buf = ctx.AccessROBuffer(oit_depth_buf_);
 
-    FgAllocTex &back_color_tex = builder.GetReadTexture(back_color_tex_);
-    FgAllocTex &back_depth_tex = builder.GetReadTexture(back_depth_tex_);
+    FgAllocTex &back_color_tex = ctx.AccessROTexture(back_color_tex_);
+    FgAllocTex &back_depth_tex = ctx.AccessROTexture(back_depth_tex_);
 
     FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (irradiance_tex_) {
-        irr_tex = &builder.GetReadTexture(irradiance_tex_);
-        dist_tex = &builder.GetReadTexture(distance_tex_);
-        off_tex = &builder.GetReadTexture(offset_tex_);
+        irr_tex = &ctx.AccessROTexture(irradiance_tex_);
+        dist_tex = &ctx.AccessROTexture(distance_tex_);
+        off_tex = &ctx.AccessROTexture(offset_tex_);
     }
 
     FgAllocTex *specular_tex = nullptr;
     if (oit_specular_tex_) {
-        specular_tex = &builder.GetReadTexture(oit_specular_tex_);
+        specular_tex = &ctx.AccessROTexture(oit_specular_tex_);
     }
 
     if ((*p_list_)->alpha_blend_start_index == -1) {
@@ -74,8 +73,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
 
         const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, prog_oit_blit_depth_, depth_target, {}, rast_state,
-                            builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, prog_oit_blit_depth_, depth_target, {}, rast_state, ctx.rast_state(),
+                            bindings, &uniform_params, sizeof(uniform_params), 0);
     }
 
     Ren::SmallVector<Ren::Binding, 16> bindings = {
@@ -104,7 +103,7 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[0]->prog()->descr_set_layouts()[0], bindings,
-                                         ctx.default_descr_alloc(), ctx.log());
+                                         ctx.descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->textures_descr_sets[0];
 
     using BDB = basic_draw_batch_t;

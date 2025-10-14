@@ -8,13 +8,12 @@
 #include "../Renderer_Structs.h"
 #include "../shaders/depth_hierarchy_interface.h"
 
-void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
-    FgAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
-    FgAllocBuf &atomic_buf = builder.GetWriteBuffer(atomic_buf_);
-    FgAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
+void Eng::ExDepthHierarchy::Execute(FgContext &ctx) {
+    FgAllocTex &depth_tex = ctx.AccessROTexture(depth_tex_);
+    FgAllocBuf &atomic_buf = ctx.AccessRWBuffer(atomic_buf_);
+    FgAllocTex &output_tex = ctx.AccessRWTexture(output_tex_);
 
-    Ren::Context &ctx = builder.ctx();
-    Ren::ApiContext *api_ctx = ctx.api_ctx();
+    Ren::ApiContext *api_ctx = ctx.ren_ctx().api_ctx();
 
     if (output_tex.ref->handle().views.size() < output_tex.ref->params.mip_count) {
         // Initialize per-mip views
@@ -43,7 +42,7 @@ void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
     Ren::DescrSizes descr_sizes;
     descr_sizes.img_sampler_count = 1;
     descr_sizes.store_img_count = output_tex.ref->params.mip_count;
-    VkDescriptorSet descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
+    VkDescriptorSet descr_set = ctx.descr_alloc().Alloc(descr_sizes, descr_set_layout);
 
     { // update descriptor set
         const VkDescriptorImageInfo depth_tex_info = depth_tex.ref->vk_desc_image_info(1);

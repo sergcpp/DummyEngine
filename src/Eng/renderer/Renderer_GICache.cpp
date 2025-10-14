@@ -109,10 +109,10 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
         frame_textures.gi_cache_offset = data->offset_tex =
             probe_blend.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
 
-        probe_blend.set_execute_cb([this, data, &persistent_data](FgBuilder &builder) {
-            FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
-            FgAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
-            FgAllocTex &out_irr_tex = builder.GetWriteTexture(data->output_tex);
+        probe_blend.set_execute_cb([this, data, &persistent_data](FgContext &ctx) {
+            FgAllocTex &ray_data_tex = ctx.AccessROTexture(data->ray_data);
+            FgAllocTex &offset_tex = ctx.AccessROTexture(data->offset_tex);
+            FgAllocTex &out_irr_tex = ctx.AccessRWTexture(data->output_tex);
 
             const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
                                              {Trg::TexSampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.ref},
@@ -170,10 +170,10 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
         frame_textures.gi_cache_distance = data->output_tex =
             probe_blend.AddStorageImageOutput(persistent_data.probe_distance, Stg::ComputeShader);
 
-        probe_blend.set_execute_cb([this, data, &persistent_data](FgBuilder &builder) {
-            FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
-            FgAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
-            FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
+        probe_blend.set_execute_cb([this, data, &persistent_data](FgContext &ctx) {
+            FgAllocTex &ray_data_tex = ctx.AccessROTexture(data->ray_data);
+            FgAllocTex &offset_tex = ctx.AccessROTexture(data->offset_tex);
+            FgAllocTex &out_dist_tex = ctx.AccessRWTexture(data->output_tex);
 
             const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
                                              {Trg::TexSampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.ref},
@@ -217,9 +217,9 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
         frame_textures.gi_cache_offset = data->output_tex =
             probe_relocate.AddStorageImageOutput(persistent_data.probe_offset, Stg::ComputeShader);
 
-        probe_relocate.set_execute_cb([this, data, &persistent_data](FgBuilder &builder) {
-            FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
-            FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
+        probe_relocate.set_execute_cb([this, data, &persistent_data](FgContext &ctx) {
+            FgAllocTex &ray_data_tex = ctx.AccessROTexture(data->ray_data);
+            FgAllocTex &out_dist_tex = ctx.AccessRWTexture(data->output_tex);
 
             const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeRelocate::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
                                              {Trg::ImageRW, ProbeRelocate::OUT_IMG_SLOT, *out_dist_tex.ref}};
@@ -269,10 +269,10 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
         frame_textures.gi_cache_offset = data->output_tex =
             probe_classify.AddStorageImageOutput(persistent_data.probe_offset, Stg::ComputeShader);
 
-        probe_classify.set_execute_cb([this, data, &persistent_data](FgBuilder &builder) {
-            FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
-            FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
-            FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
+        probe_classify.set_execute_cb([this, data, &persistent_data](FgContext &ctx) {
+            FgAllocBuf &shared_data_buf = ctx.AccessROBuffer(data->shared_data);
+            FgAllocTex &ray_data_tex = ctx.AccessROTexture(data->ray_data);
+            FgAllocTex &out_dist_tex = ctx.AccessRWTexture(data->output_tex);
 
             const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
                                              {Trg::TexSampled, ProbeClassify::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},

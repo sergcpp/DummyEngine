@@ -29,14 +29,14 @@ Eng::ExOITDepthPeel::ExOITDepthPeel(const DrawList **p_list, const view_state_t 
     out_depth_buf_ = out_depth_buf;
 }
 
-void Eng::ExOITDepthPeel::Execute(FgBuilder &builder) {
-    FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
-    FgAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
-    FgAllocTex &depth_tex = builder.GetWriteTexture(depth_tex_);
+void Eng::ExOITDepthPeel::Execute(FgContext &ctx) {
+    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(vtx_buf1_);
+    FgAllocBuf &vtx_buf2 = ctx.AccessROBuffer(vtx_buf2_);
+    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(ndx_buf_);
+    FgAllocTex &depth_tex = ctx.AccessRWTexture(depth_tex_);
 
-    LazyInit(builder.ctx(), builder.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex);
-    DrawTransparent(builder);
+    LazyInit(ctx.ren_ctx(), ctx.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex);
+    DrawTransparent(ctx);
 }
 
 void Eng::ExOITDepthPeel::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,

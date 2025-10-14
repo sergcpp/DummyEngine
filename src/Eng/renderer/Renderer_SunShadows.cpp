@@ -42,16 +42,15 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             indir_args = data->tile_counter = rt_sh_prepare.AddTransferOutput("SH Tile Counter", desc);
         }
 
-        rt_sh_prepare.set_execute_cb([data](FgBuilder &builder) {
-            FgAllocBuf &tile_counter_buf = builder.GetWriteBuffer(data->tile_counter);
+        rt_sh_prepare.set_execute_cb([data](FgContext &ctx) {
+            FgAllocBuf &tile_counter_buf = ctx.AccessRWBuffer(data->tile_counter);
 
             Ren::DispatchIndirectCommand indirect_cmd = {};
             indirect_cmd.num_groups_x = 0; // will be incremented atomically
             indirect_cmd.num_groups_y = 1;
             indirect_cmd.num_groups_z = 1;
 
-            Ren::Context &ctx = builder.ctx();
-            tile_counter_buf.ref->UpdateImmediate(0, sizeof(indirect_cmd), &indirect_cmd, ctx.current_cmd_buf());
+            tile_counter_buf.ref->UpdateImmediate(0, sizeof(indirect_cmd), &indirect_cmd, ctx.cmd_buf());
         });
     }
 
@@ -104,16 +103,16 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 sh_classify.AddStorageImageOutput("SH BN Tex", params, Stg::ComputeShader);
         }
 
-        sh_classify.set_execute_cb([this, data](FgBuilder &builder) {
-            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth);
-            FgAllocTex &norm_tex = builder.GetReadTexture(data->normal);
-            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            FgAllocBuf &bn_pmj_seq = builder.GetReadBuffer(data->bn_pmj_seq);
+        sh_classify.set_execute_cb([this, data](FgContext &ctx) {
+            FgAllocTex &depth_tex = ctx.AccessROTexture(data->depth);
+            FgAllocTex &norm_tex = ctx.AccessROTexture(data->normal);
+            FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(data->shared_data);
+            FgAllocBuf &bn_pmj_seq = ctx.AccessROBuffer(data->bn_pmj_seq);
 
-            FgAllocBuf &tile_counter_buf = builder.GetWriteBuffer(data->tile_counter);
-            FgAllocBuf &tile_list_buf = builder.GetWriteBuffer(data->tile_list);
-            FgAllocTex &ray_hits_tex = builder.GetWriteTexture(data->out_ray_hits_tex);
-            FgAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
+            FgAllocBuf &tile_counter_buf = ctx.AccessRWBuffer(data->tile_counter);
+            FgAllocBuf &tile_list_buf = ctx.AccessRWBuffer(data->tile_list);
+            FgAllocTex &ray_hits_tex = ctx.AccessRWTexture(data->out_ray_hits_tex);
+            FgAllocTex &noise_tex = ctx.AccessRWTexture(data->out_noise_tex);
 
             const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                                              {Trg::TexSampled, RTShadowClassify::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
@@ -133,7 +132,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             uniform_params.frame_index = view_state_.frame_index;
 
             DispatchCompute(*pi_shadow_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            ctx.descr_alloc(), ctx.log());
         });
     }
 
@@ -198,9 +197,9 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             data->out_result_img = rt_shadow_debug.AddStorageImageOutput("RT SH Debug", params, Stg::ComputeShader);
         }
 
-        rt_shadow_debug.set_execute_cb([this, data](FgBuilder &builder) {
-            FgAllocTex &hit_mask_tex = builder.GetReadTexture(data->hit_mask_tex);
-            FgAllocTex &out_result_img = builder.GetWriteTexture(data->out_result_img);
+        rt_shadow_debug.set_execute_cb([this, data](FgContext &ctx) {
+            FgAllocTex &hit_mask_tex = ctx.AccessROTexture(data->hit_mask_tex);
+            FgAllocTex &out_result_img = ctx.AccessRWTexture(data->out_result_img);
 
             const Ren::Binding bindings[] = {{Trg::TexSampled, RTShadowDebug::HIT_MASK_TEX_SLOT, *hit_mask_tex.ref},
                                              {Trg::ImageRW, RTShadowDebug::OUT_RESULT_IMG_SLOT, *out_result_img.ref}};
@@ -213,7 +212,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             uniform_params.img_size = Ren::Vec2u(view_state_.ren_res[0], view_state_.ren_res[1]);
 
             DispatchCompute(*pi_shadow_debug_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            ctx.descr_alloc(), ctx.log());
         });
 
         return data->out_result_img;
@@ -243,10 +242,10 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 rt_prep_mask.AddStorageOutput("RT SH Mask", desc, Stg::ComputeShader);
         }
 
-        rt_prep_mask.set_execute_cb([this, data](FgBuilder &builder) {
-            FgAllocTex &hit_mask_tex = builder.GetReadTexture(data->hit_mask_tex);
+        rt_prep_mask.set_execute_cb([this, data](FgContext &ctx) {
+            FgAllocTex &hit_mask_tex = ctx.AccessROTexture(data->hit_mask_tex);
 
-            FgAllocBuf &out_shadow_mask_buf = builder.GetWriteBuffer(data->out_shadow_mask_buf);
+            FgAllocBuf &out_shadow_mask_buf = ctx.AccessRWBuffer(data->out_shadow_mask_buf);
 
             const Ren::Binding bindings[] = {
                 {Trg::TexSampled, RTShadowPrepareMask::HIT_MASK_TEX_SLOT, *hit_mask_tex.ref},
@@ -261,7 +260,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             uniform_params.img_size = Ren::Vec2u(view_state_.ren_res[0], view_state_.ren_res[1]);
 
             DispatchCompute(*pi_shadow_prepare_mask_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            ctx.descr_alloc(), ctx.log());
         });
     }
 
@@ -330,19 +329,19 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 rt_classify_tiles.AddStorageImageOutput("SH Moments Tex", params, Stg::ComputeShader);
         }
 
-        rt_classify_tiles.set_execute_cb([this, data](FgBuilder &builder) {
-            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth);
-            FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity);
-            FgAllocTex &norm_tex = builder.GetReadTexture(data->normal);
-            FgAllocTex &hist_tex = builder.GetReadTexture(data->hist);
-            FgAllocTex &prev_depth_tex = builder.GetReadTexture(data->prev_depth);
-            FgAllocTex &prev_moments_tex = builder.GetReadTexture(data->prev_moments);
-            FgAllocBuf &ray_hits_buf = builder.GetReadBuffer(data->ray_hits);
-            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+        rt_classify_tiles.set_execute_cb([this, data](FgContext &ctx) {
+            FgAllocTex &depth_tex = ctx.AccessROTexture(data->depth);
+            FgAllocTex &velocity_tex = ctx.AccessROTexture(data->velocity);
+            FgAllocTex &norm_tex = ctx.AccessROTexture(data->normal);
+            FgAllocTex &hist_tex = ctx.AccessROTexture(data->hist);
+            FgAllocTex &prev_depth_tex = ctx.AccessROTexture(data->prev_depth);
+            FgAllocTex &prev_moments_tex = ctx.AccessROTexture(data->prev_moments);
+            FgAllocBuf &ray_hits_buf = ctx.AccessROBuffer(data->ray_hits);
+            FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(data->shared_data);
 
-            FgAllocBuf &out_tile_metadata_buf = builder.GetWriteBuffer(data->out_tile_metadata_buf);
-            FgAllocTex &out_repro_results_img = builder.GetWriteTexture(data->out_repro_results_img);
-            FgAllocTex &out_moments_img = builder.GetWriteTexture(data->out_moments_img);
+            FgAllocBuf &out_tile_metadata_buf = ctx.AccessRWBuffer(data->out_tile_metadata_buf);
+            FgAllocTex &out_repro_results_img = ctx.AccessRWTexture(data->out_repro_results_img);
+            FgAllocTex &out_moments_img = ctx.AccessRWTexture(data->out_moments_img);
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -369,7 +368,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 1.0f / Ren::Vec2f{float(view_state_.ren_res[0]), float(view_state_.ren_res[1])};
 
             DispatchCompute(*pi_shadow_classify_tiles_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            ctx.descr_alloc(), ctx.log());
         });
     }
 
@@ -406,14 +405,14 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 rt_filter.AddStorageImageOutput("SH Filter 0 Tex", params, Stg::ComputeShader);
         }
 
-        rt_filter.set_execute_cb([this, data](FgBuilder &builder) {
-            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth);
-            FgAllocTex &norm_tex = builder.GetReadTexture(data->normal);
-            FgAllocTex &input_tex = builder.GetReadTexture(data->input);
-            FgAllocBuf &tile_metadata_buf = builder.GetReadBuffer(data->tile_metadata);
-            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+        rt_filter.set_execute_cb([this, data](FgContext &ctx) {
+            FgAllocTex &depth_tex = ctx.AccessROTexture(data->depth);
+            FgAllocTex &norm_tex = ctx.AccessROTexture(data->normal);
+            FgAllocTex &input_tex = ctx.AccessROTexture(data->input);
+            FgAllocBuf &tile_metadata_buf = ctx.AccessROBuffer(data->tile_metadata);
+            FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(data->shared_data);
 
-            FgAllocTex &out_history_img = builder.GetWriteTexture(data->out_history_img);
+            FgAllocTex &out_history_img = ctx.AccessRWTexture(data->out_history_img);
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -433,7 +432,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             uniform_params.inv_img_size = 1.0f / Ren::Vec2f{view_state_.ren_res};
 
             DispatchCompute(*pi_shadow_filter_[0], grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            ctx.descr_alloc(), ctx.log());
         });
     }
 
@@ -470,14 +469,14 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 rt_filter.AddStorageImageOutput("SH Filter 1 Tex", params, Stg::ComputeShader);
         }
 
-        rt_filter.set_execute_cb([this, data](FgBuilder &builder) {
-            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth);
-            FgAllocTex &norm_tex = builder.GetReadTexture(data->normal);
-            FgAllocTex &input_tex = builder.GetReadTexture(data->input);
-            FgAllocBuf &tile_metadata_buf = builder.GetReadBuffer(data->tile_metadata);
-            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+        rt_filter.set_execute_cb([this, data](FgContext &ctx) {
+            FgAllocTex &depth_tex = ctx.AccessROTexture(data->depth);
+            FgAllocTex &norm_tex = ctx.AccessROTexture(data->normal);
+            FgAllocTex &input_tex = ctx.AccessROTexture(data->input);
+            FgAllocBuf &tile_metadata_buf = ctx.AccessROBuffer(data->tile_metadata);
+            FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(data->shared_data);
 
-            FgAllocTex &out_history_img = builder.GetWriteTexture(data->out_history_img);
+            FgAllocTex &out_history_img = ctx.AccessRWTexture(data->out_history_img);
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -497,7 +496,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             uniform_params.inv_img_size = 1.0f / Ren::Vec2f{view_state_.ren_res};
 
             DispatchCompute(*pi_shadow_filter_[1], grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            ctx.descr_alloc(), ctx.log());
         });
     }
 
@@ -534,14 +533,14 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 rt_filter.AddStorageImageOutput("SH Filter 2 Tex", params, Stg::ComputeShader);
         }
 
-        rt_filter.set_execute_cb([this, data](FgBuilder &builder) {
-            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth);
-            FgAllocTex &norm_tex = builder.GetReadTexture(data->normal);
-            FgAllocTex &input_tex = builder.GetReadTexture(data->input);
-            FgAllocBuf &tile_metadata_buf = builder.GetReadBuffer(data->tile_metadata);
-            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+        rt_filter.set_execute_cb([this, data](FgContext &ctx) {
+            FgAllocTex &depth_tex = ctx.AccessROTexture(data->depth);
+            FgAllocTex &norm_tex = ctx.AccessROTexture(data->normal);
+            FgAllocTex &input_tex = ctx.AccessROTexture(data->input);
+            FgAllocBuf &tile_metadata_buf = ctx.AccessROBuffer(data->tile_metadata);
+            FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(data->shared_data);
 
-            FgAllocTex &out_history_img = builder.GetWriteTexture(data->out_history_img);
+            FgAllocTex &out_history_img = ctx.AccessRWTexture(data->out_history_img);
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -561,7 +560,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             uniform_params.inv_img_size = 1.0f / Ren::Vec2f{view_state_.ren_res};
 
             DispatchCompute(*pi_shadow_filter_[2], grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            ctx.descr_alloc(), ctx.log());
         });
     }
 
@@ -603,14 +602,14 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 rt_sh_combine.AddStorageImageOutput("Sun Shadows", params, Stg::ComputeShader);
         }
 
-        rt_sh_combine.set_execute_cb([this, data](FgBuilder &builder) {
-            FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
-            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            FgAllocTex &norm_tex = builder.GetReadTexture(data->normal_tex);
-            FgAllocTex &shadow_depth_tex = builder.GetReadTexture(data->shadow_depth_tex);
-            FgAllocTex &shadow_color_tex = builder.GetReadTexture(data->shadow_color_tex);
-            FgAllocTex &rt_shadow_tex = builder.GetReadTexture(data->rt_shadow_tex);
-            FgAllocTex &out_shadow_tex = builder.GetWriteTexture(data->out_shadow_tex);
+        rt_sh_combine.set_execute_cb([this, data](FgContext &ctx) {
+            FgAllocBuf &shared_data_buf = ctx.AccessROBuffer(data->shared_data);
+            FgAllocTex &depth_tex = ctx.AccessROTexture(data->depth_tex);
+            FgAllocTex &norm_tex = ctx.AccessROTexture(data->normal_tex);
+            FgAllocTex &shadow_depth_tex = ctx.AccessROTexture(data->shadow_depth_tex);
+            FgAllocTex &shadow_color_tex = ctx.AccessROTexture(data->shadow_color_tex);
+            FgAllocTex &rt_shadow_tex = ctx.AccessROTexture(data->rt_shadow_tex);
+            FgAllocTex &out_shadow_tex = ctx.AccessRWTexture(data->out_shadow_tex);
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
@@ -636,7 +635,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             uniform_params.softness_factor *= 0.5f * float(SUN_SHADOW_RES);
 
             DispatchCompute(*pi_sun_shadows_[1], grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            ctx.descr_alloc(), ctx.log());
         });
     }
 
@@ -684,14 +683,14 @@ Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buf
             sun_shadows.AddStorageImageOutput("Sun Shadows", params, Stg::ComputeShader);
     }
 
-    sun_shadows.set_execute_cb([this, data](FgBuilder &builder) {
-        FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
-        FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-        FgAllocTex &albedo_tex = builder.GetReadTexture(data->albedo_tex);
-        FgAllocTex &norm_tex = builder.GetReadTexture(data->normal_tex);
-        FgAllocTex &shadow_depth_tex = builder.GetReadTexture(data->shadow_depth_tex);
-        FgAllocTex &shadow_color_tex = builder.GetReadTexture(data->shadow_color_tex);
-        FgAllocTex &out_shadow_tex = builder.GetWriteTexture(data->out_shadow_tex);
+    sun_shadows.set_execute_cb([this, data](FgContext &ctx) {
+        FgAllocBuf &shared_data_buf = ctx.AccessROBuffer(data->shared_data);
+        FgAllocTex &depth_tex = ctx.AccessROTexture(data->depth_tex);
+        FgAllocTex &albedo_tex = ctx.AccessROTexture(data->albedo_tex);
+        FgAllocTex &norm_tex = ctx.AccessROTexture(data->normal_tex);
+        FgAllocTex &shadow_depth_tex = ctx.AccessROTexture(data->shadow_depth_tex);
+        FgAllocTex &shadow_color_tex = ctx.AccessROTexture(data->shadow_color_tex);
+        FgAllocTex &out_shadow_tex = ctx.AccessRWTexture(data->out_shadow_tex);
 
         const Ren::Binding bindings[] = {
             {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
@@ -717,7 +716,7 @@ Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buf
         uniform_params.softness_factor *= 0.5f * float(SUN_SHADOW_RES);
 
         DispatchCompute(*pi_sun_shadows_[0], grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                        builder.ctx().default_descr_alloc(), builder.ctx().log());
+                        ctx.descr_alloc(), ctx.log());
     });
 
     return shadow_tex;

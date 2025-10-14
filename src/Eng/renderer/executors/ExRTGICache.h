@@ -48,7 +48,7 @@ class ExRTGICache final : public FgExecutor {
     ExRTGICache(const view_state_t *view_state, const BindlessTextureData *bindless_tex, const Args *args)
         : view_state_(view_state), bindless_tex_(bindless_tex), args_(args) {}
 
-    void Execute(FgBuilder &builder) override;
+    void Execute(FgContext &ctx) override;
 
   private:
     bool initialized_ = false;
@@ -64,7 +64,7 @@ class ExRTGICache final : public FgExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
-    void Execute_HWRT(FgBuilder &builder);
-    void Execute_SWRT(FgBuilder &builder);
+    void Execute_HWRT(FgContext &ctx);
+    void Execute_SWRT(FgContext &ctx);
 };
 } // namespace Eng

@@ -66,17 +66,16 @@ uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const En
                      uint32_t i, uint64_t mask);
 } // namespace ExSharedInternal
 
-void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2, FgAllocBuf &ndx_buf) {
+void Eng::ExDepthFill::DrawDepth(FgContext &ctx, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2, FgAllocBuf &ndx_buf) {
     using namespace ExSharedInternal;
 
-    FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
-    FgAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
-    FgAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
-    FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
+    FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
+    FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
+    FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
+    FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
+    FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
 
-    Ren::Context &ctx = builder.ctx();
-    Ren::ApiContext *api_ctx = ctx.api_ctx();
+    Ren::ApiContext *api_ctx = ctx.ren_ctx().api_ctx();
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
     //
@@ -107,7 +106,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                                          {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref}};
         simple_descr_sets[0] =
-            PrepareDescriptorSet(api_ctx, simple_descr_set_layout, bindings, ctx.default_descr_alloc(), ctx.log());
+            PrepareDescriptorSet(api_ctx, simple_descr_set_layout, bindings, ctx.descr_alloc(), ctx.log());
         simple_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
@@ -120,7 +119,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
                                          {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref}};
         vege_descr_sets[0] =
-            PrepareDescriptorSet(api_ctx, vege_descr_set_layout, bindings, ctx.default_descr_alloc(), ctx.log());
+            PrepareDescriptorSet(api_ctx, vege_descr_set_layout, bindings, ctx.descr_alloc(), ctx.log());
         vege_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
@@ -188,7 +187,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         pi_moving_solid_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "ONE-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_solid_[0]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_solid_[0]->layout(), 0,
                                              1, simple_descr_sets, 0, nullptr);
@@ -201,7 +200,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         }
 
         { // two-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "TWO-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_solid_[2]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_solid_[2]->layout(), 0,
                                              1, simple_descr_sets, 0, nullptr);
@@ -213,7 +212,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     }
 
     { // simple alpha-tested meshes (depth only)
-        Ren::DebugMarker _m(api_ctx, ctx.current_cmd_buf(), "STATIC-ALPHA-SIMPLE");
+        Ren::DebugMarker _m(api_ctx, ctx.cmd_buf(), "STATIC-ALPHA-SIMPLE");
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
@@ -231,7 +230,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         pi_static_transp_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "ONE-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[0]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[0]->layout(),
                                              0, 2, simple_descr_sets, 0, nullptr);
@@ -245,7 +244,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         }
 
         { // two-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "TWO-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[2]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[2]->layout(),
                                              0, 2, simple_descr_sets, 0, nullptr);
@@ -258,7 +257,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     }
 
     { // moving alpha-tested meshes (depth and velocity)
-        Ren::DebugMarker _m(api_ctx, ctx.current_cmd_buf(), "STATIC-ALPHA-MOVING");
+        Ren::DebugMarker _m(api_ctx, ctx.cmd_buf(), "STATIC-ALPHA-MOVING");
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
@@ -277,7 +276,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         pi_moving_transp_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "ONE-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_transp_[0]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_transp_[0]->layout(),
                                              0, 2, simple_descr_sets, 0, nullptr);
@@ -293,7 +292,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         }
 
         { // two-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "TWO-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_transp_[2]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_transp_[2]->layout(),
                                              0, 2, simple_descr_sets, 0, nullptr);
@@ -345,7 +344,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     }
 
     { // moving solid vegetation (depth and velocity)
-        Ren::DebugMarker _m(api_ctx, ctx.current_cmd_buf(), "VEGE-SOLID-MOVING");
+        Ren::DebugMarker _m(api_ctx, ctx.cmd_buf(), "VEGE-SOLID-MOVING");
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
@@ -364,7 +363,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         pi_vege_moving_solid_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "ONE-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_moving_solid_[0]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_vege_moving_solid_[0]->layout(), 0, 1, vege_descr_sets, 0, nullptr);
@@ -373,7 +372,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         }
 
         { // two-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "TWO-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_moving_solid_[1]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_vege_moving_solid_[1]->layout(), 0, 1, vege_descr_sets, 0, nullptr);
@@ -385,7 +384,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     }
 
     { // static alpha-tested vegetation (depth and velocity)
-        Ren::DebugMarker _m(api_ctx, ctx.current_cmd_buf(), "VEGE-ALPHA-SIMPLE");
+        Ren::DebugMarker _m(api_ctx, ctx.cmd_buf(), "VEGE-ALPHA-SIMPLE");
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
@@ -404,7 +403,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         pi_vege_static_transp_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "ONE-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_static_transp_[0]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_vege_static_transp_[0]->layout(), 0, 2, vege_descr_sets, 0, nullptr);
@@ -414,7 +413,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         }
 
         { // two-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "TWO-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_static_transp_[1]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_vege_static_transp_[1]->layout(), 0, 2, vege_descr_sets, 0, nullptr);
@@ -427,7 +426,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     }
 
     { // moving alpha-tested vegetation (depth and velocity)
-        Ren::DebugMarker _m(api_ctx, ctx.current_cmd_buf(), "VEGE-ALPHA-MOVING");
+        Ren::DebugMarker _m(api_ctx, ctx.cmd_buf(), "VEGE-ALPHA-MOVING");
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
@@ -446,7 +445,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         pi_vege_moving_transp_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "ONE-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_moving_transp_[0]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_vege_moving_transp_[0]->layout(), 0, 2, vege_descr_sets, 0, nullptr);
@@ -456,7 +455,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         }
 
         { // two-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "TWO-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_moving_transp_[1]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_vege_moving_transp_[1]->layout(), 0, 2, vege_descr_sets, 0, nullptr);
@@ -469,7 +468,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     }
 
     { // solid skinned meshes (depth and velocity)
-        Ren::DebugMarker _m(api_ctx, ctx.current_cmd_buf(), "SKIN-SOLID-SIMPLE");
+        Ren::DebugMarker _m(api_ctx, ctx.cmd_buf(), "SKIN-SOLID-SIMPLE");
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
@@ -488,7 +487,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         pi_skin_static_solid_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "ONE-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_static_solid_[0]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_skin_static_solid_[0]->layout(), 0, 1, simple_descr_sets, 0, nullptr);
@@ -496,7 +495,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         }
 
         { // two-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "TWO-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_static_solid_[1]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_skin_static_solid_[1]->layout(), 0, 1, simple_descr_sets, 0, nullptr);
@@ -508,7 +507,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     }
 
     { // moving solid skinned (depth and velocity)
-        Ren::DebugMarker _m(api_ctx, ctx.current_cmd_buf(), "SKIN-SOLID-MOVING");
+        Ren::DebugMarker _m(api_ctx, ctx.cmd_buf(), "SKIN-SOLID-MOVING");
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
@@ -527,7 +526,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         pi_skin_moving_solid_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "ONE-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_moving_solid_[0]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_skin_moving_solid_[0]->layout(), 0, 1, simple_descr_sets, 0, nullptr);
@@ -536,7 +535,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         }
 
         { // two-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "TWO-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_moving_solid_[1]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_skin_moving_solid_[1]->layout(), 0, 1, simple_descr_sets, 0, nullptr);
@@ -548,7 +547,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     }
 
     { // static alpha-tested skinned (depth and velocity)
-        Ren::DebugMarker _m(api_ctx, ctx.current_cmd_buf(), "SKIN-ALPHA-SIMPLE");
+        Ren::DebugMarker _m(api_ctx, ctx.cmd_buf(), "SKIN-ALPHA-SIMPLE");
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
@@ -567,7 +566,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         pi_skin_static_transp_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "ONE-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_static_transp_[0]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_skin_static_transp_[0]->layout(), 0, 2, simple_descr_sets, 0, nullptr);
@@ -577,7 +576,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         }
 
         { // two-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "TWO-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_static_transp_[1]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_skin_static_transp_[1]->layout(), 0, 2, simple_descr_sets, 0, nullptr);
@@ -590,7 +589,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     }
 
     { // moving alpha-tested skinned (depth and velocity)
-        Ren::DebugMarker _m(api_ctx, ctx.current_cmd_buf(), "SKIN-ALPHA-MOVING");
+        Ren::DebugMarker _m(api_ctx, ctx.cmd_buf(), "SKIN-ALPHA-MOVING");
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
@@ -609,7 +608,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         pi_skin_moving_transp_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "ONE-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_moving_transp_[0]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_skin_moving_transp_[0]->layout(), 0, 2, simple_descr_sets, 0, nullptr);
@@ -619,7 +618,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         }
 
         { // two-sided
-            Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
+            Ren::DebugMarker _mm(api_ctx, ctx.cmd_buf(), "TWO-SIDED");
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_moving_transp_[1]->handle());
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                              pi_skin_moving_transp_[1]->layout(), 0, 2, simple_descr_sets, 0, nullptr);

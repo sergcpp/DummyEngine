@@ -4,14 +4,14 @@
 
 #include "../../utils/ShaderLoader.h"
 
-Eng::ExOITScheduleRays::ExOITScheduleRays(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
-                                          const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
-                                          const FgResRef textures_buf, const BindlessTextureData *bindless_tex,
-                                          const FgResRef noise_tex, const FgResRef dummy_white,
-                                          const FgResRef instances_buf, const FgResRef instance_indices_buf,
-                                          const FgResRef shared_data_buf, const FgResRef depth_tex,
-                                          const FgResRef oit_depth_buf, const FgResRef ray_counter,
-                                          const FgResRef ray_list) {
+Eng::ExOITScheduleRays::ExOITScheduleRays(const DrawList **p_list, const view_state_t *view_state,
+                                          const FgResRef vtx_buf1, const FgResRef vtx_buf2, const FgResRef ndx_buf,
+                                          const FgResRef materials_buf, const FgResRef textures_buf,
+                                          const BindlessTextureData *bindless_tex, const FgResRef noise_tex,
+                                          const FgResRef dummy_white, const FgResRef instances_buf,
+                                          const FgResRef instance_indices_buf, const FgResRef shared_data_buf,
+                                          const FgResRef depth_tex, const FgResRef oit_depth_buf,
+                                          const FgResRef ray_counter, const FgResRef ray_list) {
     view_state_ = view_state;
     bindless_tex_ = bindless_tex;
 
@@ -34,14 +34,14 @@ Eng::ExOITScheduleRays::ExOITScheduleRays(const DrawList **p_list, const view_st
     depth_tex_ = depth_tex;
 }
 
-void Eng::ExOITScheduleRays::Execute(FgBuilder &builder) {
-    FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
-    FgAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
-    FgAllocTex &depth_tex = builder.GetWriteTexture(depth_tex_);
+void Eng::ExOITScheduleRays::Execute(FgContext &ctx) {
+    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(vtx_buf1_);
+    FgAllocBuf &vtx_buf2 = ctx.AccessROBuffer(vtx_buf2_);
+    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(ndx_buf_);
+    FgAllocTex &depth_tex = ctx.AccessRWTexture(depth_tex_);
 
-    LazyInit(builder.ctx(), builder.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex);
-    DrawTransparent(builder, depth_tex);
+    LazyInit(ctx.ren_ctx(), ctx.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex);
+    DrawTransparent(ctx, depth_tex);
 }
 
 void Eng::ExOITScheduleRays::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1,

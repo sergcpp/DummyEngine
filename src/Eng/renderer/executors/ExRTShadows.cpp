@@ -5,12 +5,12 @@
 
 #include "../../utils/ShaderLoader.h"
 
-void Eng::ExRTShadows::Execute(FgBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
-    if (builder.ctx().capabilities.hwrt) {
-        Execute_HWRT_Inline(builder);
+void Eng::ExRTShadows::Execute(FgContext &ctx) {
+    LazyInit(ctx.ren_ctx(), ctx.sh());
+    if (ctx.ren_ctx().capabilities.hwrt) {
+        Execute_HWRT_Inline(ctx);
     } else {
-        Execute_SWRT(builder);
+        Execute_SWRT(ctx);
     }
 }
 
