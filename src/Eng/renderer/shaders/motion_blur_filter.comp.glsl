@@ -43,14 +43,19 @@ float GetSampleWeight(float center_depth, float sample_epth, float offset_len, f
                SpreadCmp(offset_len, vec2(center_spread_len, sample_spread_len)));
 }
 
-float Dither(const ivec2 icoord) {
-    const float Scale = 0.25;
+const float DitherScale = 0.5;
+
+float Dither2x2(const ivec2 icoord) {
     const vec2 position_mod = vec2(icoord & 1);
-    return (-Scale + 2.0 * Scale * position_mod.x) * (-1.0 + 2.0 * position_mod.y);
+    return (-DitherScale + 2.0 * DitherScale * position_mod.x) * (-1.0 + 2.0 * position_mod.y);
+}
+
+float Dither4x4(const ivec2 icoord) {
+    return 2.0 * DitherScale * Bayer4x4(uvec2(icoord), 0) - DitherScale;
 }
 
 float PDnrand(vec2 n) {
-	return fract(sin(dot(n.xy, vec2(12.9898, 78.233))) * 43758.5453);
+	return 2.0 * DitherScale * fract(sin(dot(n.xy, vec2(12.9898, 78.233))) * 43758.5453) - DitherScale;
 }
 
 layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
@@ -66,7 +71,7 @@ void main() {
 
     sample_data_t center = Sample(pix_uv);
 
-    if (length2(tile_data.xy) < 0.25) {
+    if (false && length2(tile_data.xy) < 0.25) {
 #if DEBUG_CLASSIFICATION
         center.color.rg *= 0.0;
 #endif
@@ -77,10 +82,12 @@ void main() {
     const int SampleCount = 4;
     const float DurationFrames = 0.5;
 
-    const vec2 uv_delta = (0.5 * DurationFrames / SampleCount) * tile_data.xy * g_params.inv_ren_res;
-    const float px_delta_len = (0.5 * DurationFrames / SampleCount) * length(tile_data.xy);
+    //const float jitter = PDnrand(vec2(icoord));
+    //const float jitter = Dither2x2(icoord);
+    const float jitter = Dither4x4(icoord);
 
-    const float jitter = Dither(icoord) / float(SampleCount);
+    const vec2 uv_delta = (1.0 + jitter) * (0.5 * DurationFrames / SampleCount) * tile_data.xy * g_params.inv_ren_res;
+    const float px_delta_len = (0.5 * DurationFrames / SampleCount) * length(tile_data.xy);
 
     vec4 result = vec4(0.0);
     float total_weight = 0.0;
@@ -100,7 +107,7 @@ void main() {
             result += w.y * Sample(uv_curr.zw).color;
             total_weight += w.y;
 
-            uv_curr += (1.0 + jitter) * vec4(uv_delta, -uv_delta);
+            uv_curr += vec4(uv_delta, -uv_delta);
         }
     } else {
         //
@@ -122,7 +129,7 @@ void main() {
             result += w.y * s2.color;
             total_weight += w.y;
 
-            uv_curr += (1.0 + jitter) * vec4(uv_delta, -uv_delta);
+            uv_curr += vec4(uv_delta, -uv_delta);
             sample_dist += px_delta_len;
         }
     }

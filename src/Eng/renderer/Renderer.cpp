@@ -1495,17 +1495,17 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         }
 
         //
-        // Motion blur
-        //
-        if (list.render_settings.enable_motion_blur) {
-            resolved_color = AddMotionBlurPasses(resolved_color, frame_textures);
-        }
-
-        //
         // Sharpening
         //
         if (list.render_settings.enable_sharpen) {
             resolved_color = AddSharpenPass(resolved_color, frame_textures.exposure, true);
+        }
+
+        //
+        // Motion blur
+        //
+        if (list.render_settings.enable_motion_blur) {
+            resolved_color = AddMotionBlurPasses(resolved_color, frame_textures);
         }
 
 #if defined(REN_GL_BACKEND) && 0 // gl-only for now
