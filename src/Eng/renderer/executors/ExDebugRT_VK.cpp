@@ -8,31 +8,31 @@
 #include "../PrimDraw.h"
 #include "../shaders/rt_debug_interface.h"
 
-void Eng::ExDebugRT::Execute_HWRT(FgContext &ctx) {
-    FgAllocBuf &geo_data_buf = ctx.AccessROBuffer(args_->geo_data_buf);
-    FgAllocBuf &materials_buf = ctx.AccessROBuffer(args_->materials_buf);
-    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(args_->vtx_buf1);
-    FgAllocBuf &vtx_buf2 = ctx.AccessROBuffer(args_->vtx_buf2);
-    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(args_->ndx_buf);
-    FgAllocBuf &lights_buf = ctx.AccessROBuffer(args_->lights_buf);
-    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
-    FgAllocTex &env_tex = ctx.AccessROTexture(args_->env_tex);
-    FgAllocTex &shadow_depth_tex = ctx.AccessROTexture(args_->shadow_depth_tex);
-    FgAllocTex &shadow_color_tex = ctx.AccessROTexture(args_->shadow_color_tex);
-    FgAllocTex &ltc_luts_tex = ctx.AccessROTexture(args_->ltc_luts_tex);
-    FgAllocBuf &cells_buf = ctx.AccessROBuffer(args_->cells_buf);
-    FgAllocBuf &items_buf = ctx.AccessROBuffer(args_->items_buf);
+void Eng::ExDebugRT::Execute_HWRT(FgContext &fg) {
+    FgAllocBuf &geo_data_buf = fg.AccessROBuffer(args_->geo_data_buf);
+    FgAllocBuf &materials_buf = fg.AccessROBuffer(args_->materials_buf);
+    FgAllocBuf &vtx_buf1 = fg.AccessROBuffer(args_->vtx_buf1);
+    FgAllocBuf &vtx_buf2 = fg.AccessROBuffer(args_->vtx_buf2);
+    FgAllocBuf &ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
+    FgAllocBuf &lights_buf = fg.AccessROBuffer(args_->lights_buf);
+    FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
+    FgAllocTex &env_tex = fg.AccessROTexture(args_->env_tex);
+    FgAllocTex &shadow_depth_tex = fg.AccessROTexture(args_->shadow_depth_tex);
+    FgAllocTex &shadow_color_tex = fg.AccessROTexture(args_->shadow_color_tex);
+    FgAllocTex &ltc_luts_tex = fg.AccessROTexture(args_->ltc_luts_tex);
+    FgAllocBuf &cells_buf = fg.AccessROBuffer(args_->cells_buf);
+    FgAllocBuf &items_buf = fg.AccessROBuffer(args_->items_buf);
 
     FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (args_->irradiance_tex) {
-        irr_tex = &ctx.AccessROTexture(args_->irradiance_tex);
-        dist_tex = &ctx.AccessROTexture(args_->distance_tex);
-        off_tex = &ctx.AccessROTexture(args_->offset_tex);
+        irr_tex = &fg.AccessROTexture(args_->irradiance_tex);
+        dist_tex = &fg.AccessROTexture(args_->distance_tex);
+        off_tex = &fg.AccessROTexture(args_->offset_tex);
     }
 
-    FgAllocTex &output_tex = ctx.AccessRWTexture(args_->output_tex);
+    FgAllocTex &output_tex = fg.AccessRWTexture(args_->output_tex);
 
-    Ren::ApiContext *api_ctx = ctx.ren_ctx().api_ctx();
+    Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 
     const auto *acc_struct = static_cast<const Ren::AccStructureVK *>(args_->tlas);
 
@@ -62,7 +62,7 @@ void Eng::ExDebugRT::Execute_HWRT(FgContext &ctx) {
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_->prog()->descr_set_layouts()[0], bindings,
-                                         ctx.descr_alloc(), ctx.log());
+                                         fg.descr_alloc(), fg.log());
     descr_sets[1] = bindless_tex_->rt_textures.descr_set;
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_->handle());
@@ -82,3 +82,4 @@ void Eng::ExDebugRT::Execute_HWRT(FgContext &ctx) {
                                pi_debug_->call_table(), uint32_t(view_state_->ren_res[0]),
                                uint32_t(view_state_->ren_res[1]), 1);
 }
+

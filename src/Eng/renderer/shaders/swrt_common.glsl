@@ -287,12 +287,12 @@ void Traverse_TLAS_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_nodes,
         while ((leaf_node & BVH2_PRIM_COUNT_BITS) != 0) {
             const uint mi_index = (leaf_node & BVH2_PRIM_INDEX_BITS);
 
-            const uvec4 mi_data = floatBitsToUint(texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * mi_index + 0)));
+            const uvec4 mi_data = floatBitsToUint(texelFetch(mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * mi_index + 0)));
             const uint mi_visibility = mi_data.x, mi_node_index = mi_data.y, mi_vindex = mi_data.z, mi_geo_index_count = mi_data.w;
             if ((mi_visibility & ray_flags) != 0) {
-                const mat4x3 inv_transform = transpose(mat3x4(texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * mi_index + 1)),
-                                                              texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * mi_index + 2)),
-                                                              texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * mi_index + 3))));
+                const mat4x3 inv_transform = transpose(mat3x4(texelFetch(mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * mi_index + 1)),
+                                                              texelFetch(mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * mi_index + 2)),
+                                                              texelFetch(mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * mi_index + 3))));
 
                 const vec3 ro = (inv_transform * vec4(orig_ro, 1.0)).xyz;
                 const vec3 rd = (inv_transform * vec4(orig_rd, 0.0)).xyz;

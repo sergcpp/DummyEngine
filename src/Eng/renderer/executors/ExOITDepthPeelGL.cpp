@@ -13,32 +13,32 @@
 namespace ExSharedInternal {
 void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
-uint32_t _draw_list_range_full(Eng::FgContext &ctx, const Ren::MaterialStorage *materials,
+uint32_t _draw_list_range_full(Eng::FgContext &fg, const Ren::MaterialStorage *materials,
                                const Ren::Pipeline pipelines[], Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                Eng::backend_info_t &backend_info);
-uint32_t _draw_list_range_full_rev(Eng::FgContext &ctx, const Ren::MaterialStorage *materials,
+uint32_t _draw_list_range_full_rev(Eng::FgContext &fg, const Ren::MaterialStorage *materials,
                                    const Ren::Pipeline pipelines[],
                                    Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                    Eng::backend_info_t &backend_info);
-uint32_t _draw_range_ext2(Eng::FgContext &ctx, const Ren::MaterialStorage &materials, const Ren::Texture &white_tex,
+uint32_t _draw_range_ext2(Eng::FgContext &fg, const Ren::MaterialStorage &materials, const Ren::Texture &white_tex,
                           Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                           uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
 } // namespace ExSharedInternal
 
-void Eng::ExOITDepthPeel::DrawTransparent(FgContext &ctx) {
+void Eng::ExOITDepthPeel::DrawTransparent(FgContext &fg) {
     using namespace ExSharedInternal;
 
-    FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
-    FgAllocTex &dummy_white = ctx.AccessROTexture(dummy_white_);
+    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
+    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
+    FgAllocTex &dummy_white = fg.AccessROTexture(dummy_white_);
 
-    FgAllocBuf &out_depth_buf = ctx.AccessRWBuffer(out_depth_buf_);
+    FgAllocBuf &out_depth_buf = fg.AccessRWBuffer(out_depth_buf_);
 
     if ((*p_list_)->alpha_blend_start_index == -1) {
         return;
@@ -61,7 +61,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgContext &ctx) {
     glBindFramebuffer(GL_FRAMEBUFFER, main_draw_fb_[0][fb_to_use_].id());
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
-    if (ctx.ren_ctx().capabilities.bindless_texture) {
+    if (fg.ren_ctx().capabilities.bindless_texture) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX,
                          GLuint(bindless_tex_->rt_inline_textures.buf->id()));
     }
@@ -89,118 +89,118 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgContext &ctx) {
     using BDB = basic_draw_batch_t;
 
     { // Simple meshes
-        Ren::DebugMarker _m(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "SIMPLE");
+        Ren::DebugMarker _m(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "SIMPLE");
 
         glBindVertexArray(pi_simple_[0]->vtx_input()->GetVAO());
         glUseProgram(pi_simple_[0]->prog()->id());
 
         { // solid one-sided
-            Ren::DebugMarker _mm(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "SOLID-ONE-SIDED");
+            Ren::DebugMarker _mm(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "SOLID-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
             rast_state.viewport[2] = view_state_->ren_res[0];
             rast_state.viewport[3] = view_state_->ren_res[1];
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(ctx, materials, *dummy_white.ref, batch_indices, batches, i, BDB::BitAlphaBlend,
+            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, BDB::BitAlphaBlend,
                                  cur_mat_id, &draws_count);
 
             rast_state = pi_simple_[1]->rast_state();
             rast_state.viewport[2] = view_state_->ren_res[0];
             rast_state.viewport[3] = view_state_->ren_res[1];
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(ctx, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
                                  BDB::BitAlphaBlend | BDB::BitBackSided, cur_mat_id, &draws_count);
         }
         { // solid two-sided
-            Ren::DebugMarker _mm(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "SOLID-TWO-SIDED");
+            Ren::DebugMarker _mm(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "SOLID-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
             rast_state.viewport[2] = view_state_->ren_res[0];
             rast_state.viewport[3] = view_state_->ren_res[1];
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(ctx, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
                                  BDB::BitAlphaBlend | BDB::BitTwoSided, cur_mat_id, &draws_count);
         }
         { // moving solid one-sided
-            Ren::DebugMarker _mm(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "MOVING-SOLID-ONE-SIDED");
+            Ren::DebugMarker _mm(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "MOVING-SOLID-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
             rast_state.viewport[2] = view_state_->ren_res[0];
             rast_state.viewport[3] = view_state_->ren_res[1];
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(ctx, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
                                  BDB::BitAlphaBlend | BDB::BitMoving, cur_mat_id, &draws_count);
         }
         { // moving solid two-sided
-            Ren::DebugMarker _mm(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "MOVING-SOLID-TWO-SIDED");
+            Ren::DebugMarker _mm(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "MOVING-SOLID-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
             rast_state.viewport[2] = view_state_->ren_res[0];
             rast_state.viewport[3] = view_state_->ren_res[1];
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitTwoSided;
-            i = _draw_range_ext2(ctx, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // alpha-tested one-sided
-            Ren::DebugMarker _mm(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "ALPHA-ONE-SIDED");
+            Ren::DebugMarker _mm(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "ALPHA-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
             rast_state.viewport[2] = view_state_->ren_res[0];
             rast_state.viewport[3] = view_state_->ren_res[1];
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(ctx, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
                                  BDB::BitAlphaBlend | BDB::BitAlphaTest, cur_mat_id, &draws_count);
         }
         { // alpha-tested two-sided
-            Ren::DebugMarker _mm(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "ALPHA-TWO-SIDED");
+            Ren::DebugMarker _mm(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "ALPHA-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
             rast_state.viewport[2] = view_state_->ren_res[0];
             rast_state.viewport[3] = view_state_->ren_res[1];
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitAlphaBlend | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(ctx, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // moving alpha-tested one-sided
-            Ren::DebugMarker _mm(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "MOVING-ALPHA-ONE-SIDED");
+            Ren::DebugMarker _mm(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "MOVING-ALPHA-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
             rast_state.viewport[2] = view_state_->ren_res[0];
             rast_state.viewport[3] = view_state_->ren_res[1];
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitAlphaTest;
-            i = _draw_range_ext2(ctx, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // moving alpha-tested two-sided
-            Ren::DebugMarker _mm(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "MOVING-ALPHA-TWO-SIDED");
+            Ren::DebugMarker _mm(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "MOVING-ALPHA-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
             rast_state.viewport[2] = view_state_->ren_res[0];
             rast_state.viewport[3] = view_state_->ren_res[1];
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(ctx, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
     }

@@ -58,13 +58,15 @@ class ExRTReflections final : public FgExecutor {
         FgResRef out_refl_tex[OIT_REFLECTION_LAYERS];
     };
 
-    explicit ExRTReflections(const view_state_t *view_state, const BindlessTextureData *bindless_tex, const Args *args)
-        : view_state_(view_state), bindless_tex_(bindless_tex), args_(args) {}
+    explicit ExRTReflections(const view_state_t *view_state, const BindlessTextureData *bindless_tex, const Args *args,
+                             bool use_rt_pipeline)
+        : view_state_(view_state), bindless_tex_(bindless_tex), args_(args), use_rt_pipeline_(use_rt_pipeline) {}
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 
   private:
     bool initialized_ = false;
+    bool use_rt_pipeline_ = false;
 
     // lazily initialized data
     Ren::PipelineRef pi_rt_reflections_[2];
@@ -77,7 +79,7 @@ class ExRTReflections final : public FgExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
-    void Execute_HWRT(FgContext &ctx);
-    void Execute_SWRT(FgContext &ctx);
+    void Execute_HWRT(FgContext &fg);
+    void Execute_SWRT(FgContext &fg);
 };
 } // namespace Eng

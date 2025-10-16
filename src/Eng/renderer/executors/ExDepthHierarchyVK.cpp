@@ -8,12 +8,12 @@
 #include "../Renderer_Structs.h"
 #include "../shaders/depth_hierarchy_interface.h"
 
-void Eng::ExDepthHierarchy::Execute(FgContext &ctx) {
-    FgAllocTex &depth_tex = ctx.AccessROTexture(depth_tex_);
-    FgAllocBuf &atomic_buf = ctx.AccessRWBuffer(atomic_buf_);
-    FgAllocTex &output_tex = ctx.AccessRWTexture(output_tex_);
+void Eng::ExDepthHierarchy::Execute(FgContext &fg) {
+    FgAllocTex &depth_tex = fg.AccessROTexture(depth_tex_);
+    FgAllocBuf &atomic_buf = fg.AccessRWBuffer(atomic_buf_);
+    FgAllocTex &output_tex = fg.AccessRWTexture(output_tex_);
 
-    Ren::ApiContext *api_ctx = ctx.ren_ctx().api_ctx();
+    Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 
     if (output_tex.ref->handle().views.size() < output_tex.ref->params.mip_count) {
         // Initialize per-mip views
@@ -30,7 +30,7 @@ void Eng::ExDepthHierarchy::Execute(FgContext &ctx) {
             VkImageView new_image_view = VK_NULL_HANDLE;
             const VkResult res = api_ctx->vkCreateImageView(api_ctx->device, &view_info, nullptr, &new_image_view);
             if (res != VK_SUCCESS) {
-                ctx.log()->Error("Failed to create image view!");
+                fg.log()->Error("Failed to create image view!");
             }
             output_tex.ref->handle().views.push_back(new_image_view);
         }
@@ -42,7 +42,7 @@ void Eng::ExDepthHierarchy::Execute(FgContext &ctx) {
     Ren::DescrSizes descr_sizes;
     descr_sizes.img_sampler_count = 1;
     descr_sizes.store_img_count = output_tex.ref->params.mip_count;
-    VkDescriptorSet descr_set = ctx.descr_alloc().Alloc(descr_sizes, descr_set_layout);
+    VkDescriptorSet descr_set = fg.descr_alloc().Alloc(descr_sizes, descr_set_layout);
 
     { // update descriptor set
         const VkDescriptorImageInfo depth_tex_info = depth_tex.ref->vk_desc_image_info(1);

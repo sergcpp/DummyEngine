@@ -53,7 +53,7 @@ class ExOpaque final : public FgExecutor {
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
                   FgAllocBuf &ndx_buf, FgAllocTex &color_tex, FgAllocTex &normal_tex, FgAllocTex &spec_tex,
                   FgAllocTex &depth_tex);
-    void DrawOpaque(FgContext &ctx);
+    void DrawOpaque(FgContext &fg);
 
 #if defined(REN_VK_BACKEND)
     void InitDescrSetLayout();
@@ -105,6 +105,6 @@ class ExOpaque final : public FgExecutor {
     }
     ~ExOpaque() final;
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 };
 } // namespace Eng

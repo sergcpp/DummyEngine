@@ -7,19 +7,19 @@
 #include "../PrimDraw.h"
 #include "../shaders/probe_debug_interface.h"
 
-Eng::ExDebugProbes::ExDebugProbes(PrimDraw &prim_draw, FgContext &ctx, const DrawList &list,
+Eng::ExDebugProbes::ExDebugProbes(PrimDraw &prim_draw, FgContext &fg, const DrawList &list,
                                   const view_state_t *view_state, const Args *args)
     : prim_draw_(prim_draw), view_state_(view_state), args_(args) {
-    prog_probe_debug_ = ctx.sh().LoadProgram("internal/probe_debug.vert.glsl", "internal/probe_debug.frag.glsl");
+    prog_probe_debug_ = fg.sh().LoadProgram("internal/probe_debug.vert.glsl", "internal/probe_debug.frag.glsl");
 }
 
-void Eng::ExDebugProbes::Execute(FgContext &ctx) {
-    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
-    FgAllocTex &off_tex = ctx.AccessROTexture(args_->offset_tex);
-    FgAllocTex &irr_tex = ctx.AccessROTexture(args_->irradiance_tex);
-    [[maybe_unused]] FgAllocTex &dist_tex = ctx.AccessROTexture(args_->distance_tex);
-    FgAllocTex &depth_tex = ctx.AccessRWTexture(args_->depth_tex);
-    FgAllocTex &output_tex = ctx.AccessRWTexture(args_->output_tex);
+void Eng::ExDebugProbes::Execute(FgContext &fg) {
+    FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
+    FgAllocTex &off_tex = fg.AccessROTexture(args_->offset_tex);
+    FgAllocTex &irr_tex = fg.AccessROTexture(args_->irradiance_tex);
+    [[maybe_unused]] FgAllocTex &dist_tex = fg.AccessROTexture(args_->distance_tex);
+    FgAllocTex &depth_tex = fg.AccessRWTexture(args_->depth_tex);
+    FgAllocTex &output_tex = fg.AccessRWTexture(args_->output_tex);
 
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -47,6 +47,6 @@ void Eng::ExDebugProbes::Execute(FgContext &ctx) {
     const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
     prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_probe_debug_, depth_target, render_targets, rast_state,
-                        ctx.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0,
+                        fg.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0,
                         PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z);
 }

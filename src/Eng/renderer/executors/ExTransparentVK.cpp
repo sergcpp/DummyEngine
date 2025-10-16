@@ -8,22 +8,22 @@
 #include <Ren/RastState.h>
 #include <Ren/VKCtx.h>
 
-void Eng::ExTransparent::DrawTransparent_Simple(FgContext &ctx, FgAllocBuf &instances_buf,
+void Eng::ExTransparent::DrawTransparent_Simple(FgContext &fg, FgAllocBuf &instances_buf,
                                                 FgAllocBuf &instance_indices_buf, FgAllocBuf &unif_shared_data_buf,
                                                 FgAllocBuf &materials_buf, FgAllocBuf &cells_buf, FgAllocBuf &items_buf,
                                                 FgAllocBuf &lights_buf, FgAllocBuf &decals_buf, FgAllocTex &shad_tex,
                                                 FgAllocTex &color_tex, FgAllocTex &ssao_tex) {
-    auto *api_ctx = ctx.ren_ctx().api_ctx();
+    auto *api_ctx = fg.ren_ctx().api_ctx();
 
-    [[maybe_unused]] FgAllocTex &brdf_lut = ctx.AccessROTexture(brdf_lut_);
-    FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
-    [[maybe_unused]] FgAllocTex &cone_rt_lut = ctx.AccessROTexture(cone_rt_lut_);
-    FgAllocTex &dummy_black = ctx.AccessROTexture(dummy_black_);
+    [[maybe_unused]] FgAllocTex &brdf_lut = fg.AccessROTexture(brdf_lut_);
+    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
+    [[maybe_unused]] FgAllocTex &cone_rt_lut = fg.AccessROTexture(cone_rt_lut_);
+    FgAllocTex &dummy_black = fg.AccessROTexture(dummy_black_);
 
     FgAllocTex *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (lm_tex_[i]) {
-            lm_tex[i] = &ctx.AccessROTexture(lm_tex_[i]);
+            lm_tex[i] = &fg.AccessROTexture(lm_tex_[i]);
         } else {
             lm_tex[i] = &dummy_black;
         }
@@ -38,7 +38,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgContext &ctx, FgAllocBuf &inst
     descr_sizes.ubuf_count = 1;
     descr_sizes.utbuf_count = 4;
     descr_sizes.sbuf_count = 3;
-    const VkDescriptorSet res_descr_set = ctx.descr_alloc().Alloc(descr_sizes, descr_set_layout_);
+    const VkDescriptorSet res_descr_set = fg.descr_alloc().Alloc(descr_sizes, descr_set_layout_);
 
     { // update descriptor set
         const VkDescriptorImageInfo shad_info = shad_tex.ref->vk_desc_image_info();
@@ -266,7 +266,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgContext &ctx, FgAllocBuf &inst
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_transparent_->vk_handle();
-        rp_begin_info.framebuffer = transparent_draw_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
+        rp_begin_info.framebuffer = transparent_draw_fb_[fg.backend_frame()][fb_to_use_].vk_handle();
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -360,9 +360,9 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgContext &ctx, FgAllocBuf &inst
     }
 }
 
-void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgContext &ctx) { assert(false && "Not implemented!"); }
+void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgContext &fg) { assert(false && "Not implemented!"); }
 
-void Eng::ExTransparent::DrawTransparent_OIT_WeightedBlended(FgContext &ctx) { assert(false && "Not implemented!"); }
+void Eng::ExTransparent::DrawTransparent_OIT_WeightedBlended(FgContext &fg) { assert(false && "Not implemented!"); }
 
 void Eng::ExTransparent::InitDescrSetLayout() {
     VkDescriptorSetLayoutBinding bindings[] = {

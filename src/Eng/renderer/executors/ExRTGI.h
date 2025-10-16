@@ -20,12 +20,6 @@ class ExRTGI final : public FgExecutor {
         FgResRef shared_data;
         FgResRef depth_tex;
         FgResRef normal_tex;
-        FgResRef env_tex;
-        FgResRef lights_buf;
-        FgResRef shadow_depth_tex, shadow_color_tex;
-        FgResRef ltc_luts_tex;
-        FgResRef cells_buf;
-        FgResRef items_buf;
         FgResRef ray_counter;
         FgResRef ray_list;
         FgResRef indir_args;
@@ -47,21 +41,21 @@ class ExRTGI final : public FgExecutor {
             FgResRef mesh_instances_buf;
         } swrt;
 
-        bool two_bounce = false;
+        bool second_bounce = false;
 
-        FgResRef out_gi_tex;
+        FgResRef out_ray_hits_buf;
     };
 
     ExRTGI(const view_state_t *view_state, const BindlessTextureData *bindless_tex, const Args *args)
         : view_state_(view_state), bindless_tex_(bindless_tex), args_(args) {}
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 
   private:
     bool initialized_ = false;
 
     // lazily initialized data
-    Ren::PipelineRef pi_rt_gi_[2], pi_rt_gi_2bounce_[2];
+    Ren::PipelineRef pi_rt_gi_;
 
     // temp data (valid only between Setup and Execute calls)
     const view_state_t *view_state_ = nullptr;
@@ -71,7 +65,7 @@ class ExRTGI final : public FgExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
-    void Execute_HWRT(FgContext &ctx);
-    void Execute_SWRT(FgContext &ctx);
+    void Execute_HWRT(FgContext &fg);
+    void Execute_SWRT(FgContext &fg);
 };
 } // namespace Eng

@@ -99,35 +99,35 @@ uint32_t _draw_list_range_full_rev(Ren::ApiContext *api_ctx, VkCommandBuffer cmd
 }
 } // namespace ExSharedInternal
 
-void Eng::ExOpaque::DrawOpaque(FgContext &ctx) {
+void Eng::ExOpaque::DrawOpaque(FgContext &fg) {
     using namespace ExSharedInternal;
 
-    auto *api_ctx = ctx.ren_ctx().api_ctx();
+    auto *api_ctx = fg.ren_ctx().api_ctx();
 
     //
     // Prepare descriptor sets
     //
-    FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
-    FgAllocBuf &cells_buf = ctx.AccessROBuffer(cells_buf_);
-    FgAllocBuf &items_buf = ctx.AccessROBuffer(items_buf_);
-    FgAllocBuf &lights_buf = ctx.AccessROBuffer(lights_buf_);
-    FgAllocBuf &decals_buf = ctx.AccessROBuffer(decals_buf_);
+    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
+    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
+    FgAllocBuf &cells_buf = fg.AccessROBuffer(cells_buf_);
+    FgAllocBuf &items_buf = fg.AccessROBuffer(items_buf_);
+    FgAllocBuf &lights_buf = fg.AccessROBuffer(lights_buf_);
+    FgAllocBuf &decals_buf = fg.AccessROBuffer(decals_buf_);
 
-    FgAllocTex &shad_tex = ctx.AccessROTexture(shad_tex_);
-    [[maybe_unused]] FgAllocTex &brdf_lut = ctx.AccessROTexture(brdf_lut_);
-    FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
-    [[maybe_unused]] FgAllocTex &cone_rt_lut = ctx.AccessROTexture(cone_rt_lut_);
+    FgAllocTex &shad_tex = fg.AccessROTexture(shad_tex_);
+    [[maybe_unused]] FgAllocTex &brdf_lut = fg.AccessROTexture(brdf_lut_);
+    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
+    [[maybe_unused]] FgAllocTex &cone_rt_lut = fg.AccessROTexture(cone_rt_lut_);
 
-    FgAllocTex &dummy_black = ctx.AccessROTexture(dummy_black_);
-    FgAllocTex &ssao_tex = ctx.AccessROTexture(ssao_tex_);
+    FgAllocTex &dummy_black = fg.AccessROTexture(dummy_black_);
+    FgAllocTex &ssao_tex = fg.AccessROTexture(ssao_tex_);
 
     FgAllocTex *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (lm_tex_[i]) {
-            lm_tex[i] = &ctx.AccessROTexture(lm_tex_[i]);
+            lm_tex[i] = &fg.AccessROTexture(lm_tex_[i]);
         } else {
             lm_tex[i] = &dummy_black;
         }
@@ -142,7 +142,7 @@ void Eng::ExOpaque::DrawOpaque(FgContext &ctx) {
     descr_sizes.ubuf_count = 1;
     descr_sizes.utbuf_count = 4;
     descr_sizes.sbuf_count = 3;
-    const VkDescriptorSet res_descr_set = ctx.descr_alloc().Alloc(descr_sizes, descr_set_layout_);
+    const VkDescriptorSet res_descr_set = fg.descr_alloc().Alloc(descr_sizes, descr_set_layout_);
 
     { // update descriptor set
         const VkDescriptorImageInfo shad_info = shad_tex.ref->vk_desc_image_info();
@@ -369,7 +369,7 @@ void Eng::ExOpaque::DrawOpaque(FgContext &ctx) {
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_opaque_->vk_handle();
-        rp_begin_info.framebuffer = opaque_draw_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
+        rp_begin_info.framebuffer = opaque_draw_fb_[fg.backend_frame()][fb_to_use_].vk_handle();
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 

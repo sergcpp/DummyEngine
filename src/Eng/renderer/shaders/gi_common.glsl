@@ -57,24 +57,24 @@ void UnpackRayCoords(uint packed_ray, out uvec2 ray_coord, out bool copy_horizon
     copy_diagonal = ((packed_ray >> 31u) & 1u) != 0u; // 0b1
 }
 
-vec3 SampleCosineHemisphere(float u, float v) {
-    float phi = 2.0 * M_PI * v;
+vec3 SampleCosineHemisphere(const float u, const float v) {
+    const float phi = 2.0 * M_PI * v;
 
-    float cos_phi = cos(phi);
-    float sin_phi = sin(phi);
+    const float cos_phi = cos(phi);
+    const float sin_phi = sin(phi);
 
-    float dir = sqrt(u);
-    float k = sqrt(1.0 - u);
+    const float dir = sqrt(u);
+    const float k = sqrt(1.0 - u);
     return vec3(dir * cos_phi, dir * sin_phi, k);
 }
 
 mat3 CreateTBN(vec3 N) {
     vec3 U;
     if (abs(N.z) > 0.0) {
-        float k = sqrt(N.y * N.y + N.z * N.z);
+        const float k = sqrt(N.y * N.y + N.z * N.z);
         U.x = 0.0; U.y = -N.z / k; U.z = N.y / k;
     } else {
-        float k = sqrt(N.x * N.x + N.y * N.y);
+        const float k = sqrt(N.x * N.x + N.y * N.y);
         U.x = N.y / k; U.y = -N.x / k; U.z = 0.0;
     }
 
@@ -85,23 +85,33 @@ mat3 CreateTBN(vec3 N) {
     return transpose(TBN);
 }
 
-/* fp16 */ float Luminance(/* fp16 */ vec3 color) { return max(lum(color), 0.001); }
+vec3 SampleDiffuseVector(sampler2D noise_tex, vec3 normal, ivec2 dispatch_thread_id, int bounce) {
+    const vec4 fetch = texelFetch(noise_tex, ivec2(dispatch_thread_id) % 128, 0);
 
-/* fp16 */ float ComputeTemporalVariance(/* fp16 */ vec3 history_radiance, /* fp16 */ vec3 radiance) {
-    /* fp16 */ float history_luminance = Luminance(history_radiance);
-    /* fp16 */ float luminance = Luminance(radiance);
-    /* fp16 */ float diff = abs(history_luminance - luminance) / max(max(history_luminance, luminance), 0.5);
+    const vec2 u = (bounce == 0) ? fetch.xy : fetch.zw;
+    const vec3 direction_tbn = SampleCosineHemisphere(u.x, u.y);
+
+    const mat3 inv_tbn_transform = transpose(CreateTBN(normal));
+    return normalize(inv_tbn_transform * direction_tbn);
+}
+
+/* fp16 */ float Luminance(/* fp16 */ const vec3 color) { return max(lum(color), 0.001); }
+
+/* fp16 */ float ComputeTemporalVariance(/* fp16 */ const vec3 history_radiance, /* fp16 */ const vec3 radiance) {
+    /* fp16 */ const float history_luminance = Luminance(history_radiance);
+    /* fp16 */ const float luminance = Luminance(radiance);
+    /* fp16 */ const float diff = abs(history_luminance - luminance) / max(max(history_luminance, luminance), 0.5);
     return diff * diff;
 }
 
-vec4 GetBlurKernelRotation(uvec2 pixel_pos, vec4 base_rotator, uint frame) {
+vec4 GetBlurKernelRotation(const uvec2 pixel_pos, const vec4 base_rotator, const uint frame) {
     vec4 rotator = vec4(1, 0, 0, 1);
 
 #ifdef PER_PIXEL_KERNEL_ROTATION
-    float angle = Bayer4x4(pixel_pos, frame) * 2.0 * M_PI;
+    const float angle = Bayer4x4(pixel_pos, frame) * 2.0 * M_PI;
 
-    float ca = cos(angle);
-    float sa = sin(angle);
+    const float ca = cos(angle);
+    const float sa = sin(angle);
 
     rotator = vec4(ca, sa, -sa, ca);
 #endif

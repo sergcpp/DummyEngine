@@ -5,19 +5,19 @@
 #include <Phy/BVHSplit.h>
 #include <Ren/Context.h>
 
-void Eng::ExBuildAccStructures::Execute(FgContext &ctx) {
-    if (ctx.ren_ctx().capabilities.hwrt) {
+void Eng::ExBuildAccStructures::Execute(FgContext &fg) {
+    if (fg.ren_ctx().capabilities.hwrt) {
 #if !defined(REN_GL_BACKEND)
-        Execute_HWRT(ctx);
+        Execute_HWRT(fg);
 #endif
     } else {
-        Execute_SWRT(ctx);
+        Execute_SWRT(fg);
     }
 }
 
-void Eng::ExBuildAccStructures::Execute_SWRT(FgContext &ctx) {
-    FgAllocBuf &rt_obj_instances_buf = ctx.AccessRWBuffer(rt_obj_instances_buf_);
-    FgAllocBuf &rt_tlas_buf = ctx.AccessRWBuffer(rt_tlas_buf_);
+void Eng::ExBuildAccStructures::Execute_SWRT(FgContext &fg) {
+    FgAllocBuf &rt_obj_instances_buf = fg.AccessRWBuffer(rt_obj_instances_buf_);
+    FgAllocBuf &rt_tlas_buf = fg.AccessRWBuffer(rt_tlas_buf_);
 
     const auto &rt_obj_instances = p_list_->rt_obj_instances[rt_index_];
     auto &rt_obj_instances_stage_buf = p_list_->rt_obj_instances_stage_buf[rt_index_];
@@ -59,7 +59,7 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgContext &ctx) {
             }
         }
 
-        std::vector<gpu_mesh_instance_t> mesh_instances;
+        std::vector<swrt_mesh_instance_t> mesh_instances;
         mesh_instances.reserve(rt_obj_instances.count);
 
         for (int i = 0; i < int(rt_obj_instances.count); ++i) {
@@ -83,37 +83,37 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgContext &ctx) {
         }
 
         { // update instances buf
-            uint8_t *stage_mem = rt_obj_instances_stage_buf->MapRange(
-                ctx.backend_frame() * SWRTObjInstancesBufChunkSize, SWRTObjInstancesBufChunkSize);
-            const uint32_t rt_obj_instances_mem_size = uint32_t(mesh_instances.size()) * sizeof(gpu_mesh_instance_t);
+            uint8_t *stage_mem = rt_obj_instances_stage_buf->MapRange(fg.backend_frame() * SWRTObjInstancesBufChunkSize,
+                                                                      SWRTObjInstancesBufChunkSize);
+            const uint32_t rt_obj_instances_mem_size = uint32_t(mesh_instances.size()) * sizeof(swrt_mesh_instance_t);
             if (stage_mem) {
                 memcpy(stage_mem, mesh_instances.data(), rt_obj_instances_mem_size);
                 rt_obj_instances_stage_buf->Unmap();
             } else {
-                ctx.log()->Error("ExBuildAccStructures: Failed to map rt obj instance buffer!");
+                fg.log()->Error("ExBuildAccStructures: Failed to map rt obj instance buffer!");
             }
 
-            CopyBufferToBuffer(*rt_obj_instances_stage_buf, ctx.backend_frame() * SWRTObjInstancesBufChunkSize,
-                               *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, ctx.cmd_buf());
+            CopyBufferToBuffer(*rt_obj_instances_stage_buf, fg.backend_frame() * SWRTObjInstancesBufChunkSize,
+                               *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, fg.cmd_buf());
         }
 
         { // update nodes buf
             uint8_t *stage_mem =
-                rt_tlas_stage_buf->MapRange(ctx.backend_frame() * SWRTTLASNodesBufChunkSize, SWRTTLASNodesBufChunkSize);
+                rt_tlas_stage_buf->MapRange(fg.backend_frame() * SWRTTLASNodesBufChunkSize, SWRTTLASNodesBufChunkSize);
             const uint32_t rt_nodes_mem_size = uint32_t(temp_bvh2_nodes.size()) * sizeof(gpu_bvh2_node_t);
             if (stage_mem) {
                 memcpy(stage_mem, temp_bvh2_nodes.data(), rt_nodes_mem_size);
                 rt_tlas_stage_buf->Unmap();
             } else {
-                ctx.log()->Error("ExBuildAccStructures: Failed to map rt tlas stage buffer!");
+                fg.log()->Error("ExBuildAccStructures: Failed to map rt tlas stage buffer!");
             }
 
-            CopyBufferToBuffer(*rt_tlas_stage_buf, ctx.backend_frame() * SWRTTLASNodesBufChunkSize, *rt_tlas_buf.ref, 0,
-                               rt_nodes_mem_size, ctx.cmd_buf());
+            CopyBufferToBuffer(*rt_tlas_stage_buf, fg.backend_frame() * SWRTTLASNodesBufChunkSize, *rt_tlas_buf.ref, 0,
+                               rt_nodes_mem_size, fg.cmd_buf());
         }
     } else {
         const gpu_bvh2_node_t dummy_node = {};
-        rt_tlas_buf.ref->UpdateImmediate(0, sizeof(dummy_node), &dummy_node, ctx.cmd_buf());
+        rt_tlas_buf.ref->UpdateImmediate(0, sizeof(dummy_node), &dummy_node, fg.cmd_buf());
     }
 }
 

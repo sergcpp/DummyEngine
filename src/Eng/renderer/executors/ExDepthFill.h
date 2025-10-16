@@ -73,6 +73,6 @@ class ExDepthFill final : public FgExecutor {
         velocity_tex_ = velocity_tex;
     }
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 };
 } // namespace Eng

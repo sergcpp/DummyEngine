@@ -7,14 +7,14 @@
 
 #include "../shaders/skinning_interface.h"
 
-void Eng::ExSkinning::Execute(FgContext &ctx) {
-    FgAllocBuf &skin_vtx_buf = ctx.AccessROBuffer(skin_vtx_buf_);
-    FgAllocBuf &skin_transforms_buf = ctx.AccessROBuffer(skin_transforms_buf_);
-    FgAllocBuf &shape_keys_buf = ctx.AccessROBuffer(shape_keys_buf_);
-    FgAllocBuf &delta_buf = ctx.AccessROBuffer(delta_buf_);
+void Eng::ExSkinning::Execute(FgContext &fg) {
+    FgAllocBuf &skin_vtx_buf = fg.AccessROBuffer(skin_vtx_buf_);
+    FgAllocBuf &skin_transforms_buf = fg.AccessROBuffer(skin_transforms_buf_);
+    FgAllocBuf &shape_keys_buf = fg.AccessROBuffer(shape_keys_buf_);
+    FgAllocBuf &delta_buf = fg.AccessROBuffer(delta_buf_);
 
-    FgAllocBuf &vtx_buf1 = ctx.AccessRWBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = ctx.AccessRWBuffer(vtx_buf2_);
+    FgAllocBuf &vtx_buf1 = fg.AccessRWBuffer(vtx_buf1_);
+    FgAllocBuf &vtx_buf2 = fg.AccessRWBuffer(vtx_buf2_);
 
     if (!p_list_->skin_regions.empty()) {
         const GLuint vertex_buf1_id = vtx_buf1.ref->id();

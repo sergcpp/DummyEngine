@@ -12,7 +12,7 @@ class ExReadExposure final : public FgExecutor {
     };
 
     void Setup(const Args *args) { args_ = args; }
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 
     [[nodiscard]] float exposure() const { return exposure_; }
 

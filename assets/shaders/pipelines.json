@@ -121,10 +121,6 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/ssr_write_indir_rt_dispatch.comp.glsl" ]
-    },
-    {
-        "type" : "compute",
         "shaders" : [ "internal/ssr_reproject.comp.glsl" ]
     },
     {
@@ -262,10 +258,6 @@
         "features" : {
             "subgroup" : false
         }
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/gi_write_indir_rt_dispatch.comp.glsl" ]
     },
     {
         "type" : "compute",

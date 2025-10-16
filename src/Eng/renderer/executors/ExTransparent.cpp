@@ -5,34 +5,34 @@
 #include "../../utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void Eng::ExTransparent::Execute(FgContext &ctx) {
-    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = ctx.AccessROBuffer(vtx_buf2_);
-    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(ndx_buf_);
+void Eng::ExTransparent::Execute(FgContext &fg) {
+    FgAllocBuf &vtx_buf1 = fg.AccessROBuffer(vtx_buf1_);
+    FgAllocBuf &vtx_buf2 = fg.AccessROBuffer(vtx_buf2_);
+    FgAllocBuf &ndx_buf = fg.AccessROBuffer(ndx_buf_);
 
-    FgAllocTex &color_tex = ctx.AccessRWTexture(color_tex_);
-    FgAllocTex &normal_tex = ctx.AccessRWTexture(normal_tex_);
-    FgAllocTex &spec_tex = ctx.AccessRWTexture(spec_tex_);
-    FgAllocTex &depth_tex = ctx.AccessRWTexture(depth_tex_);
+    FgAllocTex &color_tex = fg.AccessRWTexture(color_tex_);
+    FgAllocTex &normal_tex = fg.AccessRWTexture(normal_tex_);
+    FgAllocTex &spec_tex = fg.AccessRWTexture(spec_tex_);
+    FgAllocTex &depth_tex = fg.AccessRWTexture(depth_tex_);
 
-    LazyInit(ctx.ren_ctx(), ctx.sh(), vtx_buf1, vtx_buf2, ndx_buf, color_tex, normal_tex, spec_tex, depth_tex);
-    DrawTransparent(ctx, color_tex);
+    LazyInit(fg.ren_ctx(), fg.sh(), vtx_buf1, vtx_buf2, ndx_buf, color_tex, normal_tex, spec_tex, depth_tex);
+    DrawTransparent(fg, color_tex);
 }
 
-void Eng::ExTransparent::DrawTransparent(FgContext &ctx, FgAllocTex &color_tex) {
-    FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
-    FgAllocBuf &cells_buf = ctx.AccessROBuffer(cells_buf_);
-    FgAllocBuf &items_buf = ctx.AccessROBuffer(items_buf_);
-    FgAllocBuf &lights_buf = ctx.AccessROBuffer(lights_buf_);
-    FgAllocBuf &decals_buf = ctx.AccessROBuffer(decals_buf_);
+void Eng::ExTransparent::DrawTransparent(FgContext &fg, FgAllocTex &color_tex) {
+    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
+    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
+    FgAllocBuf &cells_buf = fg.AccessROBuffer(cells_buf_);
+    FgAllocBuf &items_buf = fg.AccessROBuffer(items_buf_);
+    FgAllocBuf &lights_buf = fg.AccessROBuffer(lights_buf_);
+    FgAllocBuf &decals_buf = fg.AccessROBuffer(decals_buf_);
 
-    FgAllocTex &shad_tex = ctx.AccessROTexture(shad_tex_);
-    FgAllocTex &ssao_tex = ctx.AccessROTexture(ssao_tex_);
+    FgAllocTex &shad_tex = fg.AccessROTexture(shad_tex_);
+    FgAllocTex &ssao_tex = fg.AccessROTexture(ssao_tex_);
 
-    DrawTransparent_Simple(ctx, instances_buf, instance_indices_buf, unif_shared_data_buf, materials_buf, cells_buf,
+    DrawTransparent_Simple(fg, instances_buf, instance_indices_buf, unif_shared_data_buf, materials_buf, cells_buf,
                            items_buf, lights_buf, decals_buf, shad_tex, color_tex, ssao_tex);
 }
 

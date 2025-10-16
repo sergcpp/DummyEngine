@@ -17,18 +17,18 @@ const Ren::Vec2i g_sample_positions[16] = {Ren::Vec2i{1, 0}, Ren::Vec2i{3, 2}, R
                                            Ren::Vec2i{1, 1}, Ren::Vec2i{3, 3}, Ren::Vec2i{0, 2}, Ren::Vec2i{2, 0}};
 } // namespace ExSkydomeCubeInternal
 
-void Eng::ExSkydomeCube::Execute(FgContext &ctx) {
-    LazyInit(ctx.ren_ctx(), ctx.sh());
+void Eng::ExSkydomeCube::Execute(FgContext &fg) {
+    LazyInit(fg.ren_ctx(), fg.sh());
 
-    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
-    FgAllocTex &transmittance_lut = ctx.AccessROTexture(args_->transmittance_lut);
-    FgAllocTex &multiscatter_lut = ctx.AccessROTexture(args_->multiscatter_lut);
-    FgAllocTex &moon_tex = ctx.AccessROTexture(args_->moon_tex);
-    FgAllocTex &weather_tex = ctx.AccessROTexture(args_->weather_tex);
-    FgAllocTex &cirrus_tex = ctx.AccessROTexture(args_->cirrus_tex);
-    FgAllocTex &curl_tex = ctx.AccessROTexture(args_->curl_tex);
-    FgAllocTex &noise3d_tex = ctx.AccessROTexture(args_->noise3d_tex);
-    FgAllocTex &color_tex = ctx.AccessRWTexture(args_->color_tex);
+    FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
+    FgAllocTex &transmittance_lut = fg.AccessROTexture(args_->transmittance_lut);
+    FgAllocTex &multiscatter_lut = fg.AccessROTexture(args_->multiscatter_lut);
+    FgAllocTex &moon_tex = fg.AccessROTexture(args_->moon_tex);
+    FgAllocTex &weather_tex = fg.AccessROTexture(args_->weather_tex);
+    FgAllocTex &cirrus_tex = fg.AccessROTexture(args_->cirrus_tex);
+    FgAllocTex &curl_tex = fg.AccessROTexture(args_->curl_tex);
+    FgAllocTex &noise3d_tex = fg.AccessROTexture(args_->noise3d_tex);
+    FgAllocTex &color_tex = fg.AccessRWTexture(args_->color_tex);
 
     if (view_state_->env_generation == generation_) {
         return;
@@ -105,8 +105,8 @@ void Eng::ExSkydomeCube::Execute(FgContext &ctx) {
 
         const Ren::RenderTarget color_targets[] = {
             {color_tex.ref, uint8_t((faceq / 4) + 1), Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_, {}, color_targets, rast_state,
-                            ctx.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_, {}, color_targets, rast_state, fg.rast_state(),
+                            bindings, &uniform_params, sizeof(uniform_params), 0);
 
         last_updated_faceq_ = faceq;
     }
@@ -117,8 +117,7 @@ void Eng::ExSkydomeCube::Execute(FgContext &ctx) {
     for (int face = face_start; face < face_end; ++face) {
         for (int mip = 1; mip < mip_count; mip += 4) {
             const Ren::TransitionInfo transitions[] = {{color_tex.ref.get(), Ren::eResState::UnorderedAccess}};
-            TransitionResourceStates(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), Ren::AllStages, Ren::AllStages,
-                                     transitions);
+            TransitionResourceStates(fg.ren_ctx().api_ctx(), fg.cmd_buf(), Ren::AllStages, Ren::AllStages, transitions);
 
             const Ren::Binding _bindings[] = {{Ren::eBindTarget::TexSampled,
                                                SkydomeDownsample::INPUT_TEX_SLOT,
@@ -154,7 +153,7 @@ void Eng::ExSkydomeCube::Execute(FgContext &ctx) {
                 (uniform_params.img_size[1] + SkydomeDownsample::GRP_SIZE_Y - 1) / SkydomeDownsample::GRP_SIZE_Y, 1u};
 
             DispatchCompute(*pi_skydome_downsample_, grp_count, _bindings, &uniform_params, sizeof(uniform_params),
-                            ctx.descr_alloc(), ctx.log());
+                            fg.descr_alloc(), fg.log());
         }
     }
 
@@ -163,7 +162,7 @@ void Eng::ExSkydomeCube::Execute(FgContext &ctx) {
     }
 
     const Ren::TransitionInfo transitions[] = {{color_tex.ref.get(), Ren::eResState::RenderTarget}};
-    Ren::TransitionResourceStates(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), Ren::AllStages, Ren::AllStages, transitions);
+    Ren::TransitionResourceStates(fg.ren_ctx().api_ctx(), fg.cmd_buf(), Ren::AllStages, Ren::AllStages, transitions);
 }
 
 void Eng::ExSkydomeCube::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
@@ -175,12 +174,12 @@ void Eng::ExSkydomeCube::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     }
 }
 
-void Eng::ExSkydomeScreen::Execute(FgContext &ctx) {
-    LazyInit(ctx.ren_ctx(), ctx.sh());
+void Eng::ExSkydomeScreen::Execute(FgContext &fg) {
+    LazyInit(fg.ren_ctx(), fg.sh());
 
-    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
+    FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
 
-    FgAllocTex &color_tex = ctx.AccessRWTexture(args_->color_tex);
+    FgAllocTex &color_tex = fg.AccessRWTexture(args_->color_tex);
 
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
@@ -206,14 +205,14 @@ void Eng::ExSkydomeScreen::Execute(FgContext &ctx) {
     const Ren::RenderTarget color_targets[] = {{color_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
     if (args_->sky_quality == eSkyQuality::Ultra) {
-        FgAllocTex &transmittance_lut = ctx.AccessROTexture(args_->phys.transmittance_lut);
-        FgAllocTex &multiscatter_lut = ctx.AccessROTexture(args_->phys.multiscatter_lut);
-        FgAllocTex &moon_tex = ctx.AccessROTexture(args_->phys.moon_tex);
-        FgAllocTex &weather_tex = ctx.AccessROTexture(args_->phys.weather_tex);
-        FgAllocTex &cirrus_tex = ctx.AccessROTexture(args_->phys.cirrus_tex);
-        FgAllocTex &curl_tex = ctx.AccessROTexture(args_->phys.curl_tex);
-        FgAllocTex &noise3d_tex = ctx.AccessROTexture(args_->phys.noise3d_tex);
-        FgAllocTex &depth_tex = ctx.AccessRWTexture(args_->depth_tex);
+        FgAllocTex &transmittance_lut = fg.AccessROTexture(args_->phys.transmittance_lut);
+        FgAllocTex &multiscatter_lut = fg.AccessROTexture(args_->phys.multiscatter_lut);
+        FgAllocTex &moon_tex = fg.AccessROTexture(args_->phys.moon_tex);
+        FgAllocTex &weather_tex = fg.AccessROTexture(args_->phys.weather_tex);
+        FgAllocTex &cirrus_tex = fg.AccessROTexture(args_->phys.cirrus_tex);
+        FgAllocTex &curl_tex = fg.AccessROTexture(args_->phys.curl_tex);
+        FgAllocTex &noise3d_tex = fg.AccessROTexture(args_->phys.noise3d_tex);
+        FgAllocTex &depth_tex = fg.AccessRWTexture(args_->depth_tex);
 
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref);
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref);
@@ -229,16 +228,16 @@ void Eng::ExSkydomeScreen::Execute(FgContext &ctx) {
         const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store,
                                                 Ren::eLoadOp::Load, Ren::eStoreOp::Store};
         prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_[0], depth_target, color_targets, rast_state,
-                            ctx.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
+                            fg.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
     } else if (args_->sky_quality == eSkyQuality::High) {
-        FgAllocTex &transmittance_lut = ctx.AccessROTexture(args_->phys.transmittance_lut);
-        FgAllocTex &multiscatter_lut = ctx.AccessROTexture(args_->phys.multiscatter_lut);
-        FgAllocTex &moon_tex = ctx.AccessROTexture(args_->phys.moon_tex);
-        FgAllocTex &weather_tex = ctx.AccessROTexture(args_->phys.weather_tex);
-        FgAllocTex &cirrus_tex = ctx.AccessROTexture(args_->phys.cirrus_tex);
-        FgAllocTex &curl_tex = ctx.AccessROTexture(args_->phys.curl_tex);
-        FgAllocTex &noise3d_tex = ctx.AccessROTexture(args_->phys.noise3d_tex);
-        FgAllocTex &depth_tex = ctx.AccessROTexture(args_->depth_tex);
+        FgAllocTex &transmittance_lut = fg.AccessROTexture(args_->phys.transmittance_lut);
+        FgAllocTex &multiscatter_lut = fg.AccessROTexture(args_->phys.multiscatter_lut);
+        FgAllocTex &moon_tex = fg.AccessROTexture(args_->phys.moon_tex);
+        FgAllocTex &weather_tex = fg.AccessROTexture(args_->phys.weather_tex);
+        FgAllocTex &cirrus_tex = fg.AccessROTexture(args_->phys.cirrus_tex);
+        FgAllocTex &curl_tex = fg.AccessROTexture(args_->phys.curl_tex);
+        FgAllocTex &noise3d_tex = fg.AccessROTexture(args_->phys.noise3d_tex);
+        FgAllocTex &depth_tex = fg.AccessROTexture(args_->depth_tex);
 
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref);
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref);
@@ -254,10 +253,10 @@ void Eng::ExSkydomeScreen::Execute(FgContext &ctx) {
         rast_state.viewport[3] = color_tex.ref->params.h;
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_[1], {}, color_targets, rast_state,
-                            ctx.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
+                            fg.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
     } else {
-        FgAllocTex &env_tex = ctx.AccessROTexture(args_->env_tex);
-        FgAllocTex &depth_tex = ctx.AccessRWTexture(args_->depth_tex);
+        FgAllocTex &env_tex = fg.AccessROTexture(args_->env_tex);
+        FgAllocTex &depth_tex = fg.AccessRWTexture(args_->depth_tex);
 
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::ENV_TEX_SLOT, *env_tex.ref);
 
@@ -268,7 +267,7 @@ void Eng::ExSkydomeScreen::Execute(FgContext &ctx) {
                                                 Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_simple_, depth_target, color_targets, rast_state,
-                            ctx.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
+                            fg.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
     }
 }
 

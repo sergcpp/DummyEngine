@@ -55,14 +55,14 @@ class ExTransparent final : public FgExecutor {
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
                   FgAllocBuf &ndx_buf, FgAllocTex &color_tex, FgAllocTex &normal_tex, FgAllocTex &spec_tex,
                   FgAllocTex &depth_tex);
-    void DrawTransparent(FgContext &ctx, FgAllocTex &color_tex);
+    void DrawTransparent(FgContext &fg, FgAllocTex &color_tex);
 
-    void DrawTransparent_Simple(FgContext &ctx, FgAllocBuf &instances_buf, FgAllocBuf &instance_indices_buf,
+    void DrawTransparent_Simple(FgContext &fg, FgAllocBuf &instances_buf, FgAllocBuf &instance_indices_buf,
                                 FgAllocBuf &unif_shared_data_buf, FgAllocBuf &materials_buf, FgAllocBuf &cells_buf,
                                 FgAllocBuf &items_buf, FgAllocBuf &lights_buf, FgAllocBuf &decals_buf,
                                 FgAllocTex &shad_tex, FgAllocTex &color_tex, FgAllocTex &ssao_tex);
-    void DrawTransparent_OIT_MomentBased(FgContext &ctx);
-    void DrawTransparent_OIT_WeightedBlended(FgContext &ctx);
+    void DrawTransparent_OIT_MomentBased(FgContext &fg);
+    void DrawTransparent_OIT_WeightedBlended(FgContext &fg);
 
 #if defined(REN_VK_BACKEND)
     void InitDescrSetLayout();
@@ -115,6 +115,6 @@ class ExTransparent final : public FgExecutor {
     }
     ~ExTransparent() final;
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 };
 } // namespace Eng

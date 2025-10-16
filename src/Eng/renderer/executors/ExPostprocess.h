@@ -30,7 +30,7 @@ class ExPostprocess final : public FgExecutor {
 
     ExPostprocess(PrimDraw &prim_draw, ShaderLoader &sh, const view_state_t *view_state, const Args *args);
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 
   private:
     PrimDraw &prim_draw_;

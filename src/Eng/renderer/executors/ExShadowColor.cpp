@@ -5,16 +5,16 @@
 #include "../../utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void Eng::ExShadowColor::Execute(FgContext &ctx) {
-    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = ctx.AccessROBuffer(vtx_buf2_);
-    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(ndx_buf_);
+void Eng::ExShadowColor::Execute(FgContext &fg) {
+    FgAllocBuf &vtx_buf1 = fg.AccessROBuffer(vtx_buf1_);
+    FgAllocBuf &vtx_buf2 = fg.AccessROBuffer(vtx_buf2_);
+    FgAllocBuf &ndx_buf = fg.AccessROBuffer(ndx_buf_);
 
-    FgAllocTex &shadow_depth_tex = ctx.AccessRWTexture(shadow_depth_tex_);
-    FgAllocTex &shadow_color_tex = ctx.AccessRWTexture(shadow_color_tex_);
+    FgAllocTex &shadow_depth_tex = fg.AccessRWTexture(shadow_depth_tex_);
+    FgAllocTex &shadow_color_tex = fg.AccessRWTexture(shadow_color_tex_);
 
-    LazyInit(ctx.ren_ctx(), ctx.sh(), vtx_buf1, vtx_buf2, ndx_buf, shadow_depth_tex, shadow_color_tex);
-    DrawShadowMaps(ctx);
+    LazyInit(fg.ren_ctx(), fg.sh(), vtx_buf1, vtx_buf2, ndx_buf, shadow_depth_tex, shadow_color_tex);
+    DrawShadowMaps(fg);
 }
 
 void Eng::ExShadowColor::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,

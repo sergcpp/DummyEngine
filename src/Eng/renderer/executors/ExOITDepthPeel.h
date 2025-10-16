@@ -35,7 +35,7 @@ class ExOITDepthPeel final : public FgExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
                   FgAllocBuf &ndx_buf, FgAllocTex &depth_tex);
-    void DrawTransparent(FgContext &ctx);
+    void DrawTransparent(FgContext &fg);
 
   public:
     ExOITDepthPeel(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
@@ -44,6 +44,6 @@ class ExOITDepthPeel final : public FgExecutor {
                    const FgResRef instance_indices_buf, const FgResRef shared_data_buf, const FgResRef depth_tex,
                    const FgResRef out_depth_buf);
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 };
 } // namespace Eng

@@ -2,16 +2,19 @@
 
 #include "gi_write_indirect_args_interface.h"
 
+#pragma multi_compile MAIN RT_DISPATCH SHADE
+
 layout(std430, binding = RAY_COUNTER_SLOT) buffer RayCounter {
     uint g_ray_counter[];
 };
-layout(std430, binding = INDIR_ARGS_SLOT) buffer IndirArgs {
+layout(std430, binding = INDIR_ARGS_SLOT) writeonly buffer IndirArgs {
     uint g_intersect_args[];
 };
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
+#if defined(MAIN)
     { // intersection arguments
         const uint ray_count = g_ray_counter[0];
 
@@ -42,4 +45,36 @@ void main() {
         g_ray_counter[4] = 0;
         g_ray_counter[5] = tile_count;
     }
+#elif defined(RT_DISPATCH)
+    const uint ray_count = g_ray_counter[6];
+
+    // raytracing pipeline dispatch
+    g_intersect_args[0] = ray_count;
+    g_intersect_args[1] = 1;
+    g_intersect_args[2] = 1;
+
+    // compute pipeline dispatch (for inlined raytracing)
+    g_intersect_args[3] = (ray_count + 63) / 64;
+    g_intersect_args[4] = 1;
+    g_intersect_args[5] = 1;
+
+    g_ray_counter[6] = 0;
+    g_ray_counter[7] = ray_count;
+#elif defined(SHADE)
+    const uint miss_count = g_ray_counter[8];
+    const uint hit_count = g_ray_counter[10];
+
+    g_intersect_args[0] = (miss_count + 63) / 64;
+    g_intersect_args[1] = 1;
+    g_intersect_args[2] = 1;
+
+    g_intersect_args[3] = (hit_count + 63) / 64;
+    g_intersect_args[4] = 1;
+    g_intersect_args[5] = 1;
+
+    g_ray_counter[8] = 0;
+    g_ray_counter[9] = miss_count;
+    g_ray_counter[10] = 0;
+    g_ray_counter[11] = hit_count;
+#endif
 }

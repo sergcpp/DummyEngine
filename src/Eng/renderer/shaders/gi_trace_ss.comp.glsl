@@ -39,48 +39,37 @@ layout(std430, binding = INOUT_RAY_COUNTER_SLOT) coherent buffer RayCounter {
 
 #include "ss_trace_hierarchical.glsl.inl"
 
-void StoreRay(uint ray_index, uvec2 ray_coord, bool copy_horizontal, bool copy_vertical, bool copy_diagonal) {
+void StoreRay(const uint ray_index, const uvec2 ray_coord, const bool copy_horizontal, const bool copy_vertical, const bool copy_diagonal) {
     g_out_ray_list[ray_index] = PackRay(ray_coord, copy_horizontal, copy_vertical, copy_diagonal); // Store out pixel to trace
-}
-
-vec3 SampleDiffuseVector(vec3 normal, ivec2 dispatch_thread_id) {
-    mat3 tbn_transform = CreateTBN(normal);
-
-    vec2 u = texelFetch(g_noise_tex, ivec2(dispatch_thread_id) % 128, 0).xy;
-
-    vec3 direction_tbn = SampleCosineHemisphere(u.x, u.y);
-
-    // Transform reflected_direction back to the initial space.
-    mat3 inv_tbn_transform = transpose(tbn_transform);
-    return (inv_tbn_transform * direction_tbn);
 }
 
 layout(local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    uint ray_index = gl_WorkGroupID.x * GRP_SIZE_X + gl_LocalInvocationIndex;
+    const uint ray_index = gl_WorkGroupID.x * GRP_SIZE_X + gl_LocalInvocationIndex;
     if (ray_index >= g_inout_ray_counter[1]) return;
-    uint packed_coords = g_in_ray_list[ray_index];
+    const uint packed_coords = g_in_ray_list[ray_index];
 
     uvec2 ray_coords;
     bool copy_horizontal, copy_vertical, copy_diagonal;
     UnpackRayCoords(packed_coords, ray_coords, copy_horizontal, copy_vertical, copy_diagonal);
 
-    ivec2 pix_uvs = ivec2(ray_coords);
-    if (pix_uvs.x >= g_params.resolution.x || pix_uvs.y >= g_params.resolution.y) return;
-    vec2 norm_uvs = (vec2(pix_uvs) + 0.5) * g_shrd_data.ren_res.zw;
+    const ivec2 pix_uvs = ivec2(ray_coords);
+    if (pix_uvs.x >= g_params.resolution.x || pix_uvs.y >= g_params.resolution.y) {
+        return;
+    }
+    const vec2 norm_uvs = (vec2(pix_uvs) + 0.5) * g_shrd_data.ren_res.zw;
 
-    vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, pix_uvs, 0).x).xyz;
-    float depth = texelFetch(g_depth_tex, pix_uvs, 0).x;
-
-    vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
+    const vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, pix_uvs, 0).x).xyz;
+    const float depth = texelFetch(g_depth_tex, pix_uvs, 0).x;
 
     const vec3 ray_origin_ss = vec3(norm_uvs, depth);
     const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy - 1.0, ray_origin_ss.z, 1.0);
     const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
 
-    const vec3 view_ray_vs = normalize(ray_origin_vs);
-    const vec3 refl_ray_vs = SampleDiffuseVector(normal_vs, pix_uvs);
+    // NOTE: Computed in world-space so that TBN choice is synchronized with world-space traversal
+    const vec3 refl_ray_ws = SampleDiffuseVector(g_noise_tex, normal_ws, pix_uvs, 0);
+    const vec3 refl_ray_vs = normalize((g_shrd_data.view_from_world * vec4(refl_ray_ws, 0.0)).xyz);
 
     vec3 hit_point_cs, hit_point_vs, hit_normal_vs;
     bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs, refl_ray_vs, g_depth_tex, g_norm_tex, hit_point_cs, hit_point_vs, hit_normal_vs);
@@ -107,11 +96,11 @@ void main() {
     out_color.w = GetNormHitDist(out_color.w, -ray_origin_vs.z, 1.0);
 
     { // schedule rt rays
-        bool needs_ray = !hit_found;
+        const bool needs_ray = !hit_found;
 #ifndef NO_SUBGROUP
-        uvec4 needs_ray_ballot = subgroupBallot(needs_ray);
-        uint local_ray_index_in_wave = subgroupBallotExclusiveBitCount(needs_ray_ballot);
-        uint wave_ray_count = subgroupBallotBitCount(needs_ray_ballot);
+        const uvec4 needs_ray_ballot = subgroupBallot(needs_ray);
+        const uint local_ray_index_in_wave = subgroupBallotExclusiveBitCount(needs_ray_ballot);
+        const uint wave_ray_count = subgroupBallotBitCount(needs_ray_ballot);
 
         uint base_ray_index = 0;
         if (subgroupElect()) {
@@ -119,12 +108,12 @@ void main() {
         }
         base_ray_index = subgroupBroadcastFirst(base_ray_index);
         if (needs_ray) {
-            uint ray_index = base_ray_index + local_ray_index_in_wave;
+            const uint ray_index = base_ray_index + local_ray_index_in_wave;
             StoreRay(ray_index, pix_uvs, copy_horizontal, copy_vertical, copy_diagonal);
         }
 #else
         if (needs_ray) {
-            uint ray_index = atomicAdd(g_inout_ray_counter[6], 1);
+            const uint ray_index = atomicAdd(g_inout_ray_counter[6], 1);
             StoreRay(ray_index, pix_uvs, copy_horizontal, copy_vertical, copy_diagonal);
         }
 #endif

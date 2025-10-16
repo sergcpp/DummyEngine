@@ -6,12 +6,12 @@
 #include "../../utils/ShaderLoader.h"
 #include "../shaders/sample_lights_interface.h"
 
-void Eng::ExSampleLights::Execute(FgContext &ctx) {
-    LazyInit(ctx.ren_ctx(), ctx.sh());
-    if (ctx.ren_ctx().capabilities.hwrt) {
-        Execute_HWRT(ctx);
+void Eng::ExSampleLights::Execute(FgContext &fg) {
+    LazyInit(fg.ren_ctx(), fg.sh());
+    if (fg.ren_ctx().capabilities.hwrt) {
+        Execute_HWRT(fg);
     } else {
-        Execute_SWRT(ctx);
+        Execute_SWRT(fg);
     }
 }
 
@@ -32,34 +32,34 @@ void Eng::ExSampleLights::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     }
 }
 
-void Eng::ExSampleLights::Execute_SWRT(FgContext &ctx) {
-    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
-    FgAllocBuf &random_seq_buf = ctx.AccessROBuffer(args_->random_seq);
+void Eng::ExSampleLights::Execute_SWRT(FgContext &fg) {
+    FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
+    FgAllocBuf &random_seq_buf = fg.AccessROBuffer(args_->random_seq);
 
-    FgAllocBuf &geo_data_buf = ctx.AccessROBuffer(args_->geo_data);
-    FgAllocBuf &materials_buf = ctx.AccessROBuffer(args_->materials);
-    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(args_->vtx_buf1);
-    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(args_->ndx_buf);
-    FgAllocBuf &rt_blas_buf = ctx.AccessROBuffer(args_->swrt.rt_blas_buf);
+    FgAllocBuf &geo_data_buf = fg.AccessROBuffer(args_->geo_data);
+    FgAllocBuf &materials_buf = fg.AccessROBuffer(args_->materials);
+    FgAllocBuf &vtx_buf1 = fg.AccessROBuffer(args_->vtx_buf1);
+    FgAllocBuf &ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
+    FgAllocBuf &rt_blas_buf = fg.AccessROBuffer(args_->swrt.rt_blas_buf);
 
-    FgAllocBuf &rt_tlas_buf = ctx.AccessROBuffer(args_->tlas_buf);
-    FgAllocBuf &prim_ndx_buf = ctx.AccessROBuffer(args_->swrt.prim_ndx_buf);
-    FgAllocBuf &mesh_instances_buf = ctx.AccessROBuffer(args_->swrt.mesh_instances_buf);
+    FgAllocBuf &rt_tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
+    FgAllocBuf &prim_ndx_buf = fg.AccessROBuffer(args_->swrt.prim_ndx_buf);
+    FgAllocBuf &mesh_instances_buf = fg.AccessROBuffer(args_->swrt.mesh_instances_buf);
 
-    FgAllocTex &albedo_tex = ctx.AccessROTexture(args_->albedo_tex);
-    FgAllocTex &depth_tex = ctx.AccessROTexture(args_->depth_tex);
-    FgAllocTex &norm_tex = ctx.AccessROTexture(args_->norm_tex);
-    FgAllocTex &spec_tex = ctx.AccessROTexture(args_->spec_tex);
+    FgAllocTex &albedo_tex = fg.AccessROTexture(args_->albedo_tex);
+    FgAllocTex &depth_tex = fg.AccessROTexture(args_->depth_tex);
+    FgAllocTex &norm_tex = fg.AccessROTexture(args_->norm_tex);
+    FgAllocTex &spec_tex = fg.AccessROTexture(args_->spec_tex);
 
-    FgAllocTex &out_diffuse_tex = ctx.AccessRWTexture(args_->out_diffuse_tex);
-    FgAllocTex &out_specular_tex = ctx.AccessRWTexture(args_->out_specular_tex);
+    FgAllocTex &out_diffuse_tex = fg.AccessRWTexture(args_->out_diffuse_tex);
+    FgAllocTex &out_specular_tex = fg.AccessRWTexture(args_->out_specular_tex);
 
     if (!args_->lights_buf) {
         return;
     }
 
-    FgAllocBuf &lights_buf = ctx.AccessROBuffer(args_->lights_buf);
-    FgAllocBuf &nodes_buf = ctx.AccessROBuffer(args_->nodes_buf);
+    FgAllocBuf &lights_buf = fg.AccessROBuffer(args_->lights_buf);
+    FgAllocBuf &nodes_buf = fg.AccessROBuffer(args_->nodes_buf);
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -91,10 +91,10 @@ void Eng::ExSampleLights::Execute_SWRT(FgContext &ctx) {
     uniform_params.lights_count = uint32_t(lights_buf.desc.size / sizeof(light_item_t));
     uniform_params.frame_index = view_state_->frame_index;
 
-    DispatchCompute(*pi_sample_lights_, grp_count, bindings, &uniform_params, sizeof(uniform_params), ctx.descr_alloc(),
-                    ctx.log());
+    DispatchCompute(*pi_sample_lights_, grp_count, bindings, &uniform_params, sizeof(uniform_params), fg.descr_alloc(),
+                    fg.log());
 }
 
 #if defined(REN_GL_BACKEND)
-void Eng::ExSampleLights::Execute_HWRT(FgContext &ctx) { assert(false && "Not implemented!"); }
+void Eng::ExSampleLights::Execute_HWRT(FgContext &fg) { assert(false && "Not implemented!"); }
 #endif

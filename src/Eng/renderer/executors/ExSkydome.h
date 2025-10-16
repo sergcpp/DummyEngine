@@ -29,7 +29,7 @@ class ExSkydomeCube final : public FgExecutor {
     ExSkydomeCube(PrimDraw &prim_draw, const view_state_t *view_state, const Args *args)
         : prim_draw_(prim_draw), view_state_(view_state), args_(args) {}
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 
   private:
     PrimDraw &prim_draw_;
@@ -72,7 +72,7 @@ class ExSkydomeScreen final : public FgExecutor {
     ExSkydomeScreen(PrimDraw &prim_draw, const view_state_t *view_state, const Args *args)
         : prim_draw_(prim_draw), view_state_(view_state), args_(args) {}
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 
     static Ren::Vec2i sample_pos(int frame_index);
 

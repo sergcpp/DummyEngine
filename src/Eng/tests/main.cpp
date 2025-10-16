@@ -12,7 +12,6 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 #include "../scene/SceneManager.h"
 #include "test_common.h"
 
-void test_cmdline();
 void test_empty_scene(Sys::ThreadPool &threads);
 void test_shading(Sys::ThreadPool &threads, bool full);
 void test_upscaling(Sys::ThreadPool &threads);
@@ -95,8 +94,6 @@ int main(int argc, char *argv[]) {
 
     Sys::ThreadPool mt_run_pool(threads_count);
 
-    test_cmdline();
-    puts(" ---------------");
     test_empty_scene(mt_run_pool);
     test_shading(mt_run_pool, full);
     puts(" ---------------");

@@ -3,12 +3,12 @@
 #include <Ren/Context.h>
 #include <Ren/VKCtx.h>
 
-void Eng::ExBuildAccStructures::Execute_HWRT(FgContext &ctx) {
-    FgAllocBuf &rt_obj_instances_buf = ctx.AccessROBuffer(rt_obj_instances_buf_);
-    [[maybe_unused]] FgAllocBuf &rt_tlas_buf = ctx.AccessRWBuffer(rt_tlas_buf_);
-    FgAllocBuf &rt_tlas_build_scratch_buf = ctx.AccessRWBuffer(rt_tlas_build_scratch_buf_);
+void Eng::ExBuildAccStructures::Execute_HWRT(FgContext &fg) {
+    FgAllocBuf &rt_obj_instances_buf = fg.AccessROBuffer(rt_obj_instances_buf_);
+    [[maybe_unused]] FgAllocBuf &rt_tlas_buf = fg.AccessRWBuffer(rt_tlas_buf_);
+    FgAllocBuf &rt_tlas_build_scratch_buf = fg.AccessRWBuffer(rt_tlas_build_scratch_buf_);
 
-    Ren::ApiContext *api_ctx = ctx.ren_ctx().api_ctx();
+    Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 
     auto *vk_tlas = reinterpret_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlases[rt_index_]);
 
@@ -39,7 +39,7 @@ void Eng::ExBuildAccStructures::Execute_HWRT(FgContext &ctx) {
     range_info.firstVertex = 0;
     range_info.transformOffset = 0;
 
-    VkCommandBuffer cmd_buf = ctx.cmd_buf();
+    VkCommandBuffer cmd_buf = fg.cmd_buf();
 
     const VkAccelerationStructureBuildRangeInfoKHR *build_range = &range_info;
     api_ctx->vkCmdBuildAccelerationStructuresKHR(cmd_buf, 1, &tlas_build_info, &build_range);

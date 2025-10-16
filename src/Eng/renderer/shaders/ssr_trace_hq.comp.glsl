@@ -232,7 +232,7 @@ void main() {
         }
         base_ray_index = subgroupBroadcastFirst(base_ray_index);
         if (needs_ray) {
-            uint ray_index = base_ray_index + local_ray_index_in_wave;
+            const uint ray_index = base_ray_index + local_ray_index_in_wave;
 #ifndef LAYERED
             g_out_ray_list[ray_index] = packed_coords;
 #else // LAYERED
@@ -242,7 +242,7 @@ void main() {
         }
 #else // NO_SUBGROUP
         if (needs_ray) {
-            uint ray_index = atomicAdd(g_inout_ray_counter[6], 1);
+            const uint ray_index = atomicAdd(g_inout_ray_counter[6], 1);
 #ifndef LAYERED
             g_out_ray_list[ray_index] = packed_coords;
 #else // LAYERED

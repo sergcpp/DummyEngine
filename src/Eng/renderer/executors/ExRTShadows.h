@@ -40,7 +40,7 @@ class ExRTShadows final : public FgExecutor {
     ExRTShadows(const view_state_t *view_state, const BindlessTextureData *bindless_tex, const Args *args)
         : view_state_(view_state), bindless_tex_(bindless_tex), args_(args) {}
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 
   private:
     bool initialized_ = false;
@@ -56,8 +56,8 @@ class ExRTShadows final : public FgExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
-    void Execute_HWRT_Pipeline(FgContext &ctx);
-    void Execute_HWRT_Inline(FgContext &ctx);
-    void Execute_SWRT(FgContext &ctx);
+    void Execute_HWRT_Pipeline(FgContext &fg);
+    void Execute_HWRT_Inline(FgContext &fg);
+    void Execute_SWRT(FgContext &fg);
 };
 } // namespace Eng

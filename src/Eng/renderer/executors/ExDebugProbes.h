@@ -20,10 +20,10 @@ class ExDebugProbes final : public FgExecutor {
         Ren::Span<const probe_volume_t> probe_volumes;
     };
 
-    ExDebugProbes(PrimDraw &prim_draw, FgContext &ctx, const DrawList &list, const view_state_t *view_state,
+    ExDebugProbes(PrimDraw &prim_draw, FgContext &fg, const DrawList &list, const view_state_t *view_state,
                   const Args *args);
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 
   private:
     PrimDraw &prim_draw_;

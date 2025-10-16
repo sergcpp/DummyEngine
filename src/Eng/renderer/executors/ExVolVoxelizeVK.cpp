@@ -10,16 +10,16 @@
 #include "../Renderer_Structs.h"
 #include "../shaders/vol_interface.h"
 
-void Eng::ExVolVoxelize::Execute_HWRT(FgContext &ctx) {
-    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
-    FgAllocTex &stbn_tex = ctx.AccessROTexture(args_->stbn_tex);
+void Eng::ExVolVoxelize::Execute_HWRT(FgContext &fg) {
+    FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
+    FgAllocTex &stbn_tex = fg.AccessROTexture(args_->stbn_tex);
 
-    FgAllocBuf &geo_data_buf = ctx.AccessROBuffer(args_->geo_data);
-    FgAllocBuf &materials_buf = ctx.AccessROBuffer(args_->materials);
-    FgAllocBuf &tlas_buf = ctx.AccessROBuffer(args_->tlas_buf);
+    FgAllocBuf &geo_data_buf = fg.AccessROBuffer(args_->geo_data);
+    FgAllocBuf &materials_buf = fg.AccessROBuffer(args_->materials);
+    FgAllocBuf &tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
 
-    FgAllocTex &out_emission_tex = ctx.AccessRWTexture(args_->out_emission_tex);
-    FgAllocTex &out_scatter_tex = ctx.AccessRWTexture(args_->out_scatter_tex);
+    FgAllocTex &out_emission_tex = fg.AccessRWTexture(args_->out_emission_tex);
+    FgAllocTex &out_scatter_tex = fg.AccessRWTexture(args_->out_scatter_tex);
 
     if (view_state_->skip_volumetrics) {
         return;
@@ -53,6 +53,6 @@ void Eng::ExVolVoxelize::Execute_HWRT(FgContext &ctx) {
     uniform_params.frame_index = view_state_->frame_index;
     uniform_params.hist_weight = (view_state_->pre_exposure / view_state_->prev_pre_exposure);
 
-    DispatchCompute(*pi_vol_voxelize_, grp_count, bindings, &uniform_params, sizeof(uniform_params), ctx.descr_alloc(),
-                    ctx.log());
+    DispatchCompute(*pi_vol_voxelize_, grp_count, bindings, &uniform_params, sizeof(uniform_params), fg.descr_alloc(),
+                    fg.log());
 }

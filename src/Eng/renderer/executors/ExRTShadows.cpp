@@ -6,12 +6,12 @@
 #include "../../utils/ShaderLoader.h"
 #include "../shaders/rt_shadows_interface.h"
 
-void Eng::ExRTShadows::Execute(FgContext &ctx) {
-    LazyInit(ctx.ren_ctx(), ctx.sh());
-    if (ctx.ren_ctx().capabilities.hwrt) {
-        Execute_HWRT_Inline(ctx);
+void Eng::ExRTShadows::Execute(FgContext &fg) {
+    LazyInit(fg.ren_ctx(), fg.sh());
+    if (fg.ren_ctx().capabilities.hwrt) {
+        Execute_HWRT_Inline(fg);
     } else {
-        Execute_SWRT(ctx);
+        Execute_SWRT(fg);
     }
 }
 
@@ -26,23 +26,23 @@ void Eng::ExRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     }
 }
 
-void Eng::ExRTShadows::Execute_SWRT(FgContext &ctx) {
-    FgAllocBuf &geo_data_buf = ctx.AccessROBuffer(args_->geo_data);
-    FgAllocBuf &materials_buf = ctx.AccessROBuffer(args_->materials);
-    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(args_->vtx_buf1);
-    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(args_->ndx_buf);
-    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
-    FgAllocTex &noise_tex = ctx.AccessROTexture(args_->noise_tex);
-    FgAllocTex &depth_tex = ctx.AccessROTexture(args_->depth_tex);
-    FgAllocTex &normal_tex = ctx.AccessROTexture(args_->normal_tex);
-    FgAllocBuf &rt_blas_buf = ctx.AccessROBuffer(args_->swrt.blas_buf);
-    FgAllocBuf &rt_tlas_buf = ctx.AccessROBuffer(args_->tlas_buf);
-    FgAllocBuf &prim_ndx_buf = ctx.AccessROBuffer(args_->swrt.prim_ndx_buf);
-    FgAllocBuf &mesh_instances_buf = ctx.AccessROBuffer(args_->swrt.mesh_instances_buf);
-    FgAllocBuf &tile_list_buf = ctx.AccessROBuffer(args_->tile_list_buf);
-    FgAllocBuf &indir_args_buf = ctx.AccessROBuffer(args_->indir_args);
+void Eng::ExRTShadows::Execute_SWRT(FgContext &fg) {
+    FgAllocBuf &geo_data_buf = fg.AccessROBuffer(args_->geo_data);
+    FgAllocBuf &materials_buf = fg.AccessROBuffer(args_->materials);
+    FgAllocBuf &vtx_buf1 = fg.AccessROBuffer(args_->vtx_buf1);
+    FgAllocBuf &ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
+    FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
+    FgAllocTex &noise_tex = fg.AccessROTexture(args_->noise_tex);
+    FgAllocTex &depth_tex = fg.AccessROTexture(args_->depth_tex);
+    FgAllocTex &normal_tex = fg.AccessROTexture(args_->normal_tex);
+    FgAllocBuf &rt_blas_buf = fg.AccessROBuffer(args_->swrt.blas_buf);
+    FgAllocBuf &rt_tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
+    FgAllocBuf &prim_ndx_buf = fg.AccessROBuffer(args_->swrt.prim_ndx_buf);
+    FgAllocBuf &mesh_instances_buf = fg.AccessROBuffer(args_->swrt.mesh_instances_buf);
+    FgAllocBuf &tile_list_buf = fg.AccessROBuffer(args_->tile_list_buf);
+    FgAllocBuf &indir_args_buf = fg.AccessROBuffer(args_->indir_args);
 
-    FgAllocTex &out_shadow_tex = ctx.AccessRWTexture(args_->out_shadow_tex);
+    FgAllocTex &out_shadow_tex = fg.AccessRWTexture(args_->out_shadow_tex);
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -65,12 +65,11 @@ void Eng::ExRTShadows::Execute_SWRT(FgContext &ctx) {
     uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
-    DispatchComputeIndirect(ctx.cmd_buf(), *pi_rt_shadows_, *indir_args_buf.ref, 0, bindings, &uniform_params,
-                            sizeof(uniform_params), ctx.descr_alloc(), ctx.log());
+    DispatchComputeIndirect(fg.cmd_buf(), *pi_rt_shadows_, *indir_args_buf.ref, 0, bindings, &uniform_params,
+                            sizeof(uniform_params), fg.descr_alloc(), fg.log());
 }
 
 #if defined(REN_GL_BACKEND)
-void Eng::ExRTShadows::Execute_HWRT_Pipeline(FgContext &ctx) { assert(false && "Not implemented!"); }
-
-void Eng::ExRTShadows::Execute_HWRT_Inline(FgContext &ctx) { assert(false && "Not implemented!"); }
+void Eng::ExRTShadows::Execute_HWRT_Pipeline(FgContext &fg) { assert(false && "Not implemented!"); }
+void Eng::ExRTShadows::Execute_HWRT_Inline(FgContext &fg) { assert(false && "Not implemented!"); }
 #endif

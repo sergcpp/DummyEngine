@@ -11,6 +11,16 @@ struct Params {
     int lights_count;
 };
 
+struct RayPayload {
+    vec3 col;
+    float first_roughness;
+    vec3 throughput;
+    int transp_depth;
+    //vec3 emission;
+    float hit_t;
+    bool is_last_bounce;
+};
+
 const int GRP_SIZE_X = 64;
 
 const float TEX_LOD_OFFSET_MIN = 1;

@@ -2033,14 +2033,14 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
                 output_tex_res = update_image.AddTransferImageOutput("Temp Image", params);
             }
 
-            update_image.set_execute_cb([stage_buf_res, output_tex_res](FgContext &ctx) {
-                FgAllocBuf &stage_buf = ctx.AccessROBuffer(stage_buf_res);
-                FgAllocTex &output_image = ctx.AccessRWTexture(output_tex_res);
+            update_image.set_execute_cb([stage_buf_res, output_tex_res](FgContext &fg) {
+                FgAllocBuf &stage_buf = fg.AccessROBuffer(stage_buf_res);
+                FgAllocTex &output_image = fg.AccessRWTexture(output_tex_res);
 
                 const int w = output_image.ref->params.w;
                 const int h = output_image.ref->params.h;
 
-                output_image.ref->SetSubImage(0, 0, w, h, Ren::eTexFormat::RGBA32F, *stage_buf.ref, ctx.cmd_buf(), 0,
+                output_image.ref->SetSubImage(0, 0, w, h, Ren::eTexFormat::RGBA32F, *stage_buf.ref, fg.cmd_buf(), 0,
                                               stage_buf.ref->size());
             });
         }

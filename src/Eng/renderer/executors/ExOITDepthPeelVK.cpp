@@ -14,17 +14,17 @@ uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, cons
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 }
 
-void Eng::ExOITDepthPeel::DrawTransparent(FgContext &ctx) {
+void Eng::ExOITDepthPeel::DrawTransparent(FgContext &fg) {
     using namespace ExSharedInternal;
 
-    auto *api_ctx = ctx.ren_ctx().api_ctx();
+    auto *api_ctx = fg.ren_ctx().api_ctx();
 
-    FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
+    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
+    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
 
-    FgAllocBuf &out_depth_buf = ctx.AccessRWBuffer(out_depth_buf_);
+    FgAllocBuf &out_depth_buf = fg.AccessRWBuffer(out_depth_buf_);
 
     if ((*p_list_)->alpha_blend_start_index == -1) {
         return;
@@ -39,7 +39,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgContext &ctx) {
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
                                          {Ren::eBindTarget::STBufRW, DepthPeel::OUT_IMG_BUF_SLOT, *out_depth_buf.ref}};
         descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_simple_[0]->prog()->descr_set_layouts()[0], bindings,
-                                             ctx.descr_alloc(), ctx.log());
+                                             fg.descr_alloc(), fg.log());
         descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 

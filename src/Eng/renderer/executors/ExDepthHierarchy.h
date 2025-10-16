@@ -16,13 +16,13 @@ class ExDepthHierarchy final : public FgExecutor {
     FgResRef output_tex_;
 
   public:
-    ExDepthHierarchy(FgContext &ctx, const view_state_t *view_state, const FgResRef depth_tex,
-                     const FgResRef atomic_counter, const FgResRef output_tex);
+    ExDepthHierarchy(FgContext &fg, const view_state_t *view_state, FgResRef depth_tex, FgResRef atomic_counter,
+                     FgResRef output_tex);
 
     static const int MipCount = 7;
     // TODO: check if it is actually makes sense to use padding
     static const int TileSize = 1 << (MipCount - 1);
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 };
 } // namespace Eng

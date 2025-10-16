@@ -133,7 +133,8 @@ const int MAX_RT_TLAS_NODES = 8192; // (4096 + 2048 + 1024 + ...)
 
 const int DECALS_BUF_STRIDE = 7;
 const int BVH2_NODE_BUF_STRIDE = 4;
-const int MESH_INSTANCE_BUF_STRIDE = 7;
+const int SWRT_MESH_INSTANCE_BUF_STRIDE = 7;
+const int HWRT_MESH_INSTANCE_BUF_STRIDE = 4;
 
 const int PROBE_VOLUME_RES_X = 32;
 const int PROBE_VOLUME_RES_Y = 16;

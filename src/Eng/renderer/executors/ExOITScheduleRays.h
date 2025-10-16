@@ -40,7 +40,7 @@ class ExOITScheduleRays final : public FgExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
                   FgAllocBuf &ndx_buf, FgAllocTex &depth_tex);
-    void DrawTransparent(FgContext &ctx, FgAllocTex &depth_tex);
+    void DrawTransparent(FgContext &fg, FgAllocTex &depth_tex);
 
   public:
     ExOITScheduleRays(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
@@ -50,6 +50,6 @@ class ExOITScheduleRays final : public FgExecutor {
                       const FgResRef depth_tex, const FgResRef oit_depth_buf, const FgResRef ray_counter,
                       const FgResRef ray_list);
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 };
 } // namespace Eng

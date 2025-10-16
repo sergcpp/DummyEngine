@@ -8,25 +8,25 @@
 #include "../Renderer_Structs.h"
 #include "../shaders/skinning_interface.h"
 
-void Eng::ExSkinning::Execute(FgContext &ctx) {
-    LazyInit(ctx.ren_ctx(), ctx.sh());
+void Eng::ExSkinning::Execute(FgContext &fg) {
+    LazyInit(fg.ren_ctx(), fg.sh());
 
-    FgAllocBuf &skin_vtx_buf = ctx.AccessROBuffer(skin_vtx_buf_);
-    FgAllocBuf &skin_transforms_buf = ctx.AccessROBuffer(skin_transforms_buf_);
-    FgAllocBuf &shape_keys_buf = ctx.AccessROBuffer(shape_keys_buf_);
-    FgAllocBuf &delta_buf = ctx.AccessROBuffer(delta_buf_);
+    FgAllocBuf &skin_vtx_buf = fg.AccessROBuffer(skin_vtx_buf_);
+    FgAllocBuf &skin_transforms_buf = fg.AccessROBuffer(skin_transforms_buf_);
+    FgAllocBuf &shape_keys_buf = fg.AccessROBuffer(shape_keys_buf_);
+    FgAllocBuf &delta_buf = fg.AccessROBuffer(delta_buf_);
 
-    FgAllocBuf &vtx_buf1 = ctx.AccessRWBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = ctx.AccessRWBuffer(vtx_buf2_);
+    FgAllocBuf &vtx_buf1 = fg.AccessRWBuffer(vtx_buf1_);
+    FgAllocBuf &vtx_buf2 = fg.AccessRWBuffer(vtx_buf2_);
 
     if (!p_list_->skin_regions.empty()) {
-        Ren::ApiContext *api_ctx = ctx.ren_ctx().api_ctx();
+        Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
         VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
         VkDescriptorSetLayout descr_set_layout = pi_skinning_->prog()->descr_set_layouts()[0];
         Ren::DescrSizes descr_sizes;
         descr_sizes.sbuf_count = 6;
-        VkDescriptorSet descr_set = ctx.descr_alloc().Alloc(descr_sizes, descr_set_layout);
+        VkDescriptorSet descr_set = fg.descr_alloc().Alloc(descr_sizes, descr_set_layout);
 
         { // update descriptor set
             const VkDescriptorBufferInfo buf_infos[6] = {
@@ -68,8 +68,7 @@ void Eng::ExSkinning::Execute(FgContext &ctx) {
                 api_ctx->vkCmdPushConstants(cmd_buf, pi_skinning_->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                             sizeof(Skinning::Params), &uniform_params);
 
-                api_ctx->vkCmdDispatch(
-                    cmd_buf, (sr.vertex_count + Skinning::GRP_SIZE - 1) / Skinning::GRP_SIZE, 1, 1);
+                api_ctx->vkCmdDispatch(cmd_buf, (sr.vertex_count + Skinning::GRP_SIZE - 1) / Skinning::GRP_SIZE, 1, 1);
             }
 
             if (sr.shape_keyed_vertex_count) {
@@ -86,8 +85,7 @@ void Eng::ExSkinning::Execute(FgContext &ctx) {
                                             sizeof(Skinning::Params), &uniform_params);
 
                 api_ctx->vkCmdDispatch(
-                    cmd_buf,
-                    (sr.shape_keyed_vertex_count + Skinning::GRP_SIZE - 1) / Skinning::GRP_SIZE, 1, 1);
+                    cmd_buf, (sr.shape_keyed_vertex_count + Skinning::GRP_SIZE - 1) / Skinning::GRP_SIZE, 1, 1);
             }
         }
     }

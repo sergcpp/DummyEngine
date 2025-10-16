@@ -10,7 +10,7 @@ class FgExecutor {
   public:
     virtual ~FgExecutor() {}
 
-    virtual void Execute(FgContext &ctx) = 0;
+    virtual void Execute(FgContext &fg) = 0;
 };
 
 class FgNode {
@@ -26,7 +26,7 @@ class FgNode {
 
     std::unique_ptr<FgExecutor> executor_;
     FgExecutor *p_executor_ = nullptr;
-    Sys::InplaceFunction<void(FgContext &ctx), 32> execute_cb_;
+    Sys::InplaceFunction<void(FgContext &fg), 32> execute_cb_;
 
     mutable Ren::SmallVector<int16_t, 16> depends_on_nodes_;
     mutable bool visited_ = false;
@@ -122,11 +122,11 @@ class FgNode {
     FgResRef AddASBuildOutput(const Ren::WeakBufRef &buf);
     FgResRef AddASBuildOutput(std::string_view name, const FgBufDesc &desc);
 
-    void Execute(FgContext &ctx) {
+    void Execute(FgContext &fg) {
         if (p_executor_) {
-            p_executor_->Execute(ctx);
+            p_executor_->Execute(fg);
         } else if (execute_cb_) {
-            execute_cb_(ctx);
+            execute_cb_(fg);
         }
     }
 

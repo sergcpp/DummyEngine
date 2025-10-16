@@ -9,40 +9,23 @@
 #include "../PrimDraw.h"
 #include "../shaders/rt_gi_interface.h"
 
-void Eng::ExRTGI::Execute_HWRT(FgContext &ctx) {
-    FgAllocBuf &geo_data_buf = ctx.AccessROBuffer(args_->geo_data);
-    FgAllocBuf &materials_buf = ctx.AccessROBuffer(args_->materials);
-    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(args_->vtx_buf1);
-    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(args_->ndx_buf);
-    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
-    FgAllocTex &noise_tex = ctx.AccessROTexture(args_->noise_tex);
-    FgAllocTex &depth_tex = ctx.AccessROTexture(args_->depth_tex);
-    FgAllocTex &normal_tex = ctx.AccessROTexture(args_->normal_tex);
-    FgAllocTex &env_tex = ctx.AccessROTexture(args_->env_tex);
-    FgAllocBuf &ray_counter_buf = ctx.AccessROBuffer(args_->ray_counter);
-    FgAllocBuf &ray_list_buf = ctx.AccessROBuffer(args_->ray_list);
-    FgAllocBuf &indir_args_buf = ctx.AccessROBuffer(args_->indir_args);
-    [[maybe_unused]] FgAllocBuf &tlas_buf = ctx.AccessROBuffer(args_->tlas_buf);
-    FgAllocBuf &lights_buf = ctx.AccessROBuffer(args_->lights_buf);
-    FgAllocTex &shadow_depth_tex = ctx.AccessROTexture(args_->shadow_depth_tex);
-    FgAllocTex &shadow_color_tex = ctx.AccessROTexture(args_->shadow_color_tex);
-    FgAllocTex &ltc_luts_tex = ctx.AccessROTexture(args_->ltc_luts_tex);
-    FgAllocBuf &cells_buf = ctx.AccessROBuffer(args_->cells_buf);
-    FgAllocBuf &items_buf = ctx.AccessROBuffer(args_->items_buf);
+void Eng::ExRTGI::Execute_HWRT(FgContext &fg) {
+    FgAllocBuf &geo_data_buf = fg.AccessROBuffer(args_->geo_data);
+    FgAllocBuf &materials_buf = fg.AccessROBuffer(args_->materials);
+    FgAllocBuf &vtx_buf1 = fg.AccessROBuffer(args_->vtx_buf1);
+    FgAllocBuf &ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
+    FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
+    FgAllocTex &noise_tex = fg.AccessROTexture(args_->noise_tex);
+    FgAllocTex &depth_tex = fg.AccessROTexture(args_->depth_tex);
+    FgAllocTex &normal_tex = fg.AccessROTexture(args_->normal_tex);
+    FgAllocBuf &ray_counter_buf = fg.AccessROBuffer(args_->ray_counter);
+    FgAllocBuf &ray_list_buf = fg.AccessROBuffer(args_->ray_list);
+    FgAllocBuf &indir_args_buf = fg.AccessROBuffer(args_->indir_args);
+    [[maybe_unused]] FgAllocBuf &rt_tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
 
-    FgAllocTex &irr_tex = ctx.AccessROTexture(args_->irradiance_tex);
-    FgAllocTex &dist_tex = ctx.AccessROTexture(args_->distance_tex);
-    FgAllocTex &off_tex = ctx.AccessROTexture(args_->offset_tex);
+    FgAllocBuf &out_ray_hits_buf = fg.AccessRWBuffer(args_->out_ray_hits_buf);
 
-    FgAllocBuf *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
-    if (args_->stoch_lights_buf) {
-        stoch_lights_buf = &ctx.AccessROBuffer(args_->stoch_lights_buf);
-        light_nodes_buf = &ctx.AccessROBuffer(args_->light_nodes_buf);
-    }
-
-    FgAllocTex &out_gi_tex = ctx.AccessRWTexture(args_->out_gi_tex);
-
-    Ren::ApiContext *api_ctx = ctx.ren_ctx().api_ctx();
+    Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 
     auto *acc_struct = static_cast<Ren::AccStructureVK *>(args_->tlas);
 
@@ -53,35 +36,20 @@ void Eng::ExRTGI::Execute_HWRT(FgContext &ctx) {
         {Ren::eBindTarget::TexSampled, RTGI::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
         {Ren::eBindTarget::TexSampled, RTGI::NORM_TEX_SLOT, *normal_tex.ref},
         {Ren::eBindTarget::TexSampled, RTGI::NOISE_TEX_SLOT, *noise_tex.ref},
-        {Ren::eBindTarget::SBufRO, RTGI::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+        {Ren::eBindTarget::SBufRW, RTGI::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
         {Ren::eBindTarget::SBufRO, RTGI::RAY_LIST_SLOT, *ray_list_buf.ref},
-        {Ren::eBindTarget::TexSampled, RTGI::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::AccStruct, RTGI::TLAS_SLOT, *acc_struct},
         {Ren::eBindTarget::SBufRO, RTGI::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBufRO, RTGI::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::SBufRO, RTGI::VTX_BUF1_SLOT, *vtx_buf1.ref},
         {Ren::eBindTarget::SBufRO, RTGI::NDX_BUF_SLOT, *ndx_buf.ref},
-        {Ren::eBindTarget::SBufRO, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::TexSampled, RTGI::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
-        {Ren::eBindTarget::TexSampled, RTGI::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
-        {Ren::eBindTarget::TexSampled, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
-        {Ren::eBindTarget::UTBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.ref},
-        {Ren::eBindTarget::UTBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.ref},
-        {Ren::eBindTarget::TexSampled, RTGI::IRRADIANCE_TEX_SLOT, *irr_tex.ref},
-        {Ren::eBindTarget::TexSampled, RTGI::DISTANCE_TEX_SLOT, *dist_tex.ref},
-        {Ren::eBindTarget::TexSampled, RTGI::OFFSET_TEX_SLOT, *off_tex.ref},
-        {Ren::eBindTarget::ImageRW, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
-    if (stoch_lights_buf) {
-        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGI::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->ref);
-        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGI::LIGHT_NODES_BUF_SLOT, *light_nodes_buf->ref);
-    }
+        {Ren::eBindTarget::SBufRW, RTGI::RAY_HITS_BUF_SLOT, *out_ray_hits_buf.ref}};
 
-    const Ren::Pipeline &pi = args_->two_bounce ? (stoch_lights_buf ? *pi_rt_gi_2bounce_[1] : *pi_rt_gi_2bounce_[0])
-                                                : (stoch_lights_buf ? *pi_rt_gi_[1] : *pi_rt_gi_[0]);
+    const Ren::Pipeline &pi = *pi_rt_gi_;
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] =
-        PrepareDescriptorSet(api_ctx, pi.prog()->descr_set_layouts()[0], bindings, ctx.descr_alloc(), ctx.log());
+        PrepareDescriptorSet(api_ctx, pi.prog()->descr_set_layouts()[0], bindings, fg.descr_alloc(), fg.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures.descr_set;
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi.handle());

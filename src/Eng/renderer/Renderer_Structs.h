@@ -574,7 +574,7 @@ struct gpu_light_cwbvh_node_t : public gpu_cwbvh_node_t {
 };
 static_assert(sizeof(gpu_light_cwbvh_node_t) == 208);
 
-struct gpu_mesh_instance_t {
+struct swrt_mesh_instance_t {
     uint32_t visibility;
     uint32_t node_index;
     uint32_t vert_index;
@@ -583,8 +583,8 @@ struct gpu_mesh_instance_t {
     Ren::Mat3x4f inv_transform;
     Ren::Mat3x4f transform;
 };
-static_assert(sizeof(gpu_mesh_instance_t) == 112);
-static_assert(sizeof(gpu_mesh_instance_t) == MESH_INSTANCE_BUF_STRIDE * 4 * sizeof(float));
+static_assert(sizeof(swrt_mesh_instance_t) == 112);
+static_assert(sizeof(swrt_mesh_instance_t) == SWRT_MESH_INSTANCE_BUF_STRIDE * 4 * sizeof(float));
 
 const size_t sizeof_VkAccelerationStructureInstanceKHR = 64;
 
@@ -600,7 +600,7 @@ const size_t CellsBufChunkSize = sizeof(cell_data_t) * ITEM_CELLS_COUNT;
 const size_t ItemsBufChunkSize = sizeof(item_data_t) * MAX_ITEMS_TOTAL;
 const size_t RTGeoInstancesBufChunkSize = sizeof(rt_geo_instance_t) * MAX_RT_GEO_INSTANCES;
 const size_t HWRTObjInstancesBufChunkSize = sizeof_VkAccelerationStructureInstanceKHR * MAX_RT_OBJ_INSTANCES_TOTAL;
-const size_t SWRTObjInstancesBufChunkSize = sizeof(gpu_mesh_instance_t) * MAX_RT_OBJ_INSTANCES_TOTAL;
+const size_t SWRTObjInstancesBufChunkSize = sizeof(swrt_mesh_instance_t) * MAX_RT_OBJ_INSTANCES_TOTAL;
 const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh2_node_t) * MAX_RT_TLAS_NODES;
 const size_t SharedDataBlockSize = 12 * 1024;
 

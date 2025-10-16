@@ -7,34 +7,34 @@
 #include "../../utils/ShaderLoader.h"
 #include "../shaders/rt_gi_cache_interface.h"
 
-void Eng::ExRTGICache::Execute_HWRT(FgContext &ctx) {
-    Ren::ApiContext *api_ctx = ctx.ren_ctx().api_ctx();
+void Eng::ExRTGICache::Execute_HWRT(FgContext &fg) {
+    Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 
-    FgAllocBuf &geo_data_buf = ctx.AccessROBuffer(args_->geo_data);
-    FgAllocBuf &materials_buf = ctx.AccessROBuffer(args_->materials);
-    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(args_->vtx_buf1);
-    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(args_->ndx_buf);
-    FgAllocBuf &unif_sh_data_buf = ctx.AccessROBuffer(args_->shared_data);
-    FgAllocTex &env_tex = ctx.AccessROTexture(args_->env_tex);
-    [[maybe_unused]] FgAllocBuf &tlas_buf = ctx.AccessROBuffer(args_->tlas_buf);
-    FgAllocBuf &lights_buf = ctx.AccessROBuffer(args_->lights_buf);
-    FgAllocTex &shadow_depth_tex = ctx.AccessROTexture(args_->shadow_depth_tex);
-    FgAllocTex &shadow_color_tex = ctx.AccessROTexture(args_->shadow_color_tex);
-    FgAllocTex &ltc_luts_tex = ctx.AccessROTexture(args_->ltc_luts_tex);
-    FgAllocBuf &cells_buf = ctx.AccessROBuffer(args_->cells_buf);
-    FgAllocBuf &items_buf = ctx.AccessROBuffer(args_->items_buf);
-    FgAllocTex &irr_tex = ctx.AccessROTexture(args_->irradiance_tex);
-    FgAllocTex &dist_tex = ctx.AccessROTexture(args_->distance_tex);
-    FgAllocTex &off_tex = ctx.AccessROTexture(args_->offset_tex);
+    FgAllocBuf &geo_data_buf = fg.AccessROBuffer(args_->geo_data);
+    FgAllocBuf &materials_buf = fg.AccessROBuffer(args_->materials);
+    FgAllocBuf &vtx_buf1 = fg.AccessROBuffer(args_->vtx_buf1);
+    FgAllocBuf &ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
+    FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
+    FgAllocTex &env_tex = fg.AccessROTexture(args_->env_tex);
+    [[maybe_unused]] FgAllocBuf &tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
+    FgAllocBuf &lights_buf = fg.AccessROBuffer(args_->lights_buf);
+    FgAllocTex &shadow_depth_tex = fg.AccessROTexture(args_->shadow_depth_tex);
+    FgAllocTex &shadow_color_tex = fg.AccessROTexture(args_->shadow_color_tex);
+    FgAllocTex &ltc_luts_tex = fg.AccessROTexture(args_->ltc_luts_tex);
+    FgAllocBuf &cells_buf = fg.AccessROBuffer(args_->cells_buf);
+    FgAllocBuf &items_buf = fg.AccessROBuffer(args_->items_buf);
+    FgAllocTex &irr_tex = fg.AccessROTexture(args_->irradiance_tex);
+    FgAllocTex &dist_tex = fg.AccessROTexture(args_->distance_tex);
+    FgAllocTex &off_tex = fg.AccessROTexture(args_->offset_tex);
 
     FgAllocBuf *random_seq_buf = nullptr, *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
     if (args_->stoch_lights_buf) {
-        random_seq_buf = &ctx.AccessROBuffer(args_->random_seq);
-        stoch_lights_buf = &ctx.AccessROBuffer(args_->stoch_lights_buf);
-        light_nodes_buf = &ctx.AccessROBuffer(args_->light_nodes_buf);
+        random_seq_buf = &fg.AccessROBuffer(args_->random_seq);
+        stoch_lights_buf = &fg.AccessROBuffer(args_->stoch_lights_buf);
+        light_nodes_buf = &fg.AccessROBuffer(args_->light_nodes_buf);
     }
 
-    FgAllocTex &out_ray_data_tex = ctx.AccessRWTexture(args_->out_ray_data_tex);
+    FgAllocTex &out_ray_data_tex = fg.AccessRWTexture(args_->out_ray_data_tex);
 
     auto *acc_struct = static_cast<Ren::AccStructureVK *>(args_->tlas);
 
@@ -68,7 +68,7 @@ void Eng::ExRTGICache::Execute_HWRT(FgContext &ctx) {
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] =
-        PrepareDescriptorSet(api_ctx, pi.prog()->descr_set_layouts()[0], bindings, ctx.descr_alloc(), ctx.log());
+        PrepareDescriptorSet(api_ctx, pi.prog()->descr_set_layouts()[0], bindings, fg.descr_alloc(), fg.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures.descr_set;
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi.handle());

@@ -18,16 +18,16 @@ uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const En
 }
 } // namespace ExSharedInternal
 
-void Eng::ExDepthFill::Execute(FgContext &ctx) {
-    FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = ctx.AccessROBuffer(vtx_buf2_);
-    FgAllocBuf &ndx_buf = ctx.AccessROBuffer(ndx_buf_);
+void Eng::ExDepthFill::Execute(FgContext &fg) {
+    FgAllocBuf &vtx_buf1 = fg.AccessROBuffer(vtx_buf1_);
+    FgAllocBuf &vtx_buf2 = fg.AccessROBuffer(vtx_buf2_);
+    FgAllocBuf &ndx_buf = fg.AccessROBuffer(ndx_buf_);
 
-    FgAllocTex &depth_tex = ctx.AccessRWTexture(depth_tex_);
-    FgAllocTex &velocity_tex = ctx.AccessRWTexture(velocity_tex_);
+    FgAllocTex &depth_tex = fg.AccessRWTexture(depth_tex_);
+    FgAllocTex &velocity_tex = fg.AccessRWTexture(velocity_tex_);
 
-    LazyInit(ctx.ren_ctx(), ctx.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex, velocity_tex);
-    DrawDepth(ctx, vtx_buf1, vtx_buf2, ndx_buf);
+    LazyInit(fg.ren_ctx(), fg.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex, velocity_tex);
+    DrawDepth(fg, vtx_buf1, vtx_buf2, ndx_buf);
 }
 
 void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,

@@ -36,7 +36,7 @@ class ExVolVoxelize final : public FgExecutor {
     ExVolVoxelize(const DrawList **p_list, const view_state_t *view_state, const Args *args)
         : p_list_(p_list), view_state_(view_state), args_(args) {}
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 
   private:
     bool initialized_ = false;
@@ -51,7 +51,7 @@ class ExVolVoxelize final : public FgExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
-    void Execute_HWRT(FgContext &ctx);
-    void Execute_SWRT(FgContext &ctx);
+    void Execute_HWRT(FgContext &fg);
+    void Execute_SWRT(FgContext &fg);
 };
 } // namespace Eng

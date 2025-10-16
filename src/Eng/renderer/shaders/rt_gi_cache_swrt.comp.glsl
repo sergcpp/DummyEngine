@@ -396,17 +396,17 @@ void main() {
 
         const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
 
-        const mat4x3 world_from_object = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4)),
-                                                          texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5)),
-                                                          texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6))));
+        const mat4x3 world_from_object = transpose(mat3x4(texelFetch(g_mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4)),
+                                                          texelFetch(g_mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5)),
+                                                          texelFetch(g_mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6))));
         p0.xyz = (world_from_object * vec4(p0.xyz, 1.0)).xyz;
         p1.xyz = (world_from_object * vec4(p1.xyz, 1.0)).xyz;
         p2.xyz = (world_from_object * vec4(p2.xyz, 1.0)).xyz;
 
 #if defined(BINDLESS_TEXTURES)
-        const mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 1)),
-                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 2)),
-                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3))));
+        const mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 1)),
+                                                      texelFetch(g_mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 2)),
+                                                      texelFetch(g_mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3))));
         const vec3 direction_obj_space = (inv_transform * vec4(probe_ray_dir, 0.0)).xyz;
 
         const vec2 tex_res = textureSizeBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]), 0).xy;

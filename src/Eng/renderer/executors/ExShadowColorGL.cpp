@@ -12,7 +12,7 @@ namespace ExSharedInternal {
 uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices,
                      Ren::Span<const Eng::basic_draw_batch_t> zfill_batches, uint32_t i, uint64_t mask,
                      int *draws_count);
-uint32_t _draw_range_ext2(Eng::FgContext &ctx, const Ren::MaterialStorage *materials,
+uint32_t _draw_range_ext2(Eng::FgContext &fg, const Ren::MaterialStorage *materials,
                           Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                           uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
 void _bind_texture4_and_sampler4(Ren::Context &ctx, const Ren::Material &mat,
@@ -42,7 +42,7 @@ void _adjust_bias_and_viewport(Ren::RastState &rast_state, const Eng::shadow_lis
 }
 } // namespace ExShadowColorInternal
 
-void Eng::ExShadowColor::DrawShadowMaps(FgContext &ctx) {
+void Eng::ExShadowColor::DrawShadowMaps(FgContext &fg) {
     using namespace ExSharedInternal;
     using namespace ExShadowColorInternal;
 
@@ -65,20 +65,20 @@ void Eng::ExShadowColor::DrawShadowMaps(FgContext &ctx) {
     _rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
     _rast_state.scissor.enabled = true;
 
-    _rast_state.ApplyChanged(ctx.rast_state());
-    ctx.rast_state() = _rast_state;
+    _rast_state.ApplyChanged(fg.rast_state());
+    fg.rast_state() = _rast_state;
 
-    Ren::ApiContext *api_ctx = ctx.ren_ctx().api_ctx();
+    Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 
-    FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
+    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
+    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
 
-    FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
+    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
-    if (ctx.ren_ctx().capabilities.bindless_texture) {
+    if (fg.ren_ctx().capabilities.bindless_texture) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX,
                          GLuint(bindless_tex_->rt_inline_textures.buf->id()));
     }
@@ -101,7 +101,7 @@ void Eng::ExShadowColor::DrawShadowMaps(FgContext &ctx) {
     [[maybe_unused]] int draw_calls_count = 0;
 
     { // draw opaque objects
-        Ren::DebugMarker _(api_ctx, ctx.cmd_buf(), "STATIC-SOLID");
+        Ren::DebugMarker _(api_ctx, fg.cmd_buf(), "STATIC-SOLID");
 
         glBindVertexArray(pi_solid_[0]->vtx_input()->GetVAO());
 
@@ -110,9 +110,9 @@ void Eng::ExShadowColor::DrawShadowMaps(FgContext &ctx) {
         for (int pi = 0; pi < 3; ++pi) {
             glUseProgram(pi_solid_[pi]->prog()->id());
 
-            Ren::RastState rast_state = ctx.rast_state();
+            Ren::RastState rast_state = fg.rast_state();
             rast_state.poly.cull = pi_solid_[pi]->rast_state().poly.cull;
-            rast_state.ApplyChanged(ctx.rast_state());
+            rast_state.ApplyChanged(fg.rast_state());
 
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); ++i) {
                 const shadow_list_t &sh_list = (*p_list_)->shadow_lists.data[i];
@@ -140,17 +140,17 @@ void Eng::ExShadowColor::DrawShadowMaps(FgContext &ctx) {
                 uint32_t cur_mat_id = 0xffffffff;
 
                 uint32_t j = batch_points[i];
-                j = _draw_range_ext2(ctx, (*p_list_)->materials, batch_indices, (*p_list_)->shadow_batches, j,
+                j = _draw_range_ext2(fg, (*p_list_)->materials, batch_indices, (*p_list_)->shadow_batches, j,
                                      BitFlags[pi], cur_mat_id, &draw_calls_count);
                 batch_points[i] = j;
             }
 
-            ctx.rast_state() = rast_state;
+            fg.rast_state() = rast_state;
         }
     }
 
     { // draw transparent (alpha-tested) objects
-        Ren::DebugMarker _(api_ctx, ctx.cmd_buf(), "STATIC-ALPHA");
+        Ren::DebugMarker _(api_ctx, fg.cmd_buf(), "STATIC-ALPHA");
 
         glBindVertexArray(pi_alpha_[0]->vtx_input()->GetVAO());
 
@@ -160,9 +160,9 @@ void Eng::ExShadowColor::DrawShadowMaps(FgContext &ctx) {
         for (int pi = 0; pi < 3; ++pi) {
             glUseProgram(pi_alpha_[pi]->prog()->id());
 
-            Ren::RastState rast_state = ctx.rast_state();
+            Ren::RastState rast_state = fg.rast_state();
             rast_state.poly.cull = pi_alpha_[pi]->rast_state().poly.cull;
-            rast_state.ApplyChanged(ctx.rast_state());
+            rast_state.ApplyChanged(fg.rast_state());
 
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); ++i) {
                 const shadow_list_t &sh_list = (*p_list_)->shadow_lists.data[i];
@@ -190,12 +190,12 @@ void Eng::ExShadowColor::DrawShadowMaps(FgContext &ctx) {
                 uint32_t cur_mat_id = 0xffffffff;
 
                 uint32_t j = batch_points[i];
-                j = _draw_range_ext2(ctx, (*p_list_)->materials, batch_indices, (*p_list_)->shadow_batches, j,
+                j = _draw_range_ext2(fg, (*p_list_)->materials, batch_indices, (*p_list_)->shadow_batches, j,
                                      BitFlags[pi], cur_mat_id, &draw_calls_count);
                 batch_points[i] = j;
             }
 
-            ctx.rast_state() = rast_state;
+            fg.rast_state() = rast_state;
         }
     }
 
@@ -203,8 +203,8 @@ void Eng::ExShadowColor::DrawShadowMaps(FgContext &ctx) {
     _rast_state.scissor.enabled = false;
     _rast_state.poly.depth_bias_mode = uint8_t(Ren::eDepthBiasMode::Disabled);
     _rast_state.depth_bias = {};
-    _rast_state.ApplyChanged(ctx.rast_state());
-    ctx.rast_state() = _rast_state;
+    _rast_state.ApplyChanged(fg.rast_state());
+    fg.rast_state() = _rast_state;
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glBindVertexArray(0);

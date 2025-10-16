@@ -31,9 +31,9 @@
 #endif
 
 #if defined(FOUR_BOUNCES)
-    #define NUM_BOUNCES 4
+    const int NUM_BOUNCES = 4;
 #else
-    #define NUM_BOUNCES 1
+    const int NUM_BOUNCES = 1;
 #endif
 
 #if defined(NO_SUBGROUP)
@@ -208,7 +208,7 @@ void main() {
     const float t_min = 0.001;
     const float t_max = 100.0;
 
-    float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
+    const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
     const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, first_roughness);
 
     float first_ray_len = t_max, total_ray_len = 0.0;
@@ -319,23 +319,23 @@ void main() {
             const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
             const uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
 
-            vec3 p0 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i0].xyz);
-            vec3 p1 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i1].xyz);
-            vec3 p2 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i2].xyz);
+            vec4 p0 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i0]);
+            vec4 p1 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i1]);
+            vec4 p2 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i2]);
             p0.xyz = (world_from_object * vec4(p0.xyz, 1.0)).xyz;
             p1.xyz = (world_from_object * vec4(p1.xyz, 1.0)).xyz;
             p2.xyz = (world_from_object * vec4(p2.xyz, 1.0)).xyz;
 
-            const vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
-            const vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
-            const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
+            const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
+            const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
+            const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
 
             const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
 
             const vec2 tex_res = textureSizeBindless(mat.texture_indices[MAT_TEX_BASECOLOR], 0).xy;
             const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
-            vec3 tri_normal = cross(p1 - p0, p2 - p0);
+            vec3 tri_normal = cross(p1.xyz - p0.xyz, p2.xyz - p0.xyz);
             const float pa = length(tri_normal);
             tri_normal /= pa;
             if (backfacing) {

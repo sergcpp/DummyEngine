@@ -154,7 +154,7 @@ float construct_float(uint m) {
     return f - 1.0;                        // Range [0:1]
 }
 
-// Octahedron packing for unit vectors - xonverts a 3D unit vector to a 2D vector with [0; 1] range
+// Octahedron packing for unit vectors - converts a 3D unit vector to a 2D vector with [0; 1] range
 // https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
 // [Cigolle 2014, "A Survey of Efficient Representations for Independent Unit Vectors"]
 vec2 PackUnitVector(const vec3 v) {
@@ -443,6 +443,18 @@ struct material_data_t {
 
 vec3 RGBMDecode(vec4 rgbm) {
     return 4.0 * rgbm.xyz * rgbm.a;
+}
+
+uint PackRGB565(const vec3 rgb) {
+    const uvec3 c = uvec3(round(rgb * vec3(31.0, 63.0, 31.0)));
+    return (c.r << 11) | (c.g << 5) | c.b;
+}
+
+vec3 UnpackRGB565(const uint v) {
+    const uint r = (v >> 11) & 0x1F;
+    const uint g = (v >> 5)  & 0x3F;
+    const uint b =  v        & 0x1F;
+    return vec3(r / 31.0, g / 63.0, b / 31.0);
 }
 
 uint ReverseBits4(uint x) {

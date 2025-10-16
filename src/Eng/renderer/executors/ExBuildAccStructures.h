@@ -19,8 +19,8 @@ class ExBuildAccStructures final : public FgExecutor {
     FgResRef rt_tlas_buf_;
     FgResRef rt_tlas_build_scratch_buf_;
 
-    void Execute_HWRT(FgContext &ctx);
-    void Execute_SWRT(FgContext &ctx);
+    void Execute_HWRT(FgContext &fg);
+    void Execute_SWRT(FgContext &fg);
 
     static uint32_t PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,
                                         std::vector<gpu_bvh_node_t> &out_nodes, std::vector<uint32_t> &out_indices);
@@ -34,6 +34,6 @@ class ExBuildAccStructures final : public FgExecutor {
           rt_obj_instances_buf_(rt_obj_instances_buf), rt_tlas_buf_(rt_tlas_buf),
           rt_tlas_build_scratch_buf_(rt_tlas_scratch_buf) {}
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 };
 } // namespace Eng

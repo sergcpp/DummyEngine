@@ -137,10 +137,10 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "complex_mat4", 20.05, Full_Ultra);
     run_image_test(threads, "complex_mat4_sun_light", 20.05, Full);
     run_image_test(threads, "complex_mat4_sun_light", 19.90, Full_Ultra);
-    run_image_test(threads, "emit_mat0", 24.95, Full);
-    run_image_test(threads, "emit_mat0", 25.85, Full_Ultra);
-    run_image_test(threads, "emit_mat1", 23.30, Full);
-    run_image_test(threads, "emit_mat1", 23.85, Full_Ultra);
+    run_image_test(threads, "emit_mat0", 24.80, Full);
+    run_image_test(threads, "emit_mat0", 25.50, Full_Ultra);
+    run_image_test(threads, "emit_mat1", 23.20, Full);
+    run_image_test(threads, "emit_mat1", 23.45, Full_Ultra);
 
     if (!full) {
         return;

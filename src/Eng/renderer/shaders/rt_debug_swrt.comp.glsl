@@ -213,9 +213,9 @@ void main() {
 
         const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
 #if defined(BINDLESS_TEXTURES)
-        mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 1)),
-                                                texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 2)),
-                                                texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3))));
+        mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 1)),
+                                                texelFetch(g_mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 2)),
+                                                texelFetch(g_mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3))));
         vec3 direction_obj_space = (inv_transform * vec4(direction, 0.0)).xyz;
 
         vec2 tex_res = textureSizeBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]), 0).xy;
@@ -251,9 +251,9 @@ void main() {
         if (backfacing) {
             N = -N;
         }
-        const mat4x3 transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4)),
-                                                  texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5)),
-                                                  texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6))));
+        const mat4x3 transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4)),
+                                                  texelFetch(g_mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5)),
+                                                  texelFetch(g_mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6))));
         N = normalize((transform * vec4(N, 0.0)).xyz);
 
         const vec3 P = origin + direction * inter.tmax;

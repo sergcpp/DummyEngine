@@ -44,10 +44,9 @@ class ExDebugRT final : public FgExecutor {
         FgResRef output_tex;
     };
 
-    ExDebugRT(FgContext &ctx, const view_state_t *view_state, const BindlessTextureData *bindless_tex,
-              const Args *args);
+    ExDebugRT(FgContext &fg, const view_state_t *view_state, const BindlessTextureData *bindless_tex, const Args *args);
 
-    void Execute(FgContext &ctx) override;
+    void Execute(FgContext &fg) override;
 
   private:
     Ren::PipelineRef pi_debug_;
@@ -59,7 +58,7 @@ class ExDebugRT final : public FgExecutor {
 
     const Args *args_ = nullptr;
 
-    void Execute_HWRT(FgContext &ctx);
-    void Execute_SWRT(FgContext &ctx);
+    void Execute_HWRT(FgContext &fg);
+    void Execute_SWRT(FgContext &fg);
 };
 } // namespace Eng

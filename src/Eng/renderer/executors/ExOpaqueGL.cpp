@@ -16,12 +16,12 @@ void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
         glBindSampler(Eng::BIND_MAT_TEX0 + j, mat.samplers[j]->id());
     }
 }
-uint32_t _draw_list_range_full(Eng::FgContext &ctx, const Ren::MaterialStorage &materials,
+uint32_t _draw_list_range_full(Eng::FgContext &fg, const Ren::MaterialStorage &materials,
                                const Ren::Pipeline pipelines[], Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                Eng::backend_info_t &backend_info) {
-    auto &ren_ctx = ctx.ren_ctx();
+    auto &ren_ctx = fg.ren_ctx();
 
     GLenum cur_primitive;
     if (cur_prog_id != 0xffffffffffffffff) {
@@ -59,7 +59,7 @@ uint32_t _draw_list_range_full(Eng::FgContext &ctx, const Ren::MaterialStorage &
 
         if (!ren_ctx.capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
             const Ren::Material &mat = materials.at(batch.mat_id);
-            _bind_textures_and_samplers(ren_ctx, mat, ctx.temp_samplers);
+            _bind_textures_and_samplers(ren_ctx, mat, fg.temp_samplers);
         }
 
         cur_pipe_id = batch.pipe_id;
@@ -77,13 +77,13 @@ uint32_t _draw_list_range_full(Eng::FgContext &ctx, const Ren::MaterialStorage &
     return i;
 }
 
-uint32_t _draw_list_range_full_rev(Eng::FgContext &ctx, const Ren::MaterialStorage &materials,
+uint32_t _draw_list_range_full_rev(Eng::FgContext &fg, const Ren::MaterialStorage &materials,
                                    const Ren::Pipeline pipelines[],
                                    Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                    Eng::backend_info_t &backend_info) {
-    auto &ren_ctx = ctx.ren_ctx();
+    auto &ren_ctx = fg.ren_ctx();
 
     int i = int(ndx);
     for (; i >= 0; i--) {
@@ -107,7 +107,7 @@ uint32_t _draw_list_range_full_rev(Eng::FgContext &ctx, const Ren::MaterialStora
 
         if (!ren_ctx.capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
             const Ren::Material &mat = materials.at(batch.mat_id);
-            _bind_textures_and_samplers(ren_ctx, mat, ctx.temp_samplers);
+            _bind_textures_and_samplers(ren_ctx, mat, fg.temp_samplers);
         }
 
         cur_pipe_id = batch.pipe_id;
@@ -126,7 +126,7 @@ uint32_t _draw_list_range_full_rev(Eng::FgContext &ctx, const Ren::MaterialStora
 }
 } // namespace ExSharedInternal
 
-void Eng::ExOpaque::DrawOpaque(FgContext &ctx) {
+void Eng::ExOpaque::DrawOpaque(FgContext &fg) {
     using namespace ExSharedInternal;
 
     Ren::RastState rast_state;
@@ -151,42 +151,42 @@ void Eng::ExOpaque::DrawOpaque(FgContext &ctx) {
     rast_state.viewport[2] = view_state_->ren_res[0];
     rast_state.viewport[3] = view_state_->ren_res[1];
 
-    rast_state.ApplyChanged(ctx.rast_state());
-    ctx.rast_state() = rast_state;
+    rast_state.ApplyChanged(fg.rast_state());
+    fg.rast_state() = rast_state;
 
     glBindVertexArray(draw_pass_vi_->GetVAO());
 
     //
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
-    FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
-    FgAllocBuf &cells_buf = ctx.AccessROBuffer(cells_buf_);
-    FgAllocBuf &items_buf = ctx.AccessROBuffer(items_buf_);
-    FgAllocBuf &lights_buf = ctx.AccessROBuffer(lights_buf_);
-    FgAllocBuf &decals_buf = ctx.AccessROBuffer(decals_buf_);
+    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
+    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
+    FgAllocBuf &cells_buf = fg.AccessROBuffer(cells_buf_);
+    FgAllocBuf &items_buf = fg.AccessROBuffer(items_buf_);
+    FgAllocBuf &lights_buf = fg.AccessROBuffer(lights_buf_);
+    FgAllocBuf &decals_buf = fg.AccessROBuffer(decals_buf_);
 
-    FgAllocTex &shad_tex = ctx.AccessROTexture(shad_tex_);
-    FgAllocTex &ssao_tex = ctx.AccessROTexture(ssao_tex_);
-    FgAllocTex &brdf_lut = ctx.AccessROTexture(brdf_lut_);
-    FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
-    FgAllocTex &cone_rt_lut = ctx.AccessROTexture(cone_rt_lut_);
+    FgAllocTex &shad_tex = fg.AccessROTexture(shad_tex_);
+    FgAllocTex &ssao_tex = fg.AccessROTexture(ssao_tex_);
+    FgAllocTex &brdf_lut = fg.AccessROTexture(brdf_lut_);
+    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
+    FgAllocTex &cone_rt_lut = fg.AccessROTexture(cone_rt_lut_);
 
-    FgAllocTex &dummy_black = ctx.AccessROTexture(dummy_black_);
+    FgAllocTex &dummy_black = fg.AccessROTexture(dummy_black_);
 
     FgAllocTex *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (lm_tex_[i]) {
-            lm_tex[i] = &ctx.AccessROTexture(lm_tex_[i]);
+            lm_tex[i] = &fg.AccessROTexture(lm_tex_[i]);
         } else {
             lm_tex[i] = &dummy_black;
         }
     }
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
-    if (ctx.ren_ctx().capabilities.bindless_texture) {
+    if (fg.ren_ctx().capabilities.bindless_texture) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX,
                          GLuint(bindless_tex_->rt_inline_textures.buf->id()));
     }
@@ -237,71 +237,71 @@ void Eng::ExOpaque::DrawOpaque(FgContext &ctx) {
         uint32_t i = 0;
 
         { // one-sided1
-            Ren::DebugMarker _m(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "ONE-SIDED-1");
+            Ren::DebugMarker _m(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "ONE-SIDED-1");
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
-            i = _draw_list_range_full(ctx, materials, pipelines_, batches, batch_indices, i, 0ull, cur_mat_id,
+            i = _draw_list_range_full(fg, materials, pipelines_, batches, batch_indices, i, 0ull, cur_mat_id,
                                       cur_pipe_id, cur_prog_id, _dummy);
         }
 
         { // two-sided1
-            Ren::DebugMarker _m(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "TWO-SIDED-1");
+            Ren::DebugMarker _m(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "TWO-SIDED-1");
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
-            i = _draw_list_range_full(ctx, materials, pipelines_, batches, batch_indices, i, CDB::BitTwoSided,
+            i = _draw_list_range_full(fg, materials, pipelines_, batches, batch_indices, i, CDB::BitTwoSided,
                                       cur_mat_id, cur_pipe_id, cur_prog_id, _dummy);
         }
 
         { // one-sided2
-            Ren::DebugMarker _m(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "ONE-SIDED-2");
+            Ren::DebugMarker _m(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "ONE-SIDED-2");
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
-            i = _draw_list_range_full(ctx, materials, pipelines_, batches, batch_indices, i, CDB::BitAlphaTest,
+            i = _draw_list_range_full(fg, materials, pipelines_, batches, batch_indices, i, CDB::BitAlphaTest,
                                       cur_mat_id, cur_pipe_id, cur_prog_id, _dummy);
         }
 
         { // two-sided2
-            Ren::DebugMarker _m(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "TWO-SIDED-2");
+            Ren::DebugMarker _m(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "TWO-SIDED-2");
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
-            i = _draw_list_range_full(ctx, materials, pipelines_, batches, batch_indices, i,
+            i = _draw_list_range_full(fg, materials, pipelines_, batches, batch_indices, i,
                                       CDB::BitAlphaTest | CDB::BitTwoSided, cur_mat_id, cur_pipe_id, cur_prog_id,
                                       _dummy);
         }
 
         { // two-sided-tested-blended
-            Ren::DebugMarker _m(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "TWO-SIDED-TESTED-BLENDED");
+            Ren::DebugMarker _m(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "TWO-SIDED-TESTED-BLENDED");
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
-            i = _draw_list_range_full_rev(ctx, materials, pipelines_, batches, batch_indices,
+            i = _draw_list_range_full_rev(fg, materials, pipelines_, batches, batch_indices,
                                           uint32_t(batch_indices.size() - 1),
                                           CDB::BitAlphaBlend | CDB::BitAlphaTest | CDB::BitTwoSided, cur_mat_id,
                                           cur_pipe_id, cur_prog_id, _dummy);
         }
 
         { // one-sided-tested-blended
-            Ren::DebugMarker _m(ctx.ren_ctx().api_ctx(), ctx.cmd_buf(), "ONE-SIDED-TESTED-BLENDED");
+            Ren::DebugMarker _m(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "ONE-SIDED-TESTED-BLENDED");
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-            rast_state.ApplyChanged(ctx.rast_state());
-            ctx.rast_state() = rast_state;
+            rast_state.ApplyChanged(fg.rast_state());
+            fg.rast_state() = rast_state;
 
-            _draw_list_range_full_rev(ctx, materials, pipelines_, batches, batch_indices, i,
+            _draw_list_range_full_rev(fg, materials, pipelines_, batches, batch_indices, i,
                                       CDB::BitAlphaBlend | CDB::BitAlphaTest, cur_mat_id, cur_pipe_id, cur_prog_id,
                                       _dummy);
         }
