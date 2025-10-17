@@ -2989,6 +2989,8 @@ bool glslx::Parser::InitSpecialGlobals(const eTrUnitType type) {
     if (type == eTrUnitType::RayGen) {
         res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchIDEXT") != nullptr;
         res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchSizeEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_WorkGroupID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LocalInvocationID") != nullptr;
     } else if (type == eTrUnitType::AnyHit || type == eTrUnitType::ClosestHit) {
         res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchIDEXT") != nullptr;
         res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchSizeEXT") != nullptr;
