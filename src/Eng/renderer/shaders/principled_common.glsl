@@ -175,16 +175,32 @@ int cubemap_face(vec3 _dir, vec3 f, vec3 u, vec3 v) {
     return dir.z > 0.0 ? 0 : 1;
 }
 
-struct ltc_params_t {
-    vec4 diff_t1;
-    vec2 diff_t2;
-    vec4 sheen_t1;
-    vec2 sheen_t2;
-    vec4 spec_t1;
-    vec2 spec_t2;
-    vec4 coat_t1;
-    vec2 coat_t2;
-};
+#ifndef ENABLE_SPHERE_LIGHT
+    #define ENABLE_SPHERE_LIGHT 1
+#endif
+#ifndef ENABLE_RECT_LIGHT
+    #define ENABLE_RECT_LIGHT 1
+#endif
+#ifndef ENABLE_DISK_LIGHT
+    #define ENABLE_DISK_LIGHT 1
+#endif
+#ifndef ENABLE_LINE_LIGHT
+    #define ENABLE_LINE_LIGHT 1
+#endif
+
+#ifndef ENABLE_DIFFUSE
+    #define ENABLE_DIFFUSE 1
+#endif
+#ifndef ENABLE_SHEEN
+    // NOTE: Sheen is disabled as it requires different LTC implementation
+    #define ENABLE_SHEEN 0
+#endif
+#ifndef ENABLE_SPECULAR
+    #define ENABLE_SPECULAR 1
+#endif
+#ifndef ENABLE_CLEARCOAT
+    #define ENABLE_CLEARCOAT 1
+#endif
 
 #ifndef MIN_SPEC_ROUGHNESS
     #define MIN_SPEC_ROUGHNESS 0.0
@@ -193,6 +209,21 @@ struct ltc_params_t {
 #ifndef SIMPLIFIED_LTC_DIFFUSE
     #define SIMPLIFIED_LTC_DIFFUSE 1
 #endif
+
+struct ltc_params_t {
+    vec4 diff_t1;
+    vec4 spec_t1;
+    vec4 coat_t1;
+#if ENABLE_SHEEN
+    vec4 sheen_t1;
+#endif
+    vec2 diff_t2;
+    vec2 spec_t2;
+    vec2 coat_t2;
+#if ENABLE_SHEEN
+    vec2 sheen_t2;
+#endif
+};
 
 ltc_params_t SampleLTC_Params(sampler2D luts, float N_dot_V, float roughness, float clearcoat_roughness2) {
     ltc_params_t ret;
@@ -204,8 +235,10 @@ ltc_params_t SampleLTC_Params(sampler2D luts, float N_dot_V, float roughness, fl
     ret.diff_t1 = textureLod(luts, diff_ltc_uv + vec2(0.0, 0.0), 0.0);
 #endif
     ret.diff_t2 = textureLod(luts, diff_ltc_uv + vec2(0.125, 0.0), 0.0).xy;
+#if ENABLE_SHEEN
     ret.sheen_t1 = textureLod(luts, diff_ltc_uv + vec2(0.25, 0.0), 0.0);
     ret.sheen_t2 = textureLod(luts, diff_ltc_uv + vec2(0.375, 0.0), 0.0).xy;
+#endif
 
     const vec2 spec_ltc_uv = LTC_Coords(N_dot_V, clamp(roughness, MIN_SPEC_ROUGHNESS, 1.0));
     ret.spec_t1 = textureLod(luts, spec_ltc_uv + vec2(0.5, 0.0), 0.0);
@@ -242,33 +275,6 @@ float spread_attenuation(const vec3 D, const vec3 light_fwd, const float tan_hal
     const float tan_a = tan_angle(-D, light_fwd);
     return max((tan_half_spread - tan_a) * spread_normalization, 0.0);
 }
-
-#ifndef ENABLE_SPHERE_LIGHT
-    #define ENABLE_SPHERE_LIGHT 1
-#endif
-#ifndef ENABLE_RECT_LIGHT
-    #define ENABLE_RECT_LIGHT 1
-#endif
-#ifndef ENABLE_DISK_LIGHT
-    #define ENABLE_DISK_LIGHT 1
-#endif
-#ifndef ENABLE_LINE_LIGHT
-    #define ENABLE_LINE_LIGHT 1
-#endif
-
-#ifndef ENABLE_DIFFUSE
-    #define ENABLE_DIFFUSE 1
-#endif
-#ifndef ENABLE_SHEEN
-    // NOTE: Sheen is disabled as it requires different LTC implementation
-    #define ENABLE_SHEEN 0
-#endif
-#ifndef ENABLE_SPECULAR
-    #define ENABLE_SPECULAR 1
-#endif
-#ifndef ENABLE_CLEARCOAT
-    #define ENABLE_CLEARCOAT 1
-#endif
 
 vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3 I, const vec3 N, const lobe_masks_t lobe_masks, const ltc_params_t ltc,
                              sampler2D ltc_luts, const float sheen, const vec3 base_color, const vec3 sheen_color, const vec3 spec_color, const vec3 clearcoat_color) {
@@ -308,10 +314,12 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, ltc.diff_t1, points, TwoSided);
             diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
 
-            if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+#if ENABLE_SHEEN
+            if (sheen > 0.0) {
                 const vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, P, ltc.sheen_t1, points, TwoSided);
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
+#endif
 
             ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff / M_PI;
         }
@@ -347,10 +355,12 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 diff = vec3(LTC_Evaluate_Rect(ltc_luts, 0.125, N, I, P, ltc.diff_t1, points, TwoSided));
             diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
 
-            if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+#if ENABLE_SHEEN
+            if (sheen > 0.0) {
                 const float _sheen = LTC_Evaluate_Rect(ltc_luts, 0.375, N, I, P, ltc.sheen_t1, points, TwoSided);
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
+#endif
 
             ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff / 4.0;
         }
@@ -392,10 +402,12 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, ltc.diff_t1, points, TwoSided);
             diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
 
-            if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+#if ENABLE_SHEEN
+            if (sheen > 0.0) {
                 const vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, P, ltc.sheen_t1, points, TwoSided);
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
+#endif
 
             ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff / 4.0;
         }
@@ -435,10 +447,12 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 diff = LTC_Evaluate_Line(N, I, P, ltc.diff_t1, points, 0.01);
             diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
 
-            if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+#if ENABLE_SHEEN
+            if (sheen > 0.0) {
                 const vec3 _sheen = LTC_Evaluate_Line(N, I, P, ltc.sheen_t1, points, 0.01);
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
+#endif
 
             ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff;
         }
@@ -489,10 +503,12 @@ vec3 EvaluateSunLight_LTC(const vec3 light_color, const vec3 light_dir, const fl
         vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, ltc.diff_t1, points, false);
         diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
 
-        if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+#if ENABLE_SHEEN
+        if (sheen > 0.0) {
             const vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, P, ltc.sheen_t1, points, false);
             diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
         }
+#endif
 
         ret += lobe_masks.diffuse_mul * light_color * diff;
     }
@@ -557,10 +573,12 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, TwoSided);
             diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
 
-            if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+#if ENABLE_SHEEN
+            if (sheen > 0.0) {
                 const vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, P, g_ltc[gl_LocalInvocationIndex].sheen_t1, points, TwoSided);
                 diff += _sheen * (sheen_color * g_ltc[gl_LocalInvocationIndex].sheen_t2.x + (1.0 - sheen_color) * g_ltc[gl_LocalInvocationIndex].sheen_t2.y);
             }
+#endif
 
             ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff / M_PI;
         }
@@ -596,10 +614,12 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 diff = vec3(LTC_Evaluate_Rect(ltc_luts, 0.125, N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, TwoSided));
             diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
 
-            if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+#if ENABLE_SHEEN
+            if (sheen > 0.0) {
                 const float _sheen = LTC_Evaluate_Rect(ltc_luts, 0.375, N, I, P, g_ltc[gl_LocalInvocationIndex].sheen_t1, points, TwoSided);
                 diff += _sheen * (sheen_color * g_ltc[gl_LocalInvocationIndex].sheen_t2.x + (1.0 - sheen_color) * g_ltc[gl_LocalInvocationIndex].sheen_t2.y);
             }
+#endif
 
             ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff / 4.0;
         }
@@ -641,10 +661,12 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, TwoSided);
             diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
 
-            if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+#if ENABLE_SHEEN
+            if (sheen > 0.0) {
                 const vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, P, g_ltc[gl_LocalInvocationIndex].sheen_t1, points, TwoSided);
                 diff += _sheen * (sheen_color * g_ltc[gl_LocalInvocationIndex].sheen_t2.x + (1.0 - sheen_color) * g_ltc[gl_LocalInvocationIndex].sheen_t2.y);
             }
+#endif
 
             ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff / 4.0;
         }
@@ -684,10 +706,12 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 diff = LTC_Evaluate_Line(N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, 0.01);
             diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
 
-            if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+#if ENABLE_SHEEN
+            if (sheen > 0.0) {
                 const vec3 _sheen = LTC_Evaluate_Line(N, I, P, g_ltc[gl_LocalInvocationIndex].sheen_t1, points, 0.01);
                 diff += _sheen * (sheen_color * g_ltc[gl_LocalInvocationIndex].sheen_t2.x + (1.0 - sheen_color) * g_ltc[gl_LocalInvocationIndex].sheen_t2.y);
             }
+#endif
 
             ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff;
         }
@@ -738,10 +762,12 @@ vec3 EvaluateSunLight_LTC(const vec3 light_color, const vec3 light_dir, const fl
         vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, false);
         diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
 
-        if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+#if ENABLE_SHEEN
+        if (sheen > 0.0) {
             const vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, P, g_ltc[gl_LocalInvocationIndex].sheen_t1, points, false);
             diff += _sheen * (sheen_color * g_ltc[gl_LocalInvocationIndex].sheen_t2.x + (1.0 - sheen_color) * g_ltc[gl_LocalInvocationIndex].sheen_t2.y);
         }
+#endif
 
         ret += lobe_masks.diffuse_mul * light_color * diff;
     }

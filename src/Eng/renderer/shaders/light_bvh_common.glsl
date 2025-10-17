@@ -2,6 +2,7 @@
 #define LIGHT_BVH_COMMON_GLSL
 #extension GL_EXT_control_flow_attributes : enable
 
+#include "principled_common.glsl" // for _light_item_t
 #include "swrt_common.glsl"
 
 #define USE_HIERARCHICAL_NEE 1
