@@ -24,7 +24,7 @@
 
 #include "rt_gi_cache_interface.h"
 
-#pragma multi_compile _ STOCH_LIGHTS
+#pragma multi_compile _ STOCH_LIGHTS STOCH_LIGHTS_MIS
 #pragma multi_compile _ PARTIAL
 #pragma multi_compile _ NO_SUBGROUP
 
@@ -64,7 +64,7 @@ layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
     _light_item_t g_lights[];
 };
 
-#if defined(STOCH_LIGHTS)
+#if defined(STOCH_LIGHTS) || defined(STOCH_LIGHTS_MIS)
     layout(binding = RANDOM_SEQ_BUF_SLOT) uniform usamplerBuffer g_random_seq;
     layout(binding = STOCH_LIGHTS_BUF_SLOT) uniform usamplerBuffer g_stoch_lights_buf;
     layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
@@ -136,7 +136,7 @@ void main() {
 
     rayQueryEXT rq;
 
-#if defined(STOCH_LIGHTS)
+#if defined(STOCH_LIGHTS) || defined(STOCH_LIGHTS_MIS)
     { // direct light sampling
         vec3 out_color = vec3(0.0), out_dir = vec3(0.0);
 
@@ -219,9 +219,11 @@ void main() {
                     out_dir = L;
                     out_color = litem.col_and_type.xyz / (ls_pdf * M_PI);
                     out_color *= SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0)));
+                #ifdef STOCH_LIGHTS_MIS
                     const float bsdf_pdf = 1.0 / (2.0 * M_PI);
                     const float mis_weight = power_heuristic(ls_pdf, bsdf_pdf);
                     out_color *= mis_weight;
+                #endif
                 }
             }
         }
@@ -406,6 +408,7 @@ void main() {
         const float clearcoat = mat.params[2].z;
         const float clearcoat_roughness = mat.params[2].w;
         vec3 emission_color = vec3(0.0);
+#if defined(STOCH_LIGHTS_MIS)
         if (transmission < 0.001) {
 #if defined(BINDLESS_TEXTURES)
             emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
@@ -413,6 +416,7 @@ void main() {
             emission_color = mat.params[3].yzw;
 #endif
         }
+#endif // STOCH_LIGHTS_MIS
 
         vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
         spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
@@ -440,7 +444,7 @@ void main() {
 
         const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
-#if defined(STOCH_LIGHTS)
+#if defined(STOCH_LIGHTS_MIS)
         if (hsum(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7) {
             const uint tri_index = (geo.indices_start / 3) + prim_id;
             const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_stoch_lights_buf, g_params.stoch_lights_count, tri_index, probe_pos);
@@ -479,7 +483,7 @@ void main() {
                 const uint s_item_data = texelFetch(g_items_buf, int(i)).x;
                 const int s_li = int(bitfieldExtract(s_item_data, 0, 12));
 
-                const _light_item_t litem = g_lights[s_li];
+                const _light_item_t litem = g_lights[subgroupBroadcastFirst(s_li)];
 
                 const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
 

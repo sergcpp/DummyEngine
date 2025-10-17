@@ -28,7 +28,7 @@
 
 #include "rt_gi_cache_interface.h"
 
-#pragma multi_compile _ STOCH_LIGHTS
+#pragma multi_compile _ STOCH_LIGHTS STOCH_LIGHTS_MIS
 #pragma multi_compile _ PARTIAL
 #pragma multi_compile _ NO_SUBGROUP
 
@@ -67,7 +67,7 @@ layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
     _light_item_t g_lights[];
 };
 
-#if defined(STOCH_LIGHTS)
+#if defined(STOCH_LIGHTS) || defined(STOCH_LIGHTS_MIS)
     layout(binding = RANDOM_SEQ_BUF_SLOT) uniform usamplerBuffer g_random_seq;
     layout(binding = STOCH_LIGHTS_BUF_SLOT) uniform usamplerBuffer g_stoch_lights_buf;
     layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
@@ -137,7 +137,7 @@ void main() {
     const vec3 probe_ray_dir = get_probe_ray_dir(ray_index, g_params.quat_rot);
     const ivec3 output_coords = get_ray_data_coords(ray_index, probe_index);
 
-#if defined(STOCH_LIGHTS)
+#if defined(STOCH_LIGHTS) || defined(STOCH_LIGHTS_MIS)
     { // direct light sampling
         vec3 out_color = vec3(0.0), out_dir = vec3(0.0);
 
@@ -151,11 +151,11 @@ void main() {
             const bool is_doublesided = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DOUBLESIDED_BIT) != 0;
 
             const vec3 p1 = litem.pos_and_radius.xyz,
-                    p2 = litem.u_and_reg.xyz,
-                    p3 = litem.v_and_blend.xyz;
+                       p2 = litem.u_and_reg.xyz,
+                       p3 = litem.v_and_blend.xyz;
             const vec2 uv1 = vec2(litem.pos_and_radius.w, litem.dir_and_spot.x),
-                    uv2 = litem.dir_and_spot.yz,
-                    uv3 = vec2(litem.dir_and_spot.w, litem.v_and_blend.w);
+                       uv2 = litem.dir_and_spot.yz,
+                       uv3 = vec2(litem.dir_and_spot.w, litem.v_and_blend.w);
             const vec3 e1 = p2 - p1, e2 = p3 - p1;
             float light_fwd_len;
             const vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
@@ -246,9 +246,11 @@ void main() {
             #if defined(BINDLESS_TEXTURES)
                     out_color *= SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0)));
             #endif
+            #if defined(STOCH_LIGHTS_MIS)
                     const float bsdf_pdf = 1.0 / (2.0 * M_PI);
                     const float mis_weight = power_heuristic(ls_pdf, bsdf_pdf);
                     out_color *= mis_weight;
+            #endif
                 }
             }
         }
@@ -471,6 +473,7 @@ void main() {
         const float clearcoat = mat.params[2].z;
         const float clearcoat_roughness = mat.params[2].w;
         vec3 emission_color = vec3(0.0);
+#if defined(STOCH_LIGHTS_MIS)
         if (transmission < 0.001) {
 #if defined(BINDLESS_TEXTURES)
             emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_EMISSION])), uv, tex_lod)));
@@ -478,6 +481,7 @@ void main() {
             emission_color = mat.params[3].yzw;
 #endif
         }
+#endif // STOCH_LIGHTS_MIS
 
         vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
         spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
@@ -505,7 +509,7 @@ void main() {
 
         const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
-#if defined(STOCH_LIGHTS)
+#if defined(STOCH_LIGHTS_MIS)
         if (hsum(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7) {
             const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_stoch_lights_buf, g_params.stoch_lights_count, uint(tri_index), probe_pos);
 
