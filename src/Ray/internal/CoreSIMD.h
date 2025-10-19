@@ -6001,7 +6001,7 @@ void Ray::NS::IntersectAreaLights(const ray_data_t<S> &r, Span<const light_t> li
                     _inv_d[3] = {inv_d[0][ri], inv_d[1][ri], inv_d[2][ri]},
                     _inv_d_o[3] = {inv_d_o[0][ri], inv_d_o[1][ri], inv_d_o[2][ri]};
 
-        TraversalStateStack_Single<MAX_STACK_SIZE, light_stack_entry_t> st;
+        TraversalStateStack_Single<MAX_LTREE_STACK_SIZE, light_stack_entry_t> st;
         st.push(0u /* root_index */, 0.0f, 1.0f);
 
         while (!st.empty()) {
@@ -6309,7 +6309,7 @@ Ray::NS::fvec<S> Ray::NS::IntersectAreaLights(const shadow_ray_t<S> &r, Span<con
         const float _inv_d[3] = {inv_d[0][ri], inv_d[1][ri], inv_d[2][ri]},
                     _inv_d_o[3] = {inv_d_o[0][ri], inv_d_o[1][ri], inv_d_o[2][ri]};
 
-        TraversalStateStack_Single<MAX_STACK_SIZE> st;
+        TraversalStateStack_Single<MAX_LTREE_STACK_SIZE> st;
         st.push(0u /* root_index */, 0.0f);
 
         while (!st.empty() && ray_masks[ri]) {
@@ -6497,8 +6497,8 @@ Ray::NS::fvec<S> Ray::NS::EvalTriLightFactor(const fvec<S> P[3], const fvec<S> r
         // recombine in AoS layout
         const float _p[3] = {P[0][ri], P[1][ri], P[2][ri]}, _ro[3] = {ro[0][ri], ro[1][ri], ro[2][ri]};
 
-        uint32_t stack[MAX_STACK_SIZE];
-        float stack_factors[MAX_STACK_SIZE];
+        uint32_t stack[MAX_LTREE_STACK_SIZE];
+        float stack_factors[MAX_LTREE_STACK_SIZE];
         uint32_t stack_size = 0;
 
         stack_factors[stack_size] = 1.0f;

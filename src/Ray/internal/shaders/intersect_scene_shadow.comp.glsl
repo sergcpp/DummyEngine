@@ -90,7 +90,11 @@ vec2 get_scrambled_2d_rand(const uint dim, const uint seed, const int _sample) {
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
+#if HWRT
+shared uint g_stack[LOCAL_GROUP_SIZE_X * LOCAL_GROUP_SIZE_Y][MAX_LTREE_STACK_SIZE];
+#else
 shared uint g_stack[LOCAL_GROUP_SIZE_X * LOCAL_GROUP_SIZE_Y][MAX_STACK_SIZE];
+#endif
 
 bool Traverse_BLAS_WithStack(vec3 ro, vec3 rd, vec3 inv_d, int obj_index, uint node_index, uint stack_size,
                                   inout hit_data_t inter) {
@@ -243,37 +247,6 @@ bool Traverse_TLAS_WithStack(vec3 orig_ro, vec3 orig_rd, vec3 orig_inv_rd, uint 
             }
         }
     }
-
-    /*while (stack_size != 0) {
-        uint cur = g_stack[gl_LocalInvocationIndex][--stack_size];
-
-        bvh_node_t n = g_nodes[cur];
-
-        if (!bbox_test(orig_inv_rd, orig_neg_inv_do, inter.t, n.bbox_min.xyz, n.bbox_max.xyz)) {
-            continue;
-        }
-
-        if ((floatBitsToUint(n.bbox_min.w) & LEAF_NODE_BIT) == 0) {
-            g_stack[gl_LocalInvocationIndex][stack_size++] = far_child(orig_rd, n);
-            g_stack[gl_LocalInvocationIndex][stack_size++] = near_child(orig_rd, n);
-        } else {
-            const uint prim_index = (floatBitsToUint(n.bbox_min.w) & PRIM_INDEX_BITS);
-
-            const mesh_instance_t mi = g_mesh_instances[prim_index];
-            if ((mi.data.w & RAY_TYPE_SHADOW_BIT) == 0) {
-                continue;
-            }
-
-            const vec3 ro = (mi.inv_xform * vec4(orig_ro, 1.0)).xyz;
-            const vec3 rd = (mi.inv_xform * vec4(orig_rd, 0.0)).xyz;
-            const vec3 inv_d = safe_invert(rd);
-
-            const bool solid_hit_found = Traverse_BLAS_WithStack(ro, rd, inv_d, int(prim_index), mi.data.y, stack_size, inter);
-            if (solid_hit_found) {
-                return true;
-            }
-        }
-    }*/
 
     return false;
 }

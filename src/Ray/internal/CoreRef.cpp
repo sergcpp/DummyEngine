@@ -3644,7 +3644,7 @@ void Ray::Ref::IntersectAreaLights(Span<const ray_data_t> rays, Span<const light
 
         ////
 
-        TraversalStack<MAX_STACK_SIZE, light_stack_entry_t> st;
+        TraversalStack<MAX_LTREE_STACK_SIZE, light_stack_entry_t> st;
         st.push(0u /* root_index */, 0.0f /* distance */, 1.0f /* factor */);
 
         while (!st.empty()) {
@@ -3891,7 +3891,7 @@ void Ray::Ref::IntersectAreaLights(Span<const ray_data_t> rays, Span<const light
 
         ////
 
-        TraversalStack<MAX_STACK_SIZE, light_stack_entry_t> st;
+        TraversalStack<MAX_LTREE_STACK_SIZE, light_stack_entry_t> st;
         st.push(0u /* root_index */, 0.0f /* distance */, 1.0f /* factor */);
 
         while (!st.empty()) {
@@ -4135,8 +4135,8 @@ void Ray::Ref::IntersectAreaLights(Span<const ray_data_t> rays, Span<const light
 
         ////
 
-        uint32_t stack[MAX_STACK_SIZE];
-        float stack_factors[MAX_STACK_SIZE];
+        uint32_t stack[MAX_LTREE_STACK_SIZE];
+        float stack_factors[MAX_LTREE_STACK_SIZE];
         uint32_t stack_size = 0;
 
         stack_factors[stack_size] = 1.0f;
@@ -4329,7 +4329,7 @@ float Ray::Ref::IntersectAreaLights(const shadow_ray_t &ray, Span<const light_t>
 
     ////
 
-    TraversalStack<MAX_STACK_SIZE> st;
+    TraversalStack<MAX_LTREE_STACK_SIZE> st;
     st.push(0u /* root_index */, 0.0f);
 
     while (!st.empty()) {
@@ -4470,7 +4470,7 @@ float Ray::Ref::IntersectAreaLights(const shadow_ray_t &ray, Span<const light_t>
 
     ////
 
-    TraversalStack<MAX_STACK_SIZE> st;
+    TraversalStack<MAX_LTREE_STACK_SIZE> st;
     st.push(0u /* root_index */, 0.0f);
 
     while (!st.empty()) {
@@ -4603,8 +4603,8 @@ float Ray::Ref::IntersectAreaLights(const shadow_ray_t &ray, Span<const light_t>
 
 float Ray::Ref::EvalTriLightFactor(const fvec4 &P, const fvec4 &ro, const uint32_t tri_index,
                                    Span<const light_t> lights, Span<const light_bvh_node_t> nodes) {
-    uint32_t stack[MAX_STACK_SIZE];
-    float stack_factors[MAX_STACK_SIZE];
+    uint32_t stack[MAX_LTREE_STACK_SIZE];
+    float stack_factors[MAX_LTREE_STACK_SIZE];
     uint32_t stack_size = 0;
 
     stack_factors[stack_size] = 1.0f;
@@ -4655,8 +4655,8 @@ float Ray::Ref::EvalTriLightFactor(const fvec4 &P, const fvec4 &ro, const uint32
 
 float Ray::Ref::EvalTriLightFactor(const fvec4 &P, const fvec4 &ro, uint32_t tri_index, Span<const light_t> lights,
                                    Span<const light_wbvh_node_t> nodes) {
-    uint32_t stack[MAX_STACK_SIZE];
-    float stack_factors[MAX_STACK_SIZE];
+    uint32_t stack[MAX_LTREE_STACK_SIZE];
+    float stack_factors[MAX_LTREE_STACK_SIZE];
     uint32_t stack_size = 0;
 
     stack_factors[stack_size] = 1.0f;
@@ -4701,8 +4701,8 @@ float Ray::Ref::EvalTriLightFactor(const fvec4 &P, const fvec4 &ro, uint32_t tri
 
 float Ray::Ref::EvalTriLightFactor(const fvec4 &P, const fvec4 &ro, uint32_t tri_index, Span<const light_t> lights,
                                    Span<const light_cwbvh_node_t> nodes) {
-    uint32_t stack[MAX_STACK_SIZE];
-    float stack_factors[MAX_STACK_SIZE];
+    uint32_t stack[MAX_LTREE_STACK_SIZE];
+    float stack_factors[MAX_LTREE_STACK_SIZE];
     uint32_t stack_size = 0;
 
     stack_factors[stack_size] = 1.0f;
