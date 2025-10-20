@@ -46,7 +46,7 @@ void main() {
     float transp_z = 2.0 * (log(lin_depth) - g_shrd_data.transp_params_and_time[0]) /
                            g_shrd_data.transp_params_and_time[1] - 1.0;
 
-    vec3 normal_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).wyz;
+    vec3 normal_color = textureBindless(g_norm_tex, g_vtx_uvs).wyz;
 
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(mat3(g_vtx_tangent, cross(g_vtx_normal, g_vtx_tangent),
@@ -68,7 +68,7 @@ void main() {
     uint offset = bitfieldExtract(cell_data.x, 0, 24);
     uint pcount = bitfieldExtract(cell_data.y, 8, 8);
 
-    vec4 specular_color = texture(SAMPLER2D(g_spec_tex), g_vtx_uvs);
+    vec4 specular_color = textureBindless(g_spec_tex, g_vtx_uvs);
     vec3 refl_ray_ws = reflect(view_ray_ws, normal);
 
     vec3 reflected_color = vec3(0.0);

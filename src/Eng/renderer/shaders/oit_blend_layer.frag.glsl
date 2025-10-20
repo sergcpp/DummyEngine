@@ -86,11 +86,11 @@ void main() {
     const uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                           bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 base_color = YCoCg_to_RGB(texture(SAMPLER2D(g_base_tex), g_vtx_uvs));
-    const vec2 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).xy;
-    const float roug_color = texture(SAMPLER2D(g_roug_tex), g_vtx_uvs).x;
-    const float metl_color = texture(SAMPLER2D(g_metl_tex), g_vtx_uvs).x;
-    const float alpha = (1.0 - g_mat_params2.x) * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).x;
+    vec3 base_color = YCoCg_to_RGB(textureBindless(g_base_tex, g_vtx_uvs));
+    const vec2 norm_color = textureBindless(g_norm_tex, g_vtx_uvs).xy;
+    const float roug_color = textureBindless(g_roug_tex, g_vtx_uvs).x;
+    const float metl_color = textureBindless(g_metl_tex, g_vtx_uvs).x;
+    const float alpha = (1.0 - g_mat_params2.x) * textureBindless(g_alpha_tex, g_vtx_uvs).x;
 
     // TODO: Apply decals here (?)
 

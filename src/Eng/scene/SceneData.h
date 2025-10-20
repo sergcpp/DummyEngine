@@ -231,6 +231,7 @@ struct PersistentGpuData {
 #elif defined(REN_GL_BACKEND)
     Ren::BufRef textures_buf;
 #endif
+    Ren::SamplerRef trilinear_sampler;
     Ren::PipelineStorage pipelines;
 
     struct {

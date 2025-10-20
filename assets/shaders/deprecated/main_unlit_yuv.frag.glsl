@@ -29,8 +29,8 @@ layout(location = LOC_OUT_NORM) out vec4 g_out_normal;
 
 void main() {
     vec3 col_yuv;
-    col_yuv.x = texture(SAMPLER2D(g_mat0_tex), g_vtx_uvs).x;
-    col_yuv.yz = texture(SAMPLER2D(g_mat1_tex), g_vtx_uvs).xy;
+    col_yuv.x = textureBindless(g_mat0_tex, g_vtx_uvs).x;
+    col_yuv.yz = textureBindless(g_mat1_tex, g_vtx_uvs).xy;
     col_yuv += vec3(-0.0627451017, -0.501960814, -0.501960814);
 
     vec3 col_rgb;

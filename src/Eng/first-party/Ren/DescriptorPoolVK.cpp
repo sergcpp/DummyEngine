@@ -40,6 +40,8 @@ bool Ren::DescrPool::Init(const DescrSizes &sizes, const uint32_t sets_count) {
     Destroy();
 
     descr_counts_[int(eDescrType::CombinedImageSampler)] = sizes.img_sampler_count;
+    descr_counts_[int(eDescrType::SampledImage)] = sizes.img_count;
+    descr_counts_[int(eDescrType::Sampler)] = sizes.sampler_count;
     descr_counts_[int(eDescrType::StorageImage)] = sizes.store_img_count;
     descr_counts_[int(eDescrType::UniformBuffer)] = sizes.ubuf_count;
     descr_counts_[int(eDescrType::UniformTexBuffer)] = sizes.utbuf_count;

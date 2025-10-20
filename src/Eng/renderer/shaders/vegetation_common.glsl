@@ -1,5 +1,7 @@
-#ifndef _VEGETATION_GLSL
-#define _VEGETATION_GLSL
+#ifndef VEGETATION_COMMON_GLSL
+#define VEGETATION_COMMON_GLSL
+
+#include "texturing_common.glsl"
 
 #define PP_RES_X 32
 #define PP_RES_Y 64
@@ -36,8 +38,8 @@ int get_index_by_uv(vec2 uv) {
     return idx2D[0] + idx2D[1] * PP_RES_X;
 }
 
-int get_parent_index_and_pivot_pos(sampler2D pp_pos_tex, vec2 coords, out vec3 pivot_pos) {
-    vec4 result = textureLod(pp_pos_tex, coords, 0.0);
+int get_parent_index_and_pivot_pos(TEX_HANDLE pp_pos_tex, vec2 coords, out vec3 pivot_pos) {
+    vec4 result = textureLodBindless(pp_pos_tex, coords, 0.0);
 
     pivot_pos = result.xyz;
 
@@ -47,8 +49,8 @@ int get_parent_index_and_pivot_pos(sampler2D pp_pos_tex, vec2 coords, out vec3 p
     return idx;
 }
 
-vec4 get_parent_pivot_direction_and_extent(sampler2D pp_dir_tex, vec2 coords) {
-    vec4 result = textureLod(pp_dir_tex, coords, 0.0);
+vec4 get_parent_pivot_direction_and_extent(TEX_HANDLE pp_dir_tex, vec2 coords) {
+    vec4 result = textureLodBindless(pp_dir_tex, coords, 0.0);
     result.xyz = result.xyz * 2.0 - 1.0;
 
     result.xyz = normalize(result.xyz);
@@ -66,15 +68,15 @@ struct HierarchyData {
     vec4 branch_dir_extent[MAX_ALLOWED_HIERARCHY];
 };
 
-HierarchyData FetchHierarchyData(sampler2D pp_pos_tex, sampler2D pp_dir_tex, vec2 start_coords) {
+HierarchyData FetchHierarchyData(TEX_HANDLE pp_pos_tex, TEX_HANDLE pp_dir_tex, vec2 start_coords) {
     HierarchyData data;
     data.max_hierarchy_level = 0;
 
     vec2 current_uv = start_coords;
     // Iterate starting from SELF, as in HierarchyData
     for(int level = 0; level < MAX_ALLOWED_HIERARCHY; ++level) {
-        int cur_idx = get_index_by_uv(current_uv);
-        int parent_idx = get_parent_index_and_pivot_pos(pp_pos_tex, current_uv, data.branch_pivot_pos[level].xyz);
+        const int cur_idx = get_index_by_uv(current_uv);
+        const int parent_idx = get_parent_index_and_pivot_pos(pp_pos_tex, current_uv, data.branch_pivot_pos[level].xyz);
         data.branch_dir_extent[level] = get_parent_pivot_direction_and_extent(pp_dir_tex, current_uv);
 
         // False will happen at trunk level
@@ -169,4 +171,4 @@ vec3 TransformVegetation(vec3 old_pos, inout vec3 inout_normal, inout vec3 inout
     return old_pos + pos_offset;
 }
 
-#endif // _VEGETATION_GLSL
+#endif // VEGETATION_COMMON_GLSL

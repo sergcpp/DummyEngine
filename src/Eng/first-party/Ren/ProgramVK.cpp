@@ -111,15 +111,14 @@ bool Ren::Program::InitDescrSetLayouts(ILog *log) {
         for (const Descr &u : sh.unif_bindings) {
             auto &bindings = layout_bindings[u.set];
 
-            auto it = std::find_if(std::begin(bindings), std::end(bindings),
+            const auto it = std::find_if(std::begin(bindings), std::end(bindings),
                                    [&u](const VkDescriptorSetLayoutBinding &b) { return u.loc == b.binding; });
-
             if (it == std::end(bindings)) {
                 auto &new_binding = bindings.emplace_back();
                 new_binding.binding = u.loc;
                 new_binding.descriptorType = u.desc_type;
 
-                if (u.unbounded_array && u.desc_type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+                if (u.unbounded_array && u.desc_type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) {
                     assert(u.count == 1);
                     new_binding.descriptorCount = api_ctx_->max_combined_image_samplers;
                 } else {
@@ -143,13 +142,12 @@ bool Ren::Program::InitDescrSetLayouts(ILog *log) {
         layout_info.bindingCount = layout_bindings[i].size();
         layout_info.pBindings = layout_bindings[i].cdata();
 
-        VkDescriptorBindingFlagsEXT bind_flag = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT;
+        const VkDescriptorBindingFlagsEXT bind_flags[2] = {VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT, 0};
 
         VkDescriptorSetLayoutBindingFlagsCreateInfoEXT extended_info = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT};
-        extended_info.pNext = nullptr;
-        extended_info.bindingCount = 1u;
-        extended_info.pBindingFlags = &bind_flag;
+        extended_info.bindingCount = layout_info.bindingCount;
+        extended_info.pBindingFlags = &bind_flags[0];
 
         if (i == 1) {
             layout_info.pNext = &extended_info;

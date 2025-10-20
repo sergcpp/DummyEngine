@@ -61,12 +61,12 @@ void main() {
     uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                     bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 base_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), g_vtx_uvs)));
-    float mask_value = texture(SAMPLER2D(g_mask_tex), g_vtx_uvs).x;
+    vec3 base_color = SRGBToLinear(YCoCg_to_RGB(textureBindless(g_diff_tex, g_vtx_uvs)));
+    float mask_value = textureBindless(g_mask_tex, g_vtx_uvs).x;
 
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);
-    vec3 normal_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).wyz;
-    vec4 specular_color = texture(SAMPLER2D(g_spec_tex), g_vtx_uvs);
+    vec3 normal_color = textureBindless(g_norm_tex, g_vtx_uvs).wyz;
+    vec4 specular_color = textureBindless(g_spec_tex, g_vtx_uvs);
 
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(mat3(cross(g_vtx_tangent, g_vtx_normal), g_vtx_tangent,

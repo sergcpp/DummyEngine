@@ -151,7 +151,7 @@ void main() {
 
                     const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
         #if defined(BINDLESS_TEXTURES)
-                    const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).x;
+                    const float alpha = (1.0 - mat.params[3].x) * textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
                     if (alpha < 0.5) {
                         ro += (inter.t + 0.0005) * shadow_ray_ws.xyz;
                         inter.mask = 0;

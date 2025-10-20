@@ -5,9 +5,9 @@
 #endif
 
 #include "_vs_common.glsl"
+#include "texturing_common.glsl"
 #include "vegetation_common.glsl"
 #include "_vs_instance_index_emu.glsl"
-#include "texturing_common.glsl"
 
 #pragma multi_compile _ VEGETATION
 #pragma multi_compile _ NO_BINDLESS
@@ -79,7 +79,7 @@ void main() {
     const TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
     const TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);
 #endif // !NO_BINDLESS
-    const HierarchyData hdata = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
+    const HierarchyData hdata = FetchHierarchyData(g_pp_pos_tex, g_pp_dir_tex, pp_vtx_uvs);
 
     const vec3 obj_pos_ws = model_matrix[3].xyz;
     const vec4 wind_scroll = g_shrd_data.wind_scroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);

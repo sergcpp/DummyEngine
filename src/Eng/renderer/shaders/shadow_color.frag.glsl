@@ -31,12 +31,12 @@ layout(location = 4) in flat float g_alpha;
 layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    const float alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).x;
+    const float alpha = g_alpha * textureBindless(g_alpha_tex, g_vtx_uvs).x;
 #ifdef ALPHATEST
     if (alpha < 0.5) {
         discard;
     }
 #endif
-    const vec3 base_color = g_base_color.xyz * YCoCg_to_RGB(texture(SAMPLER2D(g_base_tex), g_vtx_uvs));
+    const vec3 base_color = g_base_color.xyz * YCoCg_to_RGB(textureBindless(g_base_tex, g_vtx_uvs));
     g_out_color = vec4(mix(vec3(1.0), 0.8 * g_base_color.w * base_color, alpha), gl_FragCoord.z);
 }

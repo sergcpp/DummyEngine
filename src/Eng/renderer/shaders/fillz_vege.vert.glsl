@@ -78,7 +78,7 @@ void main() {
     const TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
     const TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);
 #endif // !NO_BINDLESS
-    const HierarchyData hdata_curr = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
+    const HierarchyData hdata_curr = FetchHierarchyData(g_pp_pos_tex, g_pp_dir_tex, pp_vtx_uvs);
 
     const vec3 obj_pos_ws = model_matrix_curr[3].xyz;
     const vec4 wind_scroll = g_shrd_data.wind_scroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
@@ -102,7 +102,7 @@ void main() {
 #ifdef OUTPUT_VELOCITY
     const vec4 wind_scroll_prev = g_shrd_data.wind_scroll_prev + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
 #ifdef MOVING
-    const HierarchyData hdata_prev = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
+    const HierarchyData hdata_prev = FetchHierarchyData(g_pp_pos_tex, g_pp_dir_tex, pp_vtx_uvs);
 #else // MOVING
     const HierarchyData hdata_prev = hdata_curr;
 #endif // MOVING

@@ -126,7 +126,7 @@ void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_code, const eShaderTy
         new_item.loc = desc.binding;
         new_item.set = desc.set;
         new_item.count = desc.count;
-        if (desc.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER && desc.count == 1 &&
+        if (desc.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE && desc.count == 1 &&
             (desc.type_description->op == SpvOpTypeRuntimeArray || desc.type_description->op == SpvOpTypeArray)) {
             new_item.unbounded_array = true;
         } else {

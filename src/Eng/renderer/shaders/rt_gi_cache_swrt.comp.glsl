@@ -227,7 +227,7 @@ void main() {
 
                         const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
                 #if defined(BINDLESS_TEXTURES)
-                        const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).x;
+                        const float alpha = textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
                         if (alpha < 0.5) {
                             ro += (inter.t + 0.0005) * L;
                             inter.mask = 0;
@@ -244,7 +244,7 @@ void main() {
                     out_dir = L;
                     out_color = litem.col_and_type.xyz / (ls_pdf * M_PI);
             #if defined(BINDLESS_TEXTURES)
-                    out_color *= SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0)));
+                    out_color *= SRGBToLinear(YCoCg_to_RGB(textureLodBindless(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w)), luv, 0.0)));
             #endif
             #if defined(STOCH_LIGHTS_MIS)
                     const float bsdf_pdf = 1.0 / (2.0 * M_PI);
@@ -312,7 +312,7 @@ void main() {
 
             const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
     #if defined(BINDLESS_TEXTURES)
-            const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).x;
+            const float alpha = textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
             if (alpha < 0.5) {
                 ro += (inter.t + 0.0005) * probe_ray_dir;
                 inter.mask = 0;
@@ -320,7 +320,7 @@ void main() {
                 continue;
             }
             if (mat.params[2].y > 0) {
-                const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, 0.0)));
+                const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, 0.0)));
                 throughput = min(throughput, mix(vec3(1.0), 0.8 * mat.params[2].y * base_color, alpha));
                 if (dot(throughput, vec3(0.333)) > 0.1) {
                     ro += (inter.t + 0.0005) * probe_ray_dir;
@@ -417,7 +417,7 @@ void main() {
                                                       texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3))));
         const vec3 direction_obj_space = (inv_transform * vec4(probe_ray_dir, 0.0)).xyz;
 
-        const vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), 0).xy;
+        const vec2 tex_res = textureSizeBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]), 0).xy;
         const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
         vec3 tri_normal = cross(p1.xyz - p0.xyz, p2.xyz - p0.xyz);
@@ -434,7 +434,7 @@ void main() {
         tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
         tex_lod -= log2(abs(dot(direction_obj_space, tri_normal)));
         tex_lod += TEX_LOD_OFFSET;
-        vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, tex_lod)));
+        vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, tex_lod)));
 #else
         // TODO: Fallback to shared texture atlas
         vec3 base_color = vec3(1.0);
@@ -456,7 +456,7 @@ void main() {
         }
 
 #if defined(BINDLESS_TEXTURES)
-        const float roughness = mat.params[0].w * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ROUGHNESS])), uv, tex_lod).x;
+        const float roughness = mat.params[0].w * textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_ROUGHNESS]), uv, tex_lod).x;
 #else
         const float roughness = mat.params[0].w;
 #endif
@@ -465,7 +465,7 @@ void main() {
         const float specular = mat.params[1].z;
         const float specular_tint = mat.params[1].w;
 #if defined(BINDLESS_TEXTURES)
-        const float metallic = mat.params[2].x * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_METALLIC])), uv, tex_lod).x;
+        const float metallic = mat.params[2].x * textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_METALLIC]), uv, tex_lod).x;
 #else
         const float metallic = mat.params[2].x;
 #endif
@@ -476,7 +476,7 @@ void main() {
 #if defined(STOCH_LIGHTS_MIS)
         if (transmission < 0.001) {
 #if defined(BINDLESS_TEXTURES)
-            emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_EMISSION])), uv, tex_lod)));
+            emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
 #else
             emission_color = mat.params[3].yzw;
 #endif

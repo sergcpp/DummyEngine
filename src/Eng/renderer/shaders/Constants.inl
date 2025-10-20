@@ -44,7 +44,8 @@ const int BIND_ENV_TEX = 21;
 const int BIND_NOISE_TEX = 22;
 
 const int BIND_SET_SCENETEXTURES = 1;
-const int BIND_BINDLESS_TEX = 0; // shares slot with material slot 0
+const int BIND_BINDLESS_TEX = 0;   // shares slot with material slot 0
+const int BIND_SCENE_SAMPLERS = 1; // shares slot with material slot 1
 
 const int BIND_BASE0_TEX = 0;
 const int BIND_BASE1_TEX = 1;

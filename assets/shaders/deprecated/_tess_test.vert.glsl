@@ -29,7 +29,7 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
 
 #if defined(GL_ARB_bindless_texture)
 layout(binding = BIND_BINDLESS_TEX) readonly buffer TextureHandles {
-    uvec2 texture_handles[];
+    uvec2 g_texture_handles[];
 };
 #endif
 
@@ -77,9 +77,9 @@ void main() {
 
 #if defined(GL_ARB_bindless_texture)
     material_data_t mat = g_materials[instance.y];
-    g_diff_tex = texture_handles[mat.texture_indices[MAT_TEX_BASECOLOR]];
-    g_norm_tex = texture_handles[mat.texture_indices[MAT_TEX_NORMALMAP]];
-    g_spec_tex = texture_handles[mat.texture_indices[MAT_TEX_ROUGHNESS]];
-    g_bump_tex = texture_handles[mat.texture_indices[MAT_TEX_METALLIC]];
+    g_diff_tex = g_texture_handles[mat.texture_indices[MAT_TEX_BASECOLOR]];
+    g_norm_tex = g_texture_handles[mat.texture_indices[MAT_TEX_NORMALMAP]];
+    g_spec_tex = g_texture_handles[mat.texture_indices[MAT_TEX_ROUGHNESS]];
+    g_bump_tex = g_texture_handles[mat.texture_indices[MAT_TEX_METALLIC]];
 #endif // GL_ARB_bindless_texture
 }

@@ -84,8 +84,8 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
             for (; j < int(mat->textures.size()); ++j) {
                 material_data[rel_i].texture_indices[j] = i * MAX_TEX_PER_MATERIAL + j;
                 if (texture_data) {
-                    const GLuint64 handle =
-                        glGetTextureSamplerHandleARB(mat->textures[j]->id(), mat->samplers[j]->id());
+                    const GLuint64 handle = glGetTextureSamplerHandleARB(
+                        mat->textures[j]->id(), scene_data_.persistent_data.trilinear_sampler->id());
                     if (!glIsTextureHandleResidentARB(handle)) {
                         glMakeTextureHandleResidentARB(handle);
                     }

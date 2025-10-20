@@ -60,30 +60,30 @@ void main() {
     uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 albedo_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), aVertexUVAndCurvature_.xy)));
+    vec3 albedo_color = SRGBToLinear(YCoCg_to_RGB(textureBindless(g_diff_tex, aVertexUVAndCurvature_.xy)));
 
     vec2 duv_dx = dFdx(aVertexUVAndCurvature_.xy), duv_dy = dFdy(aVertexUVAndCurvature_.xy);
-    vec3 normal_color = texture(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy).wyz;
-    vec3 normal_detail_color = texture(SAMPLER2D(g_norm_detail_tex), aVertexUVAndCurvature_.xy * material_params.w).wyz;
+    vec3 normal_color = textureBindless(g_norm_tex, aVertexUVAndCurvature_.xy).wyz;
+    vec3 normal_detail_color = textureBindless(g_norm_detail_tex, aVertexUVAndCurvature_.xy * material_params.w).wyz;
 
     normal_color.xy += normal_detail_color.xy;
 
     const vec3 lod_offsets = { 3.0, 2.0, 1.0 };
     const vec3 der_muls = material_params.xyz;//{ 8.0, 4.0, 2.0 };
 
-    vec3 normal_color_r = textureGrad(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy,
-                                      der_muls.x * dFdx(aVertexUVAndCurvature_.xy), der_muls.x * dFdy(aVertexUVAndCurvature_.xy)).wyz;
-    vec3 normal_color_g = textureGrad(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy,
-                                      der_muls.y * dFdx(aVertexUVAndCurvature_.xy), der_muls.y * dFdy(aVertexUVAndCurvature_.xy)).wyz;
-    vec3 normal_color_b = textureGrad(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy,
-                                      der_muls.z * dFdx(aVertexUVAndCurvature_.xy), der_muls.z * dFdy(aVertexUVAndCurvature_.xy)).wyz;
+    vec3 normal_color_r = textureGradBindless(g_norm_tex, aVertexUVAndCurvature_.xy,
+                                              der_muls.x * dFdx(aVertexUVAndCurvature_.xy), der_muls.x * dFdy(aVertexUVAndCurvature_.xy)).wyz;
+    vec3 normal_color_g = textureGradBindless(g_norm_tex, aVertexUVAndCurvature_.xy,
+                                              der_muls.y * dFdx(aVertexUVAndCurvature_.xy), der_muls.y * dFdy(aVertexUVAndCurvature_.xy)).wyz;
+    vec3 normal_color_b = textureGradBindless(g_norm_tex, aVertexUVAndCurvature_.xy,
+                                              der_muls.z * dFdx(aVertexUVAndCurvature_.xy), der_muls.z * dFdy(aVertexUVAndCurvature_.xy)).wyz;
 
-    /*float lod = textureQueryLod(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy).x;
-    vec3 normal_color_r = textureLod(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy, lod + lod_offsets.x).wyz;
-    vec3 normal_color_g = textureLod(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy, lod + lod_offsets.y).wyz;
-    vec3 normal_color_b = textureLod(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy, lod + lod_offsets.z).wyz;*/
+    /*float lod = textureQueryLodBindless(g_norm_tex, aVertexUVAndCurvature_.xy).x;
+    vec3 normal_color_r = textureLodBindless(g_norm_tex, aVertexUVAndCurvature_.xy, lod + lod_offsets.x).wyz;
+    vec3 normal_color_g = textureLodBindless(g_norm_tex, aVertexUVAndCurvature_.xy, lod + lod_offsets.y).wyz;
+    vec3 normal_color_b = textureLodBindless(g_norm_tex, aVertexUVAndCurvature_.xy, lod + lod_offsets.z).wyz;*/
 
-    vec4 spec_color = texture(SAMPLER2D(g_spec_tex), aVertexUVAndCurvature_.xy);
+    vec4 spec_color = textureBindless(g_spec_tex, aVertexUVAndCurvature_.xy);
 
     vec3 normal = vec3(normal_color.xy - vec2(1.0), normal_color.z * 2.0 - 1.0);//normal_color * 2.0 - 1.0;
     normal = normalize(mat3(g_vtx_tangent, cross(g_vtx_normal, g_vtx_tangent), g_vtx_normal) * normal);
@@ -138,16 +138,16 @@ void main() {
 
 #if 0
             float _dot1 = dot(L, normal);
-            vec3 l_diffuse = texture(SAMPLER2D(g_sss_tex), vec2(_dot1 * 0.5 + 0.5, curvature)).xyz;
+            vec3 l_diffuse = textureBindless(g_sss_tex, vec2(_dot1 * 0.5 + 0.5, curvature)).xyz;
 
             additional_light += col_and_index.xyz * atten * l_diffuse * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
 #else
             float _dot_r = dot(L, normal_r);
             float _dot_g = dot(L, normal_g);
             float _dot_b = dot(L, normal_b);
-            float l_diffuse_r = texture(SAMPLER2D(g_sss_tex), vec2(_dot_r * 0.5 + 0.5, curvature)).x;
-            float l_diffuse_g = texture(SAMPLER2D(g_sss_tex), vec2(_dot_g * 0.5 + 0.5, curvature)).y;
-            float l_diffuse_b = texture(SAMPLER2D(g_sss_tex), vec2(_dot_b * 0.5 + 0.5, curvature)).z;
+            float l_diffuse_r = textureBindless(g_sss_tex, vec2(_dot_r * 0.5 + 0.5, curvature)).x;
+            float l_diffuse_g = textureBindless(g_sss_tex, vec2(_dot_g * 0.5 + 0.5, curvature)).y;
+            float l_diffuse_b = textureBindless(g_sss_tex, vec2(_dot_b * 0.5 + 0.5, curvature)).z;
 
             additional_light += col_and_index.xyz * atten * vec3(l_diffuse_r, l_diffuse_g, l_diffuse_b) * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
 #endif
@@ -198,7 +198,7 @@ void main() {
         visibility = GetSunVisibility(lin_depth, g_shadow_tex, g_vtx_sh_uvs);
     }
 
-    vec3 sun_diffuse = texture(SAMPLER2D(g_sss_tex), vec2(N_dot_L * 0.5 + 0.5, curvature)).xyz;
+    vec3 sun_diffuse = textureBindless(g_sss_tex, vec2(N_dot_L * 0.5 + 0.5, curvature)).xyz;
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) * g_shrd_data.ren_res.zw;
     float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).x;

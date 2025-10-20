@@ -63,14 +63,15 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
 
     const int materials_per_descriptor = int(api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL);
 
-    if (pers_data.textures_descr_pool->descr_count(Ren::eDescrType::CombinedImageSampler) < max_tex_count) {
+    if (pers_data.textures_descr_pool->descr_count(Ren::eDescrType::SampledImage) < max_tex_count) {
         assert(materials_per_descriptor > 0);
         const int needed_descriptors_count =
             std::max(1, int(max_mat_count + materials_per_descriptor - 1) / materials_per_descriptor);
 
         Ren::DescrSizes descr_sizes;
-        descr_sizes.img_sampler_count =
+        descr_sizes.img_count =
             Ren::MaxFramesInFlight * needed_descriptors_count * api_ctx->max_combined_image_samplers;
+        descr_sizes.sampler_count = Ren::MaxFramesInFlight * needed_descriptors_count;
         [[maybe_unused]] bool res = pers_data.textures_descr_pool->Init(
             descr_sizes, Ren::MaxFramesInFlight * needed_descriptors_count /* sets_count */);
         if (ren_ctx_.capabilities.hwrt) {
@@ -91,22 +92,28 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
         assert(res);
 
         if (!pers_data.textures_descr_layout) {
-            VkDescriptorSetLayoutBinding textures_binding = {};
-            textures_binding.binding = BIND_BINDLESS_TEX;
-            textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            textures_binding.descriptorCount = api_ctx->max_combined_image_samplers;
-            textures_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+            VkDescriptorSetLayoutBinding bindings[2] = {};
+
+            bindings[0].binding = BIND_BINDLESS_TEX;
+            bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            bindings[0].descriptorCount = api_ctx->max_combined_image_samplers;
+            bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            bindings[1].binding = BIND_SCENE_SAMPLERS;
+            bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            bindings[1].descriptorCount = 1;
+            bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
             VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-            layout_info.bindingCount = 1;
-            layout_info.pBindings = &textures_binding;
+            layout_info.bindingCount = std::size(bindings);
+            layout_info.pBindings = &bindings[0];
 
-            VkDescriptorBindingFlagsEXT bind_flag = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT;
+            const VkDescriptorBindingFlagsEXT bind_flags[2] = {VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT, 0};
 
             VkDescriptorSetLayoutBindingFlagsCreateInfoEXT extended_info = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT};
-            extended_info.bindingCount = 1u;
-            extended_info.pBindingFlags = &bind_flag;
+            extended_info.bindingCount = std::size(bindings);
+            extended_info.pBindingFlags = &bind_flags[0];
             layout_info.pNext = &extended_info;
 
             const VkResult _res = api_ctx->vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
@@ -115,22 +122,28 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
         }
 
         if (ren_ctx_.capabilities.hwrt && !pers_data.rt_textures_descr_layout) {
-            VkDescriptorSetLayoutBinding textures_binding = {};
-            textures_binding.binding = BIND_BINDLESS_TEX;
-            textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            textures_binding.descriptorCount = api_ctx->max_combined_image_samplers;
-            textures_binding.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+            VkDescriptorSetLayoutBinding bindings[2] = {};
+
+            bindings[0].binding = BIND_BINDLESS_TEX;
+            bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            bindings[0].descriptorCount = api_ctx->max_combined_image_samplers;
+            bindings[0].stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+
+            bindings[1].binding = BIND_SCENE_SAMPLERS;
+            bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            bindings[1].descriptorCount = 1;
+            bindings[1].stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
 
             VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-            layout_info.bindingCount = 1;
-            layout_info.pBindings = &textures_binding;
+            layout_info.bindingCount = std::size(bindings);
+            layout_info.pBindings = &bindings[0];
 
-            VkDescriptorBindingFlagsEXT bind_flag = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT;
+            const VkDescriptorBindingFlagsEXT bind_flags[2] = {VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT, 0};
 
             VkDescriptorSetLayoutBindingFlagsCreateInfoEXT extended_info = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT};
-            extended_info.bindingCount = 1u;
-            extended_info.pBindingFlags = &bind_flag;
+            extended_info.bindingCount = std::size(bindings);
+            extended_info.pBindingFlags = &bind_flags[0];
             layout_info.pNext = &extended_info;
 
             const VkResult _res = api_ctx->vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
@@ -139,22 +152,28 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
         }
 
         if ((ren_ctx_.capabilities.hwrt || ren_ctx_.capabilities.swrt) && !pers_data.rt_inline_textures_descr_layout) {
-            VkDescriptorSetLayoutBinding textures_binding = {};
-            textures_binding.binding = BIND_BINDLESS_TEX;
-            textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            textures_binding.descriptorCount = api_ctx->max_combined_image_samplers;
-            textures_binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+            VkDescriptorSetLayoutBinding bindings[2] = {};
+
+            bindings[0].binding = BIND_BINDLESS_TEX;
+            bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            bindings[0].descriptorCount = api_ctx->max_combined_image_samplers;
+            bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+            bindings[1].binding = BIND_SCENE_SAMPLERS;
+            bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            bindings[1].descriptorCount = 1;
+            bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
             VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-            layout_info.bindingCount = 1;
-            layout_info.pBindings = &textures_binding;
+            layout_info.bindingCount = std::size(bindings);
+            layout_info.pBindings = &bindings[0];
 
-            VkDescriptorBindingFlagsEXT bind_flag = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT;
+            const VkDescriptorBindingFlagsEXT bind_flags[2] = {VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT, 0};
 
             VkDescriptorSetLayoutBindingFlagsCreateInfoEXT extended_info = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT};
-            extended_info.bindingCount = 1u;
-            extended_info.pBindingFlags = &bind_flag;
+            extended_info.bindingCount = std::size(bindings);
+            extended_info.pBindingFlags = &bind_flags[0];
             layout_info.pNext = &extended_info;
 
             const VkResult _res = api_ctx->vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
@@ -162,19 +181,37 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
             assert(_res == VK_SUCCESS);
         }
 
+        VkDescriptorImageInfo sampler_info = {};
+        sampler_info.sampler = pers_data.trilinear_sampler->vk_handle();
+
+        VkWriteDescriptorSet descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+        descr_write.dstBinding = BIND_SCENE_SAMPLERS;
+        descr_write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        descr_write.descriptorCount = 1;
+        descr_write.pImageInfo = &sampler_info;
+
         for (int j = 0; j < Ren::MaxFramesInFlight; ++j) {
             for (int k = 0; k < needed_descriptors_count; ++k) {
                 pers_data.textures_descr_sets[j].push_back(
                     pers_data.textures_descr_pool->Alloc(pers_data.textures_descr_layout));
                 assert(pers_data.textures_descr_sets[j].back());
+
+                descr_write.dstSet = pers_data.textures_descr_sets[j].back();
+                api_ctx->vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
             }
             if (ren_ctx_.capabilities.hwrt) {
                 pers_data.rt_textures_descr_sets[j] =
                     pers_data.rt_textures_descr_pool->Alloc(pers_data.rt_textures_descr_layout);
+
+                descr_write.dstSet = pers_data.rt_textures_descr_sets[j];
+                api_ctx->vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
             }
             if (ren_ctx_.capabilities.hwrt || ren_ctx_.capabilities.swrt) {
                 pers_data.rt_inline_textures_descr_sets[j] =
                     pers_data.rt_inline_textures_descr_pool->Alloc(pers_data.rt_inline_textures_descr_layout);
+
+                descr_write.dstSet = pers_data.rt_inline_textures_descr_sets[j];
+                api_ctx->vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
             }
         }
     }
@@ -269,12 +306,9 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
             descr_write.dstSet = scene_data_.persistent_data.textures_descr_sets[ren_ctx_.backend_frame()][set_index];
             descr_write.dstBinding = BIND_BINDLESS_TEX;
             descr_write.dstArrayElement = uint32_t(arr_offset * MAX_TEX_PER_MATERIAL);
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
             descr_write.descriptorCount = uint32_t(MAX_TEX_PER_MATERIAL);
-            descr_write.pBufferInfo = nullptr;
             descr_write.pImageInfo = img_infos.cdata() + rel_i * MAX_TEX_PER_MATERIAL;
-            descr_write.pTexelBufferView = nullptr;
-            descr_write.pNext = nullptr;
 
             // TODO: group this calls!!!
             api_ctx->vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);

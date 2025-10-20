@@ -59,9 +59,9 @@ void main() {
     uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                     bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 base_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), g_vtx_uvs.xy)));
-    vec3 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs.xy).wyz;
-    vec4 spec_color = texture(SAMPLER2D(g_spec_tex), g_vtx_uvs.xy);
+    vec3 base_color = SRGBToLinear(YCoCg_to_RGB(textureBindless(g_diff_tex, g_vtx_uvs.xy)));
+    vec3 norm_color = textureBindless(g_norm_tex, g_vtx_uvs.xy).wyz;
+    vec4 spec_color = textureBindless(g_spec_tex, g_vtx_uvs.xy);
 
     vec3 dp_dx = dFdx(g_vtx_pos);
     vec3 dp_dy = dFdy(g_vtx_pos);

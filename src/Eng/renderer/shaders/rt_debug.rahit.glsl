@@ -42,12 +42,12 @@ void main() {
     const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
 
     const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-    const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
+    const float alpha = (1.0 - mat.params[3].x) * textureLodBindless(mat.texture_indices[MAT_TEX_ALPHA], uv, 0.0).x;
     if (alpha < 0.5) {
         ignoreIntersectionEXT;
     }
     if (mat.params[2].y > 0) {
-        const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, 0.0)));
+        const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLodBindless(mat.texture_indices[MAT_TEX_BASECOLOR], uv, 0.0)));
         g_pld.throughput = min(g_pld.throughput, mix(vec3(1.0), 0.8 * mat.params[2].y * base_color, alpha));
         g_pld.throughput_dist = min(g_pld.throughput_dist, gl_HitTEXT);
         if (dot(g_pld.throughput, vec3(0.333)) > 0.1) {

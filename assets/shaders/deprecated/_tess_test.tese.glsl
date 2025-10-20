@@ -51,7 +51,7 @@ void main() {
     //float k = gl_TessLevelInner[0] / 64.0;
 
     //g_vtx_pos.y += 4.0 * sin(g_vtx_pos.x * 0.1);
-    g_tex_height = 0.5 * texture(SAMPLER2D(g_bump_tex), g_vtx_uvs).x * k;
+    g_tex_height = 0.5 * textureBindless(g_bump_tex, g_vtx_uvs).x * k;
     g_vtx_pos += 1.0 * 0.05 * normalize(g_vtx_normal) * g_tex_height * k;
 
     gl_Position = g_shrd_data.clip_from_world * vec4(g_vtx_pos, 1.0);

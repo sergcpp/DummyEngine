@@ -276,6 +276,14 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
         scene_data_.buffers.Insert("NdxBuf", api_ctx, Ren::eBufType::VertexIndices, 128, 4);
     scene_data_.persistent_data.indices_buf->AddBufferView(Ren::eTexFormat::R32UI);
 
+    Ren::SamplingParams sampling_params;
+    sampling_params.filter = Ren::eTexFilter::Trilinear;
+    sampling_params.wrap = Ren::eTexWrap::Repeat;
+    sampling_params.lod_bias.from_float(-1.0f);
+
+    Ren::eSamplerLoadStatus load_status;
+    scene_data_.persistent_data.trilinear_sampler = ren_ctx_.LoadSampler(sampling_params, &load_status);
+
     StartTextureLoaderThread();
 }
 

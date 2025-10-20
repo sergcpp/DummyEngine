@@ -253,12 +253,12 @@ void main() {
                     const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
 
                     const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-                    const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
+                    const float alpha = (1.0 - mat.params[3].x) * textureLodBindless(mat.texture_indices[MAT_TEX_ALPHA], uv, 0.0).x;
                     if (alpha < 0.5) {
                         continue;
                     }
                     if (mat.params[2].y > 0) {
-                        const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, 0.0)));
+                        const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, 0.0)));
                         throughput = min(throughput, mix(vec3(1.0), 0.8 * mat.params[2].y * base_color, alpha));
                         if (dot(throughput, vec3(0.333)) > 0.1) {
                             continue;
@@ -332,7 +332,7 @@ void main() {
 
             const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
 
-            const vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), 0).xy;
+            const vec2 tex_res = textureSizeBindless(mat.texture_indices[MAT_TEX_BASECOLOR], 0).xy;
             const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
             vec3 tri_normal = cross(p1 - p0, p2 - p0);
@@ -350,7 +350,7 @@ void main() {
             tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
             tex_lod -= log2(abs(dot(refl_ray_ws, tri_normal)));
             tex_lod += mix(TEX_LOD_OFFSET_MIN, TEX_LOD_OFFSET_MAX, first_roughness);
-            const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, tex_lod)));
+            const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLodBindless(mat.texture_indices[MAT_TEX_BASECOLOR], uv, tex_lod)));
 
             const vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x),
                                       unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
@@ -376,18 +376,18 @@ void main() {
                 tint_color = base_color / base_color_lum;
             }
 
-            const float roughness = mat.params[0].w * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ROUGHNESS]), uv, tex_lod).x;
+            const float roughness = mat.params[0].w * textureLodBindless(mat.texture_indices[MAT_TEX_ROUGHNESS], uv, tex_lod).x;
             const float sheen = mat.params[1].x;
             const float sheen_tint = mat.params[1].y;
             const float specular = mat.params[1].z;
             const float specular_tint = mat.params[1].w;
-            const float metallic = mat.params[2].x * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_METALLIC]), uv, tex_lod).x;
+            const float metallic = mat.params[2].x * textureLodBindless(mat.texture_indices[MAT_TEX_METALLIC], uv, tex_lod).x;
             const float transmission = mat.params[2].y;
             const float clearcoat = mat.params[2].z;
             const float clearcoat_roughness = mat.params[2].w;
             vec3 emission_color = vec3(0.0);
             if (transmission < 0.001) {
-                emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
+                emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLodBindless(mat.texture_indices[MAT_TEX_EMISSION], uv, tex_lod)));
             }
 
             vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);

@@ -54,8 +54,8 @@ void main() {
     float transp_z =
         2.0 * (log(lin_depth) - g_shrd_data.transp_params_and_time[0]) / g_shrd_data.transp_params_and_time[1] - 1.0;
 
-    vec3 albedo_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), g_vtx_uvs)));
-    float mask_value = texture(SAMPLER2D(g_mask_tex), g_vtx_uvs).x;
+    vec3 albedo_color = SRGBToLinear(YCoCg_to_RGB(textureBindless(g_diff_tex, g_vtx_uvs)));
+    float mask_value = textureBindless(g_mask_tex, g_vtx_uvs).x;
 
     float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
@@ -69,8 +69,8 @@ void main() {
     uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                     bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 normal_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).wyz;
-    vec4 specular_color = texture(SAMPLER2D(g_spec_tex), g_vtx_uvs);
+    vec3 normal_color = textureBindless(g_norm_tex, g_vtx_uvs).wyz;
+    vec4 specular_color = textureBindless(g_spec_tex, g_vtx_uvs);
 
     vec3 dp_dx = dFdx(g_vtx_pos);
     vec3 dp_dy = dFdy(g_vtx_pos);

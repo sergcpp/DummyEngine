@@ -181,7 +181,7 @@ void main() {
     const vec3 lp = p1 * (1.0 - r1) + r1 * (p2 * (1.0 - r2) + p3 * r2);
 
 #if defined(BINDLESS_TEXTURES)
-    litem.col_and_type.xyz *= SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0)));
+    litem.col_and_type.xyz *= SRGBToLinear(YCoCg_to_RGB(textureLodBindless(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w)), luv, 0.0)));
 #endif
 
     float ls_dist;
@@ -244,7 +244,7 @@ void main() {
                 const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
 
                 const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-                const float alpha = textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
+                const float alpha = textureLodBindless(mat.texture_indices[MAT_TEX_ALPHA], uv, 0.0).x;
                 if (alpha < 0.5) {
                     continue;
                 }
@@ -307,7 +307,7 @@ void main() {
 
                 const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
     #if defined(BINDLESS_TEXTURES)
-                const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).x;
+                const float alpha = textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
                 if (alpha < 0.5) {
                     ro += (inter.t + 0.0005) * L;
                     inter.mask = 0;
