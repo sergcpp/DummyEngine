@@ -1434,44 +1434,54 @@ void Eng::SceneManager::RebuildLightTree() {
         }
 
         // Propagate flux and cone up the hierarchy
-        std::vector<uint32_t> to_process;
-        to_process.reserve(light_nodes.size());
-        to_process.insert(end(to_process), begin(leaf_indices), end(leaf_indices));
-        for (uint32_t i = 0; i < uint32_t(to_process.size()); ++i) {
-            const uint32_t n = to_process[i];
-            const uint32_t parent = parent_indices[n];
-            if (parent == 0xffffffff) {
-                continue;
-            }
-
-            light_nodes[parent].flux += light_nodes[n].flux;
-            if (light_nodes[parent].axis[0] == 0.0f && light_nodes[parent].axis[1] == 0.0f &&
-                light_nodes[parent].axis[2] == 0.0f) {
-                light_nodes[parent].axis = light_nodes[n].axis;
-                light_nodes[parent].omega_n = light_nodes[n].omega_n;
-            } else {
-                Ren::Vec3f axis1 = light_nodes[parent].axis, axis2 = light_nodes[n].axis;
-                const float angle_between = acosf(Ren::Clamp(Dot(axis1, axis2), -1.0f, 1.0f));
-
-                axis1 += axis2;
-                const float axis_length = Length(axis1);
-                if (axis_length != 0.0f) {
-                    axis1 /= axis_length;
-                } else {
-                    axis1 = Ren::Vec3f{0.0f, 1.0f, 0.0f};
+        std::vector<bool> processed(light_nodes.size(), false);
+        std::vector<uint32_t> to_process = leaf_indices;
+        while (!to_process.empty()) {
+            uint32_t next_count = 0;
+            for (uint32_t i = 0; i < uint32_t(to_process.size()); ++i) {
+                const uint32_t n = to_process[i];
+                const uint32_t parent = parent_indices[n];
+                if (parent == 0xffffffff) {
+                    continue;
                 }
 
-                light_nodes[parent].axis = axis1;
+                assert(!processed[n]);
+                processed[n] = true;
 
-                light_nodes[parent].omega_n =
-                    fminf(0.5f * (light_nodes[parent].omega_n +
-                                  fmaxf(light_nodes[parent].omega_n, angle_between + light_nodes[n].omega_n)),
-                          Ren::Pi<float>());
+                light_nodes[parent].flux += light_nodes[n].flux;
+                if (light_nodes[parent].axis[0] == 0.0f && light_nodes[parent].axis[1] == 0.0f &&
+                    light_nodes[parent].axis[2] == 0.0f) {
+                    light_nodes[parent].axis = light_nodes[n].axis;
+                    light_nodes[parent].omega_n = light_nodes[n].omega_n;
+                } else {
+                    Ren::Vec3f axis1 = light_nodes[parent].axis, axis2 = light_nodes[n].axis;
+                    const float angle_between = acosf(Ren::Clamp(Dot(axis1, axis2), -1.0f, 1.0f));
+
+                    axis1 += axis2;
+                    const float axis_length = Length(axis1);
+                    if (axis_length != 0.0f) {
+                        axis1 /= axis_length;
+                    } else {
+                        axis1 = Ren::Vec3f{0.0f, 1.0f, 0.0f};
+                    }
+
+                    light_nodes[parent].axis = axis1;
+
+                    light_nodes[parent].omega_n =
+                        fminf(0.5f * (light_nodes[parent].omega_n +
+                                      fmaxf(light_nodes[parent].omega_n, angle_between + light_nodes[n].omega_n)),
+                              Ren::Pi<float>());
+                }
+                light_nodes[parent].omega_e = fmaxf(light_nodes[parent].omega_e, light_nodes[n].omega_e);
+
+                const uint32_t left_child = light_nodes[parent].left_child & LEFT_CHILD_BITS,
+                               right_child = light_nodes[parent].right_child & RIGHT_CHILD_BITS;
+                if (processed[left_child] && processed[right_child]) {
+                    assert(next_count <= i);
+                    to_process[next_count++] = parent;
+                }
             }
-            light_nodes[parent].omega_e = fmaxf(light_nodes[parent].omega_e, light_nodes[n].omega_e);
-            if ((light_nodes[parent].left_child & LEFT_CHILD_BITS) == n) {
-                to_process.push_back(parent);
-            }
+            to_process.resize(next_count);
         }
 
         // Remove indices indirection
