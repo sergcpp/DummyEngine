@@ -902,10 +902,14 @@ void Eng::SceneManager::Alloc_TLAS() {
 void Eng::SceneManager::Release_TLAS(const bool immediate) {
     if (immediate) {
         for (auto &buf : scene_data_.persistent_data.rt_tlas_buf) {
-            buf->FreeImmediate();
+            if (buf) {
+                buf->FreeImmediate();
+            }
         }
         for (auto &tlas : scene_data_.persistent_data.rt_tlas) {
-            tlas->FreeImmediate();
+            if (tlas) {
+                tlas->FreeImmediate();
+            }
         }
     }
     std::fill(std::begin(scene_data_.persistent_data.rt_tlas_buf), std::end(scene_data_.persistent_data.rt_tlas_buf),
