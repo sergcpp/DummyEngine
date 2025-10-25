@@ -13,7 +13,7 @@
 #define _mm512_movemask_epi32(a)                                                                                       \
     int(_mm512_cmpneq_epi32_mask(_mm512_setzero_si512(), _mm512_and_si512(_mm512_set1_epi32(0x80000000U), a)))
 #define _mm512_movemask_epi8(a)                                                                                        \
-    int(_mm512_cmpneq_epi8_mask(_mm512_setzero_si512(), _mm512_and_si512(a, _mm512_set1_epi8(0x80))))
+    int(_mm512_cmpneq_epi8_mask(_mm512_setzero_si512(), _mm512_and_si512(a, _mm512_set1_epi8((char)0x80))))
 
 // https://adms-conf.org/2020-camera-ready/ADMS20_05.pdf
 #define _mm512_slli_si512(x, k) _mm512_alignr_epi32(x, _mm512_setzero_si512(), 16 - k)
