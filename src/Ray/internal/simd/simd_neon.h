@@ -99,9 +99,7 @@ template <> class fixed_size_simd<float, 4> {
         return *this;
     }
 
-    force_inline fixed_size_simd<float, 4> operator-() const {
-        return vnegq_f32(vec_);
-    }
+    force_inline fixed_size_simd<float, 4> operator-() const { return vnegq_f32(vec_); }
 
     force_inline fixed_size_simd<float, 4> vectorcall operator<(const fixed_size_simd<float, 4> rhs) const {
         const uint32x4_t res = vcltq_f32(vec_, rhs.vec_);
@@ -550,6 +548,22 @@ template <> class fixed_size_simd<int, 4> {
         return vgetq_lane_u8(paired, 0) | (vgetq_lane_u8(paired, 8) << 2);
     }
 
+    int movemask8() {
+        // Taken from sse2neon
+        uint8x16_t input = vreinterpretq_u8_s32(vec_);
+        uint8x16_t msbs = vshrq_n_u8(input, 7);
+        uint64x2_t bits = vreinterpretq_u64_u8(msbs);
+        bits = vsraq_n_u64(bits, bits, 7);
+        bits = vsraq_n_u64(bits, bits, 14);
+        bits = vsraq_n_u64(bits, bits, 28);
+        uint8x16_t output = vreinterpretq_u8_u64(bits);
+
+        int low = vgetq_lane_u8(output, 0);
+        int high = vgetq_lane_u8(output, 8);
+
+        return (high << 8) | low;
+    }
+
     force_inline bool all_zeros() const {
 #if defined(__aarch64__) || defined(_M_ARM64)
         return vmaxvq_u32(vreinterpretq_u32_s32(vec_)) == 0;
@@ -588,6 +602,13 @@ template <> class fixed_size_simd<int, 4> {
                                                                  const fixed_size_simd<int, 4> _min,
                                                                  const fixed_size_simd<int, 4> _max) {
         return max(_min, min(v1, _max));
+    }
+
+    friend force_inline fixed_size_simd<int, 4> vectorcall cmpeq8(const fixed_size_simd<int, 4> &v1,
+                                                                  const fixed_size_simd<int, 4> &v2) {
+        fixed_size_simd<int, 4> ret;
+        ret.vec_ = vreinterpretq_s32_u8(vceqq_s8(vreinterpretq_s8_s32(v1.vec_), vreinterpretq_s8_s32(v2.vec_)));
+        return ret;
     }
 
     force_inline static fixed_size_simd<int, 4> vectorcall and_not(const fixed_size_simd<int, 4> v1,
@@ -651,7 +672,6 @@ template <> class fixed_size_simd<int, 4> {
         UNROLLED_FOR(i, 4, { ret.comp_[i] = v1 / v2.comp_[i]; })
         return ret;
     }
-
 
     friend fixed_size_simd<int, 4> vectorcall operator>>(const fixed_size_simd<int, 4> v1,
                                                          const fixed_size_simd<int, 4> v2) {
@@ -847,13 +867,29 @@ template <> class fixed_size_simd<unsigned, 4> {
 
     force_inline int movemask() const {
         // Taken from sse2neon
-        uint32x4_t input = vreinterpretq_u32_s32(vec_);
+        uint32x4_t input = vec_;
         // Shift out everything but the sign bits with a 32-bit unsigned shift right.
         uint64x2_t high_bits = vreinterpretq_u64_u32(vshrq_n_u32(input, 31));
         // Merge the two pairs together with a 64-bit unsigned shift right + add.
         uint8x16_t paired = vreinterpretq_u8_u64(vsraq_n_u64(high_bits, high_bits, 31));
         // Extract the result.
         return vgetq_lane_u8(paired, 0) | (vgetq_lane_u8(paired, 8) << 2);
+    }
+
+    int movemask8() {
+        // Taken from sse2neon
+        uint8x16_t input = vreinterpretq_u8_s32(vec_);
+        uint8x16_t msbs = vshrq_n_u8(input, 7);
+        uint64x2_t bits = vreinterpretq_u64_u8(msbs);
+        bits = vsraq_n_u64(bits, bits, 7);
+        bits = vsraq_n_u64(bits, bits, 14);
+        bits = vsraq_n_u64(bits, bits, 28);
+        uint8x16_t output = vreinterpretq_u8_u64(bits);
+
+        int low = vgetq_lane_u8(output, 0);
+        int high = vgetq_lane_u8(output, 8);
+
+        return (high << 8) | low;
     }
 
     force_inline bool all_zeros() const {
@@ -894,6 +930,13 @@ template <> class fixed_size_simd<unsigned, 4> {
                                                                       const fixed_size_simd<unsigned, 4> _min,
                                                                       const fixed_size_simd<unsigned, 4> _max) {
         return max(_min, min(v1, _max));
+    }
+
+    friend force_inline fixed_size_simd<unsigned, 4> vectorcall cmpeq8(const fixed_size_simd<unsigned, 4> &v1,
+                                                                       const fixed_size_simd<unsigned, 4> &v2) {
+        fixed_size_simd<unsigned, 4> ret;
+        ret.vec_ = vreinterpretq_s32_u8(vceqq_s8(vreinterpretq_s8_u32(v1.vec_), vreinterpretq_s8_u32(v2.vec_)));
+        return ret;
     }
 
     force_inline static fixed_size_simd<unsigned, 4> vectorcall and_not(const fixed_size_simd<unsigned, 4> v1,

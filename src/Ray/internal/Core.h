@@ -100,10 +100,11 @@ static_assert(sizeof(bvh_node_t) == 32, "!");
 struct light_bvh_node_t : public bvh_node_t {
     float flux;
     float axis[3];
-    float omega_n; // cone angle enclosing light normals
-    float omega_e; // emission angle around each normal
+    float omega_n;    // cone angle enclosing light normals
+    float omega_e;    // emission angle around each normal
+    uint32_t bitmask; // contained light types
 };
-static_assert(sizeof(light_bvh_node_t) == 56, "!");
+static_assert(sizeof(light_bvh_node_t) == 60, "!");
 
 struct bvh2_node_t {
     float ch_data0[4];    // [ ch0.min.x, ch0.max.x, ch0.min.y, ch0.max.y ]
@@ -131,9 +132,8 @@ static_assert(sizeof(light_wbvh_node_t) == 320, "!");
 
 struct alignas(16) cwbvh_node_t {
     float bbox_min[3];
-    float _unused0;
     float bbox_max[3];
-    float _unused1;
+    uint8_t ch_bitmask[8];
     uint8_t ch_bbox_min[3][8];
     uint8_t ch_bbox_max[3][8];
     uint32_t child[8];

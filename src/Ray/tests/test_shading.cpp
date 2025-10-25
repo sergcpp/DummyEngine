@@ -1427,7 +1427,7 @@ void test_complex_mat5(const char *arch_list[], std::string_view preferred_devic
 
 void test_complex_mat5_emissive(const char *arch_list[], std::string_view preferred_device) {
     const int SampleCount = 78;
-    const int PixThres = 14650;
+    const int PixThres = 14450;
 
     Ray::principled_mat_desc_t metal_mat_desc;
     metal_mat_desc.base_texture = Ray::TextureHandle{0};
@@ -1445,7 +1445,7 @@ void test_complex_mat5_emissive(const char *arch_list[], std::string_view prefer
         "test_data/textures/gold-scuffed_roughness.tga", "test_data/textures/gold-scuffed_metallic.tga",
         "test_data/textures/Fence007A_2K_Opacity.tga"};
 
-    run_shading_test(arch_list, preferred_device, "complex_mat5_emissive", metal_mat_desc, SampleCount, 18.90, PixThres,
+    run_shading_test(arch_list, preferred_device, "complex_mat5_emissive", metal_mat_desc, SampleCount, 18.95, PixThres,
                      eDenoiseMethod::None, false, textures, eTestScene::Standard_NoLight);
 }
 

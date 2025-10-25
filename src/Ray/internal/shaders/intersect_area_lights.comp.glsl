@@ -89,6 +89,10 @@ void main() {
     g_stack[gl_LocalInvocationIndex][stack_size] = g_params.node_index;
     g_stack_factors[gl_LocalInvocationIndex][stack_size++] = 1.0;
 
+    // NOTE: triangle lights are processed separately
+    const uint LightTypesMask = (1u << LIGHT_TYPE_SPHERE) | (1u << LIGHT_TYPE_DIR) | (1u << LIGHT_TYPE_LINE) |
+                                (1u << LIGHT_TYPE_RECT) | (1u << LIGHT_TYPE_DISK) | (1u << LIGHT_TYPE_ENV);
+
     while (stack_size != 0) {
         uint cur = g_stack[gl_LocalInvocationIndex][--stack_size];
         float cur_factor = g_stack_factors[gl_LocalInvocationIndex][stack_size];
@@ -97,7 +101,7 @@ void main() {
             const light_cwbvh_node_t n = g_light_cwnodes[cur];
 
             float importance[8];
-            const float total_importance = calc_lnode_importance(n, ro, inv_d, neg_inv_do, inter.t, importance);
+            const float total_importance = calc_lnode_importance(n, ro, inv_d, neg_inv_do, inter.t, LightTypesMask, importance);
 
             // TODO: loop in morton order based on ray direction
             for (int j = 0; j < 8; ++j) {

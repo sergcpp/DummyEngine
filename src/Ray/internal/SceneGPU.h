@@ -1657,8 +1657,8 @@ inline void Ray::NS::Scene::Rebuild_SWRT_TLAS_nolock() {
 // #define DUMP_SKY_ENV
 #ifdef DUMP_SKY_ENV
 extern "C" {
-int SaveEXR(const float *data, int width, int height, int components, const int save_as_fp16,
-            const char *outfilename, const char **err);
+int SaveEXR(const float *data, int width, int height, int components, const int save_as_fp16, const char *outfilename,
+            const char **err);
 }
 #endif
 
@@ -2240,6 +2240,7 @@ inline void Ray::NS::Scene::RebuildLightTree_nolock() {
     struct additional_data_t {
         Ref::fvec4 axis;
         float flux, omega_n, omega_e;
+        uint32_t type;
     };
     aligned_vector<additional_data_t> additional_data;
     additional_data.reserve(lights_.size());
@@ -2379,7 +2380,7 @@ inline void Ray::NS::Scene::RebuildLightTree_nolock() {
         primitives.push_back({0, 0, 0, bbox_min, bbox_max});
 
         const float flux = lum * area;
-        additional_data.push_back({axis, flux, omega_n, omega_e});
+        additional_data.push_back({axis, flux, omega_n, omega_e, l.type});
     }
 
     li_indices_.Append(new_li_indices.data(), new_li_indices.size());
@@ -2410,6 +2411,7 @@ inline void Ray::NS::Scene::RebuildLightTree_nolock() {
             temp_lnodes[i].flux = additional_data[prim_index].flux;
             temp_lnodes[i].omega_n = additional_data[prim_index].omega_n;
             temp_lnodes[i].omega_e = additional_data[prim_index].omega_e;
+            temp_lnodes[i].bitmask = (1u << additional_data[prim_index].type);
         }
     }
 
@@ -2438,47 +2440,59 @@ inline void Ray::NS::Scene::RebuildLightTree_nolock() {
     }
 
     // Propagate flux and cone up the hierarchy
+    std::vector<bool> processed(temp_lnodes.size(), false);
     std::vector<uint32_t> to_process;
-    to_process.reserve(temp_lnodes.size());
     to_process.insert(end(to_process), begin(leaf_indices), end(leaf_indices));
-    for (uint32_t i = 0; i < uint32_t(to_process.size()); ++i) {
-        const uint32_t n = to_process[i];
-        const uint32_t parent = parent_indices[n];
-        if (parent == 0xffffffff) {
-            continue;
-        }
-
-        temp_lnodes[parent].flux += temp_lnodes[n].flux;
-        if (temp_lnodes[parent].axis[0] == 0.0f && temp_lnodes[parent].axis[1] == 0.0f &&
-            temp_lnodes[parent].axis[2] == 0.0f) {
-            memcpy(temp_lnodes[parent].axis, temp_lnodes[n].axis, 3 * sizeof(float));
-            temp_lnodes[parent].omega_n = temp_lnodes[n].omega_n;
-        } else {
-            auto axis1 = Ref::fvec4{temp_lnodes[parent].axis}, axis2 = Ref::fvec4{temp_lnodes[n].axis};
-            axis1.set<3>(0.0f);
-            axis2.set<3>(0.0f);
-
-            const float angle_between = acosf(clamp(dot(axis1, axis2), -1.0f, 1.0f));
-
-            axis1 += axis2;
-            const float axis_length = length(axis1);
-            if (axis_length != 0.0f) {
-                axis1 /= axis_length;
-            } else {
-                axis1 = Ref::fvec4{0.0f, 1.0f, 0.0f, 0.0f};
+    while (!to_process.empty()) {
+        uint32_t next_count = 0;
+        for (uint32_t i = 0; i < uint32_t(to_process.size()); ++i) {
+            const uint32_t n = to_process[i];
+            const uint32_t parent = parent_indices[n];
+            if (parent == 0xffffffff) {
+                continue;
             }
 
-            memcpy(temp_lnodes[parent].axis, value_ptr(axis1), 3 * sizeof(float));
+            assert(!processed[n]);
+            processed[n] = true;
 
-            temp_lnodes[parent].omega_n =
-                fminf(0.5f * (temp_lnodes[parent].omega_n +
-                              fmaxf(temp_lnodes[parent].omega_n, angle_between + temp_lnodes[n].omega_n)),
-                      PI);
+            temp_lnodes[parent].flux += temp_lnodes[n].flux;
+            temp_lnodes[parent].bitmask |= temp_lnodes[n].bitmask;
+            if (temp_lnodes[parent].axis[0] == 0.0f && temp_lnodes[parent].axis[1] == 0.0f &&
+                temp_lnodes[parent].axis[2] == 0.0f) {
+                memcpy(temp_lnodes[parent].axis, temp_lnodes[n].axis, 3 * sizeof(float));
+                temp_lnodes[parent].omega_n = temp_lnodes[n].omega_n;
+            } else {
+                auto axis1 = Ref::fvec4{temp_lnodes[parent].axis}, axis2 = Ref::fvec4{temp_lnodes[n].axis};
+                axis1.set<3>(0.0f);
+                axis2.set<3>(0.0f);
+
+                const float angle_between = acosf(clamp(dot(axis1, axis2), -1.0f, 1.0f));
+
+                axis1 += axis2;
+                const float axis_length = length(axis1);
+                if (axis_length != 0.0f) {
+                    axis1 /= axis_length;
+                } else {
+                    axis1 = Ref::fvec4{0.0f, 1.0f, 0.0f, 0.0f};
+                }
+
+                memcpy(temp_lnodes[parent].axis, value_ptr(axis1), 3 * sizeof(float));
+
+                temp_lnodes[parent].omega_n =
+                    fminf(0.5f * (temp_lnodes[parent].omega_n +
+                                  fmaxf(temp_lnodes[parent].omega_n, angle_between + temp_lnodes[n].omega_n)),
+                          PI);
+            }
+            temp_lnodes[parent].omega_e = fmaxf(temp_lnodes[parent].omega_e, temp_lnodes[n].omega_e);
+
+            const uint32_t left_child = temp_lnodes[parent].left_child & LEFT_CHILD_BITS,
+                           right_child = temp_lnodes[parent].right_child & RIGHT_CHILD_BITS;
+            if (processed[left_child] && processed[right_child]) {
+                assert(next_count <= i);
+                to_process[next_count++] = parent;
+            }
         }
-        temp_lnodes[parent].omega_e = fmaxf(temp_lnodes[parent].omega_e, temp_lnodes[n].omega_e);
-        if ((temp_lnodes[parent].left_child & LEFT_CHILD_BITS) == n) {
-            to_process.push_back(parent);
-        }
+        to_process.resize(next_count);
     }
 
     // Remove indices indirection

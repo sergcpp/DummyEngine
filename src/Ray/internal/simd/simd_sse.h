@@ -310,7 +310,7 @@ template <> class fixed_size_simd<float, 4> {
     friend force_inline fixed_size_simd<float, 4> vectorcall copysign(const fixed_size_simd<float, 4> val,
                                                                       const fixed_size_simd<float, 4> sign) {
         const __m128 sign_bit_mask = _mm_set1_ps(-0.0f);
-        const __m128 val_abs = _mm_andnot_ps(sign_bit_mask, val.vec_);   // abs(val)
+        const __m128 val_abs = _mm_andnot_ps(sign_bit_mask, val.vec_); // abs(val)
         const __m128 sign_bits = _mm_and_ps(sign_bit_mask, sign.vec_); // sign of 'sign'
         return _mm_or_ps(val_abs, sign_bits);
     }
@@ -489,6 +489,7 @@ template <> class fixed_size_simd<int, 4> {
     }
 
     force_inline int movemask() const { return _mm_movemask_ps(_mm_castsi128_ps(vec_)); }
+    force_inline int movemask8() const { return _mm_movemask_epi8(vec_); }
 
     force_inline bool all_zeros() const {
 #if defined(USE_SSE41)
@@ -532,6 +533,13 @@ template <> class fixed_size_simd<int, 4> {
                                                                  const fixed_size_simd<int, 4> _min,
                                                                  const fixed_size_simd<int, 4> _max) {
         return max(_min, min(v1, _max));
+    }
+
+    friend force_inline fixed_size_simd<int, 4> vectorcall cmpeq8(const fixed_size_simd<int, 4> &v1,
+                                                                  const fixed_size_simd<int, 4> &v2) {
+        fixed_size_simd<int, 4> ret;
+        ret.vec_ = _mm_cmpeq_epi8(v1.vec_, v2.vec_);
+        return ret;
     }
 
     force_inline static fixed_size_simd<int, 4> vectorcall and_not(const fixed_size_simd<int, 4> v1,
@@ -790,6 +798,7 @@ template <> class fixed_size_simd<unsigned, 4> {
     }
 
     force_inline int movemask() const { return _mm_movemask_ps(_mm_castsi128_ps(vec_)); }
+    force_inline int movemask8() const { return _mm_movemask_epi8(vec_); }
 
     force_inline bool all_zeros() const {
 #if defined(USE_SSE41)
@@ -829,6 +838,19 @@ template <> class fixed_size_simd<unsigned, 4> {
         UNROLLED_FOR(i, 4, { temp.comp_[i] = (v1.comp_[i] > v2.comp_[i]) ? v1.comp_[i] : v2.comp_[i]; })
 #endif
         return temp;
+    }
+
+    friend force_inline fixed_size_simd<unsigned, 4> vectorcall clamp(const fixed_size_simd<unsigned, 4> v1,
+                                                                      const fixed_size_simd<unsigned, 4> _min,
+                                                                      const fixed_size_simd<unsigned, 4> _max) {
+        return max(_min, min(v1, _max));
+    }
+
+    friend force_inline fixed_size_simd<unsigned, 4> vectorcall cmpeq8(const fixed_size_simd<unsigned, 4> &v1,
+                                                                       const fixed_size_simd<unsigned, 4> &v2) {
+        fixed_size_simd<unsigned, 4> ret;
+        ret.vec_ = _mm_cmpeq_epi8(v1.vec_, v2.vec_);
+        return ret;
     }
 
     force_inline static fixed_size_simd<unsigned, 4> vectorcall and_not(const fixed_size_simd<unsigned, 4> v1,

@@ -12,6 +12,8 @@
 
 #define _mm512_movemask_epi32(a)                                                                                       \
     int(_mm512_cmpneq_epi32_mask(_mm512_setzero_si512(), _mm512_and_si512(_mm512_set1_epi32(0x80000000U), a)))
+#define _mm512_movemask_epi8(a)                                                                                        \
+    int(_mm512_cmpneq_epi8_mask(_mm512_setzero_si512(), _mm512_and_si512(a, _mm512_set1_epi8(0x80))))
 
 // https://adms-conf.org/2020-camera-ready/ADMS20_05.pdf
 #define _mm512_slli_si512(x, k) _mm512_alignr_epi32(x, _mm512_setzero_si512(), 16 - k)
@@ -350,6 +352,7 @@ template <> class fixed_size_simd<int, 16> {
     }
 
     force_inline int movemask() const { return _mm512_movemask_epi32(vec_); }
+    force_inline int movemask8() const { return _mm512_movemask_epi8(vec_); }
 
     force_inline bool vectorcall all_zeros() const {
         return _mm512_cmpeq_epi32_mask(vec_, _mm512_setzero_si512()) == 0xFFFF;
@@ -375,6 +378,13 @@ template <> class fixed_size_simd<int, 16> {
                                                                   const fixed_size_simd<int, 16> _min,
                                                                   const fixed_size_simd<int, 16> _max) {
         return max(_min, min(v1, _max));
+    }
+
+    friend force_inline fixed_size_simd<int, 16> vectorcall cmpeq8(const fixed_size_simd<int, 16> &v1,
+                                                                   const fixed_size_simd<int, 16> &v2) {
+        fixed_size_simd<int, 16> ret;
+        ret.vec_ = _mm512_movm_epi8(_mm512_cmpeq_epi8_mask(v1.vec_, v2.vec_));
+        return ret;
     }
 
     force_inline static fixed_size_simd<int, 16> vectorcall and_not(const fixed_size_simd<int, 16> v1,
@@ -644,6 +654,7 @@ template <> class fixed_size_simd<unsigned, 16> {
     }
 
     force_inline int movemask() const { return _mm512_movemask_epi32(vec_); }
+    force_inline int movemask8() const { return _mm512_movemask_epi8(vec_); }
 
     force_inline bool vectorcall all_zeros() const {
         return _mm512_cmpeq_epi32_mask(vec_, _mm512_setzero_si512()) == 0xFFFF;
@@ -669,6 +680,13 @@ template <> class fixed_size_simd<unsigned, 16> {
                                                                        const fixed_size_simd<unsigned, 16> _min,
                                                                        const fixed_size_simd<unsigned, 16> _max) {
         return max(_min, min(v1, _max));
+    }
+
+    friend force_inline fixed_size_simd<unsigned, 16> vectorcall cmpeq8(const fixed_size_simd<unsigned, 16> &v1,
+                                                                        const fixed_size_simd<unsigned, 16> &v2) {
+        fixed_size_simd<unsigned, 16> ret;
+        ret.vec_ = _mm512_movm_epi8(_mm512_cmpeq_epi8_mask(v1.vec_, v2.vec_));
+        return ret;
     }
 
     force_inline static fixed_size_simd<unsigned, 16> vectorcall and_not(const fixed_size_simd<unsigned, 16> v1,

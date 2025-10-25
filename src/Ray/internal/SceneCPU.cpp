@@ -1238,6 +1238,7 @@ void Ray::Cpu::Scene::RebuildLightTree_nolock() {
     struct additional_data_t {
         Ref::fvec4 axis;
         float flux, omega_n, omega_e;
+        uint32_t type;
     };
     aligned_vector<additional_data_t> additional_data;
     additional_data.reserve(lights_.size());
@@ -1375,7 +1376,7 @@ void Ray::Cpu::Scene::RebuildLightTree_nolock() {
         primitives.push_back({0, 0, 0, bbox_min, bbox_max});
 
         const float flux = lum * area;
-        additional_data.push_back({axis, flux, omega_n, omega_e});
+        additional_data.push_back({axis, flux, omega_n, omega_e, l.type});
     }
 
     light_nodes_.clear();
@@ -1406,6 +1407,7 @@ void Ray::Cpu::Scene::RebuildLightTree_nolock() {
             light_nodes_[i].flux = additional_data[prim_index].flux;
             light_nodes_[i].omega_n = additional_data[prim_index].omega_n;
             light_nodes_[i].omega_e = additional_data[prim_index].omega_e;
+            light_nodes_[i].bitmask = (1u << additional_data[prim_index].type);
         }
     }
 
@@ -1434,47 +1436,59 @@ void Ray::Cpu::Scene::RebuildLightTree_nolock() {
     }
 
     // Propagate flux and cone up the hierarchy
+    std::vector<bool> processed(light_nodes_.size(), false);
     std::vector<uint32_t> to_process;
-    to_process.reserve(light_nodes_.size());
     to_process.insert(end(to_process), begin(leaf_indices), end(leaf_indices));
-    for (uint32_t i = 0; i < uint32_t(to_process.size()); ++i) {
-        const uint32_t n = to_process[i];
-        const uint32_t parent = parent_indices[n];
-        if (parent == 0xffffffff) {
-            continue;
-        }
-
-        light_nodes_[parent].flux += light_nodes_[n].flux;
-        if (light_nodes_[parent].axis[0] == 0.0f && light_nodes_[parent].axis[1] == 0.0f &&
-            light_nodes_[parent].axis[2] == 0.0f) {
-            memcpy(light_nodes_[parent].axis, light_nodes_[n].axis, 3 * sizeof(float));
-            light_nodes_[parent].omega_n = light_nodes_[n].omega_n;
-        } else {
-            auto axis1 = Ref::fvec4{light_nodes_[parent].axis}, axis2 = Ref::fvec4{light_nodes_[n].axis};
-            axis1.set<3>(0.0f);
-            axis2.set<3>(0.0f);
-
-            const float angle_between = acosf(clamp(dot(axis1, axis2), -1.0f, 1.0f));
-
-            axis1 += axis2;
-            const float axis_length = length(axis1);
-            if (axis_length != 0.0f) {
-                axis1 /= axis_length;
-            } else {
-                axis1 = Ref::fvec4{0.0f, 1.0f, 0.0f, 0.0f};
+    while (!to_process.empty()) {
+        uint32_t next_count = 0;
+        for (uint32_t i = 0; i < uint32_t(to_process.size()); ++i) {
+            const uint32_t n = to_process[i];
+            const uint32_t parent = parent_indices[n];
+            if (parent == 0xffffffff) {
+                continue;
             }
 
-            memcpy(light_nodes_[parent].axis, value_ptr(axis1), 3 * sizeof(float));
+            assert(!processed[n]);
+            processed[n] = true;
 
-            light_nodes_[parent].omega_n =
-                fminf(0.5f * (light_nodes_[parent].omega_n +
-                              fmaxf(light_nodes_[parent].omega_n, angle_between + light_nodes_[n].omega_n)),
-                      PI);
+            light_nodes_[parent].flux += light_nodes_[n].flux;
+            light_nodes_[parent].bitmask |= light_nodes_[n].bitmask;
+            if (light_nodes_[parent].axis[0] == 0.0f && light_nodes_[parent].axis[1] == 0.0f &&
+                light_nodes_[parent].axis[2] == 0.0f) {
+                memcpy(light_nodes_[parent].axis, light_nodes_[n].axis, 3 * sizeof(float));
+                light_nodes_[parent].omega_n = light_nodes_[n].omega_n;
+            } else {
+                auto axis1 = Ref::fvec4{light_nodes_[parent].axis}, axis2 = Ref::fvec4{light_nodes_[n].axis};
+                axis1.set<3>(0.0f);
+                axis2.set<3>(0.0f);
+
+                const float angle_between = acosf(clamp(dot(axis1, axis2), -1.0f, 1.0f));
+
+                axis1 += axis2;
+                const float axis_length = length(axis1);
+                if (axis_length != 0.0f) {
+                    axis1 /= axis_length;
+                } else {
+                    axis1 = Ref::fvec4{0.0f, 1.0f, 0.0f, 0.0f};
+                }
+
+                memcpy(light_nodes_[parent].axis, value_ptr(axis1), 3 * sizeof(float));
+
+                light_nodes_[parent].omega_n =
+                    fminf(0.5f * (light_nodes_[parent].omega_n +
+                                  fmaxf(light_nodes_[parent].omega_n, angle_between + light_nodes_[n].omega_n)),
+                          PI);
+            }
+            light_nodes_[parent].omega_e = fmaxf(light_nodes_[parent].omega_e, light_nodes_[n].omega_e);
+
+            const uint32_t left_child = light_nodes_[parent].left_child & LEFT_CHILD_BITS,
+                           right_child = light_nodes_[parent].right_child & RIGHT_CHILD_BITS;
+            if (processed[left_child] && processed[right_child]) {
+                assert(next_count <= i);
+                to_process[next_count++] = parent;
+            }
         }
-        light_nodes_[parent].omega_e = fmaxf(light_nodes_[parent].omega_e, light_nodes_[n].omega_e);
-        if ((light_nodes_[parent].left_child & LEFT_CHILD_BITS) == n) {
-            to_process.push_back(parent);
-        }
+        to_process.resize(next_count);
     }
 
     // Remove indices indirection

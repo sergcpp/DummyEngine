@@ -206,8 +206,6 @@ template <> class fixed_size_simd<float, 8> {
 
     friend force_inline fixed_size_simd<float, 8>
         vectorcall clamp(fixed_size_simd<float, 8> v1, fixed_size_simd<float, 8> min, fixed_size_simd<float, 8> max);
-    // friend force_inline fixed_size_simd<float, 8> vectorcall clamp(fixed_size_simd<float, 8> v1, float min, float
-    // max);
     friend force_inline fixed_size_simd<float, 8> vectorcall saturate(fixed_size_simd<float, 8> v1) {
         return clamp(v1, 0.0f, 1.0f);
     }
@@ -436,6 +434,19 @@ template <> class fixed_size_simd<int, 8> {
     }
 
     force_inline int movemask() const { return _mm256_movemask_ps(_mm256_castsi256_ps(vec_)); }
+    force_inline int movemask8() const {
+#if defined(USE_AVX2) || defined(USE_AVX512)
+        return _mm256_movemask_epi8(vec_);
+#else
+        const __m128i lo = _mm256_castsi256_si128(vec_);      // low 128 bits
+        const __m128i hi = _mm256_extractf128_si256(vec_, 1); // high 128 bits
+
+        const int mask_lo = _mm_movemask_epi8(lo);
+        const int mask_hi = _mm_movemask_epi8(hi);
+
+        return mask_lo | (mask_hi << 16);
+#endif
+    }
 
     force_inline bool vectorcall all_zeros() const { return _mm256_test_all_zeros(vec_, vec_) != 0; }
     force_inline bool vectorcall all_zeros(const fixed_size_simd<int, 8> mask) const {
@@ -473,6 +484,28 @@ template <> class fixed_size_simd<int, 8> {
                                                                  const fixed_size_simd<int, 8> _min,
                                                                  const fixed_size_simd<int, 8> _max) {
         return max(_min, min(v1, _max));
+    }
+
+    friend force_inline fixed_size_simd<int, 8> vectorcall cmpeq8(const fixed_size_simd<int, 8> &v1,
+                                                                  const fixed_size_simd<int, 8> &v2) {
+        fixed_size_simd<int, 8> ret;
+#if defined(USE_AVX2) || defined(USE_AVX512)
+        ret.vec_ = _mm256_cmpeq_epi8(v1.vec_, v2.vec_);
+#else
+        // Extract lower and upper 128-bit lanes
+        const __m128i v1_lo = _mm256_castsi256_si128(v1.vec_);
+        const __m128i v1_hi = _mm256_extractf128_si256(v1.vec_, 1);
+        const __m128i v2_lo = _mm256_castsi256_si128(v2.vec_);
+        const __m128i v2_hi = _mm256_extractf128_si256(v2.vec_, 1);
+
+        // Compare each lane separately
+        const __m128i cmp_lo = _mm_cmpeq_epi8(v1_lo, v2_lo);
+        const __m128i cmp_hi = _mm_cmpeq_epi8(v1_hi, v2_hi);
+
+        // Combine results into 256-bit vector
+        ret.vec_ = _mm256_insertf128_si256(_mm256_castsi128_si256(cmp_lo), cmp_hi, 1);
+#endif
+        return ret;
     }
 
     force_inline static fixed_size_simd<int, 8> vectorcall and_not(const fixed_size_simd<int, 8> v1,
@@ -903,6 +936,19 @@ template <> class fixed_size_simd<unsigned, 8> {
     }
 
     force_inline int movemask() const { return _mm256_movemask_ps(_mm256_castsi256_ps(vec_)); }
+    force_inline int movemask8() const {
+#if defined(USE_AVX2) || defined(USE_AVX512)
+        return _mm256_movemask_epi8(vec_);
+#else
+        const __m128i lo = _mm256_castsi256_si128(vec_);      // low 128 bits
+        const __m128i hi = _mm256_extractf128_si256(vec_, 1); // high 128 bits
+
+        const int mask_lo = _mm_movemask_epi8(lo);
+        const int mask_hi = _mm_movemask_epi8(hi);
+
+        return mask_lo | (mask_hi << 16);
+#endif
+    }
 
     force_inline bool vectorcall all_zeros() const { return _mm256_test_all_zeros(vec_, vec_) != 0; }
     force_inline bool vectorcall all_zeros(const fixed_size_simd<unsigned, 8> mask) const {
@@ -940,6 +986,28 @@ template <> class fixed_size_simd<unsigned, 8> {
                                                                       const fixed_size_simd<unsigned, 8> _min,
                                                                       const fixed_size_simd<unsigned, 8> _max) {
         return max(_min, min(v1, _max));
+    }
+
+    friend force_inline fixed_size_simd<unsigned, 8> vectorcall cmpeq8(const fixed_size_simd<unsigned, 8> &v1,
+                                                                       const fixed_size_simd<unsigned, 8> &v2) {
+        fixed_size_simd<unsigned, 8> ret;
+#if defined(USE_AVX2) || defined(USE_AVX512)
+        ret.vec_ = _mm256_cmpeq_epi8(v1.vec_, v2.vec_);
+#else
+        // Extract lower and upper 128-bit lanes
+        const __m128i v1_lo = _mm256_castsi256_si128(v1.vec_);
+        const __m128i v1_hi = _mm256_extractf128_si256(v1.vec_, 1);
+        const __m128i v2_lo = _mm256_castsi256_si128(v2.vec_);
+        const __m128i v2_hi = _mm256_extractf128_si256(v2.vec_, 1);
+
+        // Compare each lane separately
+        const __m128i cmp_lo = _mm_cmpeq_epi8(v1_lo, v2_lo);
+        const __m128i cmp_hi = _mm_cmpeq_epi8(v1_hi, v2_hi);
+
+        // Combine results into 256-bit vector
+        ret.vec_ = _mm256_insertf128_si256(_mm256_castsi128_si256(cmp_lo), cmp_hi, 1);
+#endif
+        return ret;
     }
 
     force_inline static fixed_size_simd<unsigned, 8> vectorcall and_not(const fixed_size_simd<unsigned, 8> v1,

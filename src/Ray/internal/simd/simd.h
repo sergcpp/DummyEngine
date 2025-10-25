@@ -484,6 +484,15 @@ template <typename T, int S> class fixed_size_simd {
         return ret;
     }
 
+    friend fixed_size_simd<T, S> cmpeq8(const fixed_size_simd<T, S> &v1, const fixed_size_simd<T, S> &v2) {
+        const auto *src1 = reinterpret_cast<const uint8_t *>(&v1.comp_[0]);
+        const auto *src2 = reinterpret_cast<const uint8_t *>(&v2.comp_[0]);
+        fixed_size_simd<T, S> ret;
+        auto *dst = reinterpret_cast<uint8_t *>(&ret.comp_[0]);
+        UNROLLED_FOR_S(i, S * sizeof(T), { dst[i] = (src1[i] == src2[i] ? 0xff : 0); })
+        return ret;
+    }
+
     friend force_inline fixed_size_simd<T, S> clamp(const fixed_size_simd<T, S> &v1, const fixed_size_simd<T, S> &_min,
                                                     const fixed_size_simd<T, S> &_max) {
         return min(max(v1, _min), _max);
@@ -742,6 +751,12 @@ template <int S> force_inline fixed_size_simd<int, S> simd_cast(const fixed_size
 }
 
 template <int S> force_inline const fixed_size_simd<float, S> simd_cast(const fixed_size_simd<int, S> &vec) {
+    fixed_size_simd<float, S> ret;
+    memcpy(&ret, &vec, sizeof(fixed_size_simd<float, S>));
+    return ret;
+}
+
+template <int S> force_inline const fixed_size_simd<float, S> simd_cast(const fixed_size_simd<unsigned, S> &vec) {
     fixed_size_simd<float, S> ret;
     memcpy(&ret, &vec, sizeof(fixed_size_simd<float, S>));
     return ret;

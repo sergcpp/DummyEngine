@@ -446,6 +446,8 @@ float IntersectAreaLightsShadow(shadow_ray_t r) {
     uint stack_size = 0;
     g_stack[gl_LocalInvocationIndex][stack_size++] = g_params.lights_node_index;
 
+    const uint LightTypesMask = (1u << LIGHT_TYPE_RECT) | (1u << LIGHT_TYPE_DISK);
+
     while (stack_size != 0) {
         uint cur = g_stack[gl_LocalInvocationIndex][--stack_size];
 
@@ -474,9 +476,10 @@ float IntersectAreaLightsShadow(shadow_ray_t r) {
 
             // TODO: loop in morton order based on ray direction
             for (int j = 0; j < 8; ++j) {
-                if (bbox_test(inv_d, neg_inv_do, rdist,
-                               vec3(bbox_min[0][j], bbox_min[1][j], bbox_min[2][j]),
-                               vec3(bbox_max[0][j], bbox_max[1][j], bbox_max[2][j]))) {
+                if ((n.ch_bitmask[j / 4] & (LightTypesMask << (8u * (j % 4u)))) != 0 &&
+                    bbox_test(inv_d, neg_inv_do, rdist,
+                              vec3(bbox_min[0][j], bbox_min[1][j], bbox_min[2][j]),
+                              vec3(bbox_max[0][j], bbox_max[1][j], bbox_max[2][j]))) {
                     g_stack[gl_LocalInvocationIndex][stack_size++] = n.child[j];
                 }
             }

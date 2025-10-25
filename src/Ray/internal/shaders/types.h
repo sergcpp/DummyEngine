@@ -96,6 +96,7 @@ struct light_bvh_node_t {
     float axis[3];
     float omega_n; // cone angle enclosing light normals
     float omega_e; // emission angle around each normal
+    uint bitmask;
 };
 
 struct light_wbvh_node_t {
@@ -109,9 +110,8 @@ struct light_wbvh_node_t {
 
 struct light_cwbvh_node_t {
     float bbox_min[3];
-    float _unused0;
     float bbox_max[3];
-    float _unused1;
+    uint ch_bitmask[2];
     uint ch_bbox_min[3][2];
     uint ch_bbox_max[3][2];
     uint child[8];

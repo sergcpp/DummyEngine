@@ -1038,6 +1038,7 @@ uint32_t Ray::FlattenLightBVH_r(Span<const light_bvh_node_t> nodes, const uint32
         new_node.child[0] = cur_node.prim_index;
         new_node.child[1] = cur_node.prim_count;
 
+        new_node.ch_bitmask[0] = cur_node.bitmask;
         new_node.flux[0] = cur_node.flux;
         new_node.axis[0] = EncodeOctDir(cur_node.axis);
         new_node.cos_omega_ne[0] = encode_cosines(cosf(cur_node.omega_n), fmaxf(cosf(cur_node.omega_e), 0.0f));
@@ -1167,7 +1168,7 @@ uint32_t Ray::FlattenLightBVH_r(Span<const light_bvh_node_t> nodes, const uint32
                 new_node.ch_bbox_min[0][i] = new_node.ch_bbox_min[1][i] = new_node.ch_bbox_min[2][i] = 0xff;
                 new_node.ch_bbox_max[0][i] = new_node.ch_bbox_max[1][i] = new_node.ch_bbox_max[2][i] = 0;
             }
-
+            new_node.ch_bitmask[i] = child.bitmask;
             new_node.flux[i] = child.flux;
             new_node.axis[i] = EncodeOctDir(child.axis);
             new_node.cos_omega_ne[i] = encode_cosines(cosf(child.omega_n), fmaxf(cosf(child.omega_e), 0.0f));
@@ -1176,6 +1177,7 @@ uint32_t Ray::FlattenLightBVH_r(Span<const light_bvh_node_t> nodes, const uint32
             new_node.ch_bbox_min[0][i] = new_node.ch_bbox_min[1][i] = new_node.ch_bbox_min[2][i] = 0xff;
             new_node.ch_bbox_max[0][i] = new_node.ch_bbox_max[1][i] = new_node.ch_bbox_max[2][i] = 0xff;
             // Init as zero light
+            new_node.ch_bitmask[i] = 0;
             new_node.flux[i] = 0.0f;
             new_node.axis[i] = 0;
             new_node.cos_omega_ne[i] = 0;

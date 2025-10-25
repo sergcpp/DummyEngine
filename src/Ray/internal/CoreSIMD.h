@@ -5991,6 +5991,12 @@ void Ray::NS::IntersectAreaLights(const ray_data_t<S> &r, Span<const light_t> li
     alignas(S * 4) uint32_t ray_flags[S];
     _ray_flags.store_to(ray_flags, vector_aligned);
 
+    // NOTE: triangle lights are processed separately
+    static uint32_t LightTypesMask = (1u << LIGHT_TYPE_SPHERE) | (1u << LIGHT_TYPE_DIR) | (1u << LIGHT_TYPE_LINE) |
+                                     (1u << LIGHT_TYPE_RECT) | (1u << LIGHT_TYPE_DISK) | (1u << LIGHT_TYPE_ENV);
+    static uint32_t LightTypesMask4x =
+        LightTypesMask | (LightTypesMask << 8) | (LightTypesMask << 16) | (LightTypesMask << 24);
+
     for (int ri = 0; ri < S; ri++) {
         if (!ray_masks[ri]) {
             continue;
@@ -6007,11 +6013,10 @@ void Ray::NS::IntersectAreaLights(const ray_data_t<S> &r, Span<const light_t> li
         while (!st.empty()) {
             light_stack_entry_t cur = st.pop();
 
-            if (cur.dist > inter_t[ri] || cur.factor == 0.0f) {
+        TRAVERSE:
+            if (cur.dist > inter_t[ri]) {
                 continue;
             }
-
-        TRAVERSE:
             if ((cur.index & LEAF_NODE_BIT) == 0) {
                 const light_cwbvh_node_t &n = nodes[cur.index];
 
@@ -6020,6 +6025,7 @@ void Ray::NS::IntersectAreaLights(const ray_data_t<S> &r, Span<const light_t> li
                                       (n.bbox_max[1] - n.bbox_min[1]) / 255.0f,
                                       (n.bbox_max[2] - n.bbox_min[2]) / 255.0f};
                 alignas(32) float bbox_min[3][8], bbox_max[3][8];
+                alignas(32) uint8_t bitmask[4 * S] = {};
                 for (int i = 0; i < 8; ++i) {
                     bbox_min[0][i] = bbox_min[1][i] = bbox_min[2][i] = -MAX_DIST;
                     bbox_max[0][i] = bbox_max[1][i] = bbox_max[2][i] = MAX_DIST;
@@ -6032,21 +6038,29 @@ void Ray::NS::IntersectAreaLights(const ray_data_t<S> &r, Span<const light_t> li
                         bbox_max[1][i] = n.bbox_min[1] + n.ch_bbox_max[1][i] * ext[1];
                         bbox_max[2][i] = n.bbox_min[2] + n.ch_bbox_max[2][i] * ext[2];
                     }
+                    bitmask[i] = n.ch_bitmask[i];
                 }
+
+                ivec<S> temp = ivec<S>{(const int *)bitmask, vector_aligned};
+                temp = ~cmpeq8(temp & reinterpret_cast<const int &>(LightTypesMask4x), ivec<S>{0});
 
                 alignas(32) float res_dist[8];
                 long mask = bbox_test_oct<SS>(_inv_d, _inv_d_o, inter_t[ri], bbox_min, bbox_max, res_dist);
+                mask &= temp.movemask8();
                 if (mask) {
                     fvec<SS> importance[8 / SS];
                     calc_lnode_importance<SS>(n, bbox_min, bbox_max, _ro, value_ptr(importance[0]));
 
                     fvec<SS> total_importance_v = 0.0f;
-                    UNROLLED_FOR_S(i, 8 / SS, { total_importance_v += importance[i]; })
-                    const float total_importance = hsum(total_importance_v);
-                    if (total_importance == 0.0f) {
+                    UNROLLED_FOR_S(i, 8 / SS, {
+                        mask &= ~(simd_cast(importance[i] == 0.0).movemask() << (i * 4));
+                        total_importance_v += importance[i];
+                    })
+                    if (!mask) {
                         continue;
                     }
 
+                    const float total_importance = hsum(total_importance_v);
                     alignas(32) float factors[8];
                     UNROLLED_FOR_S(i, 8 / SS, {
                         importance[i] /= total_importance;
@@ -6300,6 +6314,10 @@ Ray::NS::fvec<S> Ray::NS::IntersectAreaLights(const shadow_ray_t<S> &r, Span<con
     ray_mask.store_to(ray_masks, vector_aligned);
     rdist.store_to(inter_t, vector_aligned);
 
+    static uint32_t LightTypesMask = (1u << LIGHT_TYPE_RECT) | (1u << LIGHT_TYPE_DISK);
+    static uint32_t LightTypesMask4x =
+        LightTypesMask | (LightTypesMask << 8) | (LightTypesMask << 16) | (LightTypesMask << 24);
+
     for (int ri = 0; ri < S; ri++) {
         if (!ray_masks[ri]) {
             continue;
@@ -6318,7 +6336,6 @@ Ray::NS::fvec<S> Ray::NS::IntersectAreaLights(const shadow_ray_t<S> &r, Span<con
             if (cur.dist > inter_t[ri]) {
                 continue;
             }
-
         TRAVERSE:
             if ((cur.index & LEAF_NODE_BIT) == 0) {
                 const light_cwbvh_node_t &n = nodes[cur.index];
@@ -6328,6 +6345,7 @@ Ray::NS::fvec<S> Ray::NS::IntersectAreaLights(const shadow_ray_t<S> &r, Span<con
                                       (n.bbox_max[1] - n.bbox_min[1]) / 255.0f,
                                       (n.bbox_max[2] - n.bbox_min[2]) / 255.0f};
                 alignas(32) float bbox_min[3][8], bbox_max[3][8];
+                alignas(32) uint8_t bitmask[4 * S] = {};
                 for (int i = 0; i < 8; ++i) {
                     bbox_min[0][i] = bbox_min[1][i] = bbox_min[2][i] = -MAX_DIST;
                     bbox_max[0][i] = bbox_max[1][i] = bbox_max[2][i] = MAX_DIST;
@@ -6340,10 +6358,15 @@ Ray::NS::fvec<S> Ray::NS::IntersectAreaLights(const shadow_ray_t<S> &r, Span<con
                         bbox_max[1][i] = n.bbox_min[1] + n.ch_bbox_max[1][i] * ext[1];
                         bbox_max[2][i] = n.bbox_min[2] + n.ch_bbox_max[2][i] * ext[2];
                     }
+                    bitmask[i] = n.ch_bitmask[i];
                 }
+
+                ivec<S> temp = ivec<S>{(const int *)bitmask, vector_aligned};
+                temp = ~cmpeq8(temp & reinterpret_cast<const int &>(LightTypesMask4x), ivec<S>{0});
 
                 alignas(32) float res_dist[8];
                 long mask = bbox_test_oct<S>(_inv_d, _inv_d_o, inter_t[ri], bbox_min, bbox_max, res_dist);
+                mask &= temp.movemask8();
                 if (mask) {
                     long i = GetFirstBit(mask);
                     mask = ClearBit(mask, i);

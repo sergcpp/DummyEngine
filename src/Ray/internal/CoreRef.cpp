@@ -391,12 +391,13 @@ force_inline long bbox_test_oct(const float o[3], const float inv_d[3], const fl
 }
 
 force_inline long bbox_test_oct(const float o[3], const float inv_d[3], const float t, const cwbvh_node_t &node,
-                                float out_dist[8]) {
+                                const uint32_t accept_mask, float out_dist[8]) {
     // Unpack bounds
     const float ext[3] = {(node.bbox_max[0] - node.bbox_min[0]) / 255.0f,
                           (node.bbox_max[1] - node.bbox_min[1]) / 255.0f,
                           (node.bbox_max[2] - node.bbox_min[2]) / 255.0f};
     alignas(16) float bbox_min[3][8], bbox_max[3][8];
+    alignas(16) uint8_t bitmask[16] = {};
     for (int i = 0; i < 8; ++i) {
         bbox_min[0][i] = bbox_min[1][i] = bbox_min[2][i] = -MAX_DIST;
         bbox_max[0][i] = bbox_max[1][i] = bbox_max[2][i] = MAX_DIST;
@@ -409,6 +410,7 @@ force_inline long bbox_test_oct(const float o[3], const float inv_d[3], const fl
             bbox_max[1][i] = node.bbox_min[1] + node.ch_bbox_max[1][i] * ext[1];
             bbox_max[2][i] = node.bbox_min[2] + node.ch_bbox_max[2][i] * ext[2];
         }
+        bitmask[i] = node.ch_bitmask[i];
     }
 
     long mask = 0;
@@ -436,6 +438,10 @@ force_inline long bbox_test_oct(const float o[3], const float inv_d[3], const fl
         mask |= simd_cast(fmask).movemask();
         tmin.store_to(&out_dist[4 * i], vector_aligned);
     }) // NOLINT
+
+    ivec4 temp = ivec4{(const int *)bitmask, vector_aligned};
+    temp = ~cmpeq8(temp & reinterpret_cast<const int &>(accept_mask), ivec4{0});
+    mask &= temp.movemask8();
 #else
     UNROLLED_FOR(i, 8, { // NOLINT
         float lo_x = inv_d[0] * (bbox_min[0][i] - o[0]);
@@ -473,9 +479,10 @@ force_inline long bbox_test_oct(const float o[3], const float inv_d[3], const fl
         tmax *= 1.00000024f;
 
         out_dist[i] = tmin;
-        mask |= ((tmin <= tmax && tmin <= t && tmax > 0) ? 1 : 0) << i;
+        mask |= ((tmin <= tmax && tmin <= t && tmax > 0 && (bitmask[i] & accept_mask) != 0) ? 1 : 0) << i;
     }) // NOLINT
 #endif
+
     return mask;
 }
 
@@ -556,7 +563,6 @@ template <int StackSize, typename T = stack_entry_t> struct TraversalStack {
         if (stack[i + 1].dist < stack[i + 2].dist) {
             std::swap(stack[i + 1], stack[i + 2]);
         }
-
         assert(stack[stack_size - 4].dist >= stack[stack_size - 3].dist &&
                stack[stack_size - 3].dist >= stack[stack_size - 2].dist &&
                stack[stack_size - 2].dist >= stack[stack_size - 1].dist);
@@ -578,7 +584,6 @@ template <int StackSize, typename T = stack_entry_t> struct TraversalStack {
 
             stack[j + 1] = key;
         }
-
 #ifndef NDEBUG
         for (int j = 0; j < count - 1; j++) {
             assert(stack[stack_size - count + j].dist >= stack[stack_size - count + j + 1].dist);
@@ -3550,7 +3555,7 @@ void Ray::Ref::SampleLightSource(const fvec4 &P, const fvec4 &T, const fvec4 &B,
             const fvec4 pvec = cross(ls.L, e2);
             const fvec4 tvec = P - p1, qvec = cross(tvec, e1);
 
-            const float inv_det = 1.0f / dot(e1, pvec);
+            const float inv_det = safe_div(1.0f, dot(e1, pvec));
             const float tri_u = dot(tvec, pvec) * inv_det, tri_v = dot(ls.L, qvec) * inv_det;
 
             lp = (1.0f - tri_u - tri_v) * p1 + tri_u * p2 + tri_v * p3;
@@ -3647,26 +3652,34 @@ void Ray::Ref::IntersectAreaLights(Span<const ray_data_t> rays, Span<const light
         TraversalStack<MAX_LTREE_STACK_SIZE, light_stack_entry_t> st;
         st.push(0u /* root_index */, 0.0f /* distance */, 1.0f /* factor */);
 
+        // NOTE: triangle lights are processed separately
+        static uint32_t LightTypesMask = (1u << LIGHT_TYPE_SPHERE) | (1u << LIGHT_TYPE_DIR) | (1u << LIGHT_TYPE_LINE) |
+                                         (1u << LIGHT_TYPE_RECT) | (1u << LIGHT_TYPE_DISK) | (1u << LIGHT_TYPE_ENV);
+        static uint32_t LightTypesMask4x =
+            LightTypesMask | (LightTypesMask << 8) | (LightTypesMask << 16) | (LightTypesMask << 24);
         while (!st.empty()) {
             light_stack_entry_t cur = st.pop();
 
-            if (cur.dist > inout_inter.t || cur.factor == 0.0f) {
+        TRAVERSE:
+            assert(cur.factor > 0.0f);
+            if (cur.dist > inout_inter.t) {
                 continue;
             }
-
-        TRAVERSE:
             if ((cur.index & LEAF_NODE_BIT) == 0) {
                 alignas(16) float dist[8];
-                long mask = bbox_test_oct(value_ptr(ro), inv_d, inout_inter.t, nodes[cur.index], dist);
+                long mask =
+                    bbox_test_oct(value_ptr(ro), inv_d, inout_inter.t, nodes[cur.index], LightTypesMask4x, dist);
                 if (mask) {
                     fvec4 importance[2];
                     calc_lnode_importance(nodes[cur.index], ro, value_ptr(importance[0]));
 
-                    const float total_importance = hsum(importance[0] + importance[1]);
-                    if (total_importance == 0.0f) {
+                    mask &= ~(simd_cast(importance[0] == 0.0f).movemask() << 0);
+                    mask &= ~(simd_cast(importance[1] == 0.0f).movemask() << 4);
+                    if (!mask) {
                         continue;
                     }
 
+                    const float total_importance = hsum(importance[0] + importance[1]);
                     importance[0] /= total_importance;
                     importance[1] /= total_importance;
 
@@ -3909,11 +3922,13 @@ void Ray::Ref::IntersectAreaLights(Span<const ray_data_t> rays, Span<const light
                     fvec4 importance[2];
                     calc_lnode_importance(nodes[cur.index], ro, value_ptr(importance[0]));
 
-                    const float total_importance = hsum(importance[0] + importance[1]);
-                    if (total_importance == 0.0f) {
+                    mask &= ~(simd_cast(importance[0] == 0.0f).movemask() << 0);
+                    mask &= ~(simd_cast(importance[1] == 0.0f).movemask() << 4);
+                    if (!mask) {
                         continue;
                     }
 
+                    const float total_importance = hsum(importance[0] + importance[1]);
                     importance[0] /= total_importance;
                     importance[1] /= total_importance;
 
@@ -4473,6 +4488,9 @@ float Ray::Ref::IntersectAreaLights(const shadow_ray_t &ray, Span<const light_t>
     TraversalStack<MAX_LTREE_STACK_SIZE> st;
     st.push(0u /* root_index */, 0.0f);
 
+    static uint32_t LightTypesMask = (1u << LIGHT_TYPE_RECT) | (1u << LIGHT_TYPE_DISK);
+    static uint32_t LightTypesMask4x =
+        LightTypesMask | (LightTypesMask << 8) | (LightTypesMask << 16) | (LightTypesMask << 24);
     while (!st.empty()) {
         stack_entry_t cur = st.pop();
 
@@ -4483,7 +4501,7 @@ float Ray::Ref::IntersectAreaLights(const shadow_ray_t &ray, Span<const light_t>
     TRAVERSE:
         if ((cur.index & LEAF_NODE_BIT) == 0) {
             alignas(16) float dist[8];
-            long mask = bbox_test_oct(value_ptr(ro), inv_d, rdist, nodes[cur.index], dist);
+            long mask = bbox_test_oct(value_ptr(ro), inv_d, rdist, nodes[cur.index], LightTypesMask4x, dist);
             if (mask) {
                 long i = GetFirstBit(mask);
                 mask = ClearBit(mask, i);
