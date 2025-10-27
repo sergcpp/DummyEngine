@@ -343,6 +343,7 @@ float GetSunVisibility(float frag_depth, sampler2DShadow shadow_tex, in mat4x3 a
 
 #define ROTATE_BLOCKER_SEARCH 1
 #define GATHER4_BLOCKER_SEARCH 1
+#define BLOCKER_SEARCH_USE_COLOR_ALPHA 0
 
 vec2 BlockerSearch(sampler2D shadow_depth_tex, const vec3 shadow_uv, const float search_radius, vec4 rotator) {
     const vec2 shadow_size = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES) / 2.0);
@@ -476,7 +477,11 @@ vec3 GetCascadeVisibilityExt(sampler2DShadow shadow_depth_tex, sampler2D shadow_
     const float MinShadowRadiusPx = 1.5; // needed to hide blockyness
     const float MaxShadowRadiusPx = 16.0;
 
+#if BLOCKER_SEARCH_USE_COLOR_ALPHA
     vec2 blocker = BlockerSearch(shadow_depth_val_tex, shadow_color_tex, sh_uvs, MaxShadowRadiusPx, rotator);
+#else
+    vec2 blocker = BlockerSearch(shadow_depth_val_tex, sh_uvs, MaxShadowRadiusPx, rotator);
+#endif
     if (blocker.y < 0.5) {
         return vec3(1.0);
     }
@@ -516,15 +521,19 @@ vec3 GetCascadeVisColor(sampler2D shadow_color_tex, const vec3 sh_uvs, const vec
     const float MinShadowRadiusPx = 1.5; // needed to hide blockyness
     const float MaxShadowRadiusPx = 16.0;
 
+#if BLOCKER_SEARCH_USE_COLOR_ALPHA
     vec2 blocker = BlockerSearch2(shadow_color_tex, sh_uvs, MaxShadowRadiusPx, rotator);
     if (blocker.y < 0.5) {
         return vec3(1.0);
     }
     blocker.x /= blocker.y;
 
-    vec3 final_color = vec3(0.0);
-
     const float filter_radius_px = clamp(softness_factor * abs(blocker.x - sh_uvs.z), MinShadowRadiusPx, MaxShadowRadiusPx);
+#else
+    const float filter_radius_px = MinShadowRadiusPx;
+#endif
+
+    vec3 final_color = vec3(0.0);
     for (int i = 0; i < 16; ++i) {
         const vec2 uv = sh_uvs.xy + filter_radius_px * RotateVector(rotator, g_poisson_disk_16[i] / ShadowSizePx);
         final_color += textureLod(shadow_color_tex, uv, 0.0).xyz;

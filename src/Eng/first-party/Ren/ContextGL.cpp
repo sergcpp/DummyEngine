@@ -163,6 +163,12 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         capabilities.unif_buf_offset_alignment = unif_buf_offset_alignment;
     }
 
+    { // RGB565 render target
+        GLint color_renderable = 0;
+        glGetInternalformativ(GL_RENDERBUFFER, GL_RGB565, GL_COLOR_RENDERABLE, 1, &color_renderable);
+        capabilities.rgb565_render_target = (color_renderable != 0);
+    }
+
     InitDefaultBuffers();
 
     { // create dummy texture

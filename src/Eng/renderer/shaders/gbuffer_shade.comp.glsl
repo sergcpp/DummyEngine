@@ -98,9 +98,13 @@ vec3 LightVisibility(const _light_item_t litem, vec3 P, vec3 pos_vs, vec3 N, flo
     const float MaxShadowRadiusPx = 3.5;
 #endif // SHADOW_JITTER
 
-    vec3 final_color = vec3(1.0);
-
+#if BLOCKER_SEARCH_USE_COLOR_ALPHA
     vec2 blocker = BlockerSearch(g_shadow_depth_val_tex, g_shadow_color_tex, pp.xyz, MaxShadowRadiusPx * (1.0 - pp.z), rotator);
+#else
+    vec2 blocker = BlockerSearch(g_shadow_depth_val_tex, pp.xyz, MaxShadowRadiusPx * (1.0 - pp.z), rotator);
+#endif
+
+    vec3 final_color = vec3(1.0);
     if (blocker.y > 0.5) {
         blocker.x /= blocker.y;
 

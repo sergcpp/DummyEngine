@@ -545,7 +545,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::TexParams params;
         params.w = SHADOWMAP_WIDTH;
         params.h = SHADOWMAP_HEIGHT;
-        params.format = Ren::eTexFormat::RGBA8;
+        params.format = (ctx_.capabilities.rgb565_render_target ? Ren::eTexFormat::RGB565 : Ren::eTexFormat::RGBA8);
         params.usage = Ren::Bitmask(Ren::eTexUsage::RenderTarget) | Ren::eTexUsage::Sampled;
         params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
