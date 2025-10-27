@@ -41,7 +41,7 @@ static_assert(std::size(g_tex_usage_per_state) == int(eResState::_Count));
 } // namespace Ren
 
 int Ren::GetBlockLenBytes(const eTexFormat format) {
-    static_assert(int(eTexFormat::_Count) == 66, "Update the list below!");
+    static_assert(int(eTexFormat::_Count) == 67, "Update the list below!");
     switch (format) {
     case eTexFormat::BC1:
     case eTexFormat::BC1_srgb:

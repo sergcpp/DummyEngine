@@ -21,6 +21,7 @@ X(RG16,            2, 4, 0, 0,   VK_FORMAT_R16G16_UNORM,             GL_RG,     
 X(RG16F,           2, 4, 0, 0,   VK_FORMAT_R16G16_SFLOAT,            GL_RG,              GL_RG16F,                                  GL_HALF_FLOAT)
 X(RG32F,           2, 8, 0, 0,   VK_FORMAT_R32G32_SFLOAT,            GL_RG,              GL_RG32F,                                  GL_FLOAT)
 X(RG32UI,          2, 8, 0, 0,   VK_FORMAT_R32G32_UINT,              GL_RG_INTEGER,      GL_RG32UI,                                 GL_UNSIGNED_INT)
+X(RGB565,          3, 3, 0, 0,   VK_FORMAT_R5G6B5_UNORM_PACK16,      GL_RGB,             GL_RGB565,                                 GL_UNSIGNED_SHORT)
 X(RGB10_A2,        4, 4, 0, 0,   VK_FORMAT_A2B10G10R10_UNORM_PACK32, GL_RGBA,            GL_RGB10_A2,                               GL_UNSIGNED_INT_2_10_10_10_REV)
 X(RG11F_B10F,      3, 4, 0, 0,   VK_FORMAT_B10G11R11_UFLOAT_PACK32,  GL_RGB,             GL_R11F_G11F_B10F,                         GL_FLOAT)
 X(RGB9_E5,         4, 4, 0, 0,   VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,   GL_RGB,             GL_RGB9_E5,                                GL_UNSIGNED_INT_5_9_9_9_REV)

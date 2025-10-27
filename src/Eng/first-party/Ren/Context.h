@@ -269,6 +269,7 @@ class Context {
         int tex_buf_offset_alignment = 1;
         int unif_buf_offset_alignment = 1;
         bool depth24_stencil8_format = true; // opengl handles this on amd somehow
+        bool rgb565_render_target = false;
         bool subgroup = false;
         bool bc4_3d_texture_format = false;
     } capabilities;
@@ -288,6 +289,7 @@ class Context {
         int tex_buf_offset_alignment = 1;
         int unif_buf_offset_alignment = 1;
         bool depth24_stencil8_format = false;
+        bool rgb565_render_target = false;
         uint32_t max_combined_image_samplers = 16;
         bool subgroup = false;
         bool bc4_3d_texture_format = false;

@@ -394,6 +394,14 @@ void Ren::Context::CheckDeviceCapabilities() {
 
         capabilities.bc4_3d_texture_format = (res == VK_SUCCESS);
     }
+    {
+        VkImageFormatProperties props;
+        const VkResult res = api_ctx_->vkGetPhysicalDeviceImageFormatProperties(
+            api_ctx_->physical_device, VK_FORMAT_R5G6B5_UNORM_PACK16, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 0, &props);
+
+        capabilities.rgb565_render_target = (res == VK_SUCCESS);
+    }
 
     VkPhysicalDeviceProperties2 prop2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
     void **pp_next = const_cast<void **>(&prop2.pNext);
