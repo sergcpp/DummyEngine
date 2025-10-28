@@ -13,7 +13,6 @@ struct rt_geo_instance_t {
     uint vertices_start;
     uint material_index;
     uint flags;
-    vec4 lmap_transform;
 };
 
 vec3 offset_ray(vec3 p, vec3 n) {

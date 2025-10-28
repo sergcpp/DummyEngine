@@ -455,17 +455,13 @@ struct material_data_t {
 };
 static_assert(sizeof(material_data_t) == 96);
 
-const uint32_t RTGeoProbeBits = 0xff;
-const uint32_t RTGeoLightmappedBit = (1u << 8u);
-
 struct rt_geo_instance_t {
     uint32_t indices_start;
     uint32_t vertices_start;
     uint32_t material_index;
     uint32_t flags;
-    float lmap_transform[4];
 };
-static_assert(sizeof(rt_geo_instance_t) == 32);
+static_assert(sizeof(rt_geo_instance_t) == 16);
 
 struct rt_obj_instance_t {
     float xform[3][4];
