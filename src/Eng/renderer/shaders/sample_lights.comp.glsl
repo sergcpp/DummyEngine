@@ -276,15 +276,13 @@ void main() {
                 const bool backfacing = (inter.prim_index < 0);
                 const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
-                int i = int(inter.geo_index_count & 0x00ffffffu);
-                for (; i < int(inter.geo_index_count & 0x00ffffffu) + int((inter.geo_index_count >> 24) & 0xffu); ++i) {
-                    const int tri_start = int(g_geometries[i].indices_start) / 3;
+                int geo_index = int(inter.geo_index_count & 0x00ffffffu);
+                for (; geo_index < int(inter.geo_index_count & 0x00ffffffu) + int(inter.geo_index_count >> 24) - 1; ++geo_index) {
+                    const int tri_start = int(g_geometries[geo_index + 1].indices_start) / 3;
                     if (tri_start > tri_index) {
                         break;
                     }
                 }
-
-                const int geo_index = i - 1;
 
                 const rt_geo_instance_t geo = g_geometries[geo_index];
                 const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
