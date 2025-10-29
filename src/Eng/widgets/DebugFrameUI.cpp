@@ -231,11 +231,24 @@ void Eng::DebugFrameUI::DrawCompact(Gui::Renderer *r) {
         vertical_offset -= font_height;
         font_small_->DrawText(r, delimiter, Gui::Vec2f{-1, vertical_offset}, text_color, font_scale, parent_);
 
+        float total_duration_ms = 0.0f;
         for (int i = 0; i < int(back_info_smooth_.passes_info.size()); ++i) {
-            vertical_offset -= font_height;
-            snprintf(text_buffer, sizeof(text_buffer), " %18s: %.3f ms", back_info_smooth_.passes_info[i].name.c_str(),
-                     back_info_smooth_.passes_info[i].duration_ms);
-            font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1, vertical_offset}, text_color, font_scale, parent_);
+            total_duration_ms += back_info_smooth_.passes_info[i].duration_ms;
+        }
+
+        bool skipping = false;
+        for (const pass_info_smooth_t &info : back_info_smooth_.passes_info) {
+            if (info.duration_ms > 0.01f * total_duration_ms) {
+                vertical_offset -= font_height;
+                snprintf(text_buffer, sizeof(text_buffer), " %18s: %.3f ms", info.name.c_str(), info.duration_ms);
+                font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1, vertical_offset}, text_color, font_scale, parent_);
+                skipping = false;
+            } else if (!skipping) {
+                skipping = true;
+                vertical_offset -= font_height;
+                snprintf(text_buffer, sizeof(text_buffer), " %18s", "-");
+                font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1, vertical_offset}, text_color, font_scale, parent_);
+            }
         }
 
         vertical_offset -= font_height;
