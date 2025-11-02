@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = refactor_28_10
-	commit = 63a7dad0ca5cb9100da8ee074fe7be372dfda899
+	branch = abstract_bindless
+	commit = 57e1fc8c15938292ebf47baf976bd62a45947c10
 	method = merge
 	cmdver = 0.4.6
-	parent = ba7741f60a944480378cfe9e62b5f29cc54af67e
+	parent = e29abc5b0fcb5a78acef0ecdd25bfc7bf3467717
