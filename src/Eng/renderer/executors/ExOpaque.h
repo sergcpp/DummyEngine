@@ -33,7 +33,6 @@ class ExOpaque final : public FgExecutor {
     FgResRef instance_indices_buf_;
     FgResRef shared_data_buf_;
     FgResRef materials_buf_;
-    FgResRef textures_buf_;
     FgResRef cells_buf_;
     FgResRef items_buf_;
     FgResRef lights_buf_;
@@ -61,11 +60,11 @@ class ExOpaque final : public FgExecutor {
 #endif
   public:
     ExOpaque(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
-             const FgResRef ndx_buf, const FgResRef materials_buf, const FgResRef textures_buf,
-             const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const FgResRef brdf_lut,
-             const FgResRef noise_tex, const FgResRef cone_rt_lut, const FgResRef dummy_black,
-             const FgResRef instances_buf, const FgResRef instance_indices_buf, const FgResRef shared_data_buf,
-             const FgResRef cells_buf, const FgResRef items_buf, const FgResRef lights_buf, const FgResRef decals_buf,
+             const FgResRef ndx_buf, const FgResRef materials_buf, const Ren::Pipeline pipelines[],
+             const BindlessTextureData *bindless_tex, const FgResRef brdf_lut, const FgResRef noise_tex,
+             const FgResRef cone_rt_lut, const FgResRef dummy_black, const FgResRef instances_buf,
+             const FgResRef instance_indices_buf, const FgResRef shared_data_buf, const FgResRef cells_buf,
+             const FgResRef items_buf, const FgResRef lights_buf, const FgResRef decals_buf,
              const FgResRef shadowmap_tex, const FgResRef ssao_tex, const FgResRef lm_tex[], const FgResRef out_color,
              const FgResRef out_normals, const FgResRef out_spec, const FgResRef out_depth) {
         view_state_ = view_state;
@@ -98,8 +97,6 @@ class ExOpaque final : public FgExecutor {
         cone_rt_lut_ = cone_rt_lut;
 
         dummy_black_ = dummy_black;
-
-        textures_buf_ = textures_buf;
 
         color_tex_ = out_color;
         normal_tex_ = out_normals;

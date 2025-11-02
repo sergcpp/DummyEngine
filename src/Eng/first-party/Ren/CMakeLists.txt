@@ -49,6 +49,7 @@ set(SOURCE_FILES AccStructure.h
                  Anim.h
                  Anim.cpp
                  ApiContext.h
+                 Bindless.h
                  Bitmask.h
                  BlendFactor.inl
                  BlendOp.inl

@@ -36,7 +36,7 @@
         layout(binding = BIND_BINDLESS_TEX, std430) readonly buffer TextureHandles {
             uvec2 g_texture_handles[];
         };
-        layout(binding = BIND_SCENE_SAMPLERS) uniform sampler g_linear_sampler;
+        //layout(binding = BIND_SCENE_SAMPLERS) uniform sampler g_linear_sampler;
 
         vec4 textureBindless(const uvec2 handle, const vec2 uvs) {
             return texture(sampler2D(handle), uvs);
@@ -51,7 +51,7 @@
         #define TEX_HANDLE sampler2D
         #define TEXTURE2D
 
-        layout(binding = BIND_SCENE_SAMPLERS) uniform sampler g_linear_sampler;
+        //layout(binding = BIND_SCENE_SAMPLERS) uniform sampler g_linear_sampler;
 
         vec4 textureBindless(const sampler2D handle, const vec2 uvs) {
             return texture(handle, uvs);

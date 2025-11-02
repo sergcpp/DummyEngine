@@ -573,11 +573,6 @@ void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, cons
     const FgResRef ndx_buf = gbuf_fill.AddIndexBufferInput(persistent_data.indices_buf);
 
     const FgResRef materials_buf = gbuf_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(REN_GL_BACKEND)
-    const FgResRef textures_buf = gbuf_fill.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
-#else
-    const FgResRef textures_buf = {};
-#endif
 
     const FgResRef noise_tex =
         gbuf_fill.AddTextureInput(noise_tex_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
@@ -601,9 +596,9 @@ void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, cons
     frame_textures.depth = gbuf_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
     gbuf_fill.make_executor<ExGBufferFill>(
-        &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless, noise_tex,
-        dummy_white, dummy_black, instances_buf, instances_indices_buf, shared_data_buf, cells_buf, items_buf,
-        decals_buf, frame_textures.albedo, frame_textures.normal, frame_textures.specular, frame_textures.depth);
+        &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, &bindless, noise_tex, dummy_white,
+        dummy_black, instances_buf, instances_indices_buf, shared_data_buf, cells_buf, items_buf, decals_buf,
+        frame_textures.albedo, frame_textures.normal, frame_textures.specular, frame_textures.depth);
 }
 
 void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
@@ -616,11 +611,6 @@ void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, co
     const FgResRef ndx_buf = opaque.AddIndexBufferInput(persistent_data.indices_buf);
 
     const FgResRef materials_buf = opaque.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(REN_GL_BACKEND)
-    const FgResRef textures_buf = opaque.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
-#else
-    const FgResRef textures_buf = {};
-#endif
     const FgResRef brdf_lut = opaque.AddTextureInput(brdf_lut_, Stg::FragmentShader);
     const FgResRef noise_tex =
         opaque.AddTextureInput(noise_tex_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
@@ -656,10 +646,10 @@ void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, co
     frame_textures.depth = opaque.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
     opaque.make_executor<ExOpaque>(
-        &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
-        persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black, instances_buf,
-        instances_indices_buf, shader_data_buf, cells_buf, items_buf, lights_buf, decals_buf, shadowmap_tex, ssao_tex,
-        lmap_tex, frame_textures.color, frame_textures.normal, frame_textures.specular, frame_textures.depth);
+        &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, persistent_data.pipelines.data(), &bindless,
+        brdf_lut, noise_tex, cone_rt_lut, dummy_black, instances_buf, instances_indices_buf, shader_data_buf, cells_buf,
+        items_buf, lights_buf, decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color,
+        frame_textures.normal, frame_textures.specular, frame_textures.depth);
 }
 
 void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers,
@@ -674,11 +664,6 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
 
     const FgResRef materials_buf =
         transparent.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(REN_GL_BACKEND)
-    const FgResRef textures_buf = transparent.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
-#else
-    const FgResRef textures_buf = {};
-#endif
     const FgResRef brdf_lut = transparent.AddTextureInput(brdf_lut_, Stg::FragmentShader);
     const FgResRef noise_tex =
         transparent.AddTextureInput(noise_tex_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
@@ -714,10 +699,10 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
     frame_textures.depth = transparent.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
     transparent.make_executor<ExTransparent>(
-        &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
-        persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black, instances_buf,
-        instances_indices_buf, shader_data_buf, cells_buf, items_buf, lights_buf, decals_buf, shadowmap_tex, ssao_tex,
-        lmap_tex, frame_textures.color, frame_textures.normal, frame_textures.specular, frame_textures.depth);
+        &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, persistent_data.pipelines.data(), &bindless,
+        brdf_lut, noise_tex, cone_rt_lut, dummy_black, instances_buf, instances_indices_buf, shader_data_buf, cells_buf,
+        items_buf, lights_buf, decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color,
+        frame_textures.normal, frame_textures.specular, frame_textures.depth);
 }
 
 void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
@@ -832,11 +817,6 @@ void Eng::Renderer::AddEmissivePass(const CommonBuffers &common_buffers, const P
     const FgResRef ndx_buf = emissive.AddIndexBufferInput(persistent_data.indices_buf);
 
     const FgResRef materials_buf = emissive.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(REN_GL_BACKEND)
-    const FgResRef textures_buf = emissive.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
-#else
-    const FgResRef textures_buf = {};
-#endif
 
     const FgResRef noise_tex =
         emissive.AddTextureInput(noise_tex_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
@@ -852,9 +832,9 @@ void Eng::Renderer::AddEmissivePass(const CommonBuffers &common_buffers, const P
     frame_textures.color = emissive.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
     frame_textures.depth = emissive.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-    emissive.make_executor<ExEmissive>(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
-                                       &bindless, noise_tex, dummy_white, instances_buf, instances_indices_buf,
-                                       shared_data_buf, frame_textures.color, frame_textures.depth);
+    emissive.make_executor<ExEmissive>(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, &bindless,
+                                       noise_tex, dummy_white, instances_buf, instances_indices_buf, shared_data_buf,
+                                       frame_textures.color, frame_textures.depth);
 }
 
 void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,

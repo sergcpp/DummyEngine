@@ -114,7 +114,6 @@ void Eng::ExDepthFill::DrawDepth(FgContext &ctx, FgAllocBuf &vtx_buf1, FgAllocBu
     FgAllocBuf &instances_buf = ctx.AccessROBuffer(instances_buf_);
     FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
     FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
-    FgAllocBuf &textures_buf = ctx.AccessROBuffer(textures_buf_);
     FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
 
     glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, GLuint(unif_shared_data_buf.ref->id()));
@@ -126,7 +125,8 @@ void Eng::ExDepthFill::DrawDepth(FgContext &ctx, FgAllocBuf &vtx_buf1, FgAllocBu
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
     if (ctx.ren_ctx().capabilities.bindless_texture) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX, GLuint(textures_buf.ref->id()));
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX,
+                         GLuint(bindless_tex_->rt_inline_textures.buf->id()));
     }
 
     // Clear commands account for scissor region

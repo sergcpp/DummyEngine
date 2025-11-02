@@ -38,7 +38,6 @@ class ExTransparent final : public FgExecutor {
     FgResRef lights_buf_;
     FgResRef decals_buf_;
     FgResRef materials_buf_;
-    FgResRef textures_buf_;
     FgResRef lm_tex_[4];
     FgResRef brdf_lut_;
     FgResRef noise_tex_;
@@ -72,13 +71,13 @@ class ExTransparent final : public FgExecutor {
   public:
     ExTransparent(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
                   const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
-                  const FgResRef textures_buf, const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex,
-                  const FgResRef brdf_lut, const FgResRef noise_tex, const FgResRef cone_rt_lut,
-                  const FgResRef dummy_black, const FgResRef instances_buf, const FgResRef instance_indices_buf,
-                  const FgResRef shared_data_buf, const FgResRef cells_buf, const FgResRef items_buf,
-                  const FgResRef lights_buf, const FgResRef decals_buf, const FgResRef shad_tex,
-                  const FgResRef ssao_tex, const FgResRef lm_tex[4], const FgResRef color_tex,
-                  const FgResRef normal_tex, const FgResRef spec_tex, const FgResRef depth_tex) {
+                  const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const FgResRef brdf_lut,
+                  const FgResRef noise_tex, const FgResRef cone_rt_lut, const FgResRef dummy_black,
+                  const FgResRef instances_buf, const FgResRef instance_indices_buf, const FgResRef shared_data_buf,
+                  const FgResRef cells_buf, const FgResRef items_buf, const FgResRef lights_buf,
+                  const FgResRef decals_buf, const FgResRef shad_tex, const FgResRef ssao_tex, const FgResRef lm_tex[4],
+                  const FgResRef color_tex, const FgResRef normal_tex, const FgResRef spec_tex,
+                  const FgResRef depth_tex) {
         view_state_ = view_state;
         pipelines_ = pipelines;
         bindless_tex_ = bindless_tex;
@@ -98,7 +97,6 @@ class ExTransparent final : public FgExecutor {
         shad_tex_ = shad_tex;
         ssao_tex_ = ssao_tex;
         materials_buf_ = materials_buf;
-        textures_buf_ = textures_buf;
 
         for (int i = 0; i < 4; ++i) {
             lm_tex_[i] = lm_tex[i];

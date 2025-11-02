@@ -35,7 +35,6 @@ class ExSampleLights final : public FgExecutor {
             FgResRef rt_blas_buf;
             FgResRef prim_ndx_buf;
             FgResRef mesh_instances_buf;
-            FgResRef textures_buf;
         } swrt;
 
         FgResRef out_diffuse_tex;

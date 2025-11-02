@@ -443,9 +443,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 data->swrt.prim_ndx_buf =
                     rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
                 data->swrt.mesh_instances_buf = rt_gi.AddStorageReadonlyInput(rt_obj_instances_res, stage);
-#if defined(REN_GL_BACKEND)
-                data->swrt.textures_buf = rt_gi.AddStorageReadonlyInput(bindless.textures_buf, stage);
-#endif
             }
 
             data->irradiance_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_irradiance, stage);
@@ -487,10 +484,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                     sample_lights.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, Stg::ComputeShader);
                 data->swrt.mesh_instances_buf =
                     sample_lights.AddStorageReadonlyInput(rt_obj_instances_res, Stg::ComputeShader);
-#if defined(REN_GL_BACKEND)
-                data->swrt.textures_buf =
-                    sample_lights.AddStorageReadonlyInput(bindless.textures_buf, Stg::ComputeShader);
-#endif
             }
 
             data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];

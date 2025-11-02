@@ -6,10 +6,10 @@
 
 Eng::ExOITDepthPeel::ExOITDepthPeel(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
                                     const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
-                                    const FgResRef textures_buf, const BindlessTextureData *bindless_tex,
-                                    const FgResRef dummy_white, const FgResRef instances_buf,
-                                    const FgResRef instance_indices_buf, const FgResRef shared_data_buf,
-                                    const FgResRef depth_tex, const FgResRef out_depth_buf) {
+                                    const BindlessTextureData *bindless_tex, const FgResRef dummy_white,
+                                    const FgResRef instances_buf, const FgResRef instance_indices_buf,
+                                    const FgResRef shared_data_buf, const FgResRef depth_tex,
+                                    const FgResRef out_depth_buf) {
     view_state_ = view_state;
     bindless_tex_ = bindless_tex;
 
@@ -22,7 +22,6 @@ Eng::ExOITDepthPeel::ExOITDepthPeel(const DrawList **p_list, const view_state_t 
     instance_indices_buf_ = instance_indices_buf;
     shared_data_buf_ = shared_data_buf;
     materials_buf_ = materials_buf;
-    textures_buf_ = textures_buf;
     dummy_white_ = dummy_white;
 
     depth_tex_ = depth_tex;

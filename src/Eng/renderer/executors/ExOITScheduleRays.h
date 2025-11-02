@@ -30,7 +30,6 @@ class ExOITScheduleRays final : public FgExecutor {
     FgResRef instance_indices_buf_;
     FgResRef shared_data_buf_;
     FgResRef materials_buf_;
-    FgResRef textures_buf_;
     FgResRef noise_tex_;
     FgResRef dummy_white_;
     FgResRef oit_depth_buf_;
@@ -46,10 +45,10 @@ class ExOITScheduleRays final : public FgExecutor {
   public:
     ExOITScheduleRays(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
                       const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
-                      const FgResRef textures_buf, const BindlessTextureData *bindless_tex, const FgResRef noise_tex,
-                      const FgResRef dummy_white, const FgResRef instances_buf, const FgResRef instance_indices_buf,
-                      const FgResRef shared_data_buf, const FgResRef depth_tex, const FgResRef oit_depth_buf,
-                      const FgResRef ray_counter, const FgResRef ray_list);
+                      const BindlessTextureData *bindless_tex, const FgResRef noise_tex, const FgResRef dummy_white,
+                      const FgResRef instances_buf, const FgResRef instance_indices_buf, const FgResRef shared_data_buf,
+                      const FgResRef depth_tex, const FgResRef oit_depth_buf, const FgResRef ray_counter,
+                      const FgResRef ray_list);
 
     void Execute(FgContext &ctx) override;
 };

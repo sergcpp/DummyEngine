@@ -2,6 +2,7 @@
 
 #include <cassert>
 
+#include "Bindless.h"
 #include "Buffer.h"
 #include "GL.h"
 #include "Pipeline.h"
@@ -72,6 +73,9 @@ void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u gr
             glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, layered ? GL_TRUE : GL_FALSE, 0,
                                b.trg == eBindTarget::ImageRO ? GL_READ_ONLY : GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex->params.format));
+        } else if (b.trg == eBindTarget::BindlessDescriptors) {
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, b.loc, b.handle.bindless->buf->id(), b.offset,
+                              b.size ? b.size : b.handle.bindless->buf->size());
         }
     }
 
@@ -143,6 +147,9 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
             glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, layered ? GL_TRUE : GL_FALSE, 0,
                                b.trg == eBindTarget::ImageRO ? GL_READ_ONLY : GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex->params.format));
+        } else if (b.trg == eBindTarget::BindlessDescriptors) {
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, b.loc, b.handle.bindless->buf->id(), b.offset,
+                              b.size ? b.size : b.handle.bindless->buf->size());
         }
     }
 

@@ -32,7 +32,6 @@ class ExOITBlendLayer final : public FgExecutor {
     FgResRef instance_indices_buf_;
     FgResRef shared_data_buf_;
     FgResRef materials_buf_;
-    FgResRef textures_buf_;
     FgResRef cells_buf_;
     FgResRef items_buf_;
     FgResRef lights_buf_;
@@ -62,7 +61,7 @@ class ExOITBlendLayer final : public FgExecutor {
 
   public:
     ExOITBlendLayer(PrimDraw &prim_draw, const DrawList **p_list, const view_state_t *view_state, FgResRef vtx_buf1,
-                    FgResRef vtx_buf2, FgResRef ndx_buf, FgResRef materials_buf, FgResRef textures_buf,
+                    FgResRef vtx_buf2, FgResRef ndx_buf, FgResRef materials_buf,
                     const BindlessTextureData *bindless_tex, FgResRef cells_buf, FgResRef items_buf,
                     FgResRef lights_buf, FgResRef decals_buf, FgResRef noise_tex, FgResRef dummy_white,
                     FgResRef shadow_map, FgResRef ltc_luts_tex, FgResRef env_tex, FgResRef instances_buf,

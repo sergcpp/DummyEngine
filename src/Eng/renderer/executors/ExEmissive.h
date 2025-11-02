@@ -31,7 +31,6 @@ class ExEmissive final : public FgExecutor {
     FgResRef instance_indices_buf_;
     FgResRef shared_data_buf_;
     FgResRef materials_buf_;
-    FgResRef textures_buf_;
     FgResRef noise_tex_;
     FgResRef dummy_white_;
 
@@ -45,9 +44,9 @@ class ExEmissive final : public FgExecutor {
   public:
     ExEmissive(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
                const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
-               const FgResRef textures_buf, const BindlessTextureData *bindless_tex, const FgResRef noise_tex,
-               const FgResRef dummy_white, const FgResRef instances_buf, const FgResRef instance_indices_buf,
-               const FgResRef shared_data_buf, const FgResRef out_color, const FgResRef out_depth) {
+               const BindlessTextureData *bindless_tex, const FgResRef noise_tex, const FgResRef dummy_white,
+               const FgResRef instances_buf, const FgResRef instance_indices_buf, const FgResRef shared_data_buf,
+               const FgResRef out_color, const FgResRef out_depth) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
 
@@ -63,8 +62,6 @@ class ExEmissive final : public FgExecutor {
 
         noise_tex_ = noise_tex;
         dummy_white_ = dummy_white;
-
-        textures_buf_ = textures_buf;
 
         out_color_tex_ = out_color;
         out_depth_tex_ = out_depth;

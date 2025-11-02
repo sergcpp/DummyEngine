@@ -28,7 +28,6 @@ class ExShadowColor final : public FgExecutor {
     FgResRef instance_indices_buf_;
     FgResRef shared_data_buf_;
     FgResRef materials_buf_;
-    FgResRef textures_buf_;
     FgResRef noise_tex_;
 
     // outputs
@@ -41,9 +40,8 @@ class ExShadowColor final : public FgExecutor {
   public:
     ExShadowColor(const int w, const int h, const DrawList **p_list, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
                   const FgResRef ndx_buf, const FgResRef materials_buf, const BindlessTextureData *bindless_tex,
-                  const FgResRef textures_buf, const FgResRef instances_buf, const FgResRef instance_indices_buf,
-                  const FgResRef shared_data_buf, const FgResRef noise_tex, const FgResRef shadow_depth_tex,
-                  const FgResRef shadow_color_tex)
+                  const FgResRef instances_buf, const FgResRef instance_indices_buf, const FgResRef shared_data_buf,
+                  const FgResRef noise_tex, const FgResRef shadow_depth_tex, const FgResRef shadow_color_tex)
         : w_(w), h_(h) {
         p_list_ = p_list;
         bindless_tex_ = bindless_tex;
@@ -56,7 +54,6 @@ class ExShadowColor final : public FgExecutor {
         instance_indices_buf_ = instance_indices_buf;
         shared_data_buf_ = shared_data_buf;
         materials_buf_ = materials_buf;
-        textures_buf_ = textures_buf;
         noise_tex_ = noise_tex;
 
         shadow_depth_tex_ = shadow_depth_tex;

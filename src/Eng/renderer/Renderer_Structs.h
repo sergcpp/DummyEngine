@@ -7,6 +7,7 @@
 #include <Ren/MQuat.h>
 #include <Ren/SmallVector.h>
 
+#include <Ren/Bindless.h>
 #include <Ren/Buffer.h>
 #if defined(REN_VK_BACKEND)
 #include <Ren/VK.h>
@@ -477,10 +478,9 @@ static_assert(sizeof(rt_obj_instance_t) == 64 + 24);
 struct BindlessTextureData {
 #if defined(REN_VK_BACKEND)
     Ren::Span<const VkDescriptorSet> textures_descr_sets;
-    VkDescriptorSet rt_textures_descr_set, rt_inline_textures_descr_set;
-#elif defined(REN_GL_BACKEND)
-    Ren::WeakBufRef textures_buf;
+    Ren::BindlessDescriptors rt_textures;
 #endif
+    Ren::BindlessDescriptors rt_inline_textures;
 };
 
 enum class eTLASIndex { Main, Shadow, Volume, _Count };

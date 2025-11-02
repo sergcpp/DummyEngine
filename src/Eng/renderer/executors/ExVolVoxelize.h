@@ -25,7 +25,6 @@ class ExVolVoxelize final : public FgExecutor {
             FgResRef rt_blas_buf;
             FgResRef prim_ndx_buf;
             FgResRef mesh_instances_buf;
-            FgResRef textures_buf;
             FgResRef vtx_buf1;
             FgResRef ndx_buf;
         } swrt;

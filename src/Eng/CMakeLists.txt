@@ -163,7 +163,6 @@ if(${REN_BACKEND} STREQUAL "GL")
     set(FRAMEGRAPH_SOURCES ${FRAMEGRAPH_SOURCES}
                            renderer/framegraph/FgBuilderGL.cpp)
     set(EXECUTORS_SOURCES   ${EXECUTORS_SOURCES}
-                            renderer/executors/ExDebugRT_GL.cpp
                             renderer/executors/ExDepthFillGL.cpp
                             renderer/executors/ExDepthHierarchyGL.cpp
                             renderer/executors/ExEmissiveGL.cpp
@@ -172,11 +171,6 @@ if(${REN_BACKEND} STREQUAL "GL")
                             renderer/executors/ExOITDepthPeelGL.cpp
                             renderer/executors/ExOITScheduleRaysGL.cpp
                             renderer/executors/ExOpaqueGL.cpp
-                            renderer/executors/ExRTGI_GL.cpp
-                            renderer/executors/ExRTGICacheGL.cpp
-                            renderer/executors/ExRTReflectionsGL.cpp
-                            renderer/executors/ExRTShadows_GL.cpp
-                            renderer/executors/ExSampleLightsGL.cpp
                             renderer/executors/ExShadowColorGL.cpp
                             renderer/executors/ExShadowDepthGL.cpp
                             renderer/executors/ExSkinningGL.cpp

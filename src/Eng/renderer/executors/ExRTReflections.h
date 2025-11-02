@@ -50,7 +50,6 @@ class ExRTReflections final : public FgExecutor {
             FgResRef rt_blas_buf;
             FgResRef prim_ndx_buf;
             FgResRef mesh_instances_buf;
-            FgResRef textures_buf;
         } swrt;
 
         bool layered = false;

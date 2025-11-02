@@ -13,6 +13,7 @@ class DescrMultiPoolAlloc;
 class ILog;
 class Pipeline;
 class Texture;
+struct BindlessDescriptors;
 
 enum class eBindTarget : uint16_t {
     Tex,
@@ -27,6 +28,7 @@ enum class eBindTarget : uint16_t {
     ImageRO,
     ImageRW,
     AccStruct,
+    BindlessDescriptors,
     _Count
 };
 
@@ -39,6 +41,7 @@ struct OpaqueHandle {
     union {
         const Texture *tex;
         const Buffer *buf;
+        const BindlessDescriptors *bindless;
 #if defined(REN_VK_BACKEND)
         const AccStructureVK *acc_struct;
 #endif
@@ -53,6 +56,7 @@ struct OpaqueHandle {
         : tex(&_tex), sampler(&_sampler), view_index(_view_index) {}
     OpaqueHandle(const Buffer &_buf, int _view_index = 0) : buf(&_buf), view_index(_view_index) {}
     OpaqueHandle(const Sampler &_sampler) : ptr(nullptr), sampler(&_sampler) {}
+    OpaqueHandle(const BindlessDescriptors &_bindless) : bindless(&_bindless) {}
 #if defined(REN_VK_BACKEND)
     OpaqueHandle(const AccStructureVK &_acc_struct) : acc_struct(&_acc_struct) {}
 #endif

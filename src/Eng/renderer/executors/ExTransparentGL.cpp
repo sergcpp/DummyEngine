@@ -64,8 +64,6 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgContext &ctx, FgAllocBuf &inst
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
 
-    FgAllocBuf &textures_buf = ctx.AccessROBuffer(textures_buf_);
-
     FgAllocTex &brdf_lut = ctx.AccessROTexture(brdf_lut_);
     FgAllocTex &noise_tex = ctx.AccessROTexture(noise_tex_);
     FgAllocTex &cone_rt_lut = ctx.AccessROTexture(cone_rt_lut_);
@@ -110,7 +108,8 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgContext &ctx, FgAllocBuf &inst
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
     if (ctx.ren_ctx().capabilities.bindless_texture) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX, GLuint(textures_buf.ref->id()));
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX,
+                         GLuint(bindless_tex_->rt_inline_textures.buf->id()));
     }
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.ref->view(0).second));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));

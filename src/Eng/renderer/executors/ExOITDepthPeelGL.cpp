@@ -36,7 +36,6 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgContext &ctx) {
     FgAllocBuf &instance_indices_buf = ctx.AccessROBuffer(instance_indices_buf_);
     FgAllocBuf &unif_shared_data_buf = ctx.AccessROBuffer(shared_data_buf_);
     FgAllocBuf &materials_buf = ctx.AccessROBuffer(materials_buf_);
-    FgAllocBuf &textures_buf = ctx.AccessROBuffer(textures_buf_);
     FgAllocTex &dummy_white = ctx.AccessROTexture(dummy_white_);
 
     FgAllocBuf &out_depth_buf = ctx.AccessRWBuffer(out_depth_buf_);
@@ -63,7 +62,8 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgContext &ctx) {
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
     if (ctx.ren_ctx().capabilities.bindless_texture) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX, GLuint(textures_buf.ref->id()));
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX,
+                         GLuint(bindless_tex_->rt_inline_textures.buf->id()));
     }
 
     glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf.ref->id());

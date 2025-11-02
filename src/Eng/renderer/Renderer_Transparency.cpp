@@ -91,11 +91,6 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
         const FgResRef materials_buf =
             oit_depth_peel.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(REN_GL_BACKEND)
-        const FgResRef textures_buf = oit_depth_peel.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
-#else
-        const FgResRef textures_buf = {};
-#endif
 
         [[maybe_unused]] const FgResRef noise_tex =
             oit_depth_peel.AddTextureInput(noise_tex_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
@@ -112,9 +107,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         frame_textures.depth = oit_depth_peel.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
         oit_depth_buf = oit_depth_peel.AddStorageOutput(oit_depth_buf, Stg::FragmentShader);
 
-        oit_depth_peel.make_executor<ExOITDepthPeel>(
-            &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless, white_tex,
-            instances_buf, instances_indices_buf, shader_data_buf, frame_textures.depth, oit_depth_buf);
+        oit_depth_peel.make_executor<ExOITDepthPeel>(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf,
+                                                     &bindless, white_tex, instances_buf, instances_indices_buf,
+                                                     shader_data_buf, frame_textures.depth, oit_depth_buf);
     }
 
     FgResRef oit_ray_list;
@@ -128,11 +123,6 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
         const FgResRef materials_buf =
             oit_schedule.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(REN_GL_BACKEND)
-        const FgResRef textures_buf = oit_schedule.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
-#else
-        const FgResRef textures_buf = {};
-#endif
 
         [[maybe_unused]] const FgResRef noise_tex =
             oit_schedule.AddTextureInput(noise_tex_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
@@ -159,10 +149,10 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             oit_ray_list = oit_schedule.AddStorageOutput("OIT Ray List", desc, Stg::FragmentShader);
         }
 
-        oit_schedule.make_executor<ExOITScheduleRays>(
-            &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless, noise_tex,
-            white_tex, instances_buf, instances_indices_buf, shader_data_buf, frame_textures.depth, oit_depth_buf,
-            oit_rays_counter, oit_ray_list);
+        oit_schedule.make_executor<ExOITScheduleRays>(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf,
+                                                      materials_buf, &bindless, noise_tex, white_tex, instances_buf,
+                                                      instances_indices_buf, shader_data_buf, frame_textures.depth,
+                                                      oit_depth_buf, oit_rays_counter, oit_ray_list);
     }
 
     FgResRef indir_disp_buf;
@@ -390,10 +380,6 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 data->swrt.prim_ndx_buf =
                     rt_refl.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
                 data->swrt.mesh_instances_buf = rt_refl.AddStorageReadonlyInput(rt_obj_instances_res, stage);
-
-#if defined(REN_GL_BACKEND)
-                data->swrt.textures_buf = rt_refl.AddStorageReadonlyInput(bindless.textures_buf, stage);
-#endif
             }
 
             data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
@@ -477,12 +463,6 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
             const FgResRef materials_buf =
                 oit_blend_layer.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(REN_GL_BACKEND)
-            const FgResRef textures_buf =
-                oit_blend_layer.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
-#else
-            const FgResRef textures_buf = {};
-#endif
 
             const FgResRef noise_tex =
                 oit_blend_layer.AddTextureInput(noise_tex_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
@@ -533,8 +513,8 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             back_depth = oit_blend_layer.AddTextureInput(back_depth, Stg::FragmentShader);
 
             oit_blend_layer.make_executor<ExOITBlendLayer>(
-                prim_draw_, &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
-                cells_buf, items_buf, lights_buf, decals_buf, noise_tex, white_tex, shadow_map, ltc_luts_tex, env_tex,
+                prim_draw_, &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, &bindless, cells_buf,
+                items_buf, lights_buf, decals_buf, noise_tex, white_tex, shadow_map, ltc_luts_tex, env_tex,
                 instances_buf, instances_indices_buf, shader_data_buf, frame_textures.depth, frame_textures.color,
                 oit_depth_buf, specular_tex, layer_index, irradiance_tex, distance_tex, offset_tex, back_color,
                 back_depth);

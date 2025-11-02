@@ -777,10 +777,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     BindlessTextureData bindless_tex;
 #if defined(REN_VK_BACKEND)
     bindless_tex.textures_descr_sets = persistent_data.textures_descr_sets[ctx_.backend_frame()];
-    bindless_tex.rt_textures_descr_set = persistent_data.rt_textures_descr_sets[ctx_.backend_frame()];
-    bindless_tex.rt_inline_textures_descr_set = persistent_data.rt_inline_textures_descr_sets[ctx_.backend_frame()];
+    bindless_tex.rt_textures.descr_set = persistent_data.rt_textures_descr_sets[ctx_.backend_frame()];
+    bindless_tex.rt_inline_textures.descr_set = persistent_data.rt_inline_textures_descr_sets[ctx_.backend_frame()];
 #elif defined(REN_GL_BACKEND)
-    bindless_tex.textures_buf = persistent_data.textures_buf;
+    bindless_tex.rt_inline_textures.buf = persistent_data.textures_buf;
 #endif
 
     const bool deferred_shading =
@@ -1124,20 +1124,14 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             FgResRef materials_buf_res =
                 shadow_depth.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStage::VertexShader);
-#if defined(REN_GL_BACKEND)
-            FgResRef textures_buf_res =
-                shadow_depth.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStage::VertexShader);
-#else
-            FgResRef textures_buf_res;
-#endif
             FgResRef noise_tex_res = shadow_depth.AddTextureInput(noise_tex_, Ren::eStage::VertexShader);
 
             frame_textures.shadow_depth = shadow_depth.AddDepthOutput(shadow_depth_tex_);
 
             shadow_depth.make_executor<ExShadowDepth>(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, vtx_buf1_res,
                                                       vtx_buf2_res, ndx_buf_res, materials_buf_res, &bindless_tex,
-                                                      textures_buf_res, instances_res, instance_indices_res,
-                                                      shared_data_res, noise_tex_res, frame_textures.shadow_depth);
+                                                      instances_res, instance_indices_res, shared_data_res,
+                                                      noise_tex_res, frame_textures.shadow_depth);
         }
         { // Shadow color
             auto &shadow_color = fg_builder_.AddNode("SHADOW COLOR");
@@ -1154,12 +1148,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             FgResRef materials_buf_res =
                 shadow_color.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStage::VertexShader);
-#if defined(REN_GL_BACKEND)
-            FgResRef textures_buf_res =
-                shadow_color.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStage::VertexShader);
-#else
-            FgResRef textures_buf_res;
-#endif
             FgResRef noise_tex_res = shadow_color.AddTextureInput(noise_tex_, Ren::eStage::VertexShader);
 
             frame_textures.shadow_depth = shadow_color.AddDepthOutput(shadow_depth_tex_);
@@ -1167,7 +1155,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             shadow_color.make_executor<ExShadowColor>(
                 SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials_buf_res,
-                &bindless_tex, textures_buf_res, instances_res, instance_indices_res, shared_data_res, noise_tex_res,
+                &bindless_tex, instances_res, instance_indices_res, shared_data_res, noise_tex_res,
                 frame_textures.shadow_depth, frame_textures.shadow_color);
         }
 
@@ -1238,12 +1226,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             FgResRef materials_buf_res =
                 depth_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStage::VertexShader);
-#if defined(REN_GL_BACKEND)
-            FgResRef textures_buf_res =
-                depth_fill.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStage::VertexShader);
-#else
-            FgResRef textures_buf_res;
-#endif
             FgResRef noise_tex_res = depth_fill.AddTextureInput(noise_tex_, Ren::eStage::VertexShader);
 
             frame_textures.depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
@@ -1259,8 +1241,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             }
 
             depth_fill.make_executor<ExDepthFill>(&p_list_, &view_state_, deferred_shading /* clear_depth */, vtx_buf1,
-                                                  vtx_buf2, ndx_buf, materials_buf_res, textures_buf_res, &bindless_tex,
-                                                  instances_res, instance_indices_res, shared_data_res, noise_tex_res,
+                                                  vtx_buf2, ndx_buf, materials_buf_res, &bindless_tex, instances_res,
+                                                  instance_indices_res, shared_data_res, noise_tex_res,
                                                   frame_textures.depth, frame_textures.velocity);
         }
 
@@ -1464,10 +1446,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
                 data->swrt.mesh_instances_buf = debug_rt.AddStorageReadonlyInput(
                     rt_obj_instances_res[int(list.render_settings.debug_rt) - 1], stage);
-
-#if defined(REN_GL_BACKEND)
-                data->swrt.textures_buf = debug_rt.AddStorageReadonlyInput(bindless_tex.textures_buf, stage);
-#endif
             }
 
             data->env_tex = debug_rt.AddTextureInput(list.env.env_map, stage);

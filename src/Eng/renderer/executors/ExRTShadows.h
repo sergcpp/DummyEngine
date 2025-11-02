@@ -32,7 +32,6 @@ class ExRTShadows final : public FgExecutor {
             FgResRef blas_buf;
             FgResRef prim_ndx_buf;
             FgResRef mesh_instances_buf;
-            FgResRef textures_buf;
         } swrt;
 
         FgResRef out_shadow_tex;

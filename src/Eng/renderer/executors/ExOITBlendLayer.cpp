@@ -6,7 +6,7 @@
 
 Eng::ExOITBlendLayer::ExOITBlendLayer(
     PrimDraw &prim_draw, const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
-    const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf, const FgResRef textures_buf,
+    const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
     const BindlessTextureData *bindless_tex, const FgResRef cells_buf, const FgResRef items_buf,
     const FgResRef lights_buf, const FgResRef decals_buf, const FgResRef noise_tex, const FgResRef dummy_white,
     const FgResRef shadow_map, const FgResRef ltc_luts_tex, const FgResRef env_tex, const FgResRef instances_buf,
@@ -17,12 +17,12 @@ Eng::ExOITBlendLayer::ExOITBlendLayer(
     : prim_draw_(prim_draw), view_state_(view_state), bindless_tex_(bindless_tex), p_list_(p_list), vtx_buf1_(vtx_buf1),
       vtx_buf2_(vtx_buf2), ndx_buf_(ndx_buf), instances_buf_(instances_buf),
       instance_indices_buf_(instance_indices_buf), shared_data_buf_(shared_data_buf), materials_buf_(materials_buf),
-      textures_buf_(textures_buf), cells_buf_(cells_buf), items_buf_(items_buf), lights_buf_(lights_buf),
-      decals_buf_(decals_buf), noise_tex_(noise_tex), dummy_white_(dummy_white), shadow_map_(shadow_map),
-      ltc_luts_tex_(ltc_luts_tex), env_tex_(env_tex), oit_depth_buf_(oit_depth_buf),
-      depth_layer_index_(depth_layer_index), oit_specular_tex_(oit_specular_tex), irradiance_tex_(irradiance_tex),
-      distance_tex_(distance_tex), offset_tex_(offset_tex), back_color_tex_(back_color_tex),
-      back_depth_tex_(back_depth_tex), depth_tex_(depth_tex), color_tex_(color_tex) {}
+      cells_buf_(cells_buf), items_buf_(items_buf), lights_buf_(lights_buf), decals_buf_(decals_buf),
+      noise_tex_(noise_tex), dummy_white_(dummy_white), shadow_map_(shadow_map), ltc_luts_tex_(ltc_luts_tex),
+      env_tex_(env_tex), oit_depth_buf_(oit_depth_buf), depth_layer_index_(depth_layer_index),
+      oit_specular_tex_(oit_specular_tex), irradiance_tex_(irradiance_tex), distance_tex_(distance_tex),
+      offset_tex_(offset_tex), back_color_tex_(back_color_tex), back_depth_tex_(back_depth_tex), depth_tex_(depth_tex),
+      color_tex_(color_tex) {}
 
 void Eng::ExOITBlendLayer::Execute(FgContext &ctx) {
     FgAllocBuf &vtx_buf1 = ctx.AccessROBuffer(vtx_buf1_);

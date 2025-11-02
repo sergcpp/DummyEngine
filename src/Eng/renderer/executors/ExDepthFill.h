@@ -26,7 +26,6 @@ class ExDepthFill final : public FgExecutor {
     FgResRef instance_indices_buf_;
     FgResRef shared_data_buf_;
     FgResRef materials_buf_;
-    FgResRef textures_buf_;
     FgResRef noise_tex_;
 
     FgResRef depth_tex_;
@@ -51,7 +50,7 @@ class ExDepthFill final : public FgExecutor {
   public:
     ExDepthFill(const DrawList **list, const view_state_t *view_state, bool clear_depth, const FgResRef vtx_buf1,
                 const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
-                const FgResRef textures_buf, const BindlessTextureData *bindless_tex, const FgResRef instances_buf,
+                const BindlessTextureData *bindless_tex, const FgResRef instances_buf,
                 const FgResRef instance_indices_buf, const FgResRef shared_data_buf, const FgResRef noise_tex,
                 const FgResRef depth_tex, const FgResRef velocity_tex) {
         view_state_ = view_state;
@@ -67,7 +66,6 @@ class ExDepthFill final : public FgExecutor {
         instance_indices_buf_ = instance_indices_buf;
         shared_data_buf_ = shared_data_buf;
         materials_buf_ = materials_buf;
-        textures_buf_ = textures_buf;
 
         noise_tex_ = noise_tex;
 

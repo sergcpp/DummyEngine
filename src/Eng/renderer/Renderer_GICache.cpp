@@ -54,10 +54,6 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             data->swrt.prim_ndx_buf =
                 rt_gi_cache.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
             data->swrt.mesh_instances_buf = rt_gi_cache.AddStorageReadonlyInput(rt_obj_instances_res, stage);
-
-#if defined(REN_GL_BACKEND)
-            data->swrt.textures_buf = rt_gi_cache.AddStorageReadonlyInput(bindless.textures_buf, stage);
-#endif
         }
 
         data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];

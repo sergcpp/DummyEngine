@@ -6,12 +6,12 @@
 
 Eng::ExOITScheduleRays::ExOITScheduleRays(const DrawList **p_list, const view_state_t *view_state,
                                           const FgResRef vtx_buf1, const FgResRef vtx_buf2, const FgResRef ndx_buf,
-                                          const FgResRef materials_buf, const FgResRef textures_buf,
-                                          const BindlessTextureData *bindless_tex, const FgResRef noise_tex,
-                                          const FgResRef dummy_white, const FgResRef instances_buf,
-                                          const FgResRef instance_indices_buf, const FgResRef shared_data_buf,
-                                          const FgResRef depth_tex, const FgResRef oit_depth_buf,
-                                          const FgResRef ray_counter, const FgResRef ray_list) {
+                                          const FgResRef materials_buf, const BindlessTextureData *bindless_tex,
+                                          const FgResRef noise_tex, const FgResRef dummy_white,
+                                          const FgResRef instances_buf, const FgResRef instance_indices_buf,
+                                          const FgResRef shared_data_buf, const FgResRef depth_tex,
+                                          const FgResRef oit_depth_buf, const FgResRef ray_counter,
+                                          const FgResRef ray_list) {
     view_state_ = view_state;
     bindless_tex_ = bindless_tex;
 
@@ -24,7 +24,6 @@ Eng::ExOITScheduleRays::ExOITScheduleRays(const DrawList **p_list, const view_st
     instance_indices_buf_ = instance_indices_buf;
     shared_data_buf_ = shared_data_buf;
     materials_buf_ = materials_buf;
-    textures_buf_ = textures_buf;
     noise_tex_ = noise_tex;
     dummy_white_ = dummy_white;
     oit_depth_buf_ = oit_depth_buf;

@@ -1,6 +1,7 @@
 #include "DrawCall.h"
 
 #include "AccStructure.h"
+#include "Bindless.h"
 #include "DescriptorPool.h"
 #include "Log.h"
 #include "Pipeline.h"
@@ -169,16 +170,22 @@ void Ren::DispatchCompute(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, 
                           DescrMultiPoolAlloc &descr_alloc, ILog *log) {
     ApiContext *api_ctx = descr_alloc.api_ctx();
 
-    VkDescriptorSet descr_set =
-        PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings, descr_alloc, log);
-    if (!descr_set) {
+    SmallVector<VkDescriptorSet, 2> descr_sets;
+    descr_sets.push_back(
+        PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings, descr_alloc, log));
+    if (!descr_sets.back()) {
         log->Error("Failed to allocate descriptor set, skipping draw call!");
         return;
     }
+    for (const Binding &b : bindings) {
+        if (b.trg == eBindTarget::BindlessDescriptors) {
+            descr_sets.push_back(b.handle.bindless->descr_set);
+        }
+    }
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, comp_pipeline.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, comp_pipeline.layout(), 0, 1, &descr_set,
-                                     0, nullptr);
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, comp_pipeline.layout(), 0,
+                                     descr_sets.size(), descr_sets.data(), 0, nullptr);
 
     if (uniform_data) {
         api_ctx->vkCmdPushConstants(cmd_buf, comp_pipeline.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, uniform_data_len,
@@ -202,16 +209,22 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
                                   ILog *log) {
     ApiContext *api_ctx = descr_alloc.api_ctx();
 
-    VkDescriptorSet descr_set =
-        PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings, descr_alloc, log);
-    if (!descr_set) {
+    SmallVector<VkDescriptorSet, 2> descr_sets;
+    descr_sets.push_back(
+        PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings, descr_alloc, log));
+    if (!descr_sets.back()) {
         log->Error("Failed to allocate descriptor set, skipping draw call!");
         return;
     }
+    for (const Binding &b : bindings) {
+        if (b.trg == eBindTarget::BindlessDescriptors) {
+            descr_sets.push_back(b.handle.bindless->descr_set);
+        }
+    }
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, comp_pipeline.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, comp_pipeline.layout(), 0, 1, &descr_set,
-                                     0, nullptr);
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, comp_pipeline.layout(), 0,
+                                     descr_sets.size(), descr_sets.data(), 0, nullptr);
 
     if (uniform_data) {
         api_ctx->vkCmdPushConstants(cmd_buf, comp_pipeline.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, uniform_data_len,
