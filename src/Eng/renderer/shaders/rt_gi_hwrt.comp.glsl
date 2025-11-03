@@ -495,7 +495,7 @@ void main() {
                                                                       g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
                         avg_radiance *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
                         avg_radiance *= saturate(hit_t / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)));
-                        light_total += throughput * (1.0 / M_PI) * avg_radiance;
+                        final_color += throughput * (1.0 / M_PI) * avg_radiance;
                     }
                     if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && hit_t > 0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)) {
                         vec3 irradiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(gi_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), N,

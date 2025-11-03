@@ -10,8 +10,8 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     // complex materials
     run_image_test(threads, "visibility_flags", 25.40, Full);
     run_image_test(threads, "visibility_flags", 25.30, Full_Ultra);
-    run_image_test(threads, "visibility_flags_sun", 25.15, Full);
-    run_image_test(threads, "visibility_flags_sun", 26.50, Full_Ultra);
+    run_image_test(threads, "visibility_flags_sun", 24.95, Full);
+    run_image_test(threads, "visibility_flags_sun", 26.30, Full_Ultra);
     run_image_test(threads, "two_sided_mat", 39.45, NoShadow);
     run_image_test(threads, "two_sided_mat", 29.90, NoGI);
     run_image_test(threads, "two_sided_mat", 29.55, NoDiffGI);
@@ -38,7 +38,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "complex_mat2_area_spread", 17.10, NoDiffGI);
     run_image_test(threads, "complex_mat2_area_spread", 17.15, MedDiffGI);
     run_image_test(threads, "complex_mat2_area_spread", 18.50, Full);
-    run_image_test(threads, "complex_mat2_area_spread", 18.35, Full_Ultra);
+    run_image_test(threads, "complex_mat2_area_spread", 18.30, Full_Ultra);
     run_image_test(threads, "complex_mat2_emissive", 18.35, Full);
     run_image_test(threads, "complex_mat2_emissive", 17.35, Full_Ultra);
     run_image_test(threads, "complex_mat2_dyn",
@@ -75,13 +75,13 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "complex_mat2_sun_light", 22.80, Full_Ultra);
     run_image_test(threads, "complex_mat2_sun_light_dyn",
                    std::vector<double>{31.85, 32.15, 32.25, 32.15, 32.00, 31.55, 31.15, 30.70, 30.05, 29.35, //
-                                       28.55, 27.55, 26.45, 25.20, 23.70, 21.95, 20.20, 21.25, 22.50, 23.50,
+                                       28.55, 27.55, 26.45, 25.20, 23.70, 21.95, 20.20, 21.25, 23.10, 24.15,
                                        24.75, 24.80, 25.15, 25.90, 26.85, 27.75, 27.25, 27.85, 28.30, 28.70,
                                        29.35, 30.45, 30.50},
                    Full);
     run_image_test(threads, "complex_mat2_sun_light_dyn",
                    std::vector<double>{32.55, 32.90, 33.05, 32.90, 32.65, 32.25, 31.80, 31.30, 30.75, 30.00, //
-                                       29.05, 28.05, 26.85, 25.60, 24.25, 22.60, 20.80, 21.70, 22.80, 24.25,
+                                       29.05, 28.05, 26.85, 25.60, 24.25, 22.60, 20.80, 21.70, 23.40, 24.25,
                                        25.10, 25.15, 25.50, 26.20, 27.15, 28.10, 27.50, 28.10, 28.55, 28.90,
                                        29.55, 30.75, 30.75},
                    Full_Ultra);
