@@ -43,7 +43,8 @@ void main() {
     float ray_length = length(ray_dir_ws);
     ray_dir_ws /= ray_length;
 
-    vec3 inv_dir = 1.0 / ray_dir_ws;
+    vec3 inv_d = 1.0 / ray_dir_ws;
+    const vec3 neg_inv_do = -inv_d * ray_start_ws.xyz;
 
     int stack[32];
     int stack_size = 0;
@@ -65,7 +66,7 @@ void main() {
         vec4 node_data1 = texelFetch(g_nodes_buf, cur * 3 + 1);
         vec4 node_data2 = texelFetch(g_nodes_buf, cur * 3 + 2);
 
-        if (!bbox_test(ray_start_ws.xyz, inv_dir, 100.0, node_data1.xyz, node_data2.xyz)) continue;
+        if (!bbox_test(inv_d, neg_inv_do, 0.0, 100.0, node_data1.xyz, node_data2.xyz)) continue;
 
         tree_complexity++;
 

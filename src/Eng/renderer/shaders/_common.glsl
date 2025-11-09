@@ -482,27 +482,7 @@ bool bbox_test(const vec3 p, const vec3 bbox_min, const vec3 bbox_max) {
            p.z >= bbox_min.z && p.z <= bbox_max.z;
 }
 
-bool bbox_test(vec3 o, vec3 inv_d, float t, vec3 bbox_min, vec3 bbox_max) {
-    float low = inv_d.x * (bbox_min[0] - o.x);
-    float high = inv_d.x * (bbox_max[0] - o.x);
-    float tmin = min(low, high);
-    float tmax = max(low, high);
-
-    low = inv_d.y * (bbox_min[1] - o.y);
-    high = inv_d.y * (bbox_max[1] - o.y);
-    tmin = max(tmin, min(low, high));
-    tmax = min(tmax, max(low, high));
-
-    low = inv_d.z * (bbox_min[2] - o.z);
-    high = inv_d.z * (bbox_max[2] - o.z);
-    tmin = max(tmin, min(low, high));
-    tmax = min(tmax, max(low, high));
-    tmax *= 1.00000024;
-
-    return tmin <= tmax && tmin <= t && tmax > 0.0;
-}
-
-bool bbox_test_fma(vec3 inv_d, vec3 neg_inv_d_o, float t, vec3 bbox_min, vec3 bbox_max) {
+bool bbox_test(vec3 inv_d, vec3 neg_inv_d_o, float _tmin, float _tmax, vec3 bbox_min, vec3 bbox_max) {
     float low = fma(inv_d.x, bbox_min.x, neg_inv_d_o.x);
     float high = fma(inv_d.x, bbox_max.x, neg_inv_d_o.x);
     float tmin = min(low, high);
@@ -519,10 +499,10 @@ bool bbox_test_fma(vec3 inv_d, vec3 neg_inv_d_o, float t, vec3 bbox_min, vec3 bb
     tmax = min(tmax, max(low, high));
     tmax *= 1.00000024;
 
-    return tmin <= tmax && tmin <= t && tmax > 0.0;
+    return tmin <= tmax && tmin < _tmax && tmax > _tmin;
 }
 
-bool bbox_test(vec3 inv_d, vec3 neg_inv_d_o, float t, vec3 bbox_min, vec3 bbox_max, out float dist) {
+bool bbox_test(vec3 inv_d, vec3 neg_inv_d_o, float _tmin, float _tmax, vec3 bbox_min, vec3 bbox_max, out float dist) {
     float low = fma(inv_d.x, bbox_min.x, neg_inv_d_o.x);
     float high = fma(inv_d.x, bbox_max.x, neg_inv_d_o.x);
     float tmin = min(low, high);
@@ -541,7 +521,7 @@ bool bbox_test(vec3 inv_d, vec3 neg_inv_d_o, float t, vec3 bbox_min, vec3 bbox_m
 
     dist = tmin;
 
-    return tmin <= tmax && tmin <= t && tmax > 0.0;
+    return tmin <= tmax && tmin <= _tmax && tmax > _tmin;
 }
 
 vec2 bbox_test(vec3 inv_d, vec3 neg_inv_d_o, vec3 bbox_min, vec3 bbox_max) {

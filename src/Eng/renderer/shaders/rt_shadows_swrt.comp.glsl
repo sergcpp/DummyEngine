@@ -96,8 +96,7 @@ void main() {
 
         // Bias to avoid self-intersection
         // TODO: use flat normal here
-        vec3 ro = ray_origin_ws.xyz + (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition + (-ray_origin_vs.z) * NormalBiasViewAddition) * normal_ws;
-        ro += min_t * shadow_ray_ws.xyz;
+        ray_origin_ws.xyz += (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition + (-ray_origin_vs.z) * NormalBiasViewAddition) * normal_ws;
 
         float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
@@ -107,13 +106,14 @@ void main() {
         inter.mask = 0;
         inter.obj_index = inter.prim_index = 0;
         inter.geo_index_count = 0;
-        inter.t = max_t;
+        inter.tmin = min_t;
+        inter.tmax = max_t;
         inter.u = inter.v = 0.0;
 
         int transp_depth = 0;
         while (true) {
             Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
-                                    ro, shadow_ray_ws.xyz, inv_d, (1u << RAY_TYPE_SHADOW), 0 /* root_node */, inter);
+                                    ray_origin_ws.xyz, shadow_ray_ws.xyz, inv_d, (1u << RAY_TYPE_SHADOW), 0 /* root_node */, inter);
             if (inter.mask != 0) {
                 if (transp_depth++ < 4) {
                     // perform alpha test
@@ -151,9 +151,9 @@ void main() {
         #if defined(BINDLESS_TEXTURES)
                     const float alpha = (1.0 - mat.params[3].x) * textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
                     if (alpha < 0.5) {
-                        ro += (inter.t + 0.0005) * shadow_ray_ws.xyz;
+                        inter.tmin = (inter.tmax + 0.0005);
+                        inter.tmax = max_t - inter.tmin;
                         inter.mask = 0;
-                        inter.t = 1000.0;
                         continue;
                     }
         #endif

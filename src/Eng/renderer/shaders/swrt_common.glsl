@@ -115,7 +115,7 @@ struct hit_data_t {
     int obj_index;
     uint geo_index_count;
     int prim_index;
-    float t, u, v;
+    float tmin, tmax, u, v;
 };
 
 #define near_child(rd, n)   \
@@ -138,12 +138,12 @@ void IntersectTris_ClosestHit(samplerBuffer vtx_positions, usamplerBuffer vtx_in
         const int inter_result = IntersectTri(ro, rd, texelFetch(vtx_positions, int(first_vertex + i0)).xyz,
                                                       texelFetch(vtx_positions, int(first_vertex + i1)).xyz,
                                                       texelFetch(vtx_positions, int(first_vertex + i2)).xyz, t, u, v);
-        if (inter_result != 0 && t > 0.0 && t < out_inter.t) {
+        if (inter_result != 0 && t > out_inter.tmin && t < out_inter.tmax) {
             out_inter.mask = -1;
             out_inter.prim_index = inter_result > 0 ? int(j) : -int(j) - 1;
             out_inter.obj_index = obj_index;
             out_inter.geo_index_count = geo_index_count;
-            out_inter.t = t;
+            out_inter.tmax = t;
             out_inter.u = u;
             out_inter.v = v;
         }
@@ -182,8 +182,8 @@ void Traverse_BLAS_WithStack(samplerBuffer blas_nodes, samplerBuffer vtx_positio
             const vec3 ch1_max = vec3(ch_data1[1], ch_data1[3], ch_data2[3]);
 
             float ch0_dist, ch1_dist;
-            const bool ch0_res = bbox_test(inv_d, neg_inv_do, inter.t, ch0_min, ch0_max, ch0_dist);
-            const bool ch1_res = bbox_test(inv_d, neg_inv_do, inter.t, ch1_min, ch1_max, ch1_dist);
+            const bool ch0_res = bbox_test(inv_d, neg_inv_do, inter.tmin, inter.tmax, ch0_min, ch0_max, ch0_dist);
+            const bool ch1_res = bbox_test(inv_d, neg_inv_do, inter.tmin, inter.tmax, ch1_min, ch1_max, ch1_dist);
 
             if (!ch0_res && !ch1_res) {
                 cur = g_stack[gl_LocalInvocationIndex][--stack_size];
@@ -254,8 +254,8 @@ void Traverse_TLAS_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_nodes,
             const vec3 ch1_max = vec3(ch_data1[1], ch_data1[3], ch_data2[3]);
 
             float ch0_dist, ch1_dist;
-            const bool ch0_res = bbox_test(orig_inv_rd, orig_neg_inv_do, inter.t, ch0_min, ch0_max, ch0_dist);
-            const bool ch1_res = bbox_test(orig_inv_rd, orig_neg_inv_do, inter.t, ch1_min, ch1_max, ch1_dist);
+            const bool ch0_res = bbox_test(orig_inv_rd, orig_neg_inv_do, inter.tmin, inter.tmax, ch0_min, ch0_max, ch0_dist);
+            const bool ch1_res = bbox_test(orig_inv_rd, orig_neg_inv_do, inter.tmin, inter.tmax, ch1_min, ch1_max, ch1_dist);
 
             if (!ch0_res && !ch1_res) {
                 cur = g_stack[gl_LocalInvocationIndex][--stack_size];

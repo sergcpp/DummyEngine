@@ -76,7 +76,7 @@ void main() {
     const vec2 in_uv = px_center / vec2(g_params.img_size);
     const vec2 d = in_uv * 2.0 - 1.0;
 
-    vec3 origin = TransformFromClipSpace(g_shrd_data.world_from_clip, vec4(d.xy, 1, 1));
+    const vec3 origin = TransformFromClipSpace(g_shrd_data.world_from_clip, vec4(d.xy, 1, 1));
     const vec3 target = TransformFromClipSpace(g_shrd_data.world_from_clip, vec4(d.xy, 0, 1));
     const vec3 direction = normalize(target - origin);
     const vec3 inv_d = safe_invert(direction);
@@ -85,7 +85,8 @@ void main() {
     inter.mask = 0;
     inter.obj_index = inter.prim_index = 0;
     inter.geo_index_count = 0;
-    inter.t = distance(origin, target);
+    inter.tmin = 0.0;
+    inter.tmax = distance(origin, target);
     inter.u = inter.v = 0.0;
 
     vec3 throughput = vec3(1.0);
@@ -130,18 +131,18 @@ void main() {
 #if defined(BINDLESS_TEXTURES)
             const float alpha = (1.0 - mat.params[3].x) * textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
             if (alpha < 0.5) {
-                origin += (inter.t + 0.0005) * direction;
+                inter.tmin = (inter.tmax + 0.0005);
+                inter.tmax = 1000.0;
                 inter.mask = 0;
-                inter.t = 1000.0;
                 continue;
             }
             if (mat.params[2].y > 0) {
                 const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, 0.0)));
                 throughput = min(throughput, mix(vec3(1.0), 0.8 * mat.params[2].y * base_color, alpha));
                 if (dot(throughput, vec3(0.333)) > 0.1) {
-                    origin += (inter.t + 0.0005) * direction;
+                    inter.tmin = (inter.tmax + 0.0005);
+                    inter.tmax = 1000.0;
                     inter.mask = 0;
-                    inter.t = 1000.0;
                     continue;
                 }
             }
@@ -224,7 +225,7 @@ void main() {
         float pa = length(tri_normal);
         tri_normal /= pa;
 
-        float cone_width = g_params.pixel_spread_angle * inter.t;
+        float cone_width = g_params.pixel_spread_angle * inter.tmax;
 
         float tex_lod = 0.5 * log2(ta/pa);
         tex_lod += log2(cone_width);
@@ -255,7 +256,7 @@ void main() {
                                                   texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6))));
         N = normalize((transform * vec4(N, 0.0)).xyz);
 
-        const vec3 P = origin + direction * inter.t;
+        const vec3 P = origin + direction * inter.tmax;
         const vec3 I = -direction;
         const float N_dot_V = saturate(dot(N, I));
 

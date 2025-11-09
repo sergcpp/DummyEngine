@@ -200,8 +200,8 @@ void main() {
 
     //
 
-    vec3 ro = pos_ws + (NormalBiasConstant + abs(pos_ws) * NormalBiasPosAddition + (-pos_vs.z) * NormalBiasViewAddition) * N;
-    vec3 inv_d = safe_invert(L);
+    const vec3 ro = pos_ws + (NormalBiasConstant + abs(pos_ws) * NormalBiasPosAddition + (-pos_vs.z) * NormalBiasViewAddition) * N;
+    const vec3 inv_d = safe_invert(L);
 
     float visibility = 1.0;
 #ifdef HWRT
@@ -262,10 +262,10 @@ void main() {
     inter.mask = 0;
     inter.obj_index = inter.prim_index = 0;
     inter.geo_index_count = 0;
-    inter.t = ls_dist - 0.001;
+    inter.tmin = 0.0;
+    inter.tmax = ls_dist - 0.001;
     inter.u = inter.v = 0.0;
 
-    float inter_t = inter.t;
     int transp_depth = 0;
     while (true) {
         Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
@@ -307,10 +307,9 @@ void main() {
     #if defined(BINDLESS_TEXTURES)
                 const float alpha = textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
                 if (alpha < 0.5) {
-                    ro += (inter.t + 0.0005) * L;
+                    inter.tmin = (inter.tmax + 0.0005);
+                    inter.tmax = (ls_dist - 0.001) - inter.tmin;
                     inter.mask = 0;
-                    inter_t -= inter.t + 0.0005;
-                    inter.t = inter_t;
                     continue;
                 }
     #endif

@@ -189,22 +189,21 @@ void main() {
 
     for (int j = 0; j < NUM_BOUNCES; ++j) {
         float ray_len = t_max;
-        vec3 tri_normal, albedo;
-
-        vec3 ro = ray_origin_ws.xyz + t_min * gi_ray_ws;
-        vec3 inv_d = safe_invert(gi_ray_ws);
 
         hit_data_t inter;
         inter.mask = 0;
         inter.obj_index = inter.prim_index = 0;
         inter.geo_index_count = 0;
-        inter.t = t_max;
+        inter.tmin = t_min;
+        inter.tmax = t_max;
         inter.u = inter.v = 0.0;
+
+        const vec3 inv_d = safe_invert(gi_ray_ws);
 
         int transp_depth = 0;
         while (true) {
             Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
-                                    ro, gi_ray_ws, inv_d, (1u << RAY_TYPE_DIFFUSE), 0 /* root_node */, inter);
+                                    ray_origin_ws.xyz, gi_ray_ws, inv_d, (1u << RAY_TYPE_DIFFUSE), 0 /* root_node */, inter);
             if (inter.mask != 0 && transp_depth++ < 4) {
                 // perform alpha test, account for alpha blending
                 const bool backfacing = (inter.prim_index < 0);
@@ -241,18 +240,18 @@ void main() {
     #if defined(BINDLESS_TEXTURES)
                 const float alpha = (1.0 - mat.params[3].x) * textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
                 if (alpha < 0.5) {
-                    ro += (inter.t + 0.0005) * gi_ray_ws;
+                    inter.tmin = (inter.tmax + 0.0005);
+                    inter.tmax = t_max - inter.tmin;
                     inter.mask = 0;
-                    inter.t = 100.0;
                     continue;
                 }
                 if (mat.params[2].y > 0) {
                     const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, 0.0)));
                     throughput = min(throughput, mix(vec3(1.0), 0.8 * mat.params[2].y * base_color, alpha));
                     if (dot(throughput, vec3(0.333)) > 0.1) {
-                        ro += (inter.t + 0.0005) * gi_ray_ws;
+                        inter.tmin = (inter.tmax + 0.0005);
+                        inter.tmax = t_max - inter.tmin;
                         inter.mask = 0;
-                        inter.t = 100.0;
                         continue;
                     }
                 }
@@ -343,7 +342,7 @@ void main() {
             const float pa = length(tri_normal);
             tri_normal /= pa;
 
-            float cone_width = _cone_width + g_params.pixel_spread_angle * inter.t;
+            float cone_width = _cone_width + g_params.pixel_spread_angle * inter.tmax;
 
             float tex_lod = 0.5 * log2(ta / pa);
             tex_lod += log2(cone_width);
@@ -360,7 +359,7 @@ void main() {
             // Use triangle normal for simplicity
             const vec3 N = tri_normal;
 
-            const vec3 P = ray_origin_ws.xyz + gi_ray_ws * (t_min + inter.t);
+            const vec3 P = ray_origin_ws.xyz + gi_ray_ws * inter.tmax;
             const vec3 I = -gi_ray_ws;
             const float N_dot_V = saturate(dot(N, I));
 
@@ -433,7 +432,7 @@ void main() {
                 const float cos_theta = -dot(I, light_forward);
 
                 const float bsdf_pdf = saturate(dot(N, I)) / M_PI;
-                const float ls_pdf = pdf_factor * (inter.t * inter.t) / (0.5 * light_fwd_len * cos_theta);
+                const float ls_pdf = pdf_factor * (inter.tmax * inter.tmax) / (0.5 * light_fwd_len * cos_theta);
                 const float mis_weight = power_heuristic(bsdf_pdf, ls_pdf);
                 emission_color *= mis_weight;
             }
@@ -539,10 +538,10 @@ void main() {
                         vec3 avg_radiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(gi_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), refl_dir,
                                                                       g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
                         avg_radiance *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
-                        avg_radiance *= saturate(inter.t / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)));
+                        avg_radiance *= saturate(inter.tmax / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)));
                         final_color += throughput * (1.0 / M_PI) * avg_radiance;
                     }
-                    if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && inter.t > 0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)) {
+                    if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && inter.tmax > 0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)) {
                         vec3 irradiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(gi_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), N,
                                                                     g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
                         irradiance *= base_color * ltc.diff_t2.x;
@@ -555,7 +554,7 @@ void main() {
             }
 #endif
             throughput *= lobe_masks.diffuse_mul * base_color * ltc.diff_t2.x;
-            ray_len = inter.t;
+            ray_len = inter.tmax;
             if (j == 0) {
                 first_ray_len = ray_len;
             }

@@ -221,16 +221,16 @@ void main() {
         inter.mask = 0;
         inter.obj_index = inter.prim_index = 0;
         inter.geo_index_count = 0;
-        inter.t = t_max;
+        inter.tmin = t_min;
+        inter.tmax = t_max;
         inter.u = inter.v = 0.0;
 
-        vec3 ro = ray_origin_ws.xyz + t_min * refl_ray_ws;
         const vec3 inv_d = safe_invert(refl_ray_ws);
 
         int transp_depth = 0;
         while (true) {
             Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
-                                    ro, refl_ray_ws, inv_d, (1u << RAY_TYPE_SPECULAR), 0 /* root_node */, inter);
+                                    ray_origin_ws.xyz, refl_ray_ws, inv_d, (1u << RAY_TYPE_SPECULAR), 0 /* root_node */, inter);
             if (inter.mask != 0 && transp_depth++ < 4) {
                 // perform alpha test, account for alpha blending
                 const bool backfacing = (inter.prim_index < 0);
@@ -267,18 +267,18 @@ void main() {
     #if defined(BINDLESS_TEXTURES)
                 const float alpha = (1.0 - mat.params[3].x) * textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
                 if (alpha < 0.5) {
-                    ro += (inter.t + 0.0005) * refl_ray_ws;
+                    inter.tmin = (inter.tmax + 0.0005);
+                    inter.tmax = t_max - inter.tmin;
                     inter.mask = 0;
-                    inter.t = 100.0;
                     continue;
                 }
                 if (mat.params[2].y > 0) {
                     const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, 0.0)));
                     throughput = min(throughput, mix(vec3(1.0), 0.8 * mat.params[2].y * base_color, alpha));
                     if (dot(throughput, vec3(0.333)) > 0.1) {
-                        ro += (inter.t + 0.0005) * refl_ray_ws;
+                        inter.tmin = (inter.tmax + 0.0005);
+                        inter.tmax = t_max - inter.tmin;
                         inter.mask = 0;
-                        inter.t = 100.0;
                         continue;
                     }
                 }
@@ -369,7 +369,7 @@ void main() {
             const vec2 tex_res = textureSizeBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]), 0).xy;
             const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
-            total_ray_len += inter.t;
+            total_ray_len += inter.tmax;
             float cone_width = _cone_width + g_params.pixel_spread_angle * total_ray_len;
 
             float tex_lod = 0.5 * log2(ta / pa);
@@ -398,7 +398,7 @@ void main() {
             }
             N = normalize((world_from_object * vec4(N, 0.0)).xyz);
 
-            const vec3 P = ray_origin_ws.xyz + refl_ray_ws * (t_min + inter.t);
+            const vec3 P = ray_origin_ws.xyz + refl_ray_ws * inter.tmax;
             const vec3 I = -refl_ray_ws;
             const float N_dot_V = saturate(dot(N, I));
 
@@ -477,7 +477,7 @@ void main() {
 
                 const float D = D_GGX(sampled_normal_ts, vec2(first_roughness));
                 const float bsdf_pdf = GGX_VNDF_Reflection_Bounded_PDF(D, view_dir_ts, vec2(first_roughness));
-                const float ls_pdf = pdf_factor * (inter.t * inter.t) / (0.5 * light_fwd_len * cos_theta);
+                const float ls_pdf = pdf_factor * (inter.tmax * inter.tmax) / (0.5 * light_fwd_len * cos_theta);
                 const float mis_weight = power_heuristic(bsdf_pdf, ls_pdf);
                 emission_color *= mis_weight;
             }
@@ -595,7 +595,7 @@ void main() {
                         vec3 irradiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(refl_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), N,
                                                                     g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, !is_last_bounce);
                         irradiance *= base_color * ltc.diff_t2.x;
-                        irradiance *= mix(1.0, saturate(inter.t / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz))), saturate(16.0 * first_roughness));
+                        irradiance *= mix(1.0, saturate(inter.tmax / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz))), saturate(16.0 * first_roughness));
                         light_total += lobe_masks.diffuse_mul * (1.0 / M_PI) * irradiance;
                     }
                     if ((is_last_bounce || roughness > RECURSION_ROUGHNESS_THRES) && (lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
@@ -603,7 +603,7 @@ void main() {
                         vec3 avg_radiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(refl_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), refl_dir,
                                                                       g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
                         avg_radiance *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
-                        avg_radiance *= mix(1.0, saturate(inter.t / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz))), saturate(16.0 * first_roughness));
+                        avg_radiance *= mix(1.0, saturate(inter.tmax / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz))), saturate(16.0 * first_roughness));
                         light_total += (1.0 / M_PI) * avg_radiance;
                     }
                     break;
@@ -613,7 +613,7 @@ void main() {
 
             final_color += throughput * light_total;
             if (j == 0) {
-                first_ray_len = inter.t;
+                first_ray_len = inter.tmax;
             }
             if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
                 throughput *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;

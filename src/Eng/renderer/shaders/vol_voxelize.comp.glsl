@@ -134,16 +134,17 @@ void main() {
             inter.mask = 0;
             inter.obj_index = inter.prim_index = 0;
             inter.geo_index_count = 0;
-            inter.t = next_t - cur_t;
+            inter.tmin = cur_t;
+            inter.tmax = next_t;
             inter.u = inter.v = 0.0;
 
             Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
-                                    origin_ws + cur_t * dir_ws, dir_ws, inv_d, (1u << RAY_TYPE_VOLUME), 0 /* root_node */, inter);
+                                    origin_ws, dir_ws, inv_d, (1u << RAY_TYPE_VOLUME), 0 /* root_node */, inter);
             if (inter.mask != 0) {
                 const bool backfacing = (inter.prim_index < 0);
 
                 enter = int(!backfacing);
-                next_t = cur_t + inter.t;
+                next_t = inter.tmax;
 
                 const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
