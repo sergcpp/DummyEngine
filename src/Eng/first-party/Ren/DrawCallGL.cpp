@@ -13,6 +13,23 @@
 namespace Ren {
 extern const uint32_t g_internal_formats_gl[];
 
+const int g_gl_bind_target_index[] = {
+    0,  // Tex
+    0,  // TexSampled
+    1,  // Sampler
+    2,  // UBuf
+    3,  // UTBuf
+    4,  // SBufRO
+    4,  // SBufRW
+    5,  // STBufRO
+    5,  // STBufRW
+    5,  // ImageRO
+    5,  // ImageRW
+    -1, // AccStruct
+    4   // BindlessDescriptors
+};
+static_assert(std::size(g_gl_bind_target_index) == int(eBindTarget::_Count));
+
 int g_param_buf_binding;
 } // namespace Ren
 
@@ -32,7 +49,10 @@ uint32_t Ren::GLBindTarget(const Texture &tex, const int view) {
 
 void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
                           const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc &descr_alloc, ILog *log) {
+    uint32_t occupied[int(eBindTarget::_Count)] = {};
     for (const auto &b : bindings) {
+        assert((occupied[g_gl_bind_target_index[int(b.trg)]] & (1u << (b.loc + b.offset))) == 0);
+        occupied[g_gl_bind_target_index[int(b.trg)]] |= (1u << (b.loc + b.offset));
         if (b.trg == eBindTarget::Tex || b.trg == eBindTarget::TexSampled) {
             auto texture_id = GLuint(b.handle.tex->id());
             if (b.handle.view_index) {
@@ -106,7 +126,10 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
                                   const uint32_t indir_buf_offset, Span<const Binding> bindings,
                                   const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc &descr_alloc,
                                   ILog *log) {
+    uint32_t occupied[int(eBindTarget::_Count)] = {};
     for (const auto &b : bindings) {
+        assert((occupied[g_gl_bind_target_index[int(b.trg)]] & (1u << (b.loc + b.offset))) == 0);
+        occupied[g_gl_bind_target_index[int(b.trg)]] |= (1u << (b.loc + b.offset));
         if (b.trg == eBindTarget::Tex || b.trg == eBindTarget::TexSampled) {
             auto texture_id = GLuint(b.handle.tex->id());
             if (b.handle.view_index) {
