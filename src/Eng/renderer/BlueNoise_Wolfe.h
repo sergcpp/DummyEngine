@@ -7,5 +7,5 @@
 //
 
 namespace Eng {
-template <int Log2SampleCount> void Generate1D_STBN();
+template <int Log2SampleCount> void Generate1D_STBN(unsigned int seed, bool strided_access);
 }

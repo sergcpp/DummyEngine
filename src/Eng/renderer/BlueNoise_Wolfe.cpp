@@ -25,7 +25,7 @@ std::array<int, 3> xyz_from_index(const int index) {
 template <int SampleCount>
 Ren::Vec2i splat_pixel_energy(const int ox, const int oy, const int oz,
                               const std::bitset<TileRes> bitmap[SampleCount][TileRes], const float val,
-                              float energy[SampleCount][TileRes][TileRes]) {
+                              const bool strided_access, float energy[SampleCount][TileRes][TileRes]) {
     float min_value = FLT_MAX, max_value = -1.0f;
     int imin = -1, imax = -1;
     for (int z = 0; z < SampleCount; ++z) {
@@ -41,9 +41,24 @@ Ren::Vec2i splat_pixel_energy(const int ox, const int oy, const int oz,
                 float proximity = 0.0f;
                 if (z == oz) {
                     proximity = std::exp(-(dx * dx + dy * dy) / GaussOmega);
+                    if (strided_access) {
+                        if ((dx % 2) == 0 && (dy % 2) == 0) {
+                            proximity += std::exp(-((dx / 2) * (dx / 2) + (dy / 2) * (dy / 2)) / GaussOmega);
+                        }
+                        if ((dx % 3) == 0 && (dy % 3) == 0) {
+                            proximity += std::exp(-((dx / 3) * (dx / 3) + (dy / 3) * (dy / 3)) / GaussOmega);
+                        }
+                        if ((dx % 4) == 0 && (dy % 4) == 0) {
+                            proximity += std::exp(-((dx / 4) * (dx / 4) + (dy / 4) * (dy / 4)) / GaussOmega);
+                        }
+                    }
                 } else if (x == ox && y == oy) {
                     proximity = std::exp(-(dz * dz) / GaussOmega);
+                    if (strided_access) {
+                        proximity *= 4.0f;
+                    }
                 }
+
                 energy[z][y][x] += proximity * val;
 
                 if (bitmap[z][y][x] && energy[z][y][x] > max_value) {
@@ -63,7 +78,7 @@ Ren::Vec2i splat_pixel_energy(const int ox, const int oy, const int oz,
 void WriteDDS(const float *data, int w, int h, int d, const char *name);
 } // namespace Eng::BNInternal
 
-template <int Log2SampleCount> void Eng::Generate1D_STBN() {
+template <int Log2SampleCount> void Eng::Generate1D_STBN(const unsigned int seed, const bool strided_access) {
     using namespace BNInternal;
     using namespace STBN;
 
@@ -80,11 +95,13 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
 
         // temp data
         float debug_values[SampleCount][TileRes][TileRes] = {};
+        float debug_values2[SampleCount][TileRes / 2][TileRes / 2] = {};
+        float debug_values3[SampleCount][(TileRes + 2) / 3][(TileRes + 2) / 3] = {};
+        float debug_values4[SampleCount][TileRes / 4][TileRes / 4] = {};
     };
     auto data = std::make_unique<bn_data_t>();
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    std::mt19937 gen(seed);
     std::uniform_int_distribution<int> uniform_index(0, SampleCount * TileRes * TileRes - 1);
 
     // Void and cluster algorithm extended to include time dimension
@@ -98,7 +115,8 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
 
         if (!data->bitmap[oz][oy][ox]) {
             data->bitmap[oz][oy][ox] = true;
-            data->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, 1.0f, data->energy);
+            data->iminmax =
+                splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, 1.0f, strided_access, data->energy);
             ++data->points_count;
         }
     }
@@ -133,14 +151,16 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
             const auto [ox, oy, oz] = xyz_from_index(data->iminmax[1]);
 
             data->bitmap[oz][oy][ox] = false;
-            data->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, -1.0f, data->energy);
+            data->iminmax =
+                splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, -1.0f, strided_access, data->energy);
             last_point = data->iminmax[0];
         }
         { // Add min
             const auto [ox, oy, oz] = xyz_from_index(data->iminmax[0]);
 
             data->bitmap[oz][oy][ox] = true;
-            data->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, 1.0f, data->energy);
+            data->iminmax =
+                splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, +1.0f, strided_access, data->energy);
         }
     }
 
@@ -178,7 +198,7 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
 
         data->noise[oz][oy][ox] = float(--temp->points_count) / (SampleCount * TileRes * TileRes);
         temp->bitmap[oz][oy][ox] = false;
-        temp->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, temp->bitmap, -1.0f, temp->energy);
+        temp->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, temp->bitmap, -1.0f, strided_access, temp->energy);
     }
 
     // Phase II - Order First Half of Pixels
@@ -187,7 +207,7 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
 
         data->noise[oz][oy][ox] = float(data->points_count++) / (SampleCount * TileRes * TileRes);
         data->bitmap[oz][oy][ox] = true;
-        data->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, 1.0f, data->energy);
+        data->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, +1.0f, strided_access, data->energy);
     }
 
     // Invert energy map
@@ -203,17 +223,18 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
     for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
         const auto [ox, oy, oz] = xyz_from_index(j);
         if (data->bitmap[oz][oy][ox]) {
-            data->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, 1.0f, data->energy);
+            data->iminmax =
+                splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, 1.0f, strided_access, data->energy);
         }
     }
 
     // Phase III - Order Second Half of Pixels
     while (data->points_count < SampleCount * TileRes * TileRes) {
-        const auto [ox, oy, oz] = xyz_from_index(temp->iminmax[1]);
+        const auto [ox, oy, oz] = xyz_from_index(data->iminmax[1]);
 
         data->noise[oz][oy][ox] = float(data->points_count++) / (SampleCount * TileRes * TileRes);
         data->bitmap[oz][oy][ox] = false;
-        data->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, -1.0f, data->energy);
+        data->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, -1.0f, strided_access, data->energy);
     }
 
     { // Debug noise values
@@ -236,10 +257,52 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
 
         snprintf(name_buf, sizeof(name_buf), "debug_noise_%i.dds", SampleCount);
         WriteDDS(&data->debug_values[0][0][0], TileRes, TileRes, SampleCount, name_buf);
+
+        for (int i = 0; i < 4; ++i) {
+            for (int z = 0; z < SampleCount; ++z) {
+                for (int y = 0; y < TileRes; y += 2) {
+                    for (int x = 0; x < TileRes; x += 2) {
+                        data->debug_values2[z][y / 2][x / 2] = data->debug_values[z][y + (i / 2)][x + (i % 2)];
+                    }
+                }
+            }
+            snprintf(name_buf, sizeof(name_buf), "debug_noise_%i_strided2_%i.dds", SampleCount, i);
+            WriteDDS(&data->debug_values2[0][0][0], TileRes / 2, TileRes / 2, SampleCount, name_buf);
+        }
+
+        for (int i = 0; i < 9; ++i) {
+            for (int z = 0; z < SampleCount; ++z) {
+                for (int y = 0; y < TileRes; y += 3) {
+                    for (int x = 0; x < TileRes; x += 3) {
+                        data->debug_values3[z][y / 3][x / 3] = data->debug_values[z][y + (i / 3)][x + (i % 3)];
+                    }
+                }
+            }
+            snprintf(name_buf, sizeof(name_buf), "debug_noise_%i_strided3_%i.dds", SampleCount, i);
+            WriteDDS(&data->debug_values3[0][0][0], TileRes / 3, TileRes / 3, SampleCount, name_buf);
+        }
+
+        for (int i = 0; i < 16; ++i) {
+            for (int z = 0; z < SampleCount; ++z) {
+                for (int y = 0; y < TileRes; y += 4) {
+                    for (int x = 0; x < TileRes; x += 4) {
+                        data->debug_values4[z][y / 4][x / 4] = data->debug_values[z][y + (i / 4)][x + (i % 4)];
+                    }
+                }
+            }
+            snprintf(name_buf, sizeof(name_buf), "debug_noise_%i_strided4_%i.dds", SampleCount, i);
+            WriteDDS(&data->debug_values4[0][0][0], TileRes / 4, TileRes / 4, SampleCount, name_buf);
+        }
     }
 
     { // dump C array
-        snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/__stbn_sampler_1D_%ispp.inl", SampleCount);
+        if (strided_access) {
+            snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/__stbn_sampler_1D_%ispp_stride.inl",
+                     SampleCount);
+        } else {
+            snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/__stbn_sampler_1D_%ispp.inl",
+                     SampleCount);
+        }
         std::ofstream out_file(name_buf, std::ios::binary);
         out_file << "const int w = " << TileRes << ";\n";
         out_file << "const int h = " << TileRes << ";\n";
@@ -261,15 +324,15 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
     }
 }
 
-template void Eng::Generate1D_STBN<0>();
-template void Eng::Generate1D_STBN<1>();
-template void Eng::Generate1D_STBN<2>();
-template void Eng::Generate1D_STBN<3>();
-template void Eng::Generate1D_STBN<4>();
-template void Eng::Generate1D_STBN<5>();
-template void Eng::Generate1D_STBN<6>();
-template void Eng::Generate1D_STBN<7>();
-template void Eng::Generate1D_STBN<8>();
+template void Eng::Generate1D_STBN<0>(unsigned int seed, bool strided_access);
+template void Eng::Generate1D_STBN<1>(unsigned int seed, bool strided_access);
+template void Eng::Generate1D_STBN<2>(unsigned int seed, bool strided_access);
+template void Eng::Generate1D_STBN<3>(unsigned int seed, bool strided_access);
+template void Eng::Generate1D_STBN<4>(unsigned int seed, bool strided_access);
+template void Eng::Generate1D_STBN<5>(unsigned int seed, bool strided_access);
+template void Eng::Generate1D_STBN<6>(unsigned int seed, bool strided_access);
+template void Eng::Generate1D_STBN<7>(unsigned int seed, bool strided_access);
+template void Eng::Generate1D_STBN<8>(unsigned int seed, bool strided_access);
 
 void Eng::BNInternal::WriteDDS(const float *data, const int w, const int h, const int d, const char *name) {
     Ren::DDSHeader header = {};
