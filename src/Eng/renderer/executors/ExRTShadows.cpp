@@ -18,7 +18,7 @@ void Eng::ExRTShadows::Execute(FgContext &fg) {
 void Eng::ExRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized_) {
         pi_rt_shadows_ = sh.LoadPipeline(ctx.capabilities.hwrt ? "internal/rt_shadows_hwrt.comp.glsl"
-                                                               : "internal/rt_shadows_swrt.comp.glsl");
+                                                               : "internal/rt_shadows_swrt.comp.glsl", 32);
         if (!pi_rt_shadows_) {
             ctx.log()->Error("ExRTShadows: Failed to initialize pipeline!");
         }

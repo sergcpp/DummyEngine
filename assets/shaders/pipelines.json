@@ -938,6 +938,7 @@
     {
         "type" : "compute",
         "shaders" : [ "internal/rt_shadows_hwrt.comp.glsl" ],
+        "subgroup_size" : 32,
         "features" : {
             "hwrt" : true
         }
@@ -945,6 +946,7 @@
     {
         "type" : "compute",
         "shaders" : [ "internal/rt_shadows_swrt.comp.glsl" ],
+        "subgroup_size" : 32,
         "features" : {
             "hwrt" : false,
             "swrt" : true
