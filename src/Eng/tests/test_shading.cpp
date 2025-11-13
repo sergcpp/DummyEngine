@@ -127,7 +127,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
                    Full_Ultra);
     run_image_test(threads, "complex_mat3_sun_light", 22.25, NoShadow);
     run_image_test(threads, "complex_mat3_sun_light", 17.10, NoGI);
-    run_image_test(threads, "complex_mat3_sun_light", 22.70, NoGI_RTShadow);
+    run_image_test(threads, "complex_mat3_sun_light", 23.20, NoGI_RTShadow);
     run_image_test(threads, "complex_mat3_sun_light", 19.45, Full);
     run_image_test(threads, "complex_mat3_sun_light", 24.45, Full_Ultra);
     run_image_test(threads, "complex_mat3_mesh_lights", 16.90, MedDiffGI);

@@ -52,15 +52,15 @@ void main() {
         g_shared_mask = 0;
     }
 
-    uvec2 group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
-    uvec4 tile = g_tile_list[gl_WorkGroupID.x];
+    const uvec2 group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
+    const uvec4 tile = g_tile_list[gl_WorkGroupID.x];
 
     uvec2 tile_coord;
     uint mask;
     float min_t, max_t;
     UnpackTile(tile, tile_coord, mask, min_t, max_t);
 
-    ivec2 icoord = ivec2(tile_coord * uvec2(TILE_SIZE_X, TILE_SIZE_Y) + group_thread_id);
+    const ivec2 icoord = ivec2(tile_coord * uvec2(TILE_SIZE_X, TILE_SIZE_Y) + group_thread_id);
 
     const uint bit_index = LaneIdToBitShift(group_thread_id);
     bool is_in_shadow = ((1u << bit_index) & mask) == 0u;
@@ -75,11 +75,8 @@ void main() {
         const vec4 ray_origin_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
         const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
 
-        const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-        vec3 shadow_ray_ws = g_shrd_data.sun_dir.xyz;
-
-        vec2 u = texelFetch(g_noise_tex, icoord % 128, 0).xy;
-        shadow_ray_ws = MapToCone(u, shadow_ray_ws, g_shrd_data.sun_dir.w);
+        const vec2 u = texelFetch(g_noise_tex, icoord % 128, 0).xy;
+        const vec3 shadow_ray_ws = MapToCone(u, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w);
 
         vec4 ray_origin_ws = g_shrd_data.world_from_view * vec4(ray_origin_vs, 1.0);
         ray_origin_ws /= ray_origin_ws.w;
@@ -87,8 +84,6 @@ void main() {
         // Bias to avoid self-intersection
         // TODO: use flat normal here
         ray_origin_ws.xyz += (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition + (-ray_origin_vs.z) * NormalBiasViewAddition) * normal_ws;
-
-        float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
         rayQueryEXT rq;
         rayQueryInitializeEXT(rq,                       // rayQuery
@@ -134,8 +129,7 @@ void main() {
             }
         }
 
-        if (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT ||
-            transp_depth >= 4) {
+        if (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
             is_in_shadow = true;
         }
     }
