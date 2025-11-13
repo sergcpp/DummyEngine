@@ -2,6 +2,18 @@
 
 | Date       | Device     | Preset | Commit       | Scene          | Avg FPS | CPU (ms) | GPU (ms) | Notes             |
 |------------|------------|:------:|:------------:|----------------|---------|----------|----------|-------------------|
+| 2025-11-13 | RTX 4070 S | high   | `1d6ef0cd56` | Bistro         | 78      | 8.6      | 12.8     | Deferred RTGI     |
+|            |            | high   |              | Bistro (night) | 81      | 7.7      | 12.3     |                   |
+|            |            | ultra  |              | Bistro         | 38      | 11.5     | 26.3     |                   |
+|            |            | ultra  |              | Bistro (night) | 41      | 8.6      | 23.9     |                   |
+|            | RX 9070 XT | high   |              | Bistro         | 72      | 5.8      | 13.2     |                   |
+|            |            | high   |              | Bistro (night) | 73      | 4.7      | 12.9     |                   |
+|            |            | ultra  |              | Bistro         | 33      | 6.7      | 28.5     |                   |
+|            |            | ultra  |              | Bistro (night) | 36      | 4.8      | 25.7     |                   |
+|            | Arc A310   | high   |              | Bistro         | 6.7     | 6.8      | 142.0    |                   |
+|            |            | high   |              | Bistro (night) | 7.1     | 5.6      | 138.0    |                   |
+|            |            | ultra  |              | Bistro         | 3.1     | 7.4      | 323.0    |                   |
+|            |            | ultra  |              | Bistro (night) | 3.3     | 5.7      | 304.0    |                   |
 | 2025-10-13 | RTX 4070 S | high   | `318a14ddd2` | Bistro         | 76      | 12.5     | 12.9     | Small ltree stack |
 |            |            | high   |              | Bistro (night) | 81      | 9.3      | 12.3     |                   |
 |            |            | ultra  |              | Bistro         | 37      | 12.5     | 26.1     |                   |
