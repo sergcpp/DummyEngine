@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = refactor_09_11
-	commit = 542c75f7abd32e221dcc71e6f515bcf404276dac
+	branch = deferred_rtgi
+	commit = 6b5d99d8e9a96867ac133aaa19e7487d3f9649ce
 	method = merge
 	cmdver = 0.4.6
-	parent = 4527f91c5ccf3dfe5a56063eba8595e5f864fa39
+	parent = 1d6ef0cd56eee402f04287e917d636b066e40450
