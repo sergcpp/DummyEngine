@@ -25,13 +25,6 @@ class ExRTGI final : public FgExecutor {
         FgResRef indir_args;
         FgResRef tlas_buf; // fake read for now
 
-        FgResRef stoch_lights_buf;
-        FgResRef light_nodes_buf;
-
-        FgResRef irradiance_tex;
-        FgResRef distance_tex;
-        FgResRef offset_tex;
-
         Ren::IAccStructure *tlas = nullptr;
 
         struct {
@@ -66,6 +59,7 @@ class ExRTGI final : public FgExecutor {
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
     void Execute_HWRT(FgContext &fg);
+    void Execute_HWRT_Pipeline(FgContext &fg);
     void Execute_SWRT(FgContext &fg);
 };
 } // namespace Eng

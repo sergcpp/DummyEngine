@@ -218,8 +218,8 @@ void main() {
         g_ray_hits[out_index * RAY_HITS_STRIDE + 0] = ray_index;
     #endif
         g_ray_hits[out_index * RAY_HITS_STRIDE + 1] = (uint(instance_index) << 16u) | packed_throughput;
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 2] = floatBitsToUint(hit_t);
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 3] = (uint(backfacing ? -prim_id - 1 : prim_id) << 8u) | (geo_index & 0xffu);
+        g_ray_hits[out_index * RAY_HITS_STRIDE + 2] = floatBitsToUint(backfacing ? -hit_t : hit_t);
+        g_ray_hits[out_index * RAY_HITS_STRIDE + 3] = (uint(prim_id) << 8u) | (geo_index & 0xffu);
         g_ray_hits[out_index * RAY_HITS_STRIDE + 4] = packUnorm2x16(bary_coord);
     }
 }

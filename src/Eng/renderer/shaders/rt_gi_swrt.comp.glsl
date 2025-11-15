@@ -249,8 +249,8 @@ void main() {
         g_ray_hits[out_index * RAY_HITS_STRIDE + 0] = ray_index;
     #endif
         g_ray_hits[out_index * RAY_HITS_STRIDE + 1] = (uint(inter.obj_index) << 16u) | packed_throughput;
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 2] = floatBitsToUint(inter.tmax);
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 3] = (uint(backfacing ? -prim_id - 1 : prim_id) << 8u) | (geo_index & 0xffu);
+        g_ray_hits[out_index * RAY_HITS_STRIDE + 2] = floatBitsToUint(backfacing ? -inter.tmax : inter.tmax);
+        g_ray_hits[out_index * RAY_HITS_STRIDE + 3] = (uint(prim_id) << 8u) | (geo_index & 0xffu);
         g_ray_hits[out_index * RAY_HITS_STRIDE + 4] = packUnorm2x16(vec2(inter.u, inter.v));
     }
 }

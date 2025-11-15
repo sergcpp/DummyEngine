@@ -241,17 +241,14 @@ void main() {
     const uint temp3 = g_ray_hits[read_offset + 3];
 
     const uint obj_index = (temp1 >> 16u);
-    uint geo_index = temp3 & 0xffu;
     const vec2 inter_uv = unpackHalf2x16(g_ray_hits[read_offset + 4]);
 
-    uint prim_index = (temp3 >> 8u);
-    if ((prim_index & 0x800000u) != 0u) prim_index |= 0xFF000000u; // recover sign
-    const bool backfacing = int(prim_index) < 0;
-    int tri_index = backfacing ? -int(prim_index) - 1 : int(prim_index);
-
-    const float hit_t = uintBitsToFloat(g_ray_hits[read_offset + 2]);
+    float hit_t = uintBitsToFloat(g_ray_hits[read_offset + 2]);
+    const bool backfacing = (hit_t < 0.0);
+    hit_t = abs(hit_t);
     vec3 throughput = UnpackRGB565(temp1 & 0xffffu);
 
+    uint geo_index = (temp3 & 0xffu);
     if (g_params.is_hwrt != 0) {
         geo_index += floatBitsToUint(texelFetch(g_mesh_instances, int(HWRT_MESH_INSTANCE_BUF_STRIDE * obj_index + 3)).x) & 0x00ffffffu;
     } else {
@@ -262,7 +259,7 @@ void main() {
     const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
     const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
-    tri_index += int(geo.indices_start / 3);
+    const int tri_index = int(temp3 >> 8u) + int(geo.indices_start / 3);
     const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
     const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
     const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
