@@ -458,7 +458,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, const 
 
         { // create shader binding table
             const int RgenCount = 1;
-            const int MissCount = 1;
+            const int MissCount = prog->shader(eShaderType::Miss) ? 1 : 0;
             const int HitCount = rt_shader_groups_.size() == 4 ? 2 : 1;
 
             const int HandleCount = RgenCount + MissCount + HitCount;

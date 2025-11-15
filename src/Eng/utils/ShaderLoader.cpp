@@ -201,15 +201,16 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram2(std::string_view raygen_name, st
                                                 std::string_view intersection_name) {
     Ren::ShaderRef raygen_ref = LoadShader(raygen_name);
 
-    Ren::ShaderRef closesthit_ref, anyhit_ref;
+    Ren::ShaderRef closesthit_ref, anyhit_ref, miss_ref;
     if (!closesthit_name.empty()) {
         closesthit_ref = LoadShader(closesthit_name);
     }
     if (!anyhit_name.empty()) {
         anyhit_ref = LoadShader(anyhit_name);
     }
-
-    Ren::ShaderRef miss_ref = LoadShader(miss_name);
+    if (!miss_name.empty()) {
+        miss_ref = LoadShader(miss_name);
+    }
 
     Ren::ShaderRef intersection_ref;
     if (!intersection_name.empty()) {
