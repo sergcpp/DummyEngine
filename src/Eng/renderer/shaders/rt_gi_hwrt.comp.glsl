@@ -1,17 +1,10 @@
 #version 460
 #extension GL_EXT_ray_query : require
-#extension GL_EXT_control_flow_attributes : require
 #if !defined(NO_SUBGROUP)
 #extension GL_KHR_shader_subgroup_arithmetic : require
 #extension GL_KHR_shader_subgroup_ballot : require
 #extension GL_KHR_shader_subgroup_vote : require
 #endif
-
-#define ENABLE_SHEEN 0
-#define ENABLE_CLEARCOAT 0
-#define MIN_SPEC_ROUGHNESS 0.4
-
-#define MAX_STACK_SIZE 10
 
 #include "_fs_common.glsl"
 #include "rt_common.glsl"
@@ -22,10 +15,6 @@
 
 #pragma multi_compile FIRST SECOND
 #pragma multi_compile _ NO_SUBGROUP
-
-#if defined(NEW) && (defined(GI_CACHE) || defined(STOCH_LIGHTS))
-    #pragma dont_compile
-#endif
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -53,11 +42,8 @@ layout(std430, binding = VTX_BUF1_SLOT) readonly buffer VtxData0 {
 };
 
 layout(std430, binding = NDX_BUF_SLOT) readonly buffer NdxData {
-    uint g_indices[];
+    uint g_vtx_indices[];
 };
-
-layout(binding = MESH_INSTANCES_BUF_SLOT) uniform samplerBuffer g_mesh_instances;
-
 
 layout(std430, binding = RAY_COUNTER_SLOT) buffer RayCounter {
     uint g_ray_counter[];
@@ -69,7 +55,7 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
 
 layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
 
-layout(std430, binding = RAY_HITS_BUF_SLOT) writeonly buffer RayHitsList {
+layout(std430, binding = OUT_RAY_HITS_BUF_SLOT) writeonly buffer RayHitsList {
     uint g_ray_hits[];
 };
 
@@ -149,9 +135,9 @@ void main() {
                 const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
                 const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
-                const uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
-                const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
-                const uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
+                const uint i0 = g_vtx_indices[geo.indices_start + 3 * prim_id + 0];
+                const uint i1 = g_vtx_indices[geo.indices_start + 3 * prim_id + 1];
+                const uint i2 = g_vtx_indices[geo.indices_start + 3 * prim_id + 2];
 
                 const vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
                 const vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
@@ -174,9 +160,40 @@ void main() {
         }
     }
 
-    if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
-        // TODO: Optimize using subgroup operations
-        const uint out_index = atomicAdd(g_ray_counter[8], 1);
+    const bool is_hit = rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT;
+
+#if !defined(NO_SUBGROUP)
+    const uvec4 miss_ballot = subgroupBallot(!is_hit);
+    const uint local_miss_index = subgroupBallotExclusiveBitCount(miss_ballot);
+    const uint miss_count = subgroupBallotBitCount(miss_ballot);
+
+    const uvec4 hit_ballot = subgroupBallot(is_hit);
+    const uint local_hit_index = subgroupBallotExclusiveBitCount(hit_ballot);
+    const uint hit_count = subgroupBallotBitCount(hit_ballot);
+
+    uint miss_index = 0, hit_index = 0;
+    if (subgroupElect()) {
+        if (miss_count != 0) {
+            miss_index = atomicAdd(g_ray_counter[8], miss_count);
+        }
+        if (hit_count != 0) {
+            hit_index = atomicAdd(g_ray_counter[10], hit_count);
+        }
+    }
+    miss_index = subgroupBroadcastFirst(miss_index) + local_miss_index;
+    hit_index = subgroupBroadcastFirst(hit_index) + local_hit_index;
+
+    const uint out_index = is_hit ? hit_index : miss_index;
+#else
+    uint out_index = 0;
+    if (!is_hit) {
+        out_index = atomicAdd(g_ray_counter[8], 1);
+    } else {
+        out_index = atomicAdd(g_ray_counter[10], 1);
+    }
+#endif
+
+    if (!is_hit) {
         const uint out_offset = g_params.img_size.x * g_params.img_size.y * RAY_HITS_STRIDE - (out_index + 1) * RAY_MISS_STRIDE;
 
         // Append at the end of buffer
@@ -187,7 +204,6 @@ void main() {
     #endif
         g_ray_hits[out_offset + 1] = PackRGB565(throughput);
     } else {
-        const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, true);
         const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, true);
         const int instance_index = rayQueryGetIntersectionInstanceIdEXT(rq, true);
         const float hit_t = rayQueryGetIntersectionTEXT(rq, true);
@@ -196,17 +212,14 @@ void main() {
         const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, true);
         const uint packed_throughput = PackRGB565(throughput);
 
-        // TODO: Optimize using subgroup operations
-        const uint out_index = atomicAdd(g_ray_counter[10], 1);
-
     #if defined(FIRST)
         g_ray_hits[out_index * RAY_HITS_STRIDE + 0] = packed_coords;
     #elif defined(SECOND)
         g_ray_hits[out_index * RAY_HITS_STRIDE + 0] = ray_index;
     #endif
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 1] = (uint(instance_index) << 16u) | (geo_index << 8u) | (packed_throughput & 0xffu);
+        g_ray_hits[out_index * RAY_HITS_STRIDE + 1] = (uint(instance_index) << 16u) | packed_throughput;
         g_ray_hits[out_index * RAY_HITS_STRIDE + 2] = floatBitsToUint(hit_t);
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 3] = (uint(backfacing ? -prim_id - 1 : prim_id) << 8u) | (packed_throughput >> 8u);
+        g_ray_hits[out_index * RAY_HITS_STRIDE + 3] = (uint(backfacing ? -prim_id - 1 : prim_id) << 8u) | (geo_index & 0xffu);
         g_ray_hits[out_index * RAY_HITS_STRIDE + 4] = packUnorm2x16(bary_coord);
     }
 }

@@ -241,7 +241,7 @@ void main() {
     const uint temp3 = g_ray_hits[read_offset + 3];
 
     const uint obj_index = (temp1 >> 16u);
-    uint geo_index = (temp1 >> 8u) & 0xffu;
+    uint geo_index = temp3 & 0xffu;
     const vec2 inter_uv = unpackHalf2x16(g_ray_hits[read_offset + 4]);
 
     uint prim_index = (temp3 >> 8u);
@@ -250,7 +250,7 @@ void main() {
     int tri_index = backfacing ? -int(prim_index) - 1 : int(prim_index);
 
     const float hit_t = uintBitsToFloat(g_ray_hits[read_offset + 2]);
-    vec3 throughput = UnpackRGB565((temp1 & 0xffu) | ((temp3 & 0xffu) << 8u));
+    vec3 throughput = UnpackRGB565(temp1 & 0xffffu);
 
     if (g_params.is_hwrt != 0) {
         geo_index += floatBitsToUint(texelFetch(g_mesh_instances, int(HWRT_MESH_INSTANCE_BUF_STRIDE * obj_index + 3)).x) & 0x00ffffffu;
@@ -537,15 +537,29 @@ void main() {
 
 #ifdef HIT_FIRST
     const uint packed_throughput = PackRGB565(throughput);
-    if (packed_throughput != 0) {
-        // TODO: Optimize using subgroup operations
-        const uint out_index = atomicAdd(g_inout_ray_counter[6], 1);
 
+#if !defined(NO_SUBGROUP)
+    const uvec4 next_ballot = subgroupBallot(packed_throughput != 0);
+    const uint local_next_index = subgroupBallotExclusiveBitCount(next_ballot);
+    const uint next_count = subgroupBallotBitCount(next_ballot);
+
+    uint out_index = 0;
+    if (subgroupElect()) {
+        out_index = atomicAdd(g_inout_ray_counter[6], next_count);
+    }
+    out_index = subgroupBroadcastFirst(out_index) + local_next_index;
+#else
+    uint out_index = 0;
+    if (packed_throughput != 0) {
+        out_index = atomicAdd(g_inout_ray_counter[6], 1);
+    }
+#endif
+
+    if (packed_throughput != 0) {
         g_out_ray_list[out_index * RAY_LIST_STRIDE + 0] = packed_coords;
         g_out_ray_list[out_index * RAY_LIST_STRIDE + 1] = floatBitsToUint(first_ray_len);
         g_out_ray_list[out_index * RAY_LIST_STRIDE + 2] = packUnorm2x16(PackUnitVector(N));
         g_out_ray_list[out_index * RAY_LIST_STRIDE + 3] = packed_throughput;
-
         return;
     } else
 #endif // HIT_FIRST

@@ -43,7 +43,7 @@ void Eng::ExRTGI::Execute_HWRT(FgContext &fg) {
         {Ren::eBindTarget::SBufRO, RTGI::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::SBufRO, RTGI::VTX_BUF1_SLOT, *vtx_buf1.ref},
         {Ren::eBindTarget::SBufRO, RTGI::NDX_BUF_SLOT, *ndx_buf.ref},
-        {Ren::eBindTarget::SBufRW, RTGI::RAY_HITS_BUF_SLOT, *out_ray_hits_buf.ref}};
+        {Ren::eBindTarget::SBufRW, RTGI::OUT_RAY_HITS_BUF_SLOT, *out_ray_hits_buf.ref}};
 
     const Ren::Pipeline &pi = *pi_rt_gi_;
 

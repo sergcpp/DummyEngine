@@ -1,5 +1,4 @@
 #version 430 core
-#extension GL_EXT_control_flow_attributes : require
 #if !defined(VULKAN)
 #extension GL_ARB_bindless_texture : enable
 #endif
@@ -185,9 +184,40 @@ void main() {
         break;
     }
 
-    if (inter.mask == 0) {
-        // TODO: Optimize using subgroup operations
-        const uint out_index = atomicAdd(g_ray_counter[8], 1);
+    const bool is_hit = inter.mask != 0;
+
+#if !defined(NO_SUBGROUP)
+    const uvec4 miss_ballot = subgroupBallot(!is_hit);
+    const uint local_miss_index = subgroupBallotExclusiveBitCount(miss_ballot);
+    const uint miss_count = subgroupBallotBitCount(miss_ballot);
+
+    const uvec4 hit_ballot = subgroupBallot(is_hit);
+    const uint local_hit_index = subgroupBallotExclusiveBitCount(hit_ballot);
+    const uint hit_count = subgroupBallotBitCount(hit_ballot);
+
+    uint miss_index = 0, hit_index = 0;
+    if (subgroupElect()) {
+        if (miss_count != 0) {
+            miss_index = atomicAdd(g_ray_counter[8], miss_count);
+        }
+        if (hit_count != 0) {
+            hit_index = atomicAdd(g_ray_counter[10], hit_count);
+        }
+    }
+    miss_index = subgroupBroadcastFirst(miss_index) + local_miss_index;
+    hit_index = subgroupBroadcastFirst(hit_index) + local_hit_index;
+
+    const uint out_index = is_hit ? hit_index : miss_index;
+#else
+    uint out_index = 0;
+    if (!is_hit) {
+        out_index = atomicAdd(g_ray_counter[8], 1);
+    } else {
+        out_index = atomicAdd(g_ray_counter[10], 1);
+    }
+#endif
+
+    if (!is_hit) {
         const uint out_offset = g_params.img_size.x * g_params.img_size.y * RAY_HITS_STRIDE - (out_index + 1) * RAY_MISS_STRIDE;
 
         // Append at the end of buffer
@@ -213,17 +243,14 @@ void main() {
         const int prim_id = tri_index - int(g_geometries[i].indices_start / 3);
         const uint packed_throughput = PackRGB565(throughput);
 
-        // TODO: Optimize using subgroup operations
-        const uint out_index = atomicAdd(g_ray_counter[10], 1);
-
     #if defined(FIRST)
         g_ray_hits[out_index * RAY_HITS_STRIDE + 0] = packed_coords;
     #elif defined(SECOND)
         g_ray_hits[out_index * RAY_HITS_STRIDE + 0] = ray_index;
     #endif
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 1] = (uint(inter.obj_index) << 16u) | (geo_index << 8u) | (packed_throughput & 0xffu);
+        g_ray_hits[out_index * RAY_HITS_STRIDE + 1] = (uint(inter.obj_index) << 16u) | packed_throughput;
         g_ray_hits[out_index * RAY_HITS_STRIDE + 2] = floatBitsToUint(inter.tmax);
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 3] = (uint(backfacing ? -prim_id - 1 : prim_id) << 8u) | (packed_throughput >> 8u);
+        g_ray_hits[out_index * RAY_HITS_STRIDE + 3] = (uint(backfacing ? -prim_id - 1 : prim_id) << 8u) | (geo_index & 0xffu);
         g_ray_hits[out_index * RAY_HITS_STRIDE + 4] = packUnorm2x16(vec2(inter.u, inter.v));
     }
 }

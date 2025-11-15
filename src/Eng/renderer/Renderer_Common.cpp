@@ -104,11 +104,20 @@ void Eng::Renderer::InitPipelines() {
                                                        "internal/gi_trace_ss@NO_SUBGROUP.comp.glsl"));
     pi_gi_shade_[0] = sh_.LoadPipeline("internal/rt_gi_shade@MISS.comp.glsl");
     pi_gi_shade_[1] = sh_.LoadPipeline("internal/rt_gi_shade@MISS_SECOND.comp.glsl");
-    pi_gi_shade_[2] = sh_.LoadPipeline("internal/rt_gi_shade@HIT;GI_CACHE.comp.glsl");
-    pi_gi_shade_[3] = sh_.LoadPipeline("internal/rt_gi_shade@HIT;GI_CACHE;STOCH_LIGHTS.comp.glsl");
-    pi_gi_shade_[4] = sh_.LoadPipeline("internal/rt_gi_shade@HIT_FIRST;GI_CACHE.comp.glsl");
-    pi_gi_shade_[5] = sh_.LoadPipeline("internal/rt_gi_shade@HIT_FIRST;GI_CACHE;STOCH_LIGHTS.comp.glsl");
-    pi_gi_shade_[6] = sh_.LoadPipeline("internal/rt_gi_shade@HIT_SECOND;GI_CACHE.comp.glsl");
+    pi_gi_shade_[2] = sh_.LoadPipeline(subgroup_select("internal/rt_gi_shade@HIT;GI_CACHE.comp.glsl",
+                                                       "internal/rt_gi_shade@HIT;GI_CACHE;NO_SUBGROUP.comp.glsl"));
+    pi_gi_shade_[3] =
+        sh_.LoadPipeline(subgroup_select("internal/rt_gi_shade@HIT;GI_CACHE;STOCH_LIGHTS.comp.glsl",
+                                         "internal/rt_gi_shade@HIT;GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl"));
+    pi_gi_shade_[4] =
+        sh_.LoadPipeline(subgroup_select("internal/rt_gi_shade@HIT_FIRST;GI_CACHE.comp.glsl",
+                                         "internal/rt_gi_shade@HIT_FIRST;GI_CACHE;NO_SUBGROUP.comp.glsl"));
+    pi_gi_shade_[5] =
+        sh_.LoadPipeline(subgroup_select("internal/rt_gi_shade@HIT_FIRST;GI_CACHE;STOCH_LIGHTS.comp.glsl",
+                                         "internal/rt_gi_shade@HIT_FIRST;GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl"));
+    pi_gi_shade_[6] =
+        sh_.LoadPipeline(subgroup_select("internal/rt_gi_shade@HIT_SECOND;GI_CACHE.comp.glsl",
+                                         "internal/rt_gi_shade@HIT_SECOND;GI_CACHE;NO_SUBGROUP.comp.glsl"));
     pi_gi_reproject_ = sh_.LoadPipeline("internal/gi_reproject.comp.glsl");
     pi_gi_temporal_[0] = sh_.LoadPipeline("internal/gi_temporal.comp.glsl");
     pi_gi_temporal_[1] = sh_.LoadPipeline("internal/gi_temporal@RELAXED.comp.glsl");

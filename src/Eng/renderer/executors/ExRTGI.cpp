@@ -30,13 +30,13 @@ void Eng::ExRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
                 sh.LoadPipeline(hwrt_select(subgroup_select("internal/rt_gi_hwrt@SECOND.comp.glsl",
                                                             "internal/rt_gi_hwrt@SECOND;NO_SUBGROUP.comp.glsl"),
                                             subgroup_select("internal/rt_gi_swrt@SECOND.comp.glsl",
-                                                            "internal/rt_gi_swrt@SECOND;NO_SUBGROUP.comp.glsl")));
+                                                            "internal/rt_gi_swrt@SECOND;NO_SUBGROUP.comp.glsl")), 32);
         } else {
             pi_rt_gi_ =
                 sh.LoadPipeline(hwrt_select(subgroup_select("internal/rt_gi_hwrt@FIRST.comp.glsl",
                                                             "internal/rt_gi_hwrt@FIRST;NO_SUBGROUP.comp.glsl"),
                                             subgroup_select("internal/rt_gi_swrt@FIRST.comp.glsl",
-                                                            "internal/rt_gi_swrt@FIRST;NO_SUBGROUP.comp.glsl")));
+                                                            "internal/rt_gi_swrt@FIRST;NO_SUBGROUP.comp.glsl")), 32);
         }
 
         initialized_ = true;
