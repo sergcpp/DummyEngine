@@ -61,7 +61,11 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/ssr_write_indirect_args.comp.glsl" ]
+        "shaders" : [ "internal/ssr_write_indirect_args@MAIN.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_write_indirect_args@RT_DISPATCH.comp.glsl" ]
     },
     {
         "type" : "compute",
@@ -243,7 +247,15 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/gi_write_indirect_args.comp.glsl" ]
+        "shaders" : [ "internal/gi_write_indirect_args@MAIN.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_write_indirect_args@RT_DISPATCH.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_write_indirect_args@SHADE.comp.glsl" ]
     },
     {
         "type" : "compute",
@@ -529,7 +541,8 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/rt_gi_hwrt@GI_CACHE.comp.glsl" ],
+        "shaders" : [ "internal/rt_gi_hwrt@FIRST.comp.glsl" ],
+        "subgroup_size" : 32,
         "features" : {
             "subgroup" : true,
             "hwrt" : true
@@ -537,7 +550,8 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/rt_gi_hwrt@GI_CACHE;NO_SUBGROUP.comp.glsl" ],
+        "shaders" : [ "internal/rt_gi_hwrt@FIRST;NO_SUBGROUP.comp.glsl" ],
+        "subgroup_size" : 32,
         "features" : {
             "subgroup" : false,
             "hwrt" : true
@@ -545,41 +559,7 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/rt_gi_swrt@GI_CACHE.comp.glsl" ],
-        "features" : {
-            "subgroup" : true,
-            "hwrt" : false,
-            "swrt" : true
-        }
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/rt_gi_swrt@GI_CACHE;NO_SUBGROUP.comp.glsl" ],
-        "features" : {
-            "subgroup" : false,
-            "hwrt" : false,
-            "swrt" : true
-        }
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/rt_gi_hwrt@GI_CACHE;STOCH_LIGHTS.comp.glsl" ],
-        "features" : {
-            "subgroup" : true,
-            "hwrt" : true
-        }
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/rt_gi_hwrt@GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl" ],
-        "features" : {
-            "subgroup" : false,
-            "hwrt" : true
-        }
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/rt_gi_swrt@GI_CACHE;STOCH_LIGHTS.comp.glsl" ],
+        "shaders" : [ "internal/rt_gi_swrt@FIRST.comp.glsl" ],
         "features" : {
             "subgroup" : true,
             "hwrt" : false,
@@ -588,7 +568,7 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/rt_gi_swrt@GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl" ],
+        "shaders" : [ "internal/rt_gi_swrt@FIRST;NO_SUBGROUP.comp.glsl" ],
         "features" : {
             "subgroup" : false,
             "hwrt" : false,
@@ -597,7 +577,8 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE.comp.glsl" ],
+        "shaders" : [ "internal/rt_gi_hwrt@SECOND.comp.glsl" ],
+        "subgroup_size" : 32,
         "features" : {
             "subgroup" : true,
             "hwrt" : true
@@ -605,62 +586,11 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE;NO_SUBGROUP.comp.glsl" ],
+        "shaders" : [ "internal/rt_gi_hwrt@SECOND;NO_SUBGROUP.comp.glsl" ],
+        "subgroup_size" : 32,
         "features" : {
             "subgroup" : false,
             "hwrt" : true
-        }
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE.comp.glsl" ],
-        "features" : {
-            "subgroup" : true,
-            "hwrt" : false,
-            "swrt" : true
-        }
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE;NO_SUBGROUP.comp.glsl" ],
-        "features" : {
-            "subgroup" : false,
-            "hwrt" : false,
-            "swrt" : true
-        }
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS.comp.glsl" ],
-        "features" : {
-            "subgroup" : true,
-            "hwrt" : true
-        }
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl" ],
-        "features" : {
-            "subgroup" : false,
-            "hwrt" : true
-        }
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS.comp.glsl" ],
-        "features" : {
-            "subgroup" : true,
-            "hwrt" : false,
-            "swrt" : true
-        }
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl" ],
-        "features" : {
-            "subgroup" : false,
-            "hwrt" : false,
-            "swrt" : true
         }
     },
     {
