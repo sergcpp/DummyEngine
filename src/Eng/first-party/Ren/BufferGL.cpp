@@ -189,7 +189,7 @@ void Ren::Buffer::Free() {
 
 void Ren::Buffer::FreeImmediate() { Free(); }
 
-uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const bool persistent) {
+uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const bool persistent) const {
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     assert(offset + size <= size_);
 
@@ -217,7 +217,7 @@ uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const
     return ret;
 }
 
-void Ren::Buffer::Unmap() {
+void Ren::Buffer::Unmap() const {
     assert(mapped_offset_ != 0xffffffff && mapped_ptr_);
     glBindBuffer(g_buf_targets_gl[int(type_)], GLuint(handle_.buf));
     glUnmapBuffer(g_buf_targets_gl[int(type_)]);
@@ -233,8 +233,7 @@ void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uin
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
-void Ren::Buffer::UpdateImmediate(const uint32_t dst_offset, const uint32_t size, const void *data,
-                                  CommandBuffer) {
+void Ren::Buffer::UpdateImmediate(const uint32_t dst_offset, const uint32_t size, const void *data, CommandBuffer) {
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.buf));
     glBufferSubData(GL_COPY_WRITE_BUFFER, GLintptr(dst_offset), size, data);
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
@@ -247,17 +246,16 @@ int Ren::Buffer::AddBufferView(const eTexFormat format) {
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
     glBindTexture(GL_TEXTURE_BUFFER, tex_id);
-    glTexBufferRange(GL_TEXTURE_BUFFER, GLInternalFormatFromTexFormat(format), GLuint(handle_.buf),
-                     0, size_);
+    glTexBufferRange(GL_TEXTURE_BUFFER, GLInternalFormatFromTexFormat(format), GLuint(handle_.buf), 0, size_);
     glBindTexture(GL_TEXTURE_BUFFER, 0);
 
     handle_.views.emplace_back(format, tex_id);
     return int(handle_.views.size()) - 1;
 }
 
-uint32_t Ren::Buffer::AlignMapOffset(const uint32_t offset) { return offset; }
+uint32_t Ren::Buffer::AlignMapOffset(const uint32_t offset) const { return offset; }
 
-void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst, const uint32_t dst_offset,
+void Ren::CopyBufferToBuffer(const Buffer &src, const uint32_t src_offset, Buffer &dst, const uint32_t dst_offset,
                              const uint32_t size, CommandBuffer) {
     glBindBuffer(GL_COPY_READ_BUFFER, GLuint(src.id()));
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(dst.id()));

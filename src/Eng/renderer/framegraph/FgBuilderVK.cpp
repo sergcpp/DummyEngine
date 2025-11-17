@@ -345,6 +345,12 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             ctx_.LoadTexture(tex.name, std::get<Ren::TexHandle>(resource.handle), tex.desc, std::move(alloc), &status);
         assert(status == Ren::eTexLoadStatus::CreatedDefault);
         tex.ref = tex.strong_ref;
+        for (int i = 0; i < int(tex.desc.views.size()); ++i) {
+            const auto &v = tex.desc.views[i];
+            const int view_index =
+                tex.ref->AddImageView(v.format, v.mip_level, v.mip_count, v.base_layer, v.layer_count);
+            assert(view_index == i + 1);
+        }
     }
 
     //

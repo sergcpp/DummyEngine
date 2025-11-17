@@ -52,15 +52,17 @@ class ExTransparent final : public FgExecutor {
     FgResRef spec_tex_;
     FgResRef depth_tex_;
 
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
-                  FgAllocBuf &ndx_buf, FgAllocTex &color_tex, FgAllocTex &normal_tex, FgAllocTex &spec_tex,
-                  FgAllocTex &depth_tex);
-    void DrawTransparent(FgContext &fg, FgAllocTex &color_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
+                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, const Ren::WeakTexRef &color_tex,
+                  const Ren::WeakTexRef &normal_tex, const Ren::WeakTexRef &spec_tex, const Ren::WeakTexRef &depth_tex);
+    void DrawTransparent(FgContext &fg, const Ren::WeakTexRef &color_tex);
 
-    void DrawTransparent_Simple(FgContext &fg, FgAllocBuf &instances_buf, FgAllocBuf &instance_indices_buf,
-                                FgAllocBuf &unif_shared_data_buf, FgAllocBuf &materials_buf, FgAllocBuf &cells_buf,
-                                FgAllocBuf &items_buf, FgAllocBuf &lights_buf, FgAllocBuf &decals_buf,
-                                FgAllocTex &shad_tex, FgAllocTex &color_tex, FgAllocTex &ssao_tex);
+    void DrawTransparent_Simple(FgContext &fg, const Ren::Buffer &instances_buf,
+                                const Ren::Buffer &instance_indices_buf, const Ren::Buffer &unif_shared_data_buf,
+                                const Ren::Buffer &materials_buf, const Ren::Buffer &cells_buf,
+                                const Ren::Buffer &items_buf, const Ren::Buffer &lights_buf,
+                                const Ren::Buffer &decals_buf, const Ren::Texture &shad_tex,
+                                const Ren::WeakTexRef &color_tex, const Ren::Texture &ssao_tex);
     void DrawTransparent_OIT_MomentBased(FgContext &fg);
     void DrawTransparent_OIT_WeightedBlended(FgContext &fg);
 

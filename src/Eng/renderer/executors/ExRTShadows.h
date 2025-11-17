@@ -56,8 +56,7 @@ class ExRTShadows final : public FgExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
-    void Execute_HWRT_Pipeline(FgContext &fg);
-    void Execute_HWRT_Inline(FgContext &fg);
+    void Execute_HWRT(FgContext &fg);
     void Execute_SWRT(FgContext &fg);
 };
 } // namespace Eng

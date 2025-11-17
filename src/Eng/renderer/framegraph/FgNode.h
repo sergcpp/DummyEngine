@@ -67,7 +67,7 @@ class FgNode {
 
     FgResRef AddTransferImageInput(const Ren::WeakTexRef &tex);
     FgResRef AddTransferImageInput(FgResRef handle);
-    FgResRef AddTransferImageOutput(std::string_view name, const Ren::TexParams &params);
+    FgResRef AddTransferImageOutput(std::string_view name, const FgImgDesc &desc);
     FgResRef AddTransferImageOutput(const Ren::WeakTexRef &tex);
     FgResRef AddTransferImageOutput(FgResRef handle);
 
@@ -77,22 +77,21 @@ class FgNode {
     FgResRef AddStorageOutput(FgResRef handle, Ren::Bitmask<Ren::eStage> stages);
     FgResRef AddStorageOutput(const Ren::WeakBufRef &buf, Ren::Bitmask<Ren::eStage> stages);
 
-    FgResRef AddStorageImageOutput(std::string_view name, const Ren::TexParams &params,
-                                   Ren::Bitmask<Ren::eStage> stages);
+    FgResRef AddStorageImageOutput(std::string_view name, const FgImgDesc &desc, Ren::Bitmask<Ren::eStage> stages);
     FgResRef AddStorageImageOutput(FgResRef handle, Ren::Bitmask<Ren::eStage> stages);
     FgResRef AddStorageImageOutput(const Ren::WeakTexRef &tex, Ren::Bitmask<Ren::eStage> stages);
 
-    FgResRef AddClearImageOutput(std::string_view name, const Ren::TexParams &params) {
-        return AddTransferImageOutput(name, params);
+    FgResRef AddClearImageOutput(std::string_view name, const FgImgDesc &desc) {
+        return AddTransferImageOutput(name, desc);
     }
     FgResRef AddClearImageOutput(const Ren::WeakTexRef &tex) { return AddTransferImageOutput(tex); }
     FgResRef AddClearImageOutput(FgResRef handle) { return AddTransferImageOutput(handle); }
 
-    FgResRef AddColorOutput(std::string_view name, const Ren::TexParams &params);
+    FgResRef AddColorOutput(std::string_view name, const FgImgDesc &desc);
     FgResRef AddColorOutput(FgResRef handle);
     FgResRef AddColorOutput(const Ren::WeakTexRef &tex);
     FgResRef AddColorOutput(std::string_view name);
-    FgResRef AddDepthOutput(std::string_view name, const Ren::TexParams &params);
+    FgResRef AddDepthOutput(std::string_view name, const FgImgDesc &desc);
     FgResRef AddDepthOutput(FgResRef handle);
     FgResRef AddDepthOutput(const Ren::WeakTexRef &tex);
 

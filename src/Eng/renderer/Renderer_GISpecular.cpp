@@ -54,9 +54,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         }
 
         ssr_prepare.set_execute_cb([data](FgContext &fg) {
-            FgAllocBuf &ray_counter_buf = fg.AccessRWBuffer(data->ray_counter);
+            Ren::Buffer &ray_counter_buf = fg.AccessRWBuffer(data->ray_counter);
 
-            ray_counter_buf.ref->Fill(0, ray_counter_buf.ref->size(), 0, fg.cmd_buf());
+            ray_counter_buf.Fill(0, ray_counter_buf.size(), 0, fg.cmd_buf());
         });
     }
 
@@ -103,49 +103,44 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             tile_list = data->tile_list = ssr_classify.AddStorageOutput("Tile List", desc, Stg::ComputeShader);
         }
         { // reflections texture
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-            refl_tex = data->out_refl_tex =
-                ssr_classify.AddStorageImageOutput("SSR Temp 2", params, Stg::ComputeShader);
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RGBA16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            refl_tex = data->out_refl_tex = ssr_classify.AddStorageImageOutput("SSR Temp 2", desc, Stg::ComputeShader);
         }
         { // blue noise texture
-            Ren::TexParams params;
-            params.w = params.h = 128;
-            params.format = Ren::eTexFormat::RGBA8;
-            params.sampling.filter = Ren::eTexFilter::Nearest;
-            params.sampling.wrap = Ren::eTexWrap::Repeat;
-            noise_tex = data->out_noise_tex = ssr_classify.AddStorageImageOutput("BN Tex", params, Stg::ComputeShader);
+            FgImgDesc desc;
+            desc.w = desc.h = 128;
+            desc.format = Ren::eTexFormat::RGBA8;
+            desc.sampling.filter = Ren::eTexFilter::Nearest;
+            desc.sampling.wrap = Ren::eTexWrap::Repeat;
+            noise_tex = data->out_noise_tex = ssr_classify.AddStorageImageOutput("BN Tex", desc, Stg::ComputeShader);
         }
 
         ssr_classify.set_execute_cb([this, data, tile_count, SamplesPerQuad](FgContext &fg) {
             using namespace SSRClassifyTiles;
 
-            FgAllocTex &depth_tex = fg.AccessROTexture(data->depth);
-            FgAllocTex &spec_tex = fg.AccessROTexture(data->specular);
-            FgAllocTex &norm_tex = fg.AccessROTexture(data->normal);
-            FgAllocTex &variance_tex = fg.AccessROTexture(data->variance_history);
-            FgAllocBuf &bn_pmj_seq = fg.AccessROBuffer(data->bn_pmj_seq);
+            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth);
+            const Ren::Texture &spec_tex = fg.AccessROTexture(data->specular);
+            const Ren::Texture &norm_tex = fg.AccessROTexture(data->normal);
+            const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_history);
+            const Ren::Buffer &bn_pmj_seq = fg.AccessROBuffer(data->bn_pmj_seq);
 
-            FgAllocBuf &ray_counter_buf = fg.AccessRWBuffer(data->ray_counter);
-            FgAllocBuf &ray_list_buf = fg.AccessRWBuffer(data->ray_list);
-            FgAllocBuf &tile_list_buf = fg.AccessRWBuffer(data->tile_list);
-            FgAllocTex &refl_tex = fg.AccessRWTexture(data->out_refl_tex);
-            FgAllocTex &noise_tex = fg.AccessRWTexture(data->out_noise_tex);
+            Ren::Buffer &ray_counter_buf = fg.AccessRWBuffer(data->ray_counter);
+            Ren::Buffer &ray_list_buf = fg.AccessRWBuffer(data->ray_list);
+            Ren::Buffer &tile_list_buf = fg.AccessRWBuffer(data->tile_list);
+            Ren::Texture &refl_tex = fg.AccessRWTexture(data->out_refl_tex);
+            Ren::Texture &noise_tex = fg.AccessRWTexture(data->out_noise_tex);
 
-            const Ren::Binding bindings[] = {{Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                             {Trg::TexSampled, SPEC_TEX_SLOT, *spec_tex.ref},
-                                             {Trg::TexSampled, NORM_TEX_SLOT, *norm_tex.ref},
-                                             {Trg::TexSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
-                                             {Trg::SBufRO, RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                                             {Trg::SBufRO, RAY_LIST_SLOT, *ray_list_buf.ref},
-                                             {Trg::SBufRO, TILE_LIST_SLOT, *tile_list_buf.ref},
-                                             {Trg::UTBuf, BN_PMJ_SEQ_BUF_SLOT, *bn_pmj_seq.ref},
-                                             {Trg::ImageRW, OUT_REFL_IMG_SLOT, *refl_tex.ref},
-                                             {Trg::ImageRW, OUT_NOISE_IMG_SLOT, *noise_tex.ref}};
+            const Ren::Binding bindings[] = {
+                {Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}}, {Trg::TexSampled, SPEC_TEX_SLOT, spec_tex},
+                {Trg::TexSampled, NORM_TEX_SLOT, norm_tex},        {Trg::TexSampled, VARIANCE_TEX_SLOT, variance_tex},
+                {Trg::SBufRO, RAY_COUNTER_SLOT, ray_counter_buf},  {Trg::SBufRO, RAY_LIST_SLOT, ray_list_buf},
+                {Trg::SBufRO, TILE_LIST_SLOT, tile_list_buf},      {Trg::UTBuf, BN_PMJ_SEQ_BUF_SLOT, bn_pmj_seq},
+                {Trg::ImageRW, OUT_REFL_IMG_SLOT, refl_tex},       {Trg::ImageRW, OUT_NOISE_IMG_SLOT, noise_tex}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
                                                     (view_state_.ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
@@ -187,11 +182,11 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         write_indir.set_execute_cb([this, data](FgContext &fg) {
             using namespace SSRWriteIndirectArgs;
 
-            FgAllocBuf &ray_counter_buf = fg.AccessRWBuffer(data->ray_counter);
-            FgAllocBuf &indir_args = fg.AccessRWBuffer(data->indir_disp_buf);
+            Ren::Buffer &ray_counter_buf = fg.AccessRWBuffer(data->ray_counter);
+            Ren::Buffer &indir_args = fg.AccessRWBuffer(data->indir_disp_buf);
 
-            const Ren::Binding bindings[] = {{Trg::SBufRO, RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                                             {Trg::SBufRW, INDIR_ARGS_SLOT, *indir_args.ref}};
+            const Ren::Binding bindings[] = {{Trg::SBufRO, RAY_COUNTER_SLOT, ray_counter_buf},
+                                             {Trg::SBufRW, INDIR_ARGS_SLOT, indir_args}};
 
             DispatchCompute(*pi_ssr_write_indirect_[0], Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0, fg.descr_alloc(),
                             fg.log());
@@ -246,16 +241,16 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         ssr_trace_hq.set_execute_cb([this, data](FgContext &fg) {
             using namespace SSRTraceHQ;
 
-            FgAllocTex &noise_tex = fg.AccessROTexture(data->noise_tex);
-            FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            FgAllocTex &color_tex = fg.AccessROTexture(data->color_tex);
-            FgAllocTex &normal_tex = fg.AccessROTexture(data->normal_tex);
-            FgAllocTex &depth_hierarchy_tex = fg.AccessROTexture(data->depth_hierarchy);
-            FgAllocBuf &in_ray_list_buf = fg.AccessROBuffer(data->in_ray_list);
-            FgAllocBuf &indir_args_buf = fg.AccessROBuffer(data->indir_args);
+            const Ren::Texture &noise_tex = fg.AccessROTexture(data->noise_tex);
+            const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
+            const Ren::Texture &color_tex = fg.AccessROTexture(data->color_tex);
+            const Ren::Texture &normal_tex = fg.AccessROTexture(data->normal_tex);
+            const Ren::Texture &depth_hierarchy_tex = fg.AccessROTexture(data->depth_hierarchy);
+            const Ren::Buffer &in_ray_list_buf = fg.AccessROBuffer(data->in_ray_list);
+            const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-            FgAllocTex *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr, *irr_tex = nullptr,
-                       *dist_tex = nullptr, *off_tex = nullptr;
+            const Ren::Texture *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr,
+                               *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
             if (data->irradiance_tex) {
                 albedo_tex = &fg.AccessROTexture(data->albedo_tex);
                 specular_tex = &fg.AccessROTexture(data->specular_tex);
@@ -266,34 +261,33 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 off_tex = &fg.AccessROTexture(data->offset_tex);
             }
 
-            FgAllocTex &out_refl_tex = fg.AccessRWTexture(data->refl_tex);
-            FgAllocBuf &inout_ray_counter_buf = fg.AccessRWBuffer(data->inout_ray_counter);
-            FgAllocBuf &out_ray_list_buf = fg.AccessRWBuffer(data->out_ray_list);
+            Ren::Texture &out_refl_tex = fg.AccessRWTexture(data->refl_tex);
+            Ren::Buffer &inout_ray_counter_buf = fg.AccessRWBuffer(data->inout_ray_counter);
+            Ren::Buffer &out_ray_list_buf = fg.AccessRWBuffer(data->out_ray_list);
 
-            Ren::SmallVector<Ren::Binding, 24> bindings = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::TexSampled, DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
-                {Trg::TexSampled, COLOR_TEX_SLOT, *color_tex.ref},
-                {Trg::TexSampled, NORM_TEX_SLOT, *normal_tex.ref},
-                {Trg::TexSampled, NOISE_TEX_SLOT, *noise_tex.ref},
-                {Trg::SBufRO, IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
-                {Trg::ImageRW, OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
-                {Trg::SBufRW, INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
-                {Trg::SBufRW, OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
+            Ren::SmallVector<Ren::Binding, 24> bindings = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
+                                                           {Trg::TexSampled, DEPTH_TEX_SLOT, depth_hierarchy_tex},
+                                                           {Trg::TexSampled, COLOR_TEX_SLOT, color_tex},
+                                                           {Trg::TexSampled, NORM_TEX_SLOT, normal_tex},
+                                                           {Trg::TexSampled, NOISE_TEX_SLOT, noise_tex},
+                                                           {Trg::SBufRO, IN_RAY_LIST_SLOT, in_ray_list_buf},
+                                                           {Trg::ImageRW, OUT_REFL_IMG_SLOT, out_refl_tex},
+                                                           {Trg::SBufRW, INOUT_RAY_COUNTER_SLOT, inout_ray_counter_buf},
+                                                           {Trg::SBufRW, OUT_RAY_LIST_SLOT, out_ray_list_buf}};
             if (irr_tex) {
-                bindings.emplace_back(Trg::TexSampled, ALBEDO_TEX_SLOT, *albedo_tex->ref);
-                bindings.emplace_back(Trg::TexSampled, SPEC_TEX_SLOT, *specular_tex->ref);
-                bindings.emplace_back(Trg::TexSampled, LTC_LUTS_TEX_SLOT, *ltc_luts_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, ALBEDO_TEX_SLOT, *albedo_tex);
+                bindings.emplace_back(Trg::TexSampled, SPEC_TEX_SLOT, *specular_tex);
+                bindings.emplace_back(Trg::TexSampled, LTC_LUTS_TEX_SLOT, *ltc_luts_tex);
 
-                bindings.emplace_back(Trg::TexSampled, IRRADIANCE_TEX_SLOT, *irr_tex->ref);
-                bindings.emplace_back(Trg::TexSampled, DISTANCE_TEX_SLOT, *dist_tex->ref);
-                bindings.emplace_back(Trg::TexSampled, OFFSET_TEX_SLOT, *off_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, IRRADIANCE_TEX_SLOT, *irr_tex);
+                bindings.emplace_back(Trg::TexSampled, DISTANCE_TEX_SLOT, *dist_tex);
+                bindings.emplace_back(Trg::TexSampled, OFFSET_TEX_SLOT, *off_tex);
             }
 
             Params uniform_params;
             uniform_params.resolution = Ren::Vec4u(view_state_.ren_res[0], view_state_.ren_res[1], 0, 0);
 
-            DispatchComputeIndirect(*pi_ssr_trace_hq_[0][irr_tex != nullptr], *indir_args_buf.ref, 0, bindings,
+            DispatchComputeIndirect(*pi_ssr_trace_hq_[0][irr_tex != nullptr], indir_args_buf, 0, bindings,
                                     &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
         });
     }
@@ -325,11 +319,11 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             rt_disp_args.set_execute_cb([this, data](FgContext &fg) {
                 using namespace SSRWriteIndirectArgs;
 
-                FgAllocBuf &ray_counter_buf = fg.AccessRWBuffer(data->ray_counter);
-                FgAllocBuf &indir_disp_buf = fg.AccessRWBuffer(data->indir_disp_buf);
+                Ren::Buffer &ray_counter_buf = fg.AccessRWBuffer(data->ray_counter);
+                Ren::Buffer &indir_disp_buf = fg.AccessRWBuffer(data->indir_disp_buf);
 
-                const Ren::Binding bindings[] = {{Trg::SBufRW, RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                                                 {Trg::SBufRW, INDIR_ARGS_SLOT, *indir_disp_buf.ref}};
+                const Ren::Binding bindings[] = {{Trg::SBufRW, RAY_COUNTER_SLOT, ray_counter_buf},
+                                                 {Trg::SBufRW, INDIR_ARGS_SLOT, indir_disp_buf}};
 
                 Params params = {};
                 params.counter_index = (settings.reflections_quality == eReflectionsQuality::Raytraced_High) ? 1 : 6;
@@ -439,109 +433,108 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
         { // Reprojected reflections texture
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RGBA16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             reproj_refl_tex = data->out_reprojected_tex =
-                ssr_reproject.AddStorageImageOutput("SSR Reprojected", params, Stg::ComputeShader);
+                ssr_reproject.AddStorageImageOutput("SSR Reprojected", desc, Stg::ComputeShader);
         }
         { // 8x8 average reflections texture
-            Ren::TexParams params;
-            params.w = (view_state_.ren_res[0] + 7) / 8;
-            params.h = (view_state_.ren_res[1] + 7) / 8;
-            params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = (view_state_.ren_res[0] + 7) / 8;
+            desc.h = (view_state_.ren_res[1] + 7) / 8;
+            desc.format = Ren::eTexFormat::RGBA16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             avg_refl_tex = data->out_avg_refl_tex =
-                ssr_reproject.AddStorageImageOutput("Average Refl", params, Stg::ComputeShader);
+                ssr_reproject.AddStorageImageOutput("Average Refl", desc, Stg::ComputeShader);
         }
         { // Variance
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::R16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::R16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             variance_temp_tex = data->out_variance_tex =
-                ssr_reproject.AddStorageImageOutput("Variance Temp", params, Stg::ComputeShader);
+                ssr_reproject.AddStorageImageOutput("Variance Temp", desc, Stg::ComputeShader);
         }
         { // Sample count
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::R16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::R16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             sample_count_tex = data->out_sample_count_tex =
-                ssr_reproject.AddStorageImageOutput("Sample Count", params, Stg::ComputeShader);
+                ssr_reproject.AddStorageImageOutput("Sample Count", desc, Stg::ComputeShader);
         }
 
         data->sample_count_hist_tex =
             ssr_reproject.AddHistoryTextureInput(data->out_sample_count_tex, Stg::ComputeShader);
 
         ssr_reproject.set_execute_cb([this, data, tile_count](FgContext &fg) {
-            FgAllocBuf &shared_data_buf = fg.AccessROBuffer(data->shared_data);
-            FgAllocTex &depth_tex = fg.AccessROTexture(data->depth_tex);
-            FgAllocTex &norm_tex = fg.AccessROTexture(data->norm_tex);
-            FgAllocTex &velocity_tex = fg.AccessROTexture(data->velocity_tex);
-            FgAllocTex &depth_hist_tex = fg.AccessROTexture(data->depth_hist_tex);
-            FgAllocTex &norm_hist_tex = fg.AccessROTexture(data->norm_hist_tex);
-            FgAllocTex &refl_hist_tex = fg.AccessROTexture(data->refl_hist_tex);
-            FgAllocTex &variance_hist_tex = fg.AccessROTexture(data->variance_hist_tex);
-            FgAllocTex &sample_count_hist_tex = fg.AccessROTexture(data->sample_count_hist_tex);
-            FgAllocTex &relf_tex = fg.AccessROTexture(data->refl_tex);
-            FgAllocBuf &tile_list_buf = fg.AccessROBuffer(data->tile_list);
-            FgAllocBuf &indir_args_buf = fg.AccessROBuffer(data->indir_args);
-            FgAllocTex &out_reprojected_tex = fg.AccessRWTexture(data->out_reprojected_tex);
-            FgAllocTex &out_avg_refl_tex = fg.AccessRWTexture(data->out_avg_refl_tex);
-            FgAllocTex &out_variance_tex = fg.AccessRWTexture(data->out_variance_tex);
-            FgAllocTex &out_sample_count_tex = fg.AccessRWTexture(data->out_sample_count_tex);
+            const Ren::Buffer &shared_data_buf = fg.AccessROBuffer(data->shared_data);
+            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
+            const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
+            const Ren::Texture &velocity_tex = fg.AccessROTexture(data->velocity_tex);
+            const Ren::Texture &depth_hist_tex = fg.AccessROTexture(data->depth_hist_tex);
+            const Ren::Texture &norm_hist_tex = fg.AccessROTexture(data->norm_hist_tex);
+            const Ren::Texture &refl_hist_tex = fg.AccessROTexture(data->refl_hist_tex);
+            const Ren::Texture &variance_hist_tex = fg.AccessROTexture(data->variance_hist_tex);
+            const Ren::Texture &sample_count_hist_tex = fg.AccessROTexture(data->sample_count_hist_tex);
+            const Ren::Texture &relf_tex = fg.AccessROTexture(data->refl_tex);
+            const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
+            const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
+            Ren::Texture &out_reprojected_tex = fg.AccessRWTexture(data->out_reprojected_tex);
+            Ren::Texture &out_avg_refl_tex = fg.AccessRWTexture(data->out_avg_refl_tex);
+            Ren::Texture &out_variance_tex = fg.AccessRWTexture(data->out_variance_tex);
+            Ren::Texture &out_sample_count_tex = fg.AccessRWTexture(data->out_sample_count_tex);
 
             { // Process tiles
                 using namespace SSRReproject;
 
-                const Ren::Binding bindings[] = {
-                    {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
-                    {Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                    {Trg::TexSampled, NORM_TEX_SLOT, *norm_tex.ref},
-                    {Trg::TexSampled, VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                    {Trg::TexSampled, DEPTH_HIST_TEX_SLOT, {*depth_hist_tex.ref, 1}},
-                    {Trg::TexSampled, NORM_HIST_TEX_SLOT, *norm_hist_tex.ref},
-                    {Trg::TexSampled, REFL_HIST_TEX_SLOT, *refl_hist_tex.ref},
-                    {Trg::TexSampled, VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
-                    {Trg::TexSampled, SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
-                    {Trg::TexSampled, REFL_TEX_SLOT, *relf_tex.ref},
-                    {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                    {Trg::ImageRW, OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
-                    {Trg::ImageRW, OUT_AVG_REFL_IMG_SLOT, *out_avg_refl_tex.ref},
-                    {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref},
-                    {Trg::ImageRW, OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, shared_data_buf},
+                                                 {Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},
+                                                 {Trg::TexSampled, NORM_TEX_SLOT, norm_tex},
+                                                 {Trg::TexSampled, VELOCITY_TEX_SLOT, velocity_tex},
+                                                 {Trg::TexSampled, DEPTH_HIST_TEX_SLOT, {depth_hist_tex, 1}},
+                                                 {Trg::TexSampled, NORM_HIST_TEX_SLOT, norm_hist_tex},
+                                                 {Trg::TexSampled, REFL_HIST_TEX_SLOT, refl_hist_tex},
+                                                 {Trg::TexSampled, VARIANCE_HIST_TEX_SLOT, variance_hist_tex},
+                                                 {Trg::TexSampled, SAMPLE_COUNT_HIST_TEX_SLOT, sample_count_hist_tex},
+                                                 {Trg::TexSampled, REFL_TEX_SLOT, relf_tex},
+                                                 {Trg::SBufRO, TILE_LIST_BUF_SLOT, tile_list_buf},
+                                                 {Trg::ImageRW, OUT_REPROJECTED_IMG_SLOT, out_reprojected_tex},
+                                                 {Trg::ImageRW, OUT_AVG_REFL_IMG_SLOT, out_avg_refl_tex},
+                                                 {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, out_variance_tex},
+                                                 {Trg::ImageRW, OUT_SAMPLE_COUNT_IMG_SLOT, out_sample_count_tex}};
 
                 Params uniform_params;
                 uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
 
-                DispatchComputeIndirect(*pi_ssr_reproject_, *indir_args_buf.ref, data->indir_args_offset1, bindings,
+                DispatchComputeIndirect(*pi_ssr_reproject_, indir_args_buf, data->indir_args_offset1, bindings,
                                         &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
             }
             { // Clear unused tiles
                 using namespace TileClear;
 
-                const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::ImageRW, OUT_RAD_IMG_SLOT, *out_reprojected_tex.ref},
-                                                 {Trg::ImageRW, OUT_AVG_RAD_IMG_SLOT, *out_avg_refl_tex.ref},
-                                                 {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, tile_list_buf},
+                                                 {Trg::ImageRW, OUT_RAD_IMG_SLOT, out_reprojected_tex},
+                                                 {Trg::ImageRW, OUT_AVG_RAD_IMG_SLOT, out_avg_refl_tex},
+                                                 {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, out_variance_tex}};
 
                 Params uniform_params;
                 uniform_params.tile_count = tile_count;
 
-                DispatchComputeIndirect(*pi_tile_clear_[3], *indir_args_buf.ref, data->indir_args_offset2, bindings,
+                DispatchComputeIndirect(*pi_tile_clear_[3], indir_args_buf, data->indir_args_offset2, bindings,
                                         &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
             }
         });
@@ -576,64 +569,64 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
         { // Final reflection
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RGBA16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             prefiltered_refl = data->out_refl_tex =
-                ssr_prefilter.AddStorageImageOutput("GI Specular 1", params, Stg::ComputeShader);
+                ssr_prefilter.AddStorageImageOutput("GI Specular 1", desc, Stg::ComputeShader);
         }
 
         ssr_prefilter.set_execute_cb([this, data, tile_count](FgContext &fg) {
-            FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            FgAllocTex &depth_tex = fg.AccessROTexture(data->depth_tex);
-            FgAllocTex &spec_tex = fg.AccessROTexture(data->spec_tex);
-            FgAllocTex &norm_tex = fg.AccessROTexture(data->norm_tex);
-            FgAllocTex &refl_tex = fg.AccessROTexture(data->refl_tex);
-            FgAllocTex &avg_refl_tex = fg.AccessROTexture(data->avg_refl_tex);
-            FgAllocTex &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
-            FgAllocTex &variance_tex = fg.AccessROTexture(data->variance_tex);
-            FgAllocBuf &tile_list_buf = fg.AccessROBuffer(data->tile_list);
-            FgAllocBuf &indir_args_buf = fg.AccessROBuffer(data->indir_args);
+            const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
+            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
+            const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
+            const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
+            const Ren::Texture &refl_tex = fg.AccessROTexture(data->refl_tex);
+            const Ren::Texture &avg_refl_tex = fg.AccessROTexture(data->avg_refl_tex);
+            const Ren::Texture &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
+            const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_tex);
+            const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
+            const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-            FgAllocTex &out_refl_tex = fg.AccessRWTexture(data->out_refl_tex);
+            Ren::Texture &out_refl_tex = fg.AccessRWTexture(data->out_refl_tex);
 
             { // Filter tiles
                 using namespace SSRFilter;
 
-                const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                                 {Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                                 {Trg::TexSampled, SPEC_TEX_SLOT, *spec_tex.ref},
-                                                 {Trg::TexSampled, NORM_TEX_SLOT, *norm_tex.ref},
-                                                 {Trg::TexSampled, REFL_TEX_SLOT, {*refl_tex.ref, *nearest_sampler_}},
-                                                 {Trg::TexSampled, AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
-                                                 {Trg::TexSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                                                 {Trg::TexSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
-                                                 {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::ImageRW, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
+                                                 {Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},
+                                                 {Trg::TexSampled, SPEC_TEX_SLOT, spec_tex},
+                                                 {Trg::TexSampled, NORM_TEX_SLOT, norm_tex},
+                                                 {Trg::TexSampled, REFL_TEX_SLOT, {refl_tex, *nearest_sampler_}},
+                                                 {Trg::TexSampled, AVG_REFL_TEX_SLOT, avg_refl_tex},
+                                                 {Trg::TexSampled, SAMPLE_COUNT_TEX_SLOT, sample_count_tex},
+                                                 {Trg::TexSampled, VARIANCE_TEX_SLOT, variance_tex},
+                                                 {Trg::SBufRO, TILE_LIST_BUF_SLOT, tile_list_buf},
+                                                 {Trg::ImageRW, OUT_DENOISED_IMG_SLOT, out_refl_tex}};
 
                 Params uniform_params;
                 uniform_params.rotator = view_state_.rand_rotators[0];
                 uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                 uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-                DispatchComputeIndirect(*pi_ssr_filter_[settings.taa_mode == eTAAMode::Static], *indir_args_buf.ref,
+                DispatchComputeIndirect(*pi_ssr_filter_[settings.taa_mode == eTAAMode::Static], indir_args_buf,
                                         data->indir_args_offset1, bindings, &uniform_params, sizeof(uniform_params),
                                         fg.descr_alloc(), fg.log());
             }
             { // Clear unused tiles
                 using namespace TileClear;
 
-                const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::ImageRW, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, tile_list_buf},
+                                                 {Trg::ImageRW, OUT_RAD_IMG_SLOT, out_refl_tex}};
 
                 Params uniform_params;
                 uniform_params.tile_count = tile_count;
 
-                DispatchComputeIndirect(*pi_tile_clear_[0], *indir_args_buf.ref, data->indir_args_offset2, bindings,
+                DispatchComputeIndirect(*pi_tile_clear_[0], indir_args_buf, data->indir_args_offset2, bindings,
                                         &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
             }
         });
@@ -667,77 +660,77 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
         if (EnableBlur) {
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RGBA16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             gi_specular_tex = data->out_refl_tex =
-                ssr_temporal.AddStorageImageOutput("GI Specular", params, Stg::ComputeShader);
+                ssr_temporal.AddStorageImageOutput("GI Specular", desc, Stg::ComputeShader);
         } else {
             gi_specular_tex = refl_tex = data->out_refl_tex =
                 ssr_temporal.AddStorageImageOutput(refl_tex, Stg::ComputeShader);
         }
         { // Variance texture
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::R16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::R16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             ssr_variance_tex = data->out_variance_tex =
-                ssr_temporal.AddStorageImageOutput(SPECULAR_VARIANCE_TEX, params, Stg::ComputeShader);
+                ssr_temporal.AddStorageImageOutput(SPECULAR_VARIANCE_TEX, desc, Stg::ComputeShader);
         }
 
         ssr_temporal.set_execute_cb([this, data, tile_count](FgContext &fg) {
-            FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            FgAllocTex &norm_tex = fg.AccessROTexture(data->norm_tex);
-            FgAllocTex &avg_refl_tex = fg.AccessROTexture(data->avg_refl_tex);
-            FgAllocTex &refl_tex = fg.AccessROTexture(data->refl_tex);
-            FgAllocTex &reproj_refl_tex = fg.AccessROTexture(data->reproj_refl_tex);
-            FgAllocTex &variance_tex = fg.AccessROTexture(data->variance_tex);
-            FgAllocTex &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
-            FgAllocBuf &tile_list_buf = fg.AccessROBuffer(data->tile_list);
-            FgAllocBuf &indir_args_buf = fg.AccessROBuffer(data->indir_args);
+            const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
+            const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
+            const Ren::Texture &avg_refl_tex = fg.AccessROTexture(data->avg_refl_tex);
+            const Ren::Texture &refl_tex = fg.AccessROTexture(data->refl_tex);
+            const Ren::Texture &reproj_refl_tex = fg.AccessROTexture(data->reproj_refl_tex);
+            const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_tex);
+            const Ren::Texture &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
+            const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
+            const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-            FgAllocTex &out_refl_tex = fg.AccessRWTexture(data->out_refl_tex);
-            FgAllocTex &out_variance_tex = fg.AccessRWTexture(data->out_variance_tex);
+            Ren::Texture &out_refl_tex = fg.AccessRWTexture(data->out_refl_tex);
+            Ren::Texture &out_variance_tex = fg.AccessRWTexture(data->out_variance_tex);
 
             { // Process tiles
                 using namespace SSRResolveTemporal;
 
-                const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                                 {Trg::TexSampled, NORM_TEX_SLOT, *norm_tex.ref},
-                                                 {Trg::TexSampled, AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
-                                                 {Trg::TexSampled, REFL_TEX_SLOT, *refl_tex.ref},
-                                                 {Trg::TexSampled, REPROJ_REFL_TEX_SLOT, *reproj_refl_tex.ref},
-                                                 {Trg::TexSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
-                                                 {Trg::TexSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                                                 {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::ImageRW, OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
-                                                 {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
+                                                 {Trg::TexSampled, NORM_TEX_SLOT, norm_tex},
+                                                 {Trg::TexSampled, AVG_REFL_TEX_SLOT, avg_refl_tex},
+                                                 {Trg::TexSampled, REFL_TEX_SLOT, refl_tex},
+                                                 {Trg::TexSampled, REPROJ_REFL_TEX_SLOT, reproj_refl_tex},
+                                                 {Trg::TexSampled, VARIANCE_TEX_SLOT, variance_tex},
+                                                 {Trg::TexSampled, SAMPLE_COUNT_TEX_SLOT, sample_count_tex},
+                                                 {Trg::SBufRO, TILE_LIST_BUF_SLOT, tile_list_buf},
+                                                 {Trg::ImageRW, OUT_REFL_IMG_SLOT, out_refl_tex},
+                                                 {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, out_variance_tex}};
 
                 Params uniform_params;
                 uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
 
-                DispatchComputeIndirect(*pi_ssr_temporal_[settings.taa_mode == eTAAMode::Static], *indir_args_buf.ref,
+                DispatchComputeIndirect(*pi_ssr_temporal_[settings.taa_mode == eTAAMode::Static], indir_args_buf,
                                         data->indir_args_offset1, bindings, &uniform_params, sizeof(uniform_params),
                                         fg.descr_alloc(), fg.log());
             }
             { // Clear unused tiles
                 using namespace TileClear;
 
-                const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::ImageRW, OUT_RAD_IMG_SLOT, *out_refl_tex.ref},
-                                                 {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, tile_list_buf},
+                                                 {Trg::ImageRW, OUT_RAD_IMG_SLOT, out_refl_tex},
+                                                 {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, out_variance_tex}};
 
                 Params uniform_params;
                 uniform_params.tile_count = tile_count;
 
-                DispatchComputeIndirect(*pi_tile_clear_[2], *indir_args_buf.ref, data->indir_args_offset2, bindings,
+                DispatchComputeIndirect(*pi_tile_clear_[2], indir_args_buf, data->indir_args_offset2, bindings,
                                         &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
             }
         });
@@ -774,62 +767,61 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
             { // Final reflection
-                Ren::TexParams params;
-                params.w = view_state_.ren_res[0];
-                params.h = view_state_.ren_res[1];
-                params.format = Ren::eTexFormat::RGBA16F;
-                params.sampling.filter = Ren::eTexFilter::Bilinear;
-                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                FgImgDesc desc;
+                desc.w = view_state_.ren_res[0];
+                desc.h = view_state_.ren_res[1];
+                desc.format = Ren::eTexFormat::RGBA16F;
+                desc.sampling.filter = Ren::eTexFilter::Bilinear;
+                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 gi_specular2_tex = data->out_refl_tex =
-                    ssr_filter.AddStorageImageOutput("GI Specular 2", params, Stg::ComputeShader);
+                    ssr_filter.AddStorageImageOutput("GI Specular 2", desc, Stg::ComputeShader);
             }
 
             ssr_filter.set_execute_cb([this, data, tile_count](FgContext &fg) {
-                FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-                FgAllocTex &depth_tex = fg.AccessROTexture(data->depth_tex);
-                FgAllocTex &spec_tex = fg.AccessROTexture(data->spec_tex);
-                FgAllocTex &norm_tex = fg.AccessROTexture(data->norm_tex);
-                FgAllocTex &refl_tex = fg.AccessROTexture(data->refl_tex);
-                FgAllocTex &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
-                FgAllocTex &variance_tex = fg.AccessROTexture(data->variance_tex);
-                FgAllocBuf &tile_list_buf = fg.AccessROBuffer(data->tile_list);
-                FgAllocBuf &indir_args_buf = fg.AccessROBuffer(data->indir_args);
+                const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
+                const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
+                const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
+                const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
+                const Ren::Texture &refl_tex = fg.AccessROTexture(data->refl_tex);
+                const Ren::Texture &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
+                const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_tex);
+                const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
+                const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-                FgAllocTex &out_refl_tex = fg.AccessRWTexture(data->out_refl_tex);
+                Ren::Texture &out_refl_tex = fg.AccessRWTexture(data->out_refl_tex);
 
                 { // Filter tiles
                     using namespace SSRFilter;
 
-                    const Ren::Binding bindings[] = {
-                        {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                        {Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                        {Trg::TexSampled, SPEC_TEX_SLOT, *spec_tex.ref},
-                        {Trg::TexSampled, NORM_TEX_SLOT, *norm_tex.ref},
-                        {Trg::TexSampled, REFL_TEX_SLOT, {*refl_tex.ref, *nearest_sampler_}},
-                        {Trg::TexSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                        {Trg::TexSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
-                        {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                        {Trg::ImageRW, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
+                    const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
+                                                     {Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},
+                                                     {Trg::TexSampled, SPEC_TEX_SLOT, spec_tex},
+                                                     {Trg::TexSampled, NORM_TEX_SLOT, norm_tex},
+                                                     {Trg::TexSampled, REFL_TEX_SLOT, {refl_tex, *nearest_sampler_}},
+                                                     {Trg::TexSampled, SAMPLE_COUNT_TEX_SLOT, sample_count_tex},
+                                                     {Trg::TexSampled, VARIANCE_TEX_SLOT, variance_tex},
+                                                     {Trg::SBufRO, TILE_LIST_BUF_SLOT, tile_list_buf},
+                                                     {Trg::ImageRW, OUT_DENOISED_IMG_SLOT, out_refl_tex}};
 
                     Params uniform_params;
                     uniform_params.rotator = view_state_.rand_rotators[0];
                     uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                     uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-                    DispatchComputeIndirect(*pi_ssr_filter_[2], *indir_args_buf.ref, data->indir_args_offset1, bindings,
+                    DispatchComputeIndirect(*pi_ssr_filter_[2], indir_args_buf, data->indir_args_offset1, bindings,
                                             &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
                 }
                 { // Clear unused tiles
                     using namespace TileClear;
 
-                    const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                     {Trg::ImageRW, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
+                    const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, tile_list_buf},
+                                                     {Trg::ImageRW, OUT_RAD_IMG_SLOT, out_refl_tex}};
 
                     Params uniform_params;
                     uniform_params.tile_count = tile_count;
 
-                    DispatchComputeIndirect(*pi_tile_clear_[0], *indir_args_buf.ref, data->indir_args_offset2, bindings,
+                    DispatchComputeIndirect(*pi_tile_clear_[0], indir_args_buf, data->indir_args_offset2, bindings,
                                             &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
                 }
             });
@@ -863,62 +855,61 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
             { // Final reflection
-                Ren::TexParams params;
-                params.w = view_state_.ren_res[0];
-                params.h = view_state_.ren_res[1];
-                params.format = Ren::eTexFormat::RGBA16F;
-                params.sampling.filter = Ren::eTexFilter::Bilinear;
-                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                FgImgDesc desc;
+                desc.w = view_state_.ren_res[0];
+                desc.h = view_state_.ren_res[1];
+                desc.format = Ren::eTexFormat::RGBA16F;
+                desc.sampling.filter = Ren::eTexFilter::Bilinear;
+                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 gi_specular3_tex = data->out_refl_tex =
-                    ssr_post_filter.AddStorageImageOutput("GI Specular Filtered", params, Stg::ComputeShader);
+                    ssr_post_filter.AddStorageImageOutput("GI Specular Filtered", desc, Stg::ComputeShader);
             }
 
             ssr_post_filter.set_execute_cb([this, data, tile_count](FgContext &fg) {
-                FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-                FgAllocTex &depth_tex = fg.AccessROTexture(data->depth_tex);
-                FgAllocTex &spec_tex = fg.AccessROTexture(data->spec_tex);
-                FgAllocTex &norm_tex = fg.AccessROTexture(data->norm_tex);
-                FgAllocTex &refl_tex = fg.AccessROTexture(data->refl_tex);
-                FgAllocTex &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
-                FgAllocTex &variance_tex = fg.AccessROTexture(data->variance_tex);
-                FgAllocBuf &tile_list_buf = fg.AccessROBuffer(data->tile_list);
-                FgAllocBuf &indir_args_buf = fg.AccessROBuffer(data->indir_args);
+                const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
+                const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
+                const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
+                const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
+                const Ren::Texture &refl_tex = fg.AccessROTexture(data->refl_tex);
+                const Ren::Texture &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
+                const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_tex);
+                const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
+                const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-                FgAllocTex &out_refl_tex = fg.AccessRWTexture(data->out_refl_tex);
+                Ren::Texture &out_refl_tex = fg.AccessRWTexture(data->out_refl_tex);
 
                 { // Filter tiles
                     using namespace SSRFilter;
 
-                    const Ren::Binding bindings[] = {
-                        {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                        {Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                        {Trg::TexSampled, SPEC_TEX_SLOT, *spec_tex.ref},
-                        {Trg::TexSampled, NORM_TEX_SLOT, *norm_tex.ref},
-                        {Trg::TexSampled, REFL_TEX_SLOT, {*refl_tex.ref, *nearest_sampler_}},
-                        {Trg::TexSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                        {Trg::TexSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
-                        {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                        {Trg::ImageRW, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
+                    const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
+                                                     {Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},
+                                                     {Trg::TexSampled, SPEC_TEX_SLOT, spec_tex},
+                                                     {Trg::TexSampled, NORM_TEX_SLOT, norm_tex},
+                                                     {Trg::TexSampled, REFL_TEX_SLOT, {refl_tex, *nearest_sampler_}},
+                                                     {Trg::TexSampled, SAMPLE_COUNT_TEX_SLOT, sample_count_tex},
+                                                     {Trg::TexSampled, VARIANCE_TEX_SLOT, variance_tex},
+                                                     {Trg::SBufRO, TILE_LIST_BUF_SLOT, tile_list_buf},
+                                                     {Trg::ImageRW, OUT_DENOISED_IMG_SLOT, out_refl_tex}};
 
                     Params uniform_params;
                     uniform_params.rotator = view_state_.rand_rotators[1];
                     uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                     uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-                    DispatchComputeIndirect(*pi_ssr_filter_[3], *indir_args_buf.ref, data->indir_args_offset1, bindings,
+                    DispatchComputeIndirect(*pi_ssr_filter_[3], indir_args_buf, data->indir_args_offset1, bindings,
                                             &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
                 }
                 { // Clear unused tiles
                     using namespace TileClear;
 
-                    const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                     {Trg::ImageRW, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
+                    const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, tile_list_buf},
+                                                     {Trg::ImageRW, OUT_RAD_IMG_SLOT, out_refl_tex}};
 
                     Params uniform_params;
                     uniform_params.tile_count = tile_count;
 
-                    DispatchComputeIndirect(*pi_tile_clear_[0], *indir_args_buf.ref, data->indir_args_offset2, bindings,
+                    DispatchComputeIndirect(*pi_tile_clear_[0], indir_args_buf, data->indir_args_offset2, bindings,
                                             &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
                 }
             });
@@ -940,15 +931,15 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             data->ssr_tex = ssr_stabilization.AddTextureInput(gi_specular3_tex, Stg::ComputeShader);
 
             { // Final gi
-                Ren::TexParams params;
-                params.w = view_state_.ren_res[0];
-                params.h = view_state_.ren_res[1];
-                params.format = Ren::eTexFormat::RGBA16F;
-                params.sampling.filter = Ren::eTexFilter::Bilinear;
-                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                FgImgDesc desc;
+                desc.w = view_state_.ren_res[0];
+                desc.h = view_state_.ren_res[1];
+                desc.format = Ren::eTexFormat::RGBA16F;
+                desc.sampling.filter = Ren::eTexFilter::Bilinear;
+                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 gi_specular4_tex = data->out_ssr_tex =
-                    ssr_stabilization.AddStorageImageOutput("GI Specular 4", params, Stg::ComputeShader);
+                    ssr_stabilization.AddStorageImageOutput("GI Specular 4", desc, Stg::ComputeShader);
             }
 
             data->ssr_hist_tex = ssr_stabilization.AddHistoryTextureInput(gi_specular4_tex, Stg::ComputeShader);
@@ -956,18 +947,18 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             ssr_stabilization.set_execute_cb([this, data](FgContext &fg) {
                 using namespace SSRStabilization;
 
-                FgAllocTex &depth_tex = fg.AccessROTexture(data->depth_tex);
-                FgAllocTex &velocity_tex = fg.AccessROTexture(data->velocity_tex);
-                FgAllocTex &gi_tex = fg.AccessROTexture(data->ssr_tex);
-                FgAllocTex &gi_hist_tex = fg.AccessROTexture(data->ssr_hist_tex);
+                const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
+                const Ren::Texture &velocity_tex = fg.AccessROTexture(data->velocity_tex);
+                const Ren::Texture &gi_tex = fg.AccessROTexture(data->ssr_tex);
+                const Ren::Texture &gi_hist_tex = fg.AccessROTexture(data->ssr_hist_tex);
 
-                FgAllocTex &out_gi_tex = fg.AccessRWTexture(data->out_ssr_tex);
+                Ren::Texture &out_gi_tex = fg.AccessRWTexture(data->out_ssr_tex);
 
-                const Ren::Binding bindings[] = {{Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                                 {Trg::TexSampled, VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                                                 {Trg::TexSampled, SSR_TEX_SLOT, *gi_tex.ref},
-                                                 {Trg::TexSampled, SSR_HIST_TEX_SLOT, *gi_hist_tex.ref},
-                                                 {Trg::ImageRW, OUT_SSR_IMG_SLOT, *out_gi_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},
+                                                 {Trg::TexSampled, VELOCITY_TEX_SLOT, velocity_tex},
+                                                 {Trg::TexSampled, SSR_TEX_SLOT, gi_tex},
+                                                 {Trg::TexSampled, SSR_HIST_TEX_SLOT, gi_hist_tex},
+                                                 {Trg::ImageRW, OUT_SSR_IMG_SLOT, out_gi_tex}};
 
                 const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
                                                         (view_state_.ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
@@ -1023,15 +1014,15 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
     ssr_compose.set_execute_cb([this, data](FgContext &fg) {
         using namespace SSRCompose;
 
-        FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-        FgAllocTex &depth_tex = fg.AccessROTexture(data->depth_tex);
-        FgAllocTex &normal_tex = fg.AccessROTexture(data->normal_tex);
-        FgAllocTex &albedo_tex = fg.AccessROTexture(data->albedo_tex);
-        FgAllocTex &spec_tex = fg.AccessROTexture(data->spec_tex);
-        FgAllocTex &refl_tex = fg.AccessROTexture(data->refl_tex);
-        FgAllocTex &ltc_luts = fg.AccessROTexture(data->ltc_luts);
+        const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
+        const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
+        const Ren::Texture &normal_tex = fg.AccessROTexture(data->normal_tex);
+        const Ren::Texture &albedo_tex = fg.AccessROTexture(data->albedo_tex);
+        const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
+        const Ren::Texture &refl_tex = fg.AccessROTexture(data->refl_tex);
+        const Ren::Texture &ltc_luts = fg.AccessROTexture(data->ltc_luts);
 
-        FgAllocTex &output_tex = fg.AccessRWTexture(data->output_tex);
+        Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
 
         Ren::RastState rast_state;
         rast_state.depth.test_enabled = false;
@@ -1048,17 +1039,17 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         rast_state.viewport[3] = view_state_.ren_res[1];
 
         { // compose reflections on top of clean buffer
-            const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+            const Ren::RenderTarget render_targets[] = {{output_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
             // TODO: get rid of global binding slots
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(shared_data_t), *unif_sh_data_buf.ref},
-                {Ren::eBindTarget::TexSampled, ALBEDO_TEX_SLOT, *albedo_tex.ref},
-                {Ren::eBindTarget::TexSampled, SPEC_TEX_SLOT, *spec_tex.ref},
-                {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Ren::eBindTarget::TexSampled, NORM_TEX_SLOT, *normal_tex.ref},
-                {Ren::eBindTarget::TexSampled, REFL_TEX_SLOT, *refl_tex.ref},
-                {Ren::eBindTarget::TexSampled, LTC_LUTS_TEX_SLOT, *ltc_luts.ref}};
+                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(shared_data_t), unif_sh_data_buf},
+                {Ren::eBindTarget::TexSampled, ALBEDO_TEX_SLOT, albedo_tex},
+                {Ren::eBindTarget::TexSampled, SPEC_TEX_SLOT, spec_tex},
+                {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},
+                {Ren::eBindTarget::TexSampled, NORM_TEX_SLOT, normal_tex},
+                {Ren::eBindTarget::TexSampled, REFL_TEX_SLOT, refl_tex},
+                {Ren::eBindTarget::TexSampled, LTC_LUTS_TEX_SLOT, ltc_luts}};
 
             Params uniform_params;
             uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
@@ -1092,21 +1083,22 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
         data->depth_down_2x_tex = ssr_trace.AddTextureInput(depth_down_2x, Stg::FragmentShader);
 
         { // Auxilary texture for reflections (rg - uvs, b - influence)
-            Ren::TexParams params;
-            params.w = (view_state_.ren_res[0] / 2);
-            params.h = (view_state_.ren_res[1] / 2);
-            params.format = Ren::eTexFormat::RGB10_A2;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = (view_state_.ren_res[0] / 2);
+            desc.h = (view_state_.ren_res[1] / 2);
+            desc.format = Ren::eTexFormat::RGB10_A2;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            ssr_temp1 = data->output_tex = ssr_trace.AddColorOutput("SSR Temp 1", params);
+            ssr_temp1 = data->output_tex = ssr_trace.AddColorOutput("SSR Temp 1", desc);
         }
 
         ssr_trace.set_execute_cb([this, data](FgContext &fg) {
-            FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            FgAllocTex &normal_tex = fg.AccessROTexture(data->normal_tex);
-            FgAllocTex &depth_down_2x_tex = fg.AccessROTexture(data->depth_down_2x_tex);
-            FgAllocTex &output_tex = fg.AccessRWTexture(data->output_tex);
+            const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
+            const Ren::Texture &normal_tex = fg.AccessROTexture(data->normal_tex);
+            const Ren::Texture &depth_down_2x_tex = fg.AccessROTexture(data->depth_down_2x_tex);
+
+            Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = false;
@@ -1117,13 +1109,12 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
             rast_state.viewport[3] = (view_state_.ren_res[1] / 2);
 
             { // screen space tracing
-                const Ren::RenderTarget render_targets[] = {
-                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+                const Ren::RenderTarget render_targets[] = {{output_tex, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
                 const Ren::Binding bindings[] = {
-                    {Trg::TexSampled, SSRTrace::DEPTH_TEX_SLOT, *depth_down_2x_tex.ref},
-                    {Trg::TexSampled, SSRTrace::NORM_TEX_SLOT, *normal_tex.ref},
-                    {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(shared_data_t), *unif_sh_data_buf.ref}};
+                    {Trg::TexSampled, SSRTrace::DEPTH_TEX_SLOT, depth_down_2x_tex},
+                    {Trg::TexSampled, SSRTrace::NORM_TEX_SLOT, normal_tex},
+                    {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(shared_data_t), unif_sh_data_buf}};
 
                 SSRTrace::Params uniform_params;
                 uniform_params.transform =
@@ -1147,19 +1138,20 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
         data->ssr_tex = ssr_dilate.AddTextureInput(ssr_temp1, Stg::FragmentShader);
 
         { // Auxilary texture for reflections (rg - uvs, b - influence)
-            Ren::TexParams params;
-            params.w = (view_state_.ren_res[0] / 2);
-            params.h = (view_state_.ren_res[1] / 2);
-            params.format = Ren::eTexFormat::RGB10_A2;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = (view_state_.ren_res[0] / 2);
+            desc.h = (view_state_.ren_res[1] / 2);
+            desc.format = Ren::eTexFormat::RGB10_A2;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            ssr_temp2 = data->output_tex = ssr_dilate.AddColorOutput("SSR Temp 2", params);
+            ssr_temp2 = data->output_tex = ssr_dilate.AddColorOutput("SSR Temp 2", desc);
         }
 
         ssr_dilate.set_execute_cb([this, data](FgContext &fg) {
-            FgAllocTex &ssr_tex = fg.AccessROTexture(data->ssr_tex);
-            FgAllocTex &output_tex = fg.AccessRWTexture(data->output_tex);
+            const Ren::Texture &ssr_tex = fg.AccessROTexture(data->ssr_tex);
+
+            Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = false;
@@ -1170,10 +1162,9 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
             rast_state.viewport[3] = (view_state_.ren_res[1] / 2);
 
             { // dilate ssr buffer
-                const Ren::RenderTarget render_targets[] = {
-                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+                const Ren::RenderTarget render_targets[] = {{output_tex, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-                const Ren::Binding bindings[] = {{Trg::TexSampled, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::TexSampled, SSRDilate::SSR_TEX_SLOT, ssr_tex}};
 
                 SSRDilate::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, rast_state.viewport[2], rast_state.viewport[3]};

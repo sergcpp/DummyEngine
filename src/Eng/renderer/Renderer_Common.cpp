@@ -251,23 +251,22 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
     }
 
     update_bufs.set_execute_cb([this, &common_buffers, &persistent_data, shared_data_res](FgContext &fg) {
-        FgAllocBuf &skin_transforms_buf = fg.AccessRWBuffer(common_buffers.skin_transforms);
-        FgAllocBuf &shape_keys_buf = fg.AccessRWBuffer(common_buffers.shape_keys);
-        // FgAllocBuf &instances_buf = fg.AccessRWBuffer(common_buffers.instances_res);
-        FgAllocBuf &instance_indices_buf = fg.AccessRWBuffer(common_buffers.instance_indices);
-        FgAllocBuf &shared_data_buf = fg.AccessRWBuffer(shared_data_res);
-        FgAllocBuf &atomic_cnt_buf = fg.AccessRWBuffer(common_buffers.atomic_cnt);
+        Ren::Buffer &skin_transforms_buf = fg.AccessRWBuffer(common_buffers.skin_transforms);
+        Ren::Buffer &shape_keys_buf = fg.AccessRWBuffer(common_buffers.shape_keys);
+        // Ren::Buffer &instances_buf = fg.AccessRWBuffer(common_buffers.instances_res);
+        Ren::Buffer &instance_indices_buf = fg.AccessRWBuffer(common_buffers.instance_indices);
+        Ren::Buffer &shared_data_buf = fg.AccessRWBuffer(shared_data_res);
+        Ren::Buffer &atomic_cnt_buf = fg.AccessRWBuffer(common_buffers.atomic_cnt);
 
-        Ren::UpdateBuffer(*skin_transforms_buf.ref, 0,
-                          uint32_t(p_list_->skin_transforms.size() * sizeof(skin_transform_t)),
+        Ren::UpdateBuffer(skin_transforms_buf, 0, uint32_t(p_list_->skin_transforms.size() * sizeof(skin_transform_t)),
                           p_list_->skin_transforms.data(), *p_list_->skin_transforms_stage_buf,
                           fg.backend_frame() * SkinTransformsBufChunkSize, SkinTransformsBufChunkSize, fg.cmd_buf());
 
-        Ren::UpdateBuffer(*shape_keys_buf.ref, 0, p_list_->shape_keys_data.count * sizeof(shape_key_data_t),
+        Ren::UpdateBuffer(shape_keys_buf, 0, p_list_->shape_keys_data.count * sizeof(shape_key_data_t),
                           p_list_->shape_keys_data.data, *p_list_->shape_keys_stage_buf,
                           fg.backend_frame() * ShapeKeysBufChunkSize, ShapeKeysBufChunkSize, fg.cmd_buf());
 
-        Ren::UpdateBuffer(*instance_indices_buf.ref, 0, uint32_t(p_list_->instance_indices.size() * sizeof(Ren::Vec2i)),
+        Ren::UpdateBuffer(instance_indices_buf, 0, uint32_t(p_list_->instance_indices.size() * sizeof(Ren::Vec2i)),
                           p_list_->instance_indices.data(), *p_list_->instance_indices_stage_buf,
                           fg.backend_frame() * InstanceIndicesBufChunkSize, InstanceIndicesBufChunkSize, fg.cmd_buf());
 
@@ -478,12 +477,11 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             memcpy(&shrd_data.atmosphere, &p_list_->env.atmosphere, sizeof(atmosphere_params_t));
             static_assert(sizeof(Eng::atmosphere_params_t) == sizeof(Types::atmosphere_params_t));
 
-            Ren::UpdateBuffer(*shared_data_buf.ref, 0, sizeof(shared_data_t), &shrd_data,
-                              *p_list_->shared_data_stage_buf, fg.backend_frame() * SharedDataBlockSize,
-                              SharedDataBlockSize, fg.cmd_buf());
+            Ren::UpdateBuffer(shared_data_buf, 0, sizeof(shared_data_t), &shrd_data, *p_list_->shared_data_stage_buf,
+                              fg.backend_frame() * SharedDataBlockSize, SharedDataBlockSize, fg.cmd_buf());
         }
 
-        atomic_cnt_buf.ref->Fill(0, sizeof(uint32_t), 0, fg.cmd_buf());
+        atomic_cnt_buf.Fill(0, sizeof(uint32_t), 0, fg.cmd_buf());
     });
 }
 
@@ -534,46 +532,46 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
     }
 
     update_light_bufs.set_execute_cb([this, &common_buffers](FgContext &fg) {
-        FgAllocBuf &cells_buf = fg.AccessRWBuffer(common_buffers.cells);
-        FgAllocBuf &rt_cells_buf = fg.AccessRWBuffer(common_buffers.rt_cells);
-        FgAllocBuf &lights_buf = fg.AccessRWBuffer(common_buffers.lights);
-        FgAllocBuf &decals_buf = fg.AccessRWBuffer(common_buffers.decals);
-        FgAllocBuf &items_buf = fg.AccessRWBuffer(common_buffers.items);
-        FgAllocBuf &rt_items_buf = fg.AccessRWBuffer(common_buffers.rt_items);
+        Ren::Buffer &cells_buf = fg.AccessRWBuffer(common_buffers.cells);
+        Ren::Buffer &rt_cells_buf = fg.AccessRWBuffer(common_buffers.rt_cells);
+        Ren::Buffer &lights_buf = fg.AccessRWBuffer(common_buffers.lights);
+        Ren::Buffer &decals_buf = fg.AccessRWBuffer(common_buffers.decals);
+        Ren::Buffer &items_buf = fg.AccessRWBuffer(common_buffers.items);
+        Ren::Buffer &rt_items_buf = fg.AccessRWBuffer(common_buffers.rt_items);
 
-        Ren::UpdateBuffer(*cells_buf.ref, 0, p_list_->cells.count * sizeof(cell_data_t), p_list_->cells.data,
+        Ren::UpdateBuffer(cells_buf, 0, p_list_->cells.count * sizeof(cell_data_t), p_list_->cells.data,
                           *p_list_->cells_stage_buf, fg.backend_frame() * CellsBufChunkSize, CellsBufChunkSize,
                           fg.cmd_buf());
 
-        Ren::UpdateBuffer(*rt_cells_buf.ref, 0, p_list_->rt_cells.count * sizeof(cell_data_t), p_list_->rt_cells.data,
+        Ren::UpdateBuffer(rt_cells_buf, 0, p_list_->rt_cells.count * sizeof(cell_data_t), p_list_->rt_cells.data,
                           *p_list_->rt_cells_stage_buf, fg.backend_frame() * CellsBufChunkSize, CellsBufChunkSize,
                           fg.cmd_buf());
 
-        Ren::UpdateBuffer(*lights_buf.ref, 0, uint32_t(p_list_->lights.size() * sizeof(light_item_t)),
+        Ren::UpdateBuffer(lights_buf, 0, uint32_t(p_list_->lights.size() * sizeof(light_item_t)),
                           p_list_->lights.data(), *p_list_->lights_stage_buf, fg.backend_frame() * LightsBufChunkSize,
                           LightsBufChunkSize, fg.cmd_buf());
 
-        Ren::UpdateBuffer(*decals_buf.ref, 0, uint32_t(p_list_->decals.size() * sizeof(decal_item_t)),
+        Ren::UpdateBuffer(decals_buf, 0, uint32_t(p_list_->decals.size() * sizeof(decal_item_t)),
                           p_list_->decals.data(), *p_list_->decals_stage_buf, fg.backend_frame() * DecalsBufChunkSize,
                           DecalsBufChunkSize, fg.cmd_buf());
 
         if (p_list_->items.count) {
-            Ren::UpdateBuffer(*items_buf.ref, 0, p_list_->items.count * sizeof(item_data_t), p_list_->items.data,
+            Ren::UpdateBuffer(items_buf, 0, p_list_->items.count * sizeof(item_data_t), p_list_->items.data,
                               *p_list_->items_stage_buf, fg.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize,
                               fg.cmd_buf());
         } else {
             const item_data_t dummy = {};
-            Ren::UpdateBuffer(*items_buf.ref, 0, sizeof(item_data_t), &dummy, *p_list_->items_stage_buf,
+            Ren::UpdateBuffer(items_buf, 0, sizeof(item_data_t), &dummy, *p_list_->items_stage_buf,
                               fg.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize, fg.cmd_buf());
         }
 
         if (p_list_->rt_items.count) {
-            Ren::UpdateBuffer(*rt_items_buf.ref, 0, p_list_->rt_items.count * sizeof(item_data_t),
-                              p_list_->rt_items.data, *p_list_->rt_items_stage_buf,
-                              fg.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize, fg.cmd_buf());
+            Ren::UpdateBuffer(rt_items_buf, 0, p_list_->rt_items.count * sizeof(item_data_t), p_list_->rt_items.data,
+                              *p_list_->rt_items_stage_buf, fg.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize,
+                              fg.cmd_buf());
         } else {
             const item_data_t dummy = {};
-            Ren::UpdateBuffer(*rt_items_buf.ref, 0, sizeof(item_data_t), &dummy, *p_list_->rt_items_stage_buf,
+            Ren::UpdateBuffer(rt_items_buf, 0, sizeof(item_data_t), &dummy, *p_list_->rt_items_stage_buf,
                               fg.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize, fg.cmd_buf());
         }
     });
@@ -606,10 +604,10 @@ void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, cons
     const FgResRef items_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.items, Stg::FragmentShader);
     const FgResRef decals_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.decals, Stg::FragmentShader);
 
-    frame_textures.albedo = gbuf_fill.AddColorOutput(MAIN_ALBEDO_TEX, frame_textures.albedo_params);
-    frame_textures.normal = gbuf_fill.AddColorOutput(MAIN_NORMAL_TEX, frame_textures.normal_params);
-    frame_textures.specular = gbuf_fill.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
-    frame_textures.depth = gbuf_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
+    frame_textures.albedo = gbuf_fill.AddColorOutput(MAIN_ALBEDO_TEX, frame_textures.albedo_desc);
+    frame_textures.normal = gbuf_fill.AddColorOutput(MAIN_NORMAL_TEX, frame_textures.normal_desc);
+    frame_textures.specular = gbuf_fill.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_desc);
+    frame_textures.depth = gbuf_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
 
     gbuf_fill.make_executor<ExGBufferFill>(
         &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, &bindless, noise_tex, dummy_white,
@@ -656,10 +654,10 @@ void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, co
         }
     }
 
-    frame_textures.color = opaque.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
-    frame_textures.normal = opaque.AddColorOutput(MAIN_NORMAL_TEX, frame_textures.normal_params);
-    frame_textures.specular = opaque.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
-    frame_textures.depth = opaque.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
+    frame_textures.color = opaque.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_desc);
+    frame_textures.normal = opaque.AddColorOutput(MAIN_NORMAL_TEX, frame_textures.normal_desc);
+    frame_textures.specular = opaque.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_desc);
+    frame_textures.depth = opaque.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
 
     opaque.make_executor<ExOpaque>(
         &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, persistent_data.pipelines.data(), &bindless,
@@ -709,10 +707,10 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
         }
     }
 
-    frame_textures.color = transparent.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
-    frame_textures.normal = transparent.AddColorOutput(MAIN_NORMAL_TEX, frame_textures.normal_params);
-    frame_textures.specular = transparent.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
-    frame_textures.depth = transparent.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
+    frame_textures.color = transparent.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_desc);
+    frame_textures.normal = transparent.AddColorOutput(MAIN_NORMAL_TEX, frame_textures.normal_desc);
+    frame_textures.specular = transparent.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_desc);
+    frame_textures.depth = transparent.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
 
     transparent.make_executor<ExTransparent>(
         &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, persistent_data.pipelines.data(), &bindless,
@@ -764,53 +762,53 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
     data->env_tex = gbuf_shade.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
 
     frame_textures.color = data->output_tex =
-        gbuf_shade.AddStorageImageOutput(MAIN_COLOR_TEX, frame_textures.color_params, Stg::ComputeShader);
+        gbuf_shade.AddStorageImageOutput(MAIN_COLOR_TEX, frame_textures.color_desc, Stg::ComputeShader);
 
     gbuf_shade.set_execute_cb([this, data](FgContext &fg) {
         using namespace GBufferShade;
 
-        FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(data->shared_data);
-        FgAllocBuf &cells_buf = fg.AccessROBuffer(data->cells_buf);
-        FgAllocBuf &items_buf = fg.AccessROBuffer(data->items_buf);
-        FgAllocBuf &lights_buf = fg.AccessROBuffer(data->lights_buf);
-        FgAllocBuf &decals_buf = fg.AccessROBuffer(data->decals_buf);
+        const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(data->shared_data);
+        const Ren::Buffer &cells_buf = fg.AccessROBuffer(data->cells_buf);
+        const Ren::Buffer &items_buf = fg.AccessROBuffer(data->items_buf);
+        const Ren::Buffer &lights_buf = fg.AccessROBuffer(data->lights_buf);
+        const Ren::Buffer &decals_buf = fg.AccessROBuffer(data->decals_buf);
 
-        FgAllocTex &depth_tex = fg.AccessROTexture(data->depth_tex);
-        FgAllocTex &albedo_tex = fg.AccessROTexture(data->albedo_tex);
-        FgAllocTex &normal_tex = fg.AccessROTexture(data->normal_tex);
-        FgAllocTex &spec_tex = fg.AccessROTexture(data->spec_tex);
+        const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
+        const Ren::Texture &albedo_tex = fg.AccessROTexture(data->albedo_tex);
+        const Ren::Texture &normal_tex = fg.AccessROTexture(data->normal_tex);
+        const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
 
-        FgAllocTex &shad_depth_tex = fg.AccessROTexture(data->shadow_depth_tex);
-        FgAllocTex &shad_color_tex = fg.AccessROTexture(data->shadow_color_tex);
-        FgAllocTex &ssao_tex = fg.AccessROTexture(data->ssao_tex);
-        FgAllocTex &gi_tex = fg.AccessROTexture(data->gi_tex);
-        FgAllocTex &sun_shadow_tex = fg.AccessROTexture(data->sun_shadow_tex);
+        const Ren::Texture &shad_depth_tex = fg.AccessROTexture(data->shadow_depth_tex);
+        const Ren::Texture &shad_color_tex = fg.AccessROTexture(data->shadow_color_tex);
+        const Ren::Texture &ssao_tex = fg.AccessROTexture(data->ssao_tex);
+        const Ren::Texture &gi_tex = fg.AccessROTexture(data->gi_tex);
+        const Ren::Texture &sun_shadow_tex = fg.AccessROTexture(data->sun_shadow_tex);
 
-        FgAllocTex &ltc_luts = fg.AccessROTexture(data->ltc_luts_tex);
-        FgAllocTex &env_tex = fg.AccessROTexture(data->env_tex);
+        const Ren::Texture &ltc_luts = fg.AccessROTexture(data->ltc_luts_tex);
+        const Ren::Texture &env_tex = fg.AccessROTexture(data->env_tex);
 
-        FgAllocTex &out_color_tex = fg.AccessRWTexture(data->output_tex);
+        Ren::Texture &out_color_tex = fg.AccessRWTexture(data->output_tex);
 
         const Ren::Binding bindings[] = {
-            {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-            {Trg::UTBuf, CELLS_BUF_SLOT, *cells_buf.ref},
-            {Trg::UTBuf, ITEMS_BUF_SLOT, *items_buf.ref},
-            {Trg::UTBuf, LIGHT_BUF_SLOT, *lights_buf.ref},
-            {Trg::UTBuf, DECAL_BUF_SLOT, *decals_buf.ref},
-            {Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-            {Trg::TexSampled, DEPTH_LIN_TEX_SLOT, {*depth_tex.ref, *linear_sampler_, 1}},
-            {Trg::TexSampled, ALBEDO_TEX_SLOT, *albedo_tex.ref},
-            {Trg::TexSampled, NORM_TEX_SLOT, *normal_tex.ref},
-            {Trg::TexSampled, SPEC_TEX_SLOT, *spec_tex.ref},
-            {Trg::TexSampled, SHADOW_DEPTH_TEX_SLOT, *shad_depth_tex.ref},
-            {Trg::TexSampled, SHADOW_DEPTH_VAL_TEX_SLOT, {*shad_depth_tex.ref, *nearest_sampler_}},
-            {Trg::TexSampled, SHADOW_COLOR_TEX_SLOT, *shad_color_tex.ref},
-            {Trg::TexSampled, SSAO_TEX_SLOT, *ssao_tex.ref},
-            {Trg::TexSampled, GI_TEX_SLOT, *gi_tex.ref},
-            {Trg::TexSampled, SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},
-            {Trg::TexSampled, LTC_LUTS_TEX_SLOT, *ltc_luts.ref},
-            {Trg::TexSampled, ENV_TEX_SLOT, *env_tex.ref},
-            {Trg::ImageRW, OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
+            {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf},
+            {Trg::UTBuf, CELLS_BUF_SLOT, cells_buf},
+            {Trg::UTBuf, ITEMS_BUF_SLOT, items_buf},
+            {Trg::UTBuf, LIGHT_BUF_SLOT, lights_buf},
+            {Trg::UTBuf, DECAL_BUF_SLOT, decals_buf},
+            {Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},
+            {Trg::TexSampled, DEPTH_LIN_TEX_SLOT, {depth_tex, *linear_sampler_, 1}},
+            {Trg::TexSampled, ALBEDO_TEX_SLOT, albedo_tex},
+            {Trg::TexSampled, NORM_TEX_SLOT, normal_tex},
+            {Trg::TexSampled, SPEC_TEX_SLOT, spec_tex},
+            {Trg::TexSampled, SHADOW_DEPTH_TEX_SLOT, shad_depth_tex},
+            {Trg::TexSampled, SHADOW_DEPTH_VAL_TEX_SLOT, {shad_depth_tex, *nearest_sampler_}},
+            {Trg::TexSampled, SHADOW_COLOR_TEX_SLOT, shad_color_tex},
+            {Trg::TexSampled, SSAO_TEX_SLOT, ssao_tex},
+            {Trg::TexSampled, GI_TEX_SLOT, gi_tex},
+            {Trg::TexSampled, SUN_SHADOW_TEX_SLOT, sun_shadow_tex},
+            {Trg::TexSampled, LTC_LUTS_TEX_SLOT, ltc_luts},
+            {Trg::TexSampled, ENV_TEX_SLOT, env_tex},
+            {Trg::ImageRW, OUT_COLOR_IMG_SLOT, out_color_tex}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
                                                 (view_state_.ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
@@ -846,8 +844,8 @@ void Eng::Renderer::AddEmissivePass(const CommonBuffers &common_buffers, const P
     const FgResRef shared_data_buf = emissive.AddUniformBufferInput(
         common_buffers.shared_data, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
 
-    frame_textures.color = emissive.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
-    frame_textures.depth = emissive.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
+    frame_textures.color = emissive.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_desc);
+    frame_textures.depth = emissive.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
 
     emissive.make_executor<ExEmissive>(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, &bindless,
                                        noise_tex, dummy_white, instances_buf, instances_indices_buf, shared_data_buf,
@@ -875,10 +873,10 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
     inout_velocity_tex = data->velocity_tex = static_vel.AddColorOutput(inout_velocity_tex);
 
     static_vel.set_execute_cb([this, data](FgContext &fg) {
-        FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(data->shared_data);
+        const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(data->shared_data);
+        Ren::WeakTexRef depth_tex = fg.AccessROTextureRef(data->depth_tex);
 
-        FgAllocTex &depth_tex = fg.AccessROTexture(data->depth_tex);
-        FgAllocTex &velocity_tex = fg.AccessRWTexture(data->velocity_tex);
+        Ren::WeakTexRef velocity_tex = fg.AccessRWTextureRef(data->velocity_tex);
 
         Ren::RastState rast_state;
         rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -890,12 +888,12 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
         rast_state.viewport[3] = view_state_.ren_res[1];
 
         const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::TexSampled, BlitStaticVel::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-            {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(shared_data_t), *unif_shared_data_buf.ref}};
+            {Ren::eBindTarget::TexSampled, BlitStaticVel::DEPTH_TEX_SLOT, {*depth_tex, 1}},
+            {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(shared_data_t), unif_shared_data_buf}};
 
-        const Ren::RenderTarget render_targets[] = {{velocity_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
-        const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::None, Ren::eStoreOp::None,
-                                                Ren::eLoadOp::Load, Ren::eStoreOp::None};
+        const Ren::RenderTarget render_targets[] = {{velocity_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+        const Ren::RenderTarget depth_target = {depth_tex, Ren::eLoadOp::None, Ren::eStoreOp::None, Ren::eLoadOp::Load,
+                                                Ren::eStoreOp::None};
 
         BlitStaticVel::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.ren_res[0]), float(view_state_.ren_res[1])};
@@ -919,21 +917,21 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
 
         auto *data = clear_reconstructed.AllocNodeData<PassData>();
         { // Reconstructed previous depth
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::R32UI;
-            params.sampling.filter = Ren::eTexFilter::Nearest;
-            params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::R32UI;
+            desc.sampling.filter = Ren::eTexFilter::Nearest;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
             reconstructed_depth = data->reconstructed_depth =
-                clear_reconstructed.AddClearImageOutput("Reconstructed Prev. Depth", params);
+                clear_reconstructed.AddClearImageOutput("Reconstructed Prev. Depth", desc);
         }
 
         clear_reconstructed.set_execute_cb([data](FgContext &fg) {
-            FgAllocTex &reconstructed_depth = fg.AccessRWTexture(data->reconstructed_depth);
+            Ren::Texture &reconstructed_depth = fg.AccessRWTexture(data->reconstructed_depth);
 
-            Ren::ClearImage(*reconstructed_depth.ref, {}, fg.cmd_buf());
+            Ren::ClearImage(reconstructed_depth, {}, fg.cmd_buf());
         });
     }
 
@@ -956,44 +954,44 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
 
         data->out_reconstructed_depth_tex = reconstruct.AddStorageImageOutput(reconstructed_depth, Stg::ComputeShader);
         { // Dilated current depth
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::R32F;
-            params.sampling.filter = Ren::eTexFilter::Nearest;
-            params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::R32F;
+            desc.sampling.filter = Ren::eTexFilter::Nearest;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
             dilated_depth = data->out_dilated_depth_tex =
-                reconstruct.AddStorageImageOutput("Dilated Depth", params, Stg::ComputeShader);
+                reconstruct.AddStorageImageOutput("Dilated Depth", desc, Stg::ComputeShader);
         }
         { // Dilated motion
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RG16F;
-            params.sampling.filter = Ren::eTexFilter::Nearest;
-            params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RG16F;
+            desc.sampling.filter = Ren::eTexFilter::Nearest;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
             dilated_velocity = data->out_dilated_velocity_tex =
-                reconstruct.AddStorageImageOutput("Dilated Velocity", params, Stg::ComputeShader);
+                reconstruct.AddStorageImageOutput("Dilated Velocity", desc, Stg::ComputeShader);
         }
 
         reconstruct.set_execute_cb([this, data](FgContext &fg) {
             using namespace ReconstructDepth;
 
-            FgAllocTex &depth_tex = fg.AccessROTexture(data->depth_tex);
-            FgAllocTex &velocity_tex = fg.AccessROTexture(data->velocity_tex);
+            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
+            const Ren::Texture &velocity_tex = fg.AccessROTexture(data->velocity_tex);
 
-            FgAllocTex &reconstructed_depth_tex = fg.AccessRWTexture(data->out_reconstructed_depth_tex);
-            FgAllocTex &dilated_depth_tex = fg.AccessRWTexture(data->out_dilated_depth_tex);
-            FgAllocTex &dilated_velocity_tex = fg.AccessRWTexture(data->out_dilated_velocity_tex);
+            Ren::Texture &reconstructed_depth_tex = fg.AccessRWTexture(data->out_reconstructed_depth_tex);
+            Ren::Texture &dilated_depth_tex = fg.AccessRWTexture(data->out_dilated_depth_tex);
+            Ren::Texture &dilated_velocity_tex = fg.AccessRWTexture(data->out_dilated_velocity_tex);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                {Ren::eBindTarget::ImageRW, OUT_RECONSTRUCTED_DEPTH_IMG_SLOT, *reconstructed_depth_tex.ref},
-                {Ren::eBindTarget::ImageRW, OUT_DILATED_DEPTH_IMG_SLOT, *dilated_depth_tex.ref},
-                {Ren::eBindTarget::ImageRW, OUT_DILATED_VELOCITY_IMG_SLOT, *dilated_velocity_tex.ref}};
+                {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},
+                {Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, velocity_tex},
+                {Ren::eBindTarget::ImageRW, OUT_RECONSTRUCTED_DEPTH_IMG_SLOT, reconstructed_depth_tex},
+                {Ren::eBindTarget::ImageRW, OUT_DILATED_DEPTH_IMG_SLOT, dilated_depth_tex},
+                {Ren::eBindTarget::ImageRW, OUT_DILATED_VELOCITY_IMG_SLOT, dilated_velocity_tex}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
                                                     (view_state_.ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
@@ -1025,33 +1023,33 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
         data->velocity_tex = prep_disocclusion.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
 
         { // Texture that holds disocclusion
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RG8;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RG8;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
             frame_textures.disocclusion_mask = data->output_tex =
-                prep_disocclusion.AddStorageImageOutput("Disocclusion Mask", params, Stg::ComputeShader);
+                prep_disocclusion.AddStorageImageOutput("Disocclusion Mask", desc, Stg::ComputeShader);
         }
 
         prep_disocclusion.set_execute_cb([this, data](FgContext &fg) {
             using namespace PrepareDisocclusion;
 
-            FgAllocTex &dilated_depth_tex = fg.AccessROTexture(data->dilated_depth_tex);
-            FgAllocTex &dilated_velocity_tex = fg.AccessROTexture(data->dilated_velocity_tex);
-            FgAllocTex &reconstructed_depth_tex = fg.AccessROTexture(data->reconstructed_depth_tex);
-            FgAllocTex &velocity_tex = fg.AccessROTexture(data->velocity_tex);
+            const Ren::Texture &dilated_depth_tex = fg.AccessROTexture(data->dilated_depth_tex);
+            const Ren::Texture &dilated_velocity_tex = fg.AccessROTexture(data->dilated_velocity_tex);
+            const Ren::Texture &reconstructed_depth_tex = fg.AccessROTexture(data->reconstructed_depth_tex);
+            const Ren::Texture &velocity_tex = fg.AccessROTexture(data->velocity_tex);
 
-            FgAllocTex &output_tex = fg.AccessRWTexture(data->output_tex);
+            Ren::Texture &output_tex = fg.AccessRWTexture(data->output_tex);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::TexSampled, DILATED_DEPTH_TEX_SLOT, *dilated_depth_tex.ref},
-                {Ren::eBindTarget::TexSampled, DILATED_VELOCITY_TEX_SLOT, *dilated_velocity_tex.ref},
-                {Ren::eBindTarget::TexSampled, RECONSTRUCTED_DEPTH_TEX_SLOT, *reconstructed_depth_tex.ref},
-                {Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, *output_tex.ref}};
+                {Ren::eBindTarget::TexSampled, DILATED_DEPTH_TEX_SLOT, dilated_depth_tex},
+                {Ren::eBindTarget::TexSampled, DILATED_VELOCITY_TEX_SLOT, dilated_velocity_tex},
+                {Ren::eBindTarget::TexSampled, RECONSTRUCTED_DEPTH_TEX_SLOT, reconstructed_depth_tex},
+                {Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, velocity_tex},
+                {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, output_tex}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
                                                     (view_state_.ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
@@ -1088,26 +1086,27 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
         data->disocclusion_mask_tex = taa.AddTextureInput(frame_textures.disocclusion_mask, Stg::FragmentShader);
 
         { // Texture that holds resolved color
-            Ren::TexParams params;
-            params.w = view_state_.out_res[0];
-            params.h = view_state_.out_res[1];
-            params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+            FgImgDesc desc;
+            desc.w = view_state_.out_res[0];
+            desc.h = view_state_.out_res[1];
+            desc.format = Ren::eTexFormat::RGBA16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
-            resolved_color = data->output_tex = taa.AddColorOutput("Resolved Color", params);
-            data->output_history_tex = taa.AddColorOutput("Color History", params);
+            resolved_color = data->output_tex = taa.AddColorOutput("Resolved Color", desc);
+            data->output_history_tex = taa.AddColorOutput("Color History", desc);
         }
         data->history_tex = taa.AddHistoryTextureInput(data->output_history_tex, Stg::FragmentShader);
 
         taa.set_execute_cb([this, data, static_accumulation](FgContext &fg) {
-            FgAllocTex &color_tex = fg.AccessROTexture(data->color_tex);
-            FgAllocTex &history_tex = fg.AccessROTexture(data->history_tex);
-            FgAllocTex &dilated_depth_tex = fg.AccessROTexture(data->dilated_depth_tex);
-            FgAllocTex &dilated_velocity_tex = fg.AccessROTexture(data->dilated_velocity_tex);
-            FgAllocTex &disocclusion_mask_tex = fg.AccessROTexture(data->disocclusion_mask_tex);
-            FgAllocTex &output_tex = fg.AccessRWTexture(data->output_tex);
-            FgAllocTex &output_history_tex = fg.AccessRWTexture(data->output_history_tex);
+            const Ren::Texture &color_tex = fg.AccessROTexture(data->color_tex);
+            const Ren::Texture &history_tex = fg.AccessROTexture(data->history_tex);
+            const Ren::Texture &dilated_depth_tex = fg.AccessROTexture(data->dilated_depth_tex);
+            const Ren::Texture &dilated_velocity_tex = fg.AccessROTexture(data->dilated_velocity_tex);
+            const Ren::Texture &disocclusion_mask_tex = fg.AccessROTexture(data->disocclusion_mask_tex);
+
+            Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
+            Ren::WeakTexRef output_history_tex = fg.AccessRWTextureRef(data->output_history_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1116,16 +1115,16 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
             rast_state.viewport[3] = view_state_.out_res[1];
 
             const Ren::RenderTarget render_targets[] = {
-                {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
-                {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+                {output_tex, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
+                {output_history_tex, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::TexSampled, TSR::CURR_NEAREST_TEX_SLOT, {*color_tex.ref, *nearest_sampler_}},
-                {Ren::eBindTarget::TexSampled, TSR::CURR_LINEAR_TEX_SLOT, *color_tex.ref},
-                {Ren::eBindTarget::TexSampled, TSR::HIST_TEX_SLOT, *history_tex.ref},
-                {Ren::eBindTarget::TexSampled, TSR::DILATED_DEPTH_TEX_SLOT, *dilated_depth_tex.ref},
-                {Ren::eBindTarget::TexSampled, TSR::DILATED_VELOCITY_TEX_SLOT, *dilated_velocity_tex.ref},
-                {Ren::eBindTarget::TexSampled, TSR::DISOCCLUSION_MASK_TEX_SLOT, *disocclusion_mask_tex.ref}};
+                {Ren::eBindTarget::TexSampled, TSR::CURR_NEAREST_TEX_SLOT, {color_tex, *nearest_sampler_}},
+                {Ren::eBindTarget::TexSampled, TSR::CURR_LINEAR_TEX_SLOT, color_tex},
+                {Ren::eBindTarget::TexSampled, TSR::HIST_TEX_SLOT, history_tex},
+                {Ren::eBindTarget::TexSampled, TSR::DILATED_DEPTH_TEX_SLOT, dilated_depth_tex},
+                {Ren::eBindTarget::TexSampled, TSR::DILATED_VELOCITY_TEX_SLOT, dilated_velocity_tex},
+                {Ren::eBindTarget::TexSampled, TSR::DISOCCLUSION_MASK_TEX_SLOT, disocclusion_mask_tex}};
 
             TSR::Params uniform_params;
             uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.out_res[0], view_state_.out_res[1]};
@@ -1164,30 +1163,30 @@ Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextur
         data->in_velocity_tex = classify_h.AddTextureInput(frame_textures.velocity, Ren::eStage::ComputeShader);
 
         { // Texture that holds horizontal tiles
-            Ren::TexParams params;
-            params.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RGBA16F;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             tiles_tex = data->out_tiles_tex =
-                classify_h.AddStorageImageOutput("MB Tiles H", params, Ren::eStage::ComputeShader);
+                classify_h.AddStorageImageOutput("MB Tiles H", desc, Ren::eStage::ComputeShader);
         }
 
         classify_h.set_execute_cb([this, data](FgContext &fg) {
-            FgAllocTex &in_velocity_tex = fg.AccessROTexture(data->in_velocity_tex);
-            FgAllocTex &out_tiles_tex = fg.AccessRWTexture(data->out_tiles_tex);
+            const Ren::Texture &in_velocity_tex = fg.AccessROTexture(data->in_velocity_tex);
+            Ren::Texture &out_tiles_tex = fg.AccessRWTexture(data->out_tiles_tex);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::TexSampled, MotionBlur::VELOCITY_TEX_SLOT, *in_velocity_tex.ref},
-                {Ren::eBindTarget::ImageRW, MotionBlur::OUT_IMG_SLOT, *out_tiles_tex.ref}};
+                {Ren::eBindTarget::TexSampled, MotionBlur::VELOCITY_TEX_SLOT, in_velocity_tex},
+                {Ren::eBindTarget::ImageRW, MotionBlur::OUT_IMG_SLOT, out_tiles_tex}};
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(in_velocity_tex.ref->params.w + MotionBlur::GRP_SIZE - 1u) / MotionBlur::GRP_SIZE,
-                           in_velocity_tex.ref->params.h, 1u};
+                Ren::Vec3u{(in_velocity_tex.params.w + MotionBlur::GRP_SIZE - 1u) / MotionBlur::GRP_SIZE,
+                           in_velocity_tex.params.h, 1u};
 
             MotionBlur::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{in_velocity_tex.ref->params.w, in_velocity_tex.ref->params.h};
+            uniform_params.img_size = Ren::Vec2u{in_velocity_tex.params.w, in_velocity_tex.params.h};
 
             DispatchCompute(*pi_motion_blur_classify_[0], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             ctx_.default_descr_alloc(), ctx_.log());
@@ -1205,30 +1204,30 @@ Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextur
         data->in_velocity_tex = classify_v.AddTextureInput(tiles_tex, Ren::eStage::ComputeShader);
 
         { // Texture that holds final tiles
-            Ren::TexParams params;
-            params.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
-            params.h = (view_state_.ren_res[1] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
-            params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
+            desc.h = (view_state_.ren_res[1] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
+            desc.format = Ren::eTexFormat::RGBA16F;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             tiles_tex = data->out_tiles_tex =
-                classify_v.AddStorageImageOutput("MB Tiles V", params, Ren::eStage::ComputeShader);
+                classify_v.AddStorageImageOutput("MB Tiles V", desc, Ren::eStage::ComputeShader);
         }
 
         classify_v.set_execute_cb([this, data](FgContext &fg) {
             using namespace MotionBlur;
 
-            FgAllocTex &in_velocity_tex = fg.AccessROTexture(data->in_velocity_tex);
-            FgAllocTex &out_tiles_tex = fg.AccessRWTexture(data->out_tiles_tex);
+            const Ren::Texture &in_velocity_tex = fg.AccessROTexture(data->in_velocity_tex);
+            Ren::Texture &out_tiles_tex = fg.AccessRWTexture(data->out_tiles_tex);
 
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, *in_velocity_tex.ref},
-                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, *out_tiles_tex.ref}};
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, in_velocity_tex},
+                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_tiles_tex}};
 
-            const Ren::Vec3u grp_count = Ren::Vec3u{in_velocity_tex.ref->params.w,
-                                                    (in_velocity_tex.ref->params.h + GRP_SIZE - 1) / GRP_SIZE, 1u};
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{in_velocity_tex.params.w, (in_velocity_tex.params.h + GRP_SIZE - 1) / GRP_SIZE, 1u};
 
             Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{in_velocity_tex.ref->params.w, in_velocity_tex.ref->params.h};
+            uniform_params.img_size = Ren::Vec2u{in_velocity_tex.params.w, in_velocity_tex.params.h};
 
             DispatchCompute(*pi_motion_blur_classify_[1], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             ctx_.default_descr_alloc(), ctx_.log());
@@ -1246,31 +1245,31 @@ Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextur
         data->in_tiles_tex = dilate.AddTextureInput(tiles_tex, Ren::eStage::ComputeShader);
 
         { // Texture that holds dilated tiles
-            Ren::TexParams params;
-            params.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
-            params.h = (view_state_.ren_res[1] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
-            params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
+            desc.h = (view_state_.ren_res[1] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
+            desc.format = Ren::eTexFormat::RGBA16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             tiles_tex = data->out_tiles_tex =
-                dilate.AddStorageImageOutput("MB Tiles Dilated", params, Ren::eStage::ComputeShader);
+                dilate.AddStorageImageOutput("MB Tiles Dilated", desc, Ren::eStage::ComputeShader);
         }
 
         dilate.set_execute_cb([this, data](FgContext &fg) {
             using namespace MotionBlur;
 
-            FgAllocTex &in_tiles_tex = fg.AccessROTexture(data->in_tiles_tex);
-            FgAllocTex &out_tiles_tex = fg.AccessRWTexture(data->out_tiles_tex);
+            const Ren::Texture &in_tiles_tex = fg.AccessROTexture(data->in_tiles_tex);
+            Ren::Texture &out_tiles_tex = fg.AccessRWTexture(data->out_tiles_tex);
 
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, TILES_TEX_SLOT, *in_tiles_tex.ref},
-                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, *out_tiles_tex.ref}};
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, TILES_TEX_SLOT, in_tiles_tex},
+                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_tiles_tex}};
 
-            const Ren::Vec3u grp_count = Ren::Vec3u{(in_tiles_tex.ref->params.w + GRP_SIZE_X - 1u) / GRP_SIZE_X,
-                                                    (in_tiles_tex.ref->params.h + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
+            const Ren::Vec3u grp_count = Ren::Vec3u{(in_tiles_tex.params.w + GRP_SIZE_X - 1u) / GRP_SIZE_X,
+                                                    (in_tiles_tex.params.h + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
 
             Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{in_tiles_tex.ref->params.w, in_tiles_tex.ref->params.h};
+            uniform_params.img_size = Ren::Vec2u{in_tiles_tex.params.w, in_tiles_tex.params.h};
 
             DispatchCompute(*pi_motion_blur_dilate_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             ctx_.default_descr_alloc(), ctx_.log());
@@ -1295,36 +1294,35 @@ Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextur
         data->in_tiles_tex = filter.AddTextureInput(tiles_tex, Ren::eStage::ComputeShader);
 
         { // Texture that holds filtered color
-            Ren::TexParams params;
-            params.w = view_state_.out_res[0];
-            params.h = view_state_.out_res[1];
-            params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.out_res[0];
+            desc.h = view_state_.out_res[1];
+            desc.format = Ren::eTexFormat::RGBA16F;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            output_tex = data->output_tex =
-                filter.AddStorageImageOutput("MB Output", params, Ren::eStage::ComputeShader);
+            output_tex = data->output_tex = filter.AddStorageImageOutput("MB Output", desc, Ren::eStage::ComputeShader);
         }
 
         filter.set_execute_cb([this, data](FgContext &fg) {
             using namespace MotionBlur;
 
-            FgAllocTex &in_color_tex = fg.AccessROTexture(data->in_color_tex);
-            FgAllocTex &in_depth_tex = fg.AccessROTexture(data->in_depth_tex);
-            FgAllocTex &in_velocity_tex = fg.AccessROTexture(data->in_velocity_tex);
-            FgAllocTex &in_tiles_tex = fg.AccessROTexture(data->in_tiles_tex);
-            FgAllocTex &output_tex = fg.AccessRWTexture(data->output_tex);
+            const Ren::Texture &in_color_tex = fg.AccessROTexture(data->in_color_tex);
+            const Ren::Texture &in_depth_tex = fg.AccessROTexture(data->in_depth_tex);
+            const Ren::Texture &in_velocity_tex = fg.AccessROTexture(data->in_velocity_tex);
+            const Ren::Texture &in_tiles_tex = fg.AccessROTexture(data->in_tiles_tex);
+            Ren::Texture &output_tex = fg.AccessRWTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, COLOR_TEX_SLOT, *in_color_tex.ref},
-                                             {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {*in_depth_tex.ref, 1}},
-                                             {Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, *in_velocity_tex.ref},
-                                             {Ren::eBindTarget::TexSampled, TILES_TEX_SLOT, *in_tiles_tex.ref},
-                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, *output_tex.ref}};
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, COLOR_TEX_SLOT, in_color_tex},
+                                             {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {in_depth_tex, 1}},
+                                             {Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, in_velocity_tex},
+                                             {Ren::eBindTarget::TexSampled, TILES_TEX_SLOT, in_tiles_tex},
+                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, output_tex}};
 
-            const Ren::Vec3u grp_count = Ren::Vec3u{(in_color_tex.ref->params.w + GRP_SIZE_X - 1u) / GRP_SIZE_X,
-                                                    (in_color_tex.ref->params.h + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
+            const Ren::Vec3u grp_count = Ren::Vec3u{(in_color_tex.params.w + GRP_SIZE_X - 1u) / GRP_SIZE_X,
+                                                    (in_color_tex.params.h + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
 
             Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{in_color_tex.ref->params.w, in_color_tex.ref->params.h};
+            uniform_params.img_size = Ren::Vec2u{in_color_tex.params.w, in_color_tex.params.h};
             uniform_params.inv_ren_res = 1.0f / Ren::Vec2f{view_state_.ren_res};
             uniform_params.clip_info = view_state_.clip_info;
 
@@ -1348,33 +1346,32 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
     data->in_depth_tex = downsample_depth.AddTextureInput(depth_tex, Ren::eStage::FragmentShader);
 
     { // Texture that holds 2x downsampled linear depth
-        Ren::TexParams params;
-        params.w = view_state_.ren_res[0] / 2;
-        params.h = view_state_.ren_res[1] / 2;
-        params.format = Ren::eTexFormat::R32F;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        FgImgDesc desc;
+        desc.w = view_state_.ren_res[0] / 2;
+        desc.h = view_state_.ren_res[1] / 2;
+        desc.format = Ren::eTexFormat::R32F;
+        desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-        out_depth_down_2x = data->out_depth_tex = downsample_depth.AddColorOutput("Depth Down 2X", params);
+        out_depth_down_2x = data->out_depth_tex = downsample_depth.AddColorOutput("Depth Down 2X", desc);
     }
 
     downsample_depth.set_execute_cb([this, data](FgContext &fg) {
-        FgAllocTex &depth_tex = fg.AccessROTexture(data->in_depth_tex);
-        FgAllocTex &output_tex = fg.AccessRWTexture(data->out_depth_tex);
+        const Ren::Texture &depth_tex = fg.AccessROTexture(data->in_depth_tex);
+        Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->out_depth_tex);
 
         Ren::RastState rast_state;
 
         rast_state.viewport[2] = view_state_.ren_res[0] / 2;
         rast_state.viewport[3] = view_state_.ren_res[1] / 2;
 
-        const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::TexSampled, DownDepth::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, DownDepth::DEPTH_TEX_SLOT, {depth_tex, 1}}};
 
         DownDepth::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.ren_res[0]), float(view_state_.ren_res[1])};
         uniform_params.clip_info = view_state_.clip_info;
         uniform_params.linearize = 1.0f;
 
-        const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+        const Ren::RenderTarget render_targets[] = {{output_tex, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_down_depth_prog_, {}, render_targets, rast_state,
                             fg.rast_state(), bindings, &uniform_params, sizeof(DownDepth::Params), 0);
@@ -1394,23 +1391,22 @@ Eng::FgResRef Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity) {
 
     FgResRef output_tex;
     { // Output texture
-        Ren::TexParams params;
-        params.w = view_state_.out_res[0];
-        params.h = view_state_.out_res[1];
-        params.format = Ren::eTexFormat::RGBA8;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        FgImgDesc desc;
+        desc.w = view_state_.out_res[0];
+        desc.h = view_state_.out_res[1];
+        desc.format = Ren::eTexFormat::RGBA8;
+        desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         output_tex = data->out_color_tex =
-            debug_motion.AddStorageImageOutput("Motion Debug", params, Ren::eStage::ComputeShader);
+            debug_motion.AddStorageImageOutput("Motion Debug", desc, Ren::eStage::ComputeShader);
     }
 
     debug_motion.set_execute_cb([this, data](FgContext &fg) {
-        FgAllocTex &velocity_tex = fg.AccessROTexture(data->in_velocity_tex);
-        FgAllocTex &output_tex = fg.AccessRWTexture(data->out_color_tex);
+        const Ren::Texture &velocity_tex = fg.AccessROTexture(data->in_velocity_tex);
+        Ren::Texture &output_tex = fg.AccessRWTexture(data->out_color_tex);
 
-        const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::TexSampled, DebugVelocity::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-            {Ren::eBindTarget::ImageRW, DebugVelocity::OUT_IMG_SLOT, *output_tex.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, DebugVelocity::VELOCITY_TEX_SLOT, velocity_tex},
+                                         {Ren::eBindTarget::ImageRW, DebugVelocity::OUT_IMG_SLOT, output_tex}};
 
         const Ren::Vec3u grp_count =
             Ren::Vec3u{(view_state_.out_res[0] + DebugVelocity::GRP_SIZE_X - 1u) / DebugVelocity::GRP_SIZE_X,
@@ -1445,29 +1441,28 @@ Eng::FgResRef Eng::Renderer::AddDebugGBufferPass(const FrameTextures &frame_text
 
     FgResRef output_tex;
     { // Output texture
-        Ren::TexParams params;
-        params.w = view_state_.out_res[0];
-        params.h = view_state_.out_res[1];
-        params.format = Ren::eTexFormat::RGBA8;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        FgImgDesc desc;
+        desc.w = view_state_.out_res[0];
+        desc.h = view_state_.out_res[1];
+        desc.format = Ren::eTexFormat::RGBA8;
+        desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         output_tex = data->out_color_tex =
-            debug_gbuffer.AddStorageImageOutput("GBuffer Debug", params, Ren::eStage::ComputeShader);
+            debug_gbuffer.AddStorageImageOutput("GBuffer Debug", desc, Ren::eStage::ComputeShader);
     }
 
     debug_gbuffer.set_execute_cb([this, data, pi_index](FgContext &fg) {
-        FgAllocTex &depth_tex = fg.AccessROTexture(data->in_depth_tex);
-        FgAllocTex &albedo_tex = fg.AccessROTexture(data->in_albedo_tex);
-        FgAllocTex &normals_tex = fg.AccessROTexture(data->in_normals_tex);
-        FgAllocTex &specular_tex = fg.AccessROTexture(data->in_specular_tex);
-        FgAllocTex &output_tex = fg.AccessRWTexture(data->out_color_tex);
+        const Ren::Texture &depth_tex = fg.AccessROTexture(data->in_depth_tex);
+        const Ren::Texture &albedo_tex = fg.AccessROTexture(data->in_albedo_tex);
+        const Ren::Texture &normals_tex = fg.AccessROTexture(data->in_normals_tex);
+        const Ren::Texture &specular_tex = fg.AccessROTexture(data->in_specular_tex);
+        Ren::Texture &output_tex = fg.AccessRWTexture(data->out_color_tex);
 
-        const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::TexSampled, DebugGBuffer::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-            {Ren::eBindTarget::TexSampled, DebugGBuffer::ALBEDO_TEX_SLOT, *albedo_tex.ref},
-            {Ren::eBindTarget::TexSampled, DebugGBuffer::NORM_TEX_SLOT, *normals_tex.ref},
-            {Ren::eBindTarget::TexSampled, DebugGBuffer::SPEC_TEX_SLOT, *specular_tex.ref},
-            {Ren::eBindTarget::ImageRW, DebugGBuffer::OUT_IMG_SLOT, *output_tex.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, DebugGBuffer::DEPTH_TEX_SLOT, {depth_tex, 1}},
+                                         {Ren::eBindTarget::TexSampled, DebugGBuffer::ALBEDO_TEX_SLOT, albedo_tex},
+                                         {Ren::eBindTarget::TexSampled, DebugGBuffer::NORM_TEX_SLOT, normals_tex},
+                                         {Ren::eBindTarget::TexSampled, DebugGBuffer::SPEC_TEX_SLOT, specular_tex},
+                                         {Ren::eBindTarget::ImageRW, DebugGBuffer::OUT_IMG_SLOT, output_tex}};
 
         const Ren::Vec3u grp_count =
             Ren::Vec3u{(view_state_.out_res[0] + DebugGBuffer::GRP_SIZE_X - 1u) / DebugGBuffer::GRP_SIZE_X,

@@ -9,48 +9,27 @@
 #include "../shaders/depth_hierarchy_interface.h"
 
 void Eng::ExDepthHierarchy::Execute(FgContext &fg) {
-    FgAllocTex &depth_tex = fg.AccessROTexture(depth_tex_);
-    FgAllocBuf &atomic_buf = fg.AccessRWBuffer(atomic_buf_);
-    FgAllocTex &output_tex = fg.AccessRWTexture(output_tex_);
+    const Ren::Texture &depth_tex = fg.AccessROTexture(depth_tex_);
+    Ren::Buffer &atomic_buf = fg.AccessRWBuffer(atomic_buf_);
+    Ren::Texture &output_tex = fg.AccessRWTexture(output_tex_);
 
     Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
-
-    if (output_tex.ref->handle().views.size() < output_tex.ref->params.mip_count) {
-        // Initialize per-mip views
-        VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-        view_info.image = output_tex.ref->handle().img;
-        view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        view_info.format = Ren::VKFormatFromTexFormat(Ren::eTexFormat::R32F);
-        view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        view_info.subresourceRange.levelCount = 1;
-        view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = 1;
-        for (int i = 0; i < output_tex.ref->params.mip_count; ++i) {
-            view_info.subresourceRange.baseMipLevel = i;
-            VkImageView new_image_view = VK_NULL_HANDLE;
-            const VkResult res = api_ctx->vkCreateImageView(api_ctx->device, &view_info, nullptr, &new_image_view);
-            if (res != VK_SUCCESS) {
-                fg.log()->Error("Failed to create image view!");
-            }
-            output_tex.ref->handle().views.push_back(new_image_view);
-        }
-    }
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     VkDescriptorSetLayout descr_set_layout = pi_depth_hierarchy_->prog()->descr_set_layouts()[0];
     Ren::DescrSizes descr_sizes;
     descr_sizes.img_sampler_count = 1;
-    descr_sizes.store_img_count = output_tex.ref->params.mip_count;
+    descr_sizes.store_img_count = output_tex.params.mip_count;
     VkDescriptorSet descr_set = fg.descr_alloc().Alloc(descr_sizes, descr_set_layout);
 
     { // update descriptor set
-        const VkDescriptorImageInfo depth_tex_info = depth_tex.ref->vk_desc_image_info(1);
-        const VkDescriptorBufferInfo atomic_buf_info = {atomic_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
+        const VkDescriptorImageInfo depth_tex_info = depth_tex.vk_desc_image_info(1);
+        const VkDescriptorBufferInfo atomic_buf_info = {atomic_buf.vk_handle(), 0, VK_WHOLE_SIZE};
         Ren::SmallVector<VkDescriptorImageInfo, 16> depth_img_infos;
         for (int i = 0; i < 7; ++i) {
-            depth_img_infos.push_back(output_tex.ref->vk_desc_image_info(
-                std::min(i, output_tex.ref->params.mip_count - 1) + 1, VK_IMAGE_LAYOUT_GENERAL));
+            depth_img_infos.push_back(output_tex.vk_desc_image_info(std::min(i, output_tex.params.mip_count - 1) + 1,
+                                                                    VK_IMAGE_LAYOUT_GENERAL));
         }
 
         VkWriteDescriptorSet descr_writes[3];
@@ -85,12 +64,12 @@ void Eng::ExDepthHierarchy::Execute(FgContext &fg) {
     api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_depth_hierarchy_->layout(), 0, 1,
                                      &descr_set, 0, nullptr);
 
-    const int grp_x = (output_tex.ref->params.w + DepthHierarchy::GRP_SIZE_X - 1) / DepthHierarchy::GRP_SIZE_X;
-    const int grp_y = (output_tex.ref->params.h + DepthHierarchy::GRP_SIZE_Y - 1) / DepthHierarchy::GRP_SIZE_Y;
+    const int grp_x = (output_tex.params.w + DepthHierarchy::GRP_SIZE_X - 1) / DepthHierarchy::GRP_SIZE_X;
+    const int grp_y = (output_tex.params.h + DepthHierarchy::GRP_SIZE_Y - 1) / DepthHierarchy::GRP_SIZE_Y;
 
     DepthHierarchy::Params uniform_params;
     uniform_params.depth_size =
-        Ren::Vec4i{view_state_->ren_res[0], view_state_->ren_res[1], output_tex.ref->params.mip_count, grp_x * grp_y};
+        Ren::Vec4i{view_state_->ren_res[0], view_state_->ren_res[1], output_tex.params.mip_count, grp_x * grp_y};
     uniform_params.clip_info = view_state_->clip_info;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_depth_hierarchy_->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,

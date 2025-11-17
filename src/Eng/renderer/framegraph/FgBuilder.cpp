@@ -31,39 +31,45 @@ Ren::DescrMultiPoolAlloc &Eng::FgContext::descr_alloc() { return ctx_.default_de
 
 int Eng::FgContext::backend_frame() const { return ctx_.backend_frame(); }
 
-Eng::FgAllocBuf &Eng::FgContext::AccessROBuffer(const FgResRef handle) {
-    assert(handle.type == eFgResType::Buffer);
-    FgAllocBuf &buf = buffers_.at(handle.index);
-    assert(buf.write_count == handle.write_count);
-    ++buf.read_count;
-    return buf;
-}
+const Ren::Buffer &Eng::FgContext::AccessROBuffer(const FgResRef handle) { return *AccessROBufferRef(handle); }
 
-Eng::FgAllocTex &Eng::FgContext::AccessROTexture(const FgResRef handle) {
-    assert(handle.type == eFgResType::Texture);
-    FgAllocTex &tex = textures_.at(handle.index);
-    assert(tex.write_count == handle.write_count);
-    // assert(tex.ref->resource_state == handle.desired_state);
-    ++tex.read_count;
-    return tex;
-}
+const Ren::Texture &Eng::FgContext::AccessROTexture(const FgResRef handle) { return *AccessROTextureRef(handle); }
 
-Eng::FgAllocBuf &Eng::FgContext::AccessRWBuffer(const FgResRef handle) {
+Ren::Buffer &Eng::FgContext::AccessRWBuffer(const FgResRef handle) {
     assert(handle.type == eFgResType::Buffer);
     FgAllocBuf &buf = buffers_.at(handle.index);
     assert(buf.write_count + 1 == handle.write_count);
     // assert(buf.ref->resource_state == handle.desired_state);
     ++buf.write_count;
-    return buf;
+    return *buf.ref;
 }
 
-Eng::FgAllocTex &Eng::FgContext::AccessRWTexture(const FgResRef handle) {
+Ren::Texture &Eng::FgContext::AccessRWTexture(const FgResRef handle) { return *AccessRWTextureRef(handle); }
+
+Ren::WeakBufRef Eng::FgContext::AccessROBufferRef(const FgResRef handle) {
+    assert(handle.type == eFgResType::Buffer);
+    FgAllocBuf &buf = buffers_.at(handle.index);
+    assert(buf.write_count == handle.write_count);
+    ++buf.read_count;
+    return buf.ref;
+}
+
+Ren::WeakTexRef Eng::FgContext::AccessROTextureRef(const FgResRef handle) {
+    assert(handle.type == eFgResType::Texture);
+    FgAllocTex &tex = textures_.at(handle.index);
+    assert(tex.write_count == handle.write_count);
+    // assert(tex.ref->resource_state == handle.desired_state);
+    ++tex.read_count;
+    return tex.ref;
+}
+
+Ren::WeakTexRef Eng::FgContext::AccessRWTextureRef(const FgResRef handle) {
     assert(handle.type == eFgResType::Texture);
     FgAllocTex &tex = textures_.at(handle.index);
     assert(tex.write_count + 1 == handle.write_count);
     // assert(tex.ref->resource_state == handle.desired_state);
     ++tex.write_count;
-    return tex;
+    return tex.ref;
 }
 
 Eng::FgBuilder::FgBuilder(Ren::Context &ctx, Eng::ShaderLoader &sh, PrimDraw &prim_draw)
@@ -302,7 +308,7 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::WeakTexRef &ref, const Ren:
     if (!ptex_index) {
         FgAllocTex new_tex;
         new_tex.name = ref->name().c_str();
-        new_tex.desc = ref->params;
+        new_tex.desc = FgImgDesc{ref->params};
         new_tex.external = true;
 
         ret.index = textures_.emplace(new_tex);
@@ -312,7 +318,7 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::WeakTexRef &ref, const Ren:
     }
 
     FgAllocTex &tex = textures_[ret.index];
-    tex.desc = ref->params;
+    tex.desc = FgImgDesc{ref->params};
     tex.ref = ref;
     ret._generation = tex._generation;
     ret.desired_state = desired_state;
@@ -533,7 +539,7 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::eRe
     return ret;
 }
 
-Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::TexParams &p,
+Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const FgImgDesc &desc,
                                            const Ren::eResState desired_state, const Ren::Bitmask<Ren::eStage> stages,
                                            FgNode &node) {
     FgResource ret;
@@ -543,7 +549,7 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::Tex
     if (!ptex_index) {
         FgAllocTex new_tex;
         new_tex.name = name;
-        new_tex.desc = p;
+        new_tex.desc = desc;
 
         ret.index = textures_.emplace(new_tex);
         name_to_texture_[new_tex.name] = ret.index;
@@ -552,8 +558,8 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::Tex
     }
 
     FgAllocTex &tex = textures_[ret.index];
-    assert(tex.desc.format == Ren::eTexFormat::Undefined || tex.desc.format == p.format);
-    tex.desc = p;
+    assert(tex.desc.format == Ren::eTexFormat::Undefined || tex.desc.format == desc.format);
+    tex.desc = desc;
 
     ret._generation = tex._generation;
     ret.desired_state = desired_state;
@@ -582,7 +588,7 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::WeakTexRef &ref, const Ren
     if (!ptex_index) {
         FgAllocTex new_tex;
         new_tex.name = ref->name().c_str();
-        new_tex.desc = ref->params;
+        new_tex.desc = FgImgDesc{ref->params};
         new_tex.external = true;
 
         ret.index = textures_.emplace(new_tex);
@@ -592,7 +598,7 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::WeakTexRef &ref, const Ren
     }
 
     FgAllocTex &tex = textures_[ret.index];
-    tex.desc = ref->params;
+    tex.desc = FgImgDesc{ref->params};
     tex.ref = ref;
     ret._generation = tex._generation;
     ret.desired_state = desired_state;
@@ -639,7 +645,7 @@ Eng::FgResRef Eng::FgBuilder::MakeTextureResource(const Ren::WeakTexRef &ref) {
     if (!ptex_index) {
         FgAllocTex new_tex;
         new_tex.name = ref->name().c_str();
-        new_tex.desc = ref->params;
+        new_tex.desc = FgImgDesc{ref->params};
         new_tex.external = true;
 
         ret.index = textures_.emplace(new_tex);
@@ -649,7 +655,7 @@ Eng::FgResRef Eng::FgBuilder::MakeTextureResource(const Ren::WeakTexRef &ref) {
     }
 
     FgAllocTex &tex = textures_[ret.index];
-    tex.desc = ref->params;
+    tex.desc = FgImgDesc{ref->params};
     tex.ref = ref;
     ret._generation = tex._generation;
 

@@ -23,29 +23,29 @@ void Eng::ExGBufferFill::DrawOpaque(FgContext &fg) {
     //
     // Prepare descriptor sets
     //
-    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
-    FgAllocBuf &cells_buf = fg.AccessROBuffer(cells_buf_);
-    FgAllocBuf &items_buf = fg.AccessROBuffer(items_buf_);
-    FgAllocBuf &decals_buf = fg.AccessROBuffer(decals_buf_);
+    const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
+    const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
+    const Ren::Buffer &cells_buf = fg.AccessROBuffer(cells_buf_);
+    const Ren::Buffer &items_buf = fg.AccessROBuffer(items_buf_);
+    const Ren::Buffer &decals_buf = fg.AccessROBuffer(decals_buf_);
 
-    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
-    FgAllocTex &dummy_black = fg.AccessROTexture(dummy_black_);
+    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Texture &dummy_black = fg.AccessROTexture(dummy_black_);
 
     VkDescriptorSet descr_sets[2];
 
     { // allocate descriptors
-        const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
-                                         {Ren::eBindTarget::UTBuf, BIND_DECAL_BUF, *decals_buf.ref},
-                                         {Ren::eBindTarget::UTBuf, BIND_CELLS_BUF, *cells_buf.ref},
-                                         {Ren::eBindTarget::UTBuf, BIND_ITEMS_BUF, *items_buf.ref},
-                                         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
-                                         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
-                                         {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref},
-                                         {Ren::eBindTarget::TexSampled, BIND_DECAL_TEX, *dummy_black.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf},
+                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, instances_buf},
+                                         {Ren::eBindTarget::UTBuf, BIND_DECAL_BUF, decals_buf},
+                                         {Ren::eBindTarget::UTBuf, BIND_CELLS_BUF, cells_buf},
+                                         {Ren::eBindTarget::UTBuf, BIND_ITEMS_BUF, items_buf},
+                                         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, instance_indices_buf},
+                                         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, materials_buf},
+                                         {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, noise_tex},
+                                         {Ren::eBindTarget::TexSampled, BIND_DECAL_TEX, dummy_black}};
         descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[0]->prog()->descr_set_layouts()[0], bindings,
                                              fg.descr_alloc(), fg.log());
         descr_sets[1] = bindless_tex_->textures_descr_sets[0];

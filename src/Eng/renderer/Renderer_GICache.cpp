@@ -70,15 +70,15 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
         data->probe_volumes = persistent_data.probe_volumes;
 
         { // ~56.6mb
-            Ren::TexParams p;
-            p.w = PROBE_TOTAL_RAYS_COUNT;
-            p.h = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z;
-            p.d = 4 * PROBE_VOLUME_RES_Y;
-            p.format = Ren::eTexFormat::RGBA16F;
-            p.flags = Ren::eTexFlags::Array;
-            p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+            FgImgDesc desc;
+            desc.w = PROBE_TOTAL_RAYS_COUNT;
+            desc.h = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z;
+            desc.d = 4 * PROBE_VOLUME_RES_Y;
+            desc.format = Ren::eTexFormat::RGBA16F;
+            desc.flags = Ren::eTexFlags::Array;
+            desc.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
 
-            ray_data = data->out_ray_data_tex = rt_gi_cache.AddStorageImageOutput("Probe Volume RayData", p, stage);
+            ray_data = data->out_ray_data_tex = rt_gi_cache.AddStorageImageOutput("Probe Volume RayData", desc, stage);
         }
 
         rt_gi_cache.make_executor<ExRTGICache>(&view_state_, &bindless, data);
@@ -106,13 +106,13 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             probe_blend.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
 
         probe_blend.set_execute_cb([this, data, &persistent_data](FgContext &fg) {
-            FgAllocTex &ray_data_tex = fg.AccessROTexture(data->ray_data);
-            FgAllocTex &offset_tex = fg.AccessROTexture(data->offset_tex);
-            FgAllocTex &out_irr_tex = fg.AccessRWTexture(data->output_tex);
+            const Ren::Texture &ray_data_tex = fg.AccessROTexture(data->ray_data);
+            const Ren::Texture &offset_tex = fg.AccessROTexture(data->offset_tex);
+            Ren::Texture &out_irr_tex = fg.AccessRWTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
-                                             {Trg::TexSampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.ref},
-                                             {Trg::ImageRW, ProbeBlend::OUT_IMG_SLOT, *out_irr_tex.ref}};
+            const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeBlend::RAY_DATA_TEX_SLOT, ray_data_tex},
+                                             {Trg::TexSampled, ProbeBlend::OFFSET_TEX_SLOT, offset_tex},
+                                             {Trg::ImageRW, ProbeBlend::OUT_IMG_SLOT, out_irr_tex}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
@@ -167,13 +167,13 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             probe_blend.AddStorageImageOutput(persistent_data.probe_distance, Stg::ComputeShader);
 
         probe_blend.set_execute_cb([this, data, &persistent_data](FgContext &fg) {
-            FgAllocTex &ray_data_tex = fg.AccessROTexture(data->ray_data);
-            FgAllocTex &offset_tex = fg.AccessROTexture(data->offset_tex);
-            FgAllocTex &out_dist_tex = fg.AccessRWTexture(data->output_tex);
+            const Ren::Texture &ray_data_tex = fg.AccessROTexture(data->ray_data);
+            const Ren::Texture &offset_tex = fg.AccessROTexture(data->offset_tex);
+            Ren::Texture &out_dist_tex = fg.AccessRWTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
-                                             {Trg::TexSampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.ref},
-                                             {Trg::ImageRW, ProbeBlend::OUT_IMG_SLOT, *out_dist_tex.ref}};
+            const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeBlend::RAY_DATA_TEX_SLOT, ray_data_tex},
+                                             {Trg::TexSampled, ProbeBlend::OFFSET_TEX_SLOT, offset_tex},
+                                             {Trg::ImageRW, ProbeBlend::OUT_IMG_SLOT, out_dist_tex}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
@@ -214,11 +214,11 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             probe_relocate.AddStorageImageOutput(persistent_data.probe_offset, Stg::ComputeShader);
 
         probe_relocate.set_execute_cb([this, data, &persistent_data](FgContext &fg) {
-            FgAllocTex &ray_data_tex = fg.AccessROTexture(data->ray_data);
-            FgAllocTex &out_dist_tex = fg.AccessRWTexture(data->output_tex);
+            const Ren::Texture &ray_data_tex = fg.AccessROTexture(data->ray_data);
+            Ren::Texture &out_dist_tex = fg.AccessRWTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeRelocate::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
-                                             {Trg::ImageRW, ProbeRelocate::OUT_IMG_SLOT, *out_dist_tex.ref}};
+            const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeRelocate::RAY_DATA_TEX_SLOT, ray_data_tex},
+                                             {Trg::ImageRW, ProbeRelocate::OUT_IMG_SLOT, out_dist_tex}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
@@ -266,13 +266,13 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             probe_classify.AddStorageImageOutput(persistent_data.probe_offset, Stg::ComputeShader);
 
         probe_classify.set_execute_cb([this, data, &persistent_data](FgContext &fg) {
-            FgAllocBuf &shared_data_buf = fg.AccessROBuffer(data->shared_data);
-            FgAllocTex &ray_data_tex = fg.AccessROTexture(data->ray_data);
-            FgAllocTex &out_dist_tex = fg.AccessRWTexture(data->output_tex);
+            const Ren::Buffer &shared_data_buf = fg.AccessROBuffer(data->shared_data);
+            const Ren::Texture &ray_data_tex = fg.AccessROTexture(data->ray_data);
+            Ren::Texture &out_dist_tex = fg.AccessRWTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
-                                             {Trg::TexSampled, ProbeClassify::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
-                                             {Trg::ImageRW, ProbeClassify::OUT_IMG_SLOT, *out_dist_tex.ref}};
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, shared_data_buf},
+                                             {Trg::TexSampled, ProbeClassify::RAY_DATA_TEX_SLOT, ray_data_tex},
+                                             {Trg::ImageRW, ProbeClassify::OUT_IMG_SLOT, out_dist_tex}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);

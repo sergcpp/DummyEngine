@@ -159,24 +159,24 @@ void Eng::ExOpaque::DrawOpaque(FgContext &fg) {
     //
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
-    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
-    FgAllocBuf &cells_buf = fg.AccessROBuffer(cells_buf_);
-    FgAllocBuf &items_buf = fg.AccessROBuffer(items_buf_);
-    FgAllocBuf &lights_buf = fg.AccessROBuffer(lights_buf_);
-    FgAllocBuf &decals_buf = fg.AccessROBuffer(decals_buf_);
+    const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
+    const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
+    const Ren::Buffer &cells_buf = fg.AccessROBuffer(cells_buf_);
+    const Ren::Buffer &items_buf = fg.AccessROBuffer(items_buf_);
+    const Ren::Buffer &lights_buf = fg.AccessROBuffer(lights_buf_);
+    const Ren::Buffer &decals_buf = fg.AccessROBuffer(decals_buf_);
 
-    FgAllocTex &shad_tex = fg.AccessROTexture(shad_tex_);
-    FgAllocTex &ssao_tex = fg.AccessROTexture(ssao_tex_);
-    FgAllocTex &brdf_lut = fg.AccessROTexture(brdf_lut_);
-    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
-    FgAllocTex &cone_rt_lut = fg.AccessROTexture(cone_rt_lut_);
+    const Ren::Texture &shad_tex = fg.AccessROTexture(shad_tex_);
+    const Ren::Texture &ssao_tex = fg.AccessROTexture(ssao_tex_);
+    const Ren::Texture &brdf_lut = fg.AccessROTexture(brdf_lut_);
+    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Texture &cone_rt_lut = fg.AccessROTexture(cone_rt_lut_);
 
-    FgAllocTex &dummy_black = fg.AccessROTexture(dummy_black_);
+    const Ren::Texture &dummy_black = fg.AccessROTexture(dummy_black_);
 
-    FgAllocTex *lm_tex[4];
+    const Ren::Texture *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (lm_tex_[i]) {
             lm_tex[i] = &fg.AccessROTexture(lm_tex_[i]);
@@ -185,41 +185,41 @@ void Eng::ExOpaque::DrawOpaque(FgContext &fg) {
         }
     }
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.id()));
     if (fg.ren_ctx().capabilities.bindless_texture) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX,
                          GLuint(bindless_tex_->rt_inline_textures.buf->id()));
     }
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf.ref->id());
+    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf.id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SHAD_TEX, shad_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SHAD_TEX, shad_tex.id());
 
     if ((*p_list_)->decals_atlas) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_DECAL_TEX, (*p_list_)->decals_atlas->tex_id(0));
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SSAO_TEX_SLOT, ssao_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SSAO_TEX_SLOT, ssao_tex.id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_BRDF_LUT, brdf_lut.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_BRDF_LUT, brdf_lut.id());
 
     for (int sh_l = 0; sh_l < 4; sh_l++) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_LMAP_SH + sh_l, lm_tex[sh_l]->ref->id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_LMAP_SH + sh_l, lm_tex[sh_l]->id());
     }
 
     // ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, BIND_ENV_TEX,
     //                            (*p_list_)->probe_storage ? (*p_list_)->probe_storage->handle().id : 0);
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_LIGHT_BUF, GLuint(lights_buf.ref->view(0).second));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_DECAL_BUF, GLuint(decals_buf.ref->view(0).second));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_CELLS_BUF, GLuint(cells_buf.ref->view(0).second));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_ITEMS_BUF, GLuint(items_buf.ref->view(0).second));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_LIGHT_BUF, GLuint(lights_buf.view(0).second));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_DECAL_BUF, GLuint(decals_buf.view(0).second));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_CELLS_BUF, GLuint(cells_buf.view(0).second));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_ITEMS_BUF, GLuint(items_buf.view(0).second));
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
-    // ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_CONE_RT_LUT, cone_rt_lut.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.id());
+    // ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_CONE_RT_LUT, cone_rt_lut.id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.ref->view(0).second));
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.view(0).second));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.id()));
 
     const Ren::Span<const custom_draw_batch_t> batches = {(*p_list_)->custom_batches};
     const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->custom_batch_indices};

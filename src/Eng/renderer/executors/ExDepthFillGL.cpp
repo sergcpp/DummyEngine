@@ -107,23 +107,24 @@ uint32_t _draw_range_ext2(Eng::FgContext &fg, const Ren::MaterialStorage *materi
 }
 } // namespace ExSharedInternal
 
-void Eng::ExDepthFill::DrawDepth(FgContext &fg, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2, FgAllocBuf &ndx_buf) {
+void Eng::ExDepthFill::DrawDepth(FgContext &fg, const Ren::Buffer &vtx_buf1, const Ren::Buffer &vtx_buf2,
+                                 const Ren::Buffer &ndx_buf) {
     using namespace ExSharedInternal;
 
-    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
-    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
+    const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
+    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, GLuint(unif_shared_data_buf.ref->id()));
+    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, GLuint(unif_shared_data_buf.id()));
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.ref->view(0).second));
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.view(0).second));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.id()));
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.id());
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.id()));
     if (fg.ren_ctx().capabilities.bindless_texture) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX,
                          GLuint(bindless_tex_->rt_inline_textures.buf->id()));
@@ -242,8 +243,8 @@ void Eng::ExDepthFill::DrawDepth(FgContext &fg, FgAllocBuf &vtx_buf1, FgAllocBuf
                 rast_state.ApplyChanged(fg.rast_state());
                 fg.rast_state() = rast_state;
 
-                i = _draw_range_ext(fg, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    BDB::BitAlphaTest, cur_mat_id, &draws_count);
+                i = _draw_range_ext(fg, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, BDB::BitAlphaTest,
+                                    cur_mat_id, &draws_count);
             }
 
             { // two-sided

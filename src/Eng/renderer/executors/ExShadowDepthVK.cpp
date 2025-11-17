@@ -60,11 +60,11 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgContext &fg) {
 
     using BDB = basic_draw_batch_t;
 
-    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
-    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
+    const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
+    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
 
     Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 
@@ -73,9 +73,9 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgContext &fg) {
     VkDescriptorSetLayout simple_descr_set_layout = pi_solid_[0]->prog()->descr_set_layouts()[0];
     VkDescriptorSet simple_descr_sets[2];
     { // allocate descriptor sets
-        const Ren::Binding bindings[] = {{Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
-                                         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
-                                         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::UTBuf, BIND_INST_BUF, instances_buf},
+                                         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, instance_indices_buf},
+                                         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, materials_buf}};
         simple_descr_sets[0] =
             PrepareDescriptorSet(api_ctx, simple_descr_set_layout, bindings, fg.descr_alloc(), fg.log());
         simple_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
@@ -84,11 +84,11 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgContext &fg) {
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_solid_->prog()->descr_set_layouts()[0];
     VkDescriptorSet vege_descr_sets[2];
     { // allocate descriptor sets
-        const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
-                                         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
-                                         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
-                                         {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf},
+                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, instances_buf},
+                                         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, instance_indices_buf},
+                                         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, materials_buf},
+                                         {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, noise_tex}};
         vege_descr_sets[0] =
             PrepareDescriptorSet(api_ctx, vege_descr_set_layout, bindings, fg.descr_alloc(), fg.log());
         vege_descr_sets[1] = bindless_tex_->textures_descr_sets[0];

@@ -46,34 +46,34 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
     //
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
-    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
+    const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
+    const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
 
-    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
-    FgAllocTex &dummy_white = fg.AccessROTexture(dummy_white_);
+    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Texture &dummy_white = fg.AccessROTexture(dummy_white_);
 
     if ((*p_list_)->emissive_start_index == -1) {
         return;
     }
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.id()));
     if (fg.ren_ctx().capabilities.bindless_texture) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX,
                          GLuint(bindless_tex_->rt_inline_textures.buf->id()));
     }
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf.ref->id());
+    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf.id());
 
     if ((*p_list_)->decals_atlas) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_DECAL_TEX, (*p_list_)->decals_atlas->tex_id(0));
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.ref->view(0).second));
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.view(0).second));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.id()));
 
     const Ren::Span<const basic_draw_batch_t> batches = (*p_list_)->basic_batches;
     const Ren::Span<const uint32_t> batch_indices = (*p_list_)->basic_batch_indices;
@@ -100,8 +100,8 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             rast_state.ApplyChanged(fg.rast_state());
             fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, BDB::BitEmissive,
-                                 cur_mat_id, &draws_count);
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, BDB::BitEmissive, cur_mat_id,
+                                 &draws_count);
 
             rast_state = pi_simple_[1]->rast_state();
             rast_state.viewport[2] = view_state_->ren_res[0];
@@ -109,7 +109,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             rast_state.ApplyChanged(fg.rast_state());
             fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i,
                                  BDB::BitEmissive | BDB::BitBackSided, cur_mat_id, &draws_count);
         }
         { // solid two-sided
@@ -121,7 +121,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             rast_state.ApplyChanged(fg.rast_state());
             fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i,
                                  BDB::BitEmissive | BDB::BitTwoSided, cur_mat_id, &draws_count);
         }
         { // moving solid one-sided
@@ -133,7 +133,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             rast_state.ApplyChanged(fg.rast_state());
             fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i,
                                  BDB::BitEmissive | BDB::BitMoving, cur_mat_id, &draws_count);
         }
         { // moving solid two-sided
@@ -146,7 +146,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitEmissive | BDB::BitMoving | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // alpha-tested one-sided
@@ -158,7 +158,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             rast_state.ApplyChanged(fg.rast_state());
             fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i,
                                  BDB::BitEmissive | BDB::BitAlphaTest, cur_mat_id, &draws_count);
         }
         { // alpha-tested two-sided
@@ -171,7 +171,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitEmissive | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // moving alpha-tested one-sided
@@ -184,7 +184,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitEmissive | BDB::BitMoving | BDB::BitAlphaTest;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // moving alpha-tested two-sided
@@ -197,7 +197,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitEmissive | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
     }
@@ -216,7 +216,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             rast_state.ApplyChanged(fg.rast_state());
             fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i,
                                  BDB::BitEmissive | BDB::BitsVege, cur_mat_id, &draws_count);
         }
         { // vegetation solid two-sided
@@ -229,7 +229,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitEmissive | BDB::BitsVege | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // vegetation moving solid one-sided
@@ -242,7 +242,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitEmissive | BDB::BitsVege | BDB::BitMoving;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // vegetation moving solid two-sided
@@ -255,7 +255,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitEmissive | BDB::BitsVege | BDB::BitMoving | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // vegetation alpha-tested one-sided
@@ -268,7 +268,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitEmissive | BDB::BitsVege | BDB::BitAlphaTest;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // vegetation alpha-tested two-sided
@@ -281,7 +281,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitEmissive | BDB::BitsVege | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // vegetation moving alpha-tested one-sided
@@ -294,7 +294,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitEmissive | BDB::BitsVege | BDB::BitMoving | BDB::BitAlphaTest;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // vegetation moving alpha-tested two-sided
@@ -308,7 +308,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
 
             const uint64_t DrawMask =
                 BDB::BitEmissive | BDB::BitsVege | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
     }
@@ -328,8 +328,8 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             rast_state.ApplyChanged(fg.rast_state());
             fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, BDB::BitsSkinned,
-                                 cur_mat_id, &draws_count);
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, BDB::BitsSkinned, cur_mat_id,
+                                 &draws_count);
         }
         { // skinned solid two-sided
             Ren::DebugMarker _mm(fg.ren_ctx().api_ctx(), fg.cmd_buf(), "SKIN-SOLID-TWO-SIDED");
@@ -341,7 +341,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // skinned moving solid one-sided
@@ -354,7 +354,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitMoving;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // skinned moving solid two-sided
@@ -367,7 +367,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // skinned alpha-tested one-sided
@@ -380,7 +380,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // skinned alpha-tested two-sided
@@ -393,7 +393,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // skinned moving alpha-tested one-sided
@@ -406,7 +406,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitAlphaTest;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // skinned moving alpha-tested two-sided
@@ -419,7 +419,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
     }

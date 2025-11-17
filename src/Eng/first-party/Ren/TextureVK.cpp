@@ -1075,7 +1075,7 @@ void Ren::Texture::SetSampling(const SamplingParams s) {
     params.sampling = s;
 }
 
-void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32_t src_level, const uint32_t src_x,
+void Ren::CopyImageToImage(CommandBuffer cmd_buf, const Texture &src_tex, const uint32_t src_level, const uint32_t src_x,
                            const uint32_t src_y, const uint32_t src_z, Texture &dst_tex, const uint32_t dst_level,
                            const uint32_t dst_x, const uint32_t dst_y, const uint32_t dst_z, const uint32_t dst_face,
                            const uint32_t w, const uint32_t h, const uint32_t d) {
@@ -1107,7 +1107,7 @@ void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32
                                       dst_tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &reg);
 }
 
-void Ren::ClearImage(const Texture &tex, const ClearColor &col, CommandBuffer cmd_buf) {
+void Ren::ClearImage(Texture &tex, const ClearColor &col, CommandBuffer cmd_buf) {
     assert(tex.resource_state == eResState::CopyDst);
 
     VkImageSubresourceRange clear_range = {};

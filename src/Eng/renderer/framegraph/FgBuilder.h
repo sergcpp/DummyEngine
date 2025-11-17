@@ -78,8 +78,8 @@ struct fg_node_range_t {
 struct FgAllocRes {
     union {
         struct {
-            uint8_t read_count;
-            uint8_t write_count;
+            mutable uint8_t read_count;
+            mutable uint8_t write_count;
         };
         uint16_t _generation = 0;
     };
@@ -104,7 +104,7 @@ struct FgAllocBuf : public FgAllocRes {
 };
 
 struct FgAllocTex : public FgAllocRes {
-    Ren::TexParams desc;
+    FgImgDesc desc;
     Ren::WeakTexRef ref;
     Ren::TexRef strong_ref;
 };
@@ -141,11 +141,16 @@ class FgContext {
 
     int backend_frame() const;
 
-    FgAllocBuf &AccessROBuffer(FgResRef handle);
-    FgAllocTex &AccessROTexture(FgResRef handle);
+    const Ren::Buffer &AccessROBuffer(FgResRef handle);
+    const Ren::Texture &AccessROTexture(FgResRef handle);
 
-    FgAllocBuf &AccessRWBuffer(FgResRef handle);
-    FgAllocTex &AccessRWTexture(FgResRef handle);
+    Ren::Buffer &AccessRWBuffer(FgResRef handle);
+    Ren::Texture &AccessRWTexture(FgResRef handle);
+
+    // TODO: Get rid of these!
+    Ren::WeakBufRef AccessROBufferRef(FgResRef handle);
+    Ren::WeakTexRef AccessROTextureRef(FgResRef handle);
+    Ren::WeakTexRef AccessRWTextureRef(FgResRef handle);
 };
 
 class FgBuilder : public FgContext {
@@ -246,7 +251,7 @@ class FgBuilder : public FgContext {
                           FgNode &node);
     FgResRef WriteTexture(std::string_view name, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
                           FgNode &node);
-    FgResRef WriteTexture(std::string_view name, const Ren::TexParams &p, Ren::eResState desired_state,
+    FgResRef WriteTexture(std::string_view name, const FgImgDesc &desc, Ren::eResState desired_state,
                           Ren::Bitmask<Ren::eStage> stages, FgNode &node);
     FgResRef WriteTexture(const Ren::WeakTexRef &ref, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
                           FgNode &node, int slot_index = -1);

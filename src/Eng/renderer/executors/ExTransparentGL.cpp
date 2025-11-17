@@ -25,11 +25,13 @@ uint32_t _draw_list_range_full_rev(Eng::FgContext &fg, const Ren::MaterialStorag
                                    Eng::backend_info_t &backend_info);
 } // namespace ExSharedInternal
 
-void Eng::ExTransparent::DrawTransparent_Simple(FgContext &fg, FgAllocBuf &instances_buf,
-                                                FgAllocBuf &instance_indices_buf, FgAllocBuf &unif_shared_data_buf,
-                                                FgAllocBuf &materials_buf, FgAllocBuf &cells_buf, FgAllocBuf &items_buf,
-                                                FgAllocBuf &lights_buf, FgAllocBuf &decals_buf, FgAllocTex &shad_tex,
-                                                FgAllocTex &color_tex, FgAllocTex &ssao_tex) {
+void Eng::ExTransparent::DrawTransparent_Simple(FgContext &fg, const Ren::Buffer &instances_buf,
+                                                const Ren::Buffer &instance_indices_buf,
+                                                const Ren::Buffer &unif_shared_data_buf,
+                                                const Ren::Buffer &materials_buf, const Ren::Buffer &cells_buf,
+                                                const Ren::Buffer &items_buf, const Ren::Buffer &lights_buf,
+                                                const Ren::Buffer &decals_buf, const Ren::Texture &shad_tex,
+                                                const Ren::WeakTexRef &color_tex, const Ren::Texture &ssao_tex) {
     using namespace ExSharedInternal;
 
     Ren::RastState _rast_state;
@@ -64,26 +66,26 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgContext &fg, FgAllocBuf &insta
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
 
-    FgAllocTex &brdf_lut = fg.AccessROTexture(brdf_lut_);
-    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
-    FgAllocTex &cone_rt_lut = fg.AccessROTexture(cone_rt_lut_);
-    FgAllocTex &dummy_black = fg.AccessROTexture(dummy_black_);
+    const Ren::Texture &brdf_lut = fg.AccessROTexture(brdf_lut_);
+    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Texture &cone_rt_lut = fg.AccessROTexture(cone_rt_lut_);
+    const Ren::Texture &dummy_black = fg.AccessROTexture(dummy_black_);
 
     if (/*!(*p_list_)->probe_storage ||*/ (*p_list_)->alpha_blend_start_index == -1) {
         return;
     }
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf.ref->id());
+    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf.id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SHAD_TEX, shad_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SHAD_TEX, shad_tex.id());
 
     if ((*p_list_)->decals_atlas) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_DECAL_TEX, (*p_list_)->decals_atlas->tex_id(0));
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SSAO_TEX_SLOT, ssao_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SSAO_TEX_SLOT, ssao_tex.id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_BRDF_LUT, brdf_lut.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_BRDF_LUT, brdf_lut.id());
 
     if ((*p_list_)->render_settings.enable_lightmap && (*p_list_)->env.lm_direct) {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
@@ -91,28 +93,28 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgContext &fg, FgAllocBuf &insta
         }
     } else {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_LMAP_SH + sh_l, dummy_black.ref->id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_LMAP_SH + sh_l, dummy_black.id());
         }
     }
 
     // ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, BIND_ENV_TEX,
     //                            (*p_list_)->probe_storage ? (*p_list_)->probe_storage->handle().id : 0);
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_LIGHT_BUF, GLuint(lights_buf.ref->view(0).second));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_DECAL_BUF, GLuint(decals_buf.ref->view(0).second));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_CELLS_BUF, GLuint(cells_buf.ref->view(0).second));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_ITEMS_BUF, GLuint(items_buf.ref->view(0).second));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_LIGHT_BUF, GLuint(lights_buf.view(0).second));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_DECAL_BUF, GLuint(decals_buf.view(0).second));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_CELLS_BUF, GLuint(cells_buf.view(0).second));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_ITEMS_BUF, GLuint(items_buf.view(0).second));
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.id());
     // ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_CONE_RT_LUT, cone_rt_lut.ref->id());
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.id()));
     if (fg.ren_ctx().capabilities.bindless_texture) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX,
                          GLuint(bindless_tex_->rt_inline_textures.buf->id()));
     }
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.ref->view(0).second));
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.view(0).second));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.id()));
 
     uint64_t cur_pipe_id = 0xffffffffffffffff;
     uint64_t cur_prog_id = 0xffffffffffffffff;

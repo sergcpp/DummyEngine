@@ -1159,53 +1159,53 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 frame_textures.shadow_depth, frame_textures.shadow_color);
         }
 
-        frame_textures.depth_params.w = view_state_.ren_res[0];
-        frame_textures.depth_params.h = view_state_.ren_res[1];
-        frame_textures.depth_params.format = Ren::eTexFormat::D32_S8;
+        frame_textures.depth_desc.w = view_state_.ren_res[0];
+        frame_textures.depth_desc.h = view_state_.ren_res[1];
+        frame_textures.depth_desc.format = Ren::eTexFormat::D32_S8;
         // ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::D24_S8 : Ren::eTexFormat::D32_S8;
-        frame_textures.depth_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        frame_textures.depth_desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         // Main HDR color
-        frame_textures.color_params.w = view_state_.ren_res[0];
-        frame_textures.color_params.h = view_state_.ren_res[1];
-        frame_textures.color_params.format = Ren::eTexFormat::RGBA16F;
-        frame_textures.color_params.sampling.filter = Ren::eTexFilter::Bilinear;
-        frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+        frame_textures.color_desc.w = view_state_.ren_res[0];
+        frame_textures.color_desc.h = view_state_.ren_res[1];
+        frame_textures.color_desc.format = Ren::eTexFormat::RGBA16F;
+        frame_textures.color_desc.sampling.filter = Ren::eTexFilter::Bilinear;
+        frame_textures.color_desc.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
         if (deferred_shading) {
             // 4-component world-space normal (alpha or z is roughness)
-            frame_textures.normal_params.w = view_state_.ren_res[0];
-            frame_textures.normal_params.h = view_state_.ren_res[1];
-            frame_textures.normal_params.format = Ren::eTexFormat::R32UI;
-            frame_textures.normal_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            frame_textures.normal_desc.w = view_state_.ren_res[0];
+            frame_textures.normal_desc.h = view_state_.ren_res[1];
+            frame_textures.normal_desc.format = Ren::eTexFormat::R32UI;
+            frame_textures.normal_desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             // packed material params
-            frame_textures.specular_params.w = view_state_.ren_res[0];
-            frame_textures.specular_params.h = view_state_.ren_res[1];
-            frame_textures.specular_params.format = Ren::eTexFormat::R32UI;
-            frame_textures.specular_params.flags = {};
-            frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            frame_textures.specular_desc.w = view_state_.ren_res[0];
+            frame_textures.specular_desc.h = view_state_.ren_res[1];
+            frame_textures.specular_desc.format = Ren::eTexFormat::R32UI;
+            frame_textures.specular_desc.flags = {};
+            frame_textures.specular_desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         } else {
             // 4-component world-space normal (alpha or z is roughness)
-            frame_textures.normal_params.w = view_state_.ren_res[0];
-            frame_textures.normal_params.h = view_state_.ren_res[1];
+            frame_textures.normal_desc.w = view_state_.ren_res[0];
+            frame_textures.normal_desc.h = view_state_.ren_res[1];
 #if USE_OCT_PACKED_NORMALS == 1
-            frame_textures.normal_params.format = Ren::eTexFormat::RGB10_A2;
+            frame_textures.normal_desc.format = Ren::eTexFormat::RGB10_A2;
 #else
-            frame_textures.normal_params.format = Ren::eTexFormat::RGBA8;
+            frame_textures.normal_desc.format = Ren::eTexFormat::RGBA8;
 #endif
-            frame_textures.normal_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            frame_textures.normal_desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             // 4-component specular (alpha is roughness)
-            frame_textures.specular_params.w = view_state_.ren_res[0];
-            frame_textures.specular_params.h = view_state_.ren_res[1];
-            frame_textures.specular_params.format = Ren::eTexFormat::RGBA8;
-            frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            frame_textures.specular_desc.w = view_state_.ren_res[0];
+            frame_textures.specular_desc.h = view_state_.ren_res[1];
+            frame_textures.specular_desc.format = Ren::eTexFormat::RGBA8;
+            frame_textures.specular_desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         }
 
         // 4-component albedo (alpha is unused)
-        frame_textures.albedo_params.w = view_state_.ren_res[0];
-        frame_textures.albedo_params.h = view_state_.ren_res[1];
-        frame_textures.albedo_params.format = Ren::eTexFormat::RGBA8;
-        frame_textures.albedo_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        frame_textures.albedo_desc.w = view_state_.ren_res[0];
+        frame_textures.albedo_desc.h = view_state_.ren_res[1];
+        frame_textures.albedo_desc.format = Ren::eTexFormat::RGBA8;
+        frame_textures.albedo_desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         //
         // Depth prepass
@@ -1228,16 +1228,16 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 depth_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStage::VertexShader);
             FgResRef noise_tex_res = depth_fill.AddTextureInput(noise_tex_, Ren::eStage::VertexShader);
 
-            frame_textures.depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
+            frame_textures.depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
 
             { // Texture that holds 3D motion vectors
-                Ren::TexParams params;
-                params.w = view_state_.ren_res[0];
-                params.h = view_state_.ren_res[1];
-                params.format = Ren::eTexFormat::RGBA16F;
-                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                FgImgDesc desc;
+                desc.w = view_state_.ren_res[0];
+                desc.h = view_state_.ren_res[1];
+                desc.format = Ren::eTexFormat::RGBA16F;
+                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-                frame_textures.velocity = depth_fill.AddColorOutput(MAIN_VELOCITY_TEX, params);
+                frame_textures.velocity = depth_fill.AddColorOutput(MAIN_VELOCITY_TEX, desc);
             }
 
             depth_fill.make_executor<ExDepthFill>(&p_list_, &view_state_, deferred_shading /* clear_depth */, vtx_buf1,
@@ -1264,18 +1264,23 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 depth_hierarchy.AddStorageOutput(common_buffers.atomic_cnt, Ren::eStage::ComputeShader);
 
             { // 32-bit float depth hierarchy
-                Ren::TexParams params;
-                params.w = ((view_state_.ren_res[0] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
-                           ExDepthHierarchy::TileSize;
-                params.h = ((view_state_.ren_res[1] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
-                           ExDepthHierarchy::TileSize;
-                params.format = Ren::eTexFormat::R32F;
-                params.mip_count = ExDepthHierarchy::MipCount;
-                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-                params.sampling.filter = Ren::eTexFilter::Nearest;
+                FgImgDesc desc;
+                desc.w = ((view_state_.ren_res[0] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
+                         ExDepthHierarchy::TileSize;
+                desc.h = ((view_state_.ren_res[1] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
+                         ExDepthHierarchy::TileSize;
+                desc.format = Ren::eTexFormat::R32F;
+                desc.mip_count = ExDepthHierarchy::MipCount;
+                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                desc.sampling.filter = Ren::eTexFilter::Nearest;
+
+                // Add view for each mip level
+                for (int i = 0; i < desc.mip_count; ++i) {
+                    desc.views.push_back({desc.format, i, 1, 0, 1});
+                }
 
                 depth_hierarchy_tex =
-                    depth_hierarchy.AddStorageImageOutput("Depth Hierarchy", params, Ren::eStage::ComputeShader);
+                    depth_hierarchy.AddStorageImageOutput("Depth Hierarchy", desc, Ren::eStage::ComputeShader);
             }
 
             depth_hierarchy.make_executor<ExDepthHierarchy>(fg_builder_, &view_state_, depth_tex, atomic_buf,
@@ -1611,14 +1616,14 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 ex_postprocess_args_.lut_tex = postprocess.AddTextureInput(tonemap_lut_, Ren::eStage::FragmentShader);
             }
             if (output_tex) {
-                Ren::TexParams params;
-                params.w = view_state_.out_res[0];
-                params.h = view_state_.out_res[1];
-                params.format = Ren::eTexFormat::RGB8;
-                params.sampling.filter = Ren::eTexFilter::Bilinear;
-                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                FgImgDesc desc;
+                desc.w = view_state_.out_res[0];
+                desc.h = view_state_.out_res[1];
+                desc.format = Ren::eTexFormat::RGB8;
+                desc.sampling.filter = Ren::eTexFilter::Bilinear;
+                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-                ex_postprocess_args_.output_tex = postprocess.AddColorOutput(output_tex, params);
+                ex_postprocess_args_.output_tex = postprocess.AddColorOutput(output_tex, desc);
             } else if (target) {
                 ex_postprocess_args_.output_tex = postprocess.AddColorOutput(target);
                 if (blit_to_backbuffer) {
@@ -2024,24 +2029,24 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
             FgResRef stage_buf_res = update_image.AddTransferInput(temp_upload_buf);
 
             { // output image
-                Ren::TexParams params;
-                params.w = cur_scr_w;
-                params.h = cur_scr_h;
-                params.format = format;
-                params.sampling.filter = Ren::eTexFilter::Bilinear;
-                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-                output_tex_res = update_image.AddTransferImageOutput("Temp Image", params);
+                FgImgDesc desc;
+                desc.w = cur_scr_w;
+                desc.h = cur_scr_h;
+                desc.format = format;
+                desc.sampling.filter = Ren::eTexFilter::Bilinear;
+                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                output_tex_res = update_image.AddTransferImageOutput("Temp Image", desc);
             }
 
             update_image.set_execute_cb([stage_buf_res, output_tex_res](FgContext &fg) {
-                FgAllocBuf &stage_buf = fg.AccessROBuffer(stage_buf_res);
-                FgAllocTex &output_image = fg.AccessRWTexture(output_tex_res);
+                const Ren::Buffer &stage_buf = fg.AccessROBuffer(stage_buf_res);
+                Ren::Texture &output_image = fg.AccessRWTexture(output_tex_res);
 
-                const int w = output_image.ref->params.w;
-                const int h = output_image.ref->params.h;
+                const int w = output_image.params.w;
+                const int h = output_image.params.h;
 
-                output_image.ref->SetSubImage(0, 0, w, h, Ren::eTexFormat::RGBA32F, *stage_buf.ref, fg.cmd_buf(), 0,
-                                              stage_buf.ref->size());
+                output_image.SetSubImage(0, 0, w, h, Ren::eTexFormat::RGBA32F, stage_buf, fg.cmd_buf(), 0,
+                                         stage_buf.size());
             });
         }
 

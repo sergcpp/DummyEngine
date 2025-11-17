@@ -43,14 +43,14 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         }
 
         rt_sh_prepare.set_execute_cb([data](FgContext &fg) {
-            FgAllocBuf &tile_counter_buf = fg.AccessRWBuffer(data->tile_counter);
+            Ren::Buffer &tile_counter_buf = fg.AccessRWBuffer(data->tile_counter);
 
             Ren::DispatchIndirectCommand indirect_cmd = {};
             indirect_cmd.num_groups_x = 0; // will be incremented atomically
             indirect_cmd.num_groups_y = 1;
             indirect_cmd.num_groups_z = 1;
 
-            tile_counter_buf.ref->UpdateImmediate(0, sizeof(indirect_cmd), &indirect_cmd, fg.cmd_buf());
+            tile_counter_buf.UpdateImmediate(0, sizeof(indirect_cmd), &indirect_cmd, fg.cmd_buf());
         });
     }
 
@@ -84,44 +84,43 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             tile_list = data->tile_list = sh_classify.AddStorageOutput("SH Tile List", desc, Stg::ComputeShader);
         }
         { // ray hits texture
-            Ren::TexParams params;
-            params.w = (view_state_.ren_res[0] + 7) / 8;
-            params.h = (view_state_.ren_res[1] + 3) / 4;
-            params.format = Ren::eTexFormat::R32UI;
-            params.sampling.filter = Ren::eTexFilter::Nearest;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = (view_state_.ren_res[0] + 7) / 8;
+            desc.h = (view_state_.ren_res[1] + 3) / 4;
+            desc.format = Ren::eTexFormat::R32UI;
+            desc.sampling.filter = Ren::eTexFilter::Nearest;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             ray_hits_tex = data->out_ray_hits_tex =
-                sh_classify.AddStorageImageOutput("SH Ray Hits", params, Stg::ComputeShader);
+                sh_classify.AddStorageImageOutput("SH Ray Hits", desc, Stg::ComputeShader);
         }
         { // blue noise texture
-            Ren::TexParams params;
-            params.w = params.h = 128;
-            params.format = Ren::eTexFormat::RG8;
-            params.sampling.filter = Ren::eTexFilter::Nearest;
-            params.sampling.wrap = Ren::eTexWrap::Repeat;
-            noise_tex = data->out_noise_tex =
-                sh_classify.AddStorageImageOutput("SH BN Tex", params, Stg::ComputeShader);
+            FgImgDesc desc;
+            desc.w = desc.h = 128;
+            desc.format = Ren::eTexFormat::RG8;
+            desc.sampling.filter = Ren::eTexFilter::Nearest;
+            desc.sampling.wrap = Ren::eTexWrap::Repeat;
+            noise_tex = data->out_noise_tex = sh_classify.AddStorageImageOutput("SH BN Tex", desc, Stg::ComputeShader);
         }
 
         sh_classify.set_execute_cb([this, data](FgContext &fg) {
-            FgAllocTex &depth_tex = fg.AccessROTexture(data->depth);
-            FgAllocTex &norm_tex = fg.AccessROTexture(data->normal);
-            FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            FgAllocBuf &bn_pmj_seq = fg.AccessROBuffer(data->bn_pmj_seq);
+            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth);
+            const Ren::Texture &norm_tex = fg.AccessROTexture(data->normal);
+            const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
+            const Ren::Buffer &bn_pmj_seq = fg.AccessROBuffer(data->bn_pmj_seq);
 
-            FgAllocBuf &tile_counter_buf = fg.AccessRWBuffer(data->tile_counter);
-            FgAllocBuf &tile_list_buf = fg.AccessRWBuffer(data->tile_list);
-            FgAllocTex &ray_hits_tex = fg.AccessRWTexture(data->out_ray_hits_tex);
-            FgAllocTex &noise_tex = fg.AccessRWTexture(data->out_noise_tex);
+            Ren::Buffer &tile_counter_buf = fg.AccessRWBuffer(data->tile_counter);
+            Ren::Buffer &tile_list_buf = fg.AccessRWBuffer(data->tile_list);
+            Ren::Texture &ray_hits_tex = fg.AccessRWTexture(data->out_ray_hits_tex);
+            Ren::Texture &noise_tex = fg.AccessRWTexture(data->out_noise_tex);
 
-            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                             {Trg::TexSampled, RTShadowClassify::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                             {Trg::TexSampled, RTShadowClassify::NORM_TEX_SLOT, *norm_tex.ref},
-                                             {Trg::SBufRO, RTShadowClassify::TILE_COUNTER_SLOT, *tile_counter_buf.ref},
-                                             {Trg::SBufRO, RTShadowClassify::TILE_LIST_SLOT, *tile_list_buf.ref},
-                                             {Trg::UTBuf, RTShadowClassify::BN_PMJ_SEQ_BUF_SLOT, *bn_pmj_seq.ref},
-                                             {Trg::ImageRW, RTShadowClassify::OUT_RAY_HITS_IMG_SLOT, *ray_hits_tex.ref},
-                                             {Trg::ImageRW, RTShadowClassify::OUT_NOISE_IMG_SLOT, *noise_tex.ref}};
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
+                                             {Trg::TexSampled, RTShadowClassify::DEPTH_TEX_SLOT, {depth_tex, 1}},
+                                             {Trg::TexSampled, RTShadowClassify::NORM_TEX_SLOT, norm_tex},
+                                             {Trg::SBufRO, RTShadowClassify::TILE_COUNTER_SLOT, tile_counter_buf},
+                                             {Trg::SBufRO, RTShadowClassify::TILE_LIST_SLOT, tile_list_buf},
+                                             {Trg::UTBuf, RTShadowClassify::BN_PMJ_SEQ_BUF_SLOT, bn_pmj_seq},
+                                             {Trg::ImageRW, RTShadowClassify::OUT_RAY_HITS_IMG_SLOT, ray_hits_tex},
+                                             {Trg::ImageRW, RTShadowClassify::OUT_NOISE_IMG_SLOT, noise_tex}};
 
             const auto grp_count = Ren::Vec3u{
                 (view_state_.ren_res[0] + RTShadowClassify::GRP_SIZE_X - 1u) / RTShadowClassify::GRP_SIZE_X,
@@ -183,22 +182,22 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         data->hit_mask_tex = rt_shadow_debug.AddTextureInput(ray_hits_tex, Stg::ComputeShader);
 
         { // shadow mask buffer
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::R8;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::R8;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            data->out_result_img = rt_shadow_debug.AddStorageImageOutput("RT SH Debug", params, Stg::ComputeShader);
+            data->out_result_img = rt_shadow_debug.AddStorageImageOutput("RT SH Debug", desc, Stg::ComputeShader);
         }
 
         rt_shadow_debug.set_execute_cb([this, data](FgContext &fg) {
-            FgAllocTex &hit_mask_tex = fg.AccessROTexture(data->hit_mask_tex);
-            FgAllocTex &out_result_img = fg.AccessRWTexture(data->out_result_img);
+            const Ren::Texture &hit_mask_tex = fg.AccessROTexture(data->hit_mask_tex);
+            Ren::Texture &out_result_img = fg.AccessRWTexture(data->out_result_img);
 
-            const Ren::Binding bindings[] = {{Trg::TexSampled, RTShadowDebug::HIT_MASK_TEX_SLOT, *hit_mask_tex.ref},
-                                             {Trg::ImageRW, RTShadowDebug::OUT_RESULT_IMG_SLOT, *out_result_img.ref}};
+            const Ren::Binding bindings[] = {{Trg::TexSampled, RTShadowDebug::HIT_MASK_TEX_SLOT, hit_mask_tex},
+                                             {Trg::ImageRW, RTShadowDebug::OUT_RESULT_IMG_SLOT, out_result_img}};
 
             const Ren::Vec3u grp_count =
                 Ren::Vec3u{(view_state_.ren_res[0] + RTShadowDebug::GRP_SIZE_X - 1u) / RTShadowDebug::GRP_SIZE_X,
@@ -239,13 +238,13 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         }
 
         rt_prep_mask.set_execute_cb([this, data](FgContext &fg) {
-            FgAllocTex &hit_mask_tex = fg.AccessROTexture(data->hit_mask_tex);
+            const Ren::Texture &hit_mask_tex = fg.AccessROTexture(data->hit_mask_tex);
 
-            FgAllocBuf &out_shadow_mask_buf = fg.AccessRWBuffer(data->out_shadow_mask_buf);
+            Ren::Buffer &out_shadow_mask_buf = fg.AccessRWBuffer(data->out_shadow_mask_buf);
 
             const Ren::Binding bindings[] = {
-                {Trg::TexSampled, RTShadowPrepareMask::HIT_MASK_TEX_SLOT, *hit_mask_tex.ref},
-                {Trg::SBufRW, RTShadowPrepareMask::SHADOW_MASK_BUF_SLOT, *out_shadow_mask_buf.ref}};
+                {Trg::TexSampled, RTShadowPrepareMask::HIT_MASK_TEX_SLOT, hit_mask_tex},
+                {Trg::SBufRW, RTShadowPrepareMask::SHADOW_MASK_BUF_SLOT, out_shadow_mask_buf}};
 
             const uint32_t x_tiles = (view_state_.ren_res[0] + 8u - 1u) / 8;
             const uint32_t y_tiles = (view_state_.ren_res[1] + 4u - 1u) / 4;
@@ -305,52 +304,51 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 rt_classify_tiles.AddStorageOutput("RT SH Tile Meta", desc, Stg::ComputeShader);
         }
         { // reprojected texture
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RG16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RG16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             repro_results = data->out_repro_results_img =
-                rt_classify_tiles.AddStorageImageOutput("SH Reproj Tex", params, Stg::ComputeShader);
+                rt_classify_tiles.AddStorageImageOutput("SH Reproj Tex", desc, Stg::ComputeShader);
         }
         { // moments texture
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RG11F_B10F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-            data->out_moments_img =
-                rt_classify_tiles.AddStorageImageOutput("SH Moments Tex", params, Stg::ComputeShader);
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RG11F_B10F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            data->out_moments_img = rt_classify_tiles.AddStorageImageOutput("SH Moments Tex", desc, Stg::ComputeShader);
         }
 
         rt_classify_tiles.set_execute_cb([this, data](FgContext &fg) {
-            FgAllocTex &depth_tex = fg.AccessROTexture(data->depth);
-            FgAllocTex &velocity_tex = fg.AccessROTexture(data->velocity);
-            FgAllocTex &norm_tex = fg.AccessROTexture(data->normal);
-            FgAllocTex &hist_tex = fg.AccessROTexture(data->hist);
-            FgAllocTex &prev_depth_tex = fg.AccessROTexture(data->prev_depth);
-            FgAllocTex &prev_moments_tex = fg.AccessROTexture(data->prev_moments);
-            FgAllocBuf &ray_hits_buf = fg.AccessROBuffer(data->ray_hits);
-            FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
+            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth);
+            const Ren::Texture &velocity_tex = fg.AccessROTexture(data->velocity);
+            const Ren::Texture &norm_tex = fg.AccessROTexture(data->normal);
+            const Ren::Texture &hist_tex = fg.AccessROTexture(data->hist);
+            const Ren::Texture &prev_depth_tex = fg.AccessROTexture(data->prev_depth);
+            const Ren::Texture &prev_moments_tex = fg.AccessROTexture(data->prev_moments);
+            const Ren::Buffer &ray_hits_buf = fg.AccessROBuffer(data->ray_hits);
+            const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
 
-            FgAllocBuf &out_tile_metadata_buf = fg.AccessRWBuffer(data->out_tile_metadata_buf);
-            FgAllocTex &out_repro_results_img = fg.AccessRWTexture(data->out_repro_results_img);
-            FgAllocTex &out_moments_img = fg.AccessRWTexture(data->out_moments_img);
+            Ren::Buffer &out_tile_metadata_buf = fg.AccessRWBuffer(data->out_tile_metadata_buf);
+            Ren::Texture &out_repro_results_img = fg.AccessRWTexture(data->out_repro_results_img);
+            Ren::Texture &out_moments_img = fg.AccessRWTexture(data->out_moments_img);
 
             const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::TexSampled, RTShadowClassifyTiles::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Trg::TexSampled, RTShadowClassifyTiles::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                {Trg::TexSampled, RTShadowClassifyTiles::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::TexSampled, RTShadowClassifyTiles::HISTORY_TEX_SLOT, *hist_tex.ref},
-                {Trg::TexSampled, RTShadowClassifyTiles::PREV_DEPTH_TEX_SLOT, {*prev_depth_tex.ref, 1}},
-                {Trg::TexSampled, RTShadowClassifyTiles::PREV_MOMENTS_TEX_SLOT, *prev_moments_tex.ref},
-                {Trg::SBufRO, RTShadowClassifyTiles::RAY_HITS_BUF_SLOT, *ray_hits_buf.ref},
-                {Trg::SBufRW, RTShadowClassifyTiles::OUT_TILE_METADATA_BUF_SLOT, *out_tile_metadata_buf.ref},
-                {Trg::ImageRW, RTShadowClassifyTiles::OUT_REPROJ_RESULTS_IMG_SLOT, *out_repro_results_img.ref},
-                {Trg::ImageRW, RTShadowClassifyTiles::OUT_MOMENTS_IMG_SLOT, *out_moments_img.ref},
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
+                {Trg::TexSampled, RTShadowClassifyTiles::DEPTH_TEX_SLOT, {depth_tex, 1}},
+                {Trg::TexSampled, RTShadowClassifyTiles::VELOCITY_TEX_SLOT, velocity_tex},
+                {Trg::TexSampled, RTShadowClassifyTiles::NORM_TEX_SLOT, norm_tex},
+                {Trg::TexSampled, RTShadowClassifyTiles::HISTORY_TEX_SLOT, hist_tex},
+                {Trg::TexSampled, RTShadowClassifyTiles::PREV_DEPTH_TEX_SLOT, {prev_depth_tex, 1}},
+                {Trg::TexSampled, RTShadowClassifyTiles::PREV_MOMENTS_TEX_SLOT, prev_moments_tex},
+                {Trg::SBufRO, RTShadowClassifyTiles::RAY_HITS_BUF_SLOT, ray_hits_buf},
+                {Trg::SBufRW, RTShadowClassifyTiles::OUT_TILE_METADATA_BUF_SLOT, out_tile_metadata_buf},
+                {Trg::ImageRW, RTShadowClassifyTiles::OUT_REPROJ_RESULTS_IMG_SLOT, out_repro_results_img},
+                {Trg::ImageRW, RTShadowClassifyTiles::OUT_MOMENTS_IMG_SLOT, out_moments_img},
             };
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
@@ -391,32 +389,32 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         data->shared_data = rt_filter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
 
         { // out result texture
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RG16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RG16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             filtered_result0 = data->out_history_img =
-                rt_filter.AddStorageImageOutput("SH Filter 0 Tex", params, Stg::ComputeShader);
+                rt_filter.AddStorageImageOutput("SH Filter 0 Tex", desc, Stg::ComputeShader);
         }
 
         rt_filter.set_execute_cb([this, data](FgContext &fg) {
-            FgAllocTex &depth_tex = fg.AccessROTexture(data->depth);
-            FgAllocTex &norm_tex = fg.AccessROTexture(data->normal);
-            FgAllocTex &input_tex = fg.AccessROTexture(data->input);
-            FgAllocBuf &tile_metadata_buf = fg.AccessROBuffer(data->tile_metadata);
-            FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
+            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth);
+            const Ren::Texture &norm_tex = fg.AccessROTexture(data->normal);
+            const Ren::Texture &input_tex = fg.AccessROTexture(data->input);
+            const Ren::Buffer &tile_metadata_buf = fg.AccessROBuffer(data->tile_metadata);
+            const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
 
-            FgAllocTex &out_history_img = fg.AccessRWTexture(data->out_history_img);
+            Ren::Texture &out_history_img = fg.AccessRWTexture(data->out_history_img);
 
             const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::TexSampled, RTShadowFilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Trg::TexSampled, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::TexSampled, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
-                {Trg::SBufRO, RTShadowFilter::TILE_METADATA_BUF_SLOT, *tile_metadata_buf.ref},
-                {Trg::ImageRW, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
+                {Trg::TexSampled, RTShadowFilter::DEPTH_TEX_SLOT, {depth_tex, 1}},
+                {Trg::TexSampled, RTShadowFilter::NORM_TEX_SLOT, norm_tex},
+                {Trg::TexSampled, RTShadowFilter::INPUT_TEX_SLOT, input_tex},
+                {Trg::SBufRO, RTShadowFilter::TILE_METADATA_BUF_SLOT, tile_metadata_buf},
+                {Trg::ImageRW, RTShadowFilter::OUT_RESULT_IMG_SLOT, out_history_img},
             };
 
             const Ren::Vec3u grp_count =
@@ -455,32 +453,32 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         data->shared_data = rt_filter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
 
         { // out result texture
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RG16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RG16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             filtered_result1 = data->out_history_img =
-                rt_filter.AddStorageImageOutput("SH Filter 1 Tex", params, Stg::ComputeShader);
+                rt_filter.AddStorageImageOutput("SH Filter 1 Tex", desc, Stg::ComputeShader);
         }
 
         rt_filter.set_execute_cb([this, data](FgContext &fg) {
-            FgAllocTex &depth_tex = fg.AccessROTexture(data->depth);
-            FgAllocTex &norm_tex = fg.AccessROTexture(data->normal);
-            FgAllocTex &input_tex = fg.AccessROTexture(data->input);
-            FgAllocBuf &tile_metadata_buf = fg.AccessROBuffer(data->tile_metadata);
-            FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
+            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth);
+            const Ren::Texture &norm_tex = fg.AccessROTexture(data->normal);
+            const Ren::Texture &input_tex = fg.AccessROTexture(data->input);
+            const Ren::Buffer &tile_metadata_buf = fg.AccessROBuffer(data->tile_metadata);
+            const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
 
-            FgAllocTex &out_history_img = fg.AccessRWTexture(data->out_history_img);
+            Ren::Texture &out_history_img = fg.AccessRWTexture(data->out_history_img);
 
             const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::TexSampled, RTShadowFilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Trg::TexSampled, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::TexSampled, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
-                {Trg::SBufRO, RTShadowFilter::TILE_METADATA_BUF_SLOT, *tile_metadata_buf.ref},
-                {Trg::ImageRW, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
+                {Trg::TexSampled, RTShadowFilter::DEPTH_TEX_SLOT, {depth_tex, 1}},
+                {Trg::TexSampled, RTShadowFilter::NORM_TEX_SLOT, norm_tex},
+                {Trg::TexSampled, RTShadowFilter::INPUT_TEX_SLOT, input_tex},
+                {Trg::SBufRO, RTShadowFilter::TILE_METADATA_BUF_SLOT, tile_metadata_buf},
+                {Trg::ImageRW, RTShadowFilter::OUT_RESULT_IMG_SLOT, out_history_img},
             };
 
             const Ren::Vec3u grp_count =
@@ -519,32 +517,32 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         data->shared_data = rt_filter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
 
         { // out result texture
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RG16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RG16F;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             filtered_result2 = data->out_history_img =
-                rt_filter.AddStorageImageOutput("SH Filter 2 Tex", params, Stg::ComputeShader);
+                rt_filter.AddStorageImageOutput("SH Filter 2 Tex", desc, Stg::ComputeShader);
         }
 
         rt_filter.set_execute_cb([this, data](FgContext &fg) {
-            FgAllocTex &depth_tex = fg.AccessROTexture(data->depth);
-            FgAllocTex &norm_tex = fg.AccessROTexture(data->normal);
-            FgAllocTex &input_tex = fg.AccessROTexture(data->input);
-            FgAllocBuf &tile_metadata_buf = fg.AccessROBuffer(data->tile_metadata);
-            FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
+            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth);
+            const Ren::Texture &norm_tex = fg.AccessROTexture(data->normal);
+            const Ren::Texture &input_tex = fg.AccessROTexture(data->input);
+            const Ren::Buffer &tile_metadata_buf = fg.AccessROBuffer(data->tile_metadata);
+            const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
 
-            FgAllocTex &out_history_img = fg.AccessRWTexture(data->out_history_img);
+            Ren::Texture &out_history_img = fg.AccessRWTexture(data->out_history_img);
 
             const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::TexSampled, RTShadowFilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Trg::TexSampled, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::TexSampled, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
-                {Trg::SBufRO, RTShadowFilter::TILE_METADATA_BUF_SLOT, *tile_metadata_buf.ref},
-                {Trg::ImageRW, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
+                {Trg::TexSampled, RTShadowFilter::DEPTH_TEX_SLOT, {depth_tex, 1}},
+                {Trg::TexSampled, RTShadowFilter::NORM_TEX_SLOT, norm_tex},
+                {Trg::TexSampled, RTShadowFilter::INPUT_TEX_SLOT, input_tex},
+                {Trg::SBufRO, RTShadowFilter::TILE_METADATA_BUF_SLOT, tile_metadata_buf},
+                {Trg::ImageRW, RTShadowFilter::OUT_RESULT_IMG_SLOT, out_history_img},
             };
 
             const Ren::Vec3u grp_count =
@@ -588,35 +586,35 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         }
 
         { // shadows texture
-            Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
-            params.format = Ren::eTexFormat::RGBA8;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eTexFormat::RGBA8;
+            desc.sampling.filter = Ren::eTexFilter::Bilinear;
+            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             shadow_final = data->out_shadow_tex =
-                rt_sh_combine.AddStorageImageOutput("Sun Shadows", params, Stg::ComputeShader);
+                rt_sh_combine.AddStorageImageOutput("Sun Shadows", desc, Stg::ComputeShader);
         }
 
         rt_sh_combine.set_execute_cb([this, data](FgContext &fg) {
-            FgAllocBuf &shared_data_buf = fg.AccessROBuffer(data->shared_data);
-            FgAllocTex &depth_tex = fg.AccessROTexture(data->depth_tex);
-            FgAllocTex &norm_tex = fg.AccessROTexture(data->normal_tex);
-            FgAllocTex &shadow_depth_tex = fg.AccessROTexture(data->shadow_depth_tex);
-            FgAllocTex &shadow_color_tex = fg.AccessROTexture(data->shadow_color_tex);
-            FgAllocTex &rt_shadow_tex = fg.AccessROTexture(data->rt_shadow_tex);
-            FgAllocTex &out_shadow_tex = fg.AccessRWTexture(data->out_shadow_tex);
+            const Ren::Buffer &shared_data_buf = fg.AccessROBuffer(data->shared_data);
+            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
+            const Ren::Texture &norm_tex = fg.AccessROTexture(data->normal_tex);
+            const Ren::Texture &shadow_depth_tex = fg.AccessROTexture(data->shadow_depth_tex);
+            const Ren::Texture &shadow_color_tex = fg.AccessROTexture(data->shadow_color_tex);
+            const Ren::Texture &rt_shadow_tex = fg.AccessROTexture(data->rt_shadow_tex);
+            Ren::Texture &out_shadow_tex = fg.AccessRWTexture(data->out_shadow_tex);
 
             const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
-                {Trg::TexSampled, SunShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Trg::TexSampled, SunShadows::DEPTH_LIN_TEX_SLOT, {*depth_tex.ref, *linear_sampler_, 1}},
-                {Trg::TexSampled, SunShadows::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::TexSampled, SunShadows::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
-                {Trg::TexSampled, SunShadows::SHADOW_DEPTH_TEX_VAL_SLOT, {*shadow_depth_tex.ref, *nearest_sampler_}},
-                {Trg::TexSampled, SunShadows::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
-                {Trg::TexSampled, SunShadows::RT_SHADOW_TEX_SLOT, *rt_shadow_tex.ref},
-                {Trg::ImageRW, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, shared_data_buf},
+                {Trg::TexSampled, SunShadows::DEPTH_TEX_SLOT, {depth_tex, 1}},
+                {Trg::TexSampled, SunShadows::DEPTH_LIN_TEX_SLOT, {depth_tex, *linear_sampler_, 1}},
+                {Trg::TexSampled, SunShadows::NORM_TEX_SLOT, norm_tex},
+                {Trg::TexSampled, SunShadows::SHADOW_DEPTH_TEX_SLOT, shadow_depth_tex},
+                {Trg::TexSampled, SunShadows::SHADOW_DEPTH_TEX_VAL_SLOT, {shadow_depth_tex, *nearest_sampler_}},
+                {Trg::TexSampled, SunShadows::SHADOW_COLOR_TEX_SLOT, shadow_color_tex},
+                {Trg::TexSampled, SunShadows::RT_SHADOW_TEX_SLOT, rt_shadow_tex},
+                {Trg::ImageRW, SunShadows::OUT_SHADOW_IMG_SLOT, out_shadow_tex}};
 
             const Ren::Vec3u grp_count =
                 Ren::Vec3u{(view_state_.ren_res[0] + SunShadows::GRP_SIZE_X - 1u) / SunShadows::GRP_SIZE_X,
@@ -669,35 +667,34 @@ Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buf
     data->shadow_color_tex = sun_shadows.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
 
     { // shadows texture
-        Ren::TexParams params;
-        params.w = view_state_.ren_res[0];
-        params.h = view_state_.ren_res[1];
-        params.format = Ren::eTexFormat::RGBA8;
-        params.sampling.filter = Ren::eTexFilter::Bilinear;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-        shadow_tex = data->out_shadow_tex =
-            sun_shadows.AddStorageImageOutput("Sun Shadows", params, Stg::ComputeShader);
+        FgImgDesc desc;
+        desc.w = view_state_.ren_res[0];
+        desc.h = view_state_.ren_res[1];
+        desc.format = Ren::eTexFormat::RGBA8;
+        desc.sampling.filter = Ren::eTexFilter::Bilinear;
+        desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        shadow_tex = data->out_shadow_tex = sun_shadows.AddStorageImageOutput("Sun Shadows", desc, Stg::ComputeShader);
     }
 
     sun_shadows.set_execute_cb([this, data](FgContext &fg) {
-        FgAllocBuf &shared_data_buf = fg.AccessROBuffer(data->shared_data);
-        FgAllocTex &depth_tex = fg.AccessROTexture(data->depth_tex);
-        FgAllocTex &albedo_tex = fg.AccessROTexture(data->albedo_tex);
-        FgAllocTex &norm_tex = fg.AccessROTexture(data->normal_tex);
-        FgAllocTex &shadow_depth_tex = fg.AccessROTexture(data->shadow_depth_tex);
-        FgAllocTex &shadow_color_tex = fg.AccessROTexture(data->shadow_color_tex);
-        FgAllocTex &out_shadow_tex = fg.AccessRWTexture(data->out_shadow_tex);
+        const Ren::Buffer &shared_data_buf = fg.AccessROBuffer(data->shared_data);
+        const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
+        const Ren::Texture &albedo_tex = fg.AccessROTexture(data->albedo_tex);
+        const Ren::Texture &norm_tex = fg.AccessROTexture(data->normal_tex);
+        const Ren::Texture &shadow_depth_tex = fg.AccessROTexture(data->shadow_depth_tex);
+        const Ren::Texture &shadow_color_tex = fg.AccessROTexture(data->shadow_color_tex);
+        Ren::Texture &out_shadow_tex = fg.AccessRWTexture(data->out_shadow_tex);
 
         const Ren::Binding bindings[] = {
-            {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
-            {Trg::TexSampled, SunShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-            {Trg::TexSampled, SunShadows::DEPTH_LIN_TEX_SLOT, {*depth_tex.ref, *linear_sampler_, 1}},
-            {Trg::TexSampled, SunShadows::ALBEDO_TEX_SLOT, *albedo_tex.ref},
-            {Trg::TexSampled, SunShadows::NORM_TEX_SLOT, *norm_tex.ref},
-            {Trg::TexSampled, SunShadows::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
-            {Trg::TexSampled, SunShadows::SHADOW_DEPTH_TEX_VAL_SLOT, {*shadow_depth_tex.ref, *nearest_sampler_}},
-            {Trg::TexSampled, SunShadows::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
-            {Trg::ImageRW, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
+            {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, shared_data_buf},
+            {Trg::TexSampled, SunShadows::DEPTH_TEX_SLOT, {depth_tex, 1}},
+            {Trg::TexSampled, SunShadows::DEPTH_LIN_TEX_SLOT, {depth_tex, *linear_sampler_, 1}},
+            {Trg::TexSampled, SunShadows::ALBEDO_TEX_SLOT, albedo_tex},
+            {Trg::TexSampled, SunShadows::NORM_TEX_SLOT, norm_tex},
+            {Trg::TexSampled, SunShadows::SHADOW_DEPTH_TEX_SLOT, shadow_depth_tex},
+            {Trg::TexSampled, SunShadows::SHADOW_DEPTH_TEX_VAL_SLOT, {shadow_depth_tex, *nearest_sampler_}},
+            {Trg::TexSampled, SunShadows::SHADOW_COLOR_TEX_SLOT, shadow_color_tex},
+            {Trg::ImageRW, SunShadows::OUT_SHADOW_IMG_SLOT, out_shadow_tex}};
 
         const Ren::Vec3u grp_count =
             Ren::Vec3u{(view_state_.ren_res[0] + SunShadows::GRP_SIZE_X - 1u) / SunShadows::GRP_SIZE_X,

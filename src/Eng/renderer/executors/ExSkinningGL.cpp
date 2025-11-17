@@ -8,24 +8,24 @@
 #include "../shaders/skinning_interface.h"
 
 void Eng::ExSkinning::Execute(FgContext &fg) {
-    FgAllocBuf &skin_vtx_buf = fg.AccessROBuffer(skin_vtx_buf_);
-    FgAllocBuf &skin_transforms_buf = fg.AccessROBuffer(skin_transforms_buf_);
-    FgAllocBuf &shape_keys_buf = fg.AccessROBuffer(shape_keys_buf_);
-    FgAllocBuf &delta_buf = fg.AccessROBuffer(delta_buf_);
+    const Ren::Buffer &skin_vtx_buf = fg.AccessROBuffer(skin_vtx_buf_);
+    const Ren::Buffer &skin_transforms_buf = fg.AccessROBuffer(skin_transforms_buf_);
+    const Ren::Buffer &shape_keys_buf = fg.AccessROBuffer(shape_keys_buf_);
+    const Ren::Buffer &delta_buf = fg.AccessROBuffer(delta_buf_);
 
-    FgAllocBuf &vtx_buf1 = fg.AccessRWBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = fg.AccessRWBuffer(vtx_buf2_);
+    Ren::Buffer &vtx_buf1 = fg.AccessRWBuffer(vtx_buf1_);
+    Ren::Buffer &vtx_buf2 = fg.AccessRWBuffer(vtx_buf2_);
 
     if (!p_list_->skin_regions.empty()) {
-        const GLuint vertex_buf1_id = vtx_buf1.ref->id();
-        const GLuint vertex_buf2_id = vtx_buf2.ref->id();
-        const GLuint delta_buf_id = delta_buf.ref->id();
-        const GLuint skin_vtx_buf_id = skin_vtx_buf.ref->id();
+        const GLuint vertex_buf1_id = vtx_buf1.id();
+        const GLuint vertex_buf2_id = vtx_buf2.id();
+        const GLuint delta_buf_id = delta_buf.id();
+        const GLuint skin_vtx_buf_id = skin_vtx_buf.id();
 
         glUseProgram(pi_skinning_->prog()->id());
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::IN_VERTICES_SLOT, skin_vtx_buf_id);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::IN_MATRICES_SLOT, GLuint(skin_transforms_buf.ref->id()));
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::IN_SHAPE_KEYS_SLOT, GLuint(shape_keys_buf.ref->id()));
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::IN_MATRICES_SLOT, GLuint(skin_transforms_buf.id()));
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::IN_SHAPE_KEYS_SLOT, GLuint(shape_keys_buf.id()));
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::IN_DELTAS_SLOT, delta_buf_id);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::OUT_VERTICES0, vertex_buf1_id);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::OUT_VERTICES1, vertex_buf2_id);

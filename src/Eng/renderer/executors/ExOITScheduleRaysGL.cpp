@@ -30,18 +30,18 @@ uint32_t _draw_range_ext2(Eng::FgContext &fg, const Ren::MaterialStorage &materi
                           uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
 } // namespace ExSharedInternal
 
-void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, FgAllocTex &depth_tex) {
+void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, const Ren::WeakTexRef &depth_tex) {
     using namespace ExSharedInternal;
 
-    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
-    FgAllocTex &dummy_white = fg.AccessROTexture(dummy_white_);
-    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
-    FgAllocBuf &oit_depth_buf = fg.AccessROBuffer(oit_depth_buf_);
-    FgAllocBuf &ray_counter_buf = fg.AccessRWBuffer(ray_counter_);
-    FgAllocBuf &ray_list_buf = fg.AccessRWBuffer(ray_list_);
+    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Texture &dummy_white = fg.AccessROTexture(dummy_white_);
+    const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
+    const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
+    const Ren::Buffer &oit_depth_buf = fg.AccessROBuffer(oit_depth_buf_);
+    Ren::Buffer &ray_counter_buf = fg.AccessRWBuffer(ray_counter_);
+    Ren::Buffer &ray_list_buf = fg.AccessRWBuffer(ray_list_);
 
     if ((*p_list_)->alpha_blend_start_index == -1) {
         return;
@@ -63,24 +63,23 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, FgAllocTex &depth_te
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, main_draw_fb_[0][fb_to_use_].id());
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.id()));
     if (fg.ren_ctx().capabilities.bindless_texture) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX,
                          GLuint(bindless_tex_->rt_inline_textures.buf->id()));
     }
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf.ref->id());
+    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf.id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.ref->view(0).second));
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.view(0).second));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.id()));
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, OITScheduleRays::OIT_DEPTH_BUF_SLOT,
-                               oit_depth_buf.ref->view(0).second);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, OITScheduleRays::OIT_DEPTH_BUF_SLOT, oit_depth_buf.view(0).second);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, OITScheduleRays::RAY_COUNTER_SLOT, GLuint(ray_counter_buf.ref->id()));
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, OITScheduleRays::RAY_LIST_SLOT, GLuint(ray_list_buf.ref->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, OITScheduleRays::RAY_COUNTER_SLOT, GLuint(ray_counter_buf.id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, OITScheduleRays::RAY_LIST_SLOT, GLuint(ray_list_buf.id()));
 
     const Ren::Span<const basic_draw_batch_t> batches = {(*p_list_)->basic_batches};
     const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->basic_batch_indices};
@@ -107,8 +106,8 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, FgAllocTex &depth_te
             rast_state.ApplyChanged(fg.rast_state());
             fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, BDB::BitAlphaBlend,
-                                 cur_mat_id, &draws_count);
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, BDB::BitAlphaBlend, cur_mat_id,
+                                 &draws_count);
 
             rast_state = pi_simple_[1]->rast_state();
             rast_state.viewport[2] = view_state_->ren_res[0];
@@ -116,7 +115,7 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, FgAllocTex &depth_te
             rast_state.ApplyChanged(fg.rast_state());
             fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i,
                                  BDB::BitAlphaBlend | BDB::BitBackSided, cur_mat_id, &draws_count);
         }
         { // solid two-sided
@@ -128,7 +127,7 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, FgAllocTex &depth_te
             rast_state.ApplyChanged(fg.rast_state());
             fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i,
                                  BDB::BitAlphaBlend | BDB::BitTwoSided, cur_mat_id, &draws_count);
         }
         { // moving solid one-sided
@@ -140,7 +139,7 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, FgAllocTex &depth_te
             rast_state.ApplyChanged(fg.rast_state());
             fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i,
                                  BDB::BitAlphaBlend | BDB::BitMoving, cur_mat_id, &draws_count);
         }
         { // moving solid two-sided
@@ -153,7 +152,7 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, FgAllocTex &depth_te
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // alpha-tested one-sided
@@ -165,7 +164,7 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, FgAllocTex &depth_te
             rast_state.ApplyChanged(fg.rast_state());
             fg.rast_state() = rast_state;
 
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i,
                                  BDB::BitAlphaBlend | BDB::BitAlphaTest, cur_mat_id, &draws_count);
         }
         { // alpha-tested two-sided
@@ -178,7 +177,7 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, FgAllocTex &depth_te
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitAlphaBlend | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // moving alpha-tested one-sided
@@ -191,7 +190,7 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, FgAllocTex &depth_te
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitAlphaTest;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
         { // moving alpha-tested two-sided
@@ -204,7 +203,7 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, FgAllocTex &depth_te
             fg.rast_state() = rast_state;
 
             const uint64_t DrawMask = BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(fg, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
+            i = _draw_range_ext2(fg, materials, dummy_white, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
     }

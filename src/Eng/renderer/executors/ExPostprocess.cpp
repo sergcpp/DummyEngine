@@ -28,16 +28,17 @@ Eng::ExPostprocess::ExPostprocess(PrimDraw &prim_draw, ShaderLoader &sh, const v
 }
 
 void Eng::ExPostprocess::Execute(FgContext &fg) {
-    FgAllocTex &exposure_tex = fg.AccessROTexture(args_->exposure_tex);
-    FgAllocTex &color_tex = fg.AccessROTexture(args_->color_tex);
-    FgAllocTex &bloom_tex = fg.AccessROTexture(args_->bloom_tex);
-    FgAllocTex &output_tex = fg.AccessRWTexture(args_->output_tex);
-    FgAllocTex *lut_tex = nullptr, *output_tex2 = nullptr;
+    const Ren::Texture &exposure_tex = fg.AccessROTexture(args_->exposure_tex);
+    const Ren::Texture &color_tex = fg.AccessROTexture(args_->color_tex);
+    const Ren::Texture &bloom_tex = fg.AccessROTexture(args_->bloom_tex);
+    Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(args_->output_tex);
+    const Ren::Texture *lut_tex = nullptr;
     if (args_->lut_tex) {
         lut_tex = &fg.AccessROTexture(args_->lut_tex);
     }
+    Ren::WeakTexRef output_tex2;
     if (args_->output_tex2) {
-        output_tex2 = &fg.AccessRWTexture(args_->output_tex2);
+        output_tex2 = fg.AccessRWTextureRef(args_->output_tex2);
     }
 
     Ren::RastState rast_state;
@@ -57,20 +58,20 @@ void Eng::ExPostprocess::Execute(FgContext &fg) {
     uniform_params.pre_exposure = view_state_->pre_exposure;
 
     Ren::SmallVector<Ren::Binding, 8> bindings = {
-        {Ren::eBindTarget::TexSampled, BlitPostprocess::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
-        {Ren::eBindTarget::TexSampled, BlitPostprocess::INPUT_TEX_SLOT, {*color_tex.ref, *args_->linear_sampler}},
-        {Ren::eBindTarget::TexSampled, BlitPostprocess::BLOOM_TEX_SLOT, *bloom_tex.ref}};
+        {Ren::eBindTarget::TexSampled, BlitPostprocess::EXPOSURE_TEX_SLOT, exposure_tex},
+        {Ren::eBindTarget::TexSampled, BlitPostprocess::INPUT_TEX_SLOT, {color_tex, *args_->linear_sampler}},
+        {Ren::eBindTarget::TexSampled, BlitPostprocess::BLOOM_TEX_SLOT, bloom_tex}};
     if (args_->tonemap_mode == 2 && lut_tex) {
-        bindings.emplace_back(Ren::eBindTarget::TexSampled, BlitPostprocess::LUT_TEX_SLOT, *lut_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, BlitPostprocess::LUT_TEX_SLOT, *lut_tex);
     }
 
     Ren::SmallVector<Ren::RenderTarget, 2> render_targets = {
-        {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+        {output_tex, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
     if (output_tex2) {
-        render_targets.emplace_back(output_tex2->ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store);
+        render_targets.emplace_back(output_tex2, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store);
     }
 
-    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_postprocess_prog_[args_->tonemap_mode == 2][output_tex2 != nullptr],
-                        {}, render_targets, rast_state, fg.rast_state(), bindings, &uniform_params,
+    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_postprocess_prog_[args_->tonemap_mode == 2][bool(output_tex2)], {},
+                        render_targets, rast_state, fg.rast_state(), bindings, &uniform_params,
                         sizeof(BlitPostprocess::Params), 0);
 }

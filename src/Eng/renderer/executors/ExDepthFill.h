@@ -31,9 +31,11 @@ class ExDepthFill final : public FgExecutor {
     FgResRef depth_tex_;
     FgResRef velocity_tex_;
 
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
-                  FgAllocBuf &ndx_buf, FgAllocTex &depth_tex, FgAllocTex &velocity_tex);
-    void DrawDepth(FgContext &builder, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2, FgAllocBuf &ndx_buf);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
+                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, const Ren::WeakTexRef &depth_tex,
+                  const Ren::WeakTexRef &velocity_tex);
+    void DrawDepth(FgContext &builder, const Ren::Buffer &vtx_buf1, const Ren::Buffer &vtx_buf2,
+                   const Ren::Buffer &ndx_buf);
 
     Ren::RenderPassRef rp_depth_only_[2], rp_depth_velocity_[2];
 

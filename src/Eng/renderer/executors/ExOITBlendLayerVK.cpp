@@ -16,36 +16,36 @@ uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, cons
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 }
 
-void Eng::ExOITBlendLayer::DrawTransparent(FgContext &fg, FgAllocTex &depth_tex) {
+void Eng::ExOITBlendLayer::DrawTransparent(FgContext &fg, const Ren::WeakTexRef &depth_tex) {
     using namespace ExSharedInternal;
 
     auto *api_ctx = fg.ren_ctx().api_ctx();
 
-    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
-    FgAllocTex &shadow_map_tex = fg.AccessROTexture(shadow_map_);
-    FgAllocTex &ltc_luts_tex = fg.AccessROTexture(ltc_luts_tex_);
-    FgAllocTex &env_tex = fg.AccessROTexture(env_tex_);
-    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
-    FgAllocBuf &cells_buf = fg.AccessROBuffer(cells_buf_);
-    FgAllocBuf &items_buf = fg.AccessROBuffer(items_buf_);
-    FgAllocBuf &lights_buf = fg.AccessROBuffer(lights_buf_);
-    FgAllocBuf &decals_buf = fg.AccessROBuffer(decals_buf_);
-    FgAllocBuf &oit_depth_buf = fg.AccessROBuffer(oit_depth_buf_);
+    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Texture &shadow_map_tex = fg.AccessROTexture(shadow_map_);
+    const Ren::Texture &ltc_luts_tex = fg.AccessROTexture(ltc_luts_tex_);
+    const Ren::Texture &env_tex = fg.AccessROTexture(env_tex_);
+    const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
+    const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
+    const Ren::Buffer &cells_buf = fg.AccessROBuffer(cells_buf_);
+    const Ren::Buffer &items_buf = fg.AccessROBuffer(items_buf_);
+    const Ren::Buffer &lights_buf = fg.AccessROBuffer(lights_buf_);
+    const Ren::Buffer &decals_buf = fg.AccessROBuffer(decals_buf_);
+    const Ren::Buffer &oit_depth_buf = fg.AccessROBuffer(oit_depth_buf_);
 
-    FgAllocTex &back_color_tex = fg.AccessROTexture(back_color_tex_);
-    FgAllocTex &back_depth_tex = fg.AccessROTexture(back_depth_tex_);
+    const Ren::Texture &back_color_tex = fg.AccessROTexture(back_color_tex_);
+    const Ren::Texture &back_depth_tex = fg.AccessROTexture(back_depth_tex_);
 
-    FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
+    const Ren::Texture *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (irradiance_tex_) {
         irr_tex = &fg.AccessROTexture(irradiance_tex_);
         dist_tex = &fg.AccessROTexture(distance_tex_);
         off_tex = &fg.AccessROTexture(offset_tex_);
     }
 
-    FgAllocTex *specular_tex = nullptr;
+    const Ren::Texture *specular_tex = nullptr;
     if (oit_specular_tex_) {
         specular_tex = &fg.AccessROTexture(oit_specular_tex_);
     }
@@ -63,42 +63,41 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgContext &fg, FgAllocTex &depth_tex)
         rast_state.depth.test_enabled = true;
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
 
-        const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::UTBuf, BlitOITDepth::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::UTBuf, BlitOITDepth::OIT_DEPTH_BUF_SLOT, oit_depth_buf}};
 
         BlitOITDepth::Params uniform_params = {};
         uniform_params.img_size[0] = view_state_->ren_res[0];
         uniform_params.img_size[1] = view_state_->ren_res[1];
         uniform_params.layer_index = depth_layer_index_;
 
-        const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
+        const Ren::RenderTarget depth_target = {depth_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, prog_oit_blit_depth_, depth_target, {}, rast_state, fg.rast_state(),
                             bindings, &uniform_params, sizeof(uniform_params), 0);
     }
 
     Ren::SmallVector<Ren::Binding, 16> bindings = {
-        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-        {Ren::eBindTarget::UTBuf, OITBlendLayer::CELLS_BUF_SLOT, *cells_buf.ref},
-        {Ren::eBindTarget::UTBuf, OITBlendLayer::ITEMS_BUF_SLOT, *items_buf.ref},
-        {Ren::eBindTarget::UTBuf, OITBlendLayer::LIGHT_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::UTBuf, OITBlendLayer::DECAL_BUF_SLOT, *decals_buf.ref},
-        {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
-        {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
-        {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
-        {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref},
-        {Ren::eBindTarget::TexSampled, OITBlendLayer::SHADOW_TEX_SLOT, *shadow_map_tex.ref},
-        {Ren::eBindTarget::TexSampled, OITBlendLayer::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
-        {Ren::eBindTarget::TexSampled, OITBlendLayer::ENV_TEX_SLOT, *env_tex.ref},
-        {Ren::eBindTarget::TexSampled, OITBlendLayer::BACK_COLOR_TEX_SLOT, *back_color_tex.ref},
-        {Ren::eBindTarget::TexSampled, OITBlendLayer::BACK_DEPTH_TEX_SLOT, {*back_depth_tex.ref, 1}}};
+        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf},
+        {Ren::eBindTarget::UTBuf, OITBlendLayer::CELLS_BUF_SLOT, cells_buf},
+        {Ren::eBindTarget::UTBuf, OITBlendLayer::ITEMS_BUF_SLOT, items_buf},
+        {Ren::eBindTarget::UTBuf, OITBlendLayer::LIGHT_BUF_SLOT, lights_buf},
+        {Ren::eBindTarget::UTBuf, OITBlendLayer::DECAL_BUF_SLOT, decals_buf},
+        {Ren::eBindTarget::UTBuf, BIND_INST_BUF, instances_buf},
+        {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, instance_indices_buf},
+        {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, materials_buf},
+        {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, noise_tex},
+        {Ren::eBindTarget::TexSampled, OITBlendLayer::SHADOW_TEX_SLOT, shadow_map_tex},
+        {Ren::eBindTarget::TexSampled, OITBlendLayer::LTC_LUTS_TEX_SLOT, ltc_luts_tex},
+        {Ren::eBindTarget::TexSampled, OITBlendLayer::ENV_TEX_SLOT, env_tex},
+        {Ren::eBindTarget::TexSampled, OITBlendLayer::BACK_COLOR_TEX_SLOT, back_color_tex},
+        {Ren::eBindTarget::TexSampled, OITBlendLayer::BACK_DEPTH_TEX_SLOT, {back_depth_tex, 1}}};
     if (irr_tex) {
-        bindings.emplace_back(Ren::eBindTarget::TexSampled, OITBlendLayer::IRRADIANCE_TEX_SLOT, *irr_tex->ref);
-        bindings.emplace_back(Ren::eBindTarget::TexSampled, OITBlendLayer::DISTANCE_TEX_SLOT, *dist_tex->ref);
-        bindings.emplace_back(Ren::eBindTarget::TexSampled, OITBlendLayer::OFFSET_TEX_SLOT, *off_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, OITBlendLayer::IRRADIANCE_TEX_SLOT, *irr_tex);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, OITBlendLayer::DISTANCE_TEX_SLOT, *dist_tex);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, OITBlendLayer::OFFSET_TEX_SLOT, *off_tex);
     }
     if (specular_tex) {
-        bindings.emplace_back(Ren::eBindTarget::TexSampled, OITBlendLayer::SPEC_TEX_SLOT, *specular_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, OITBlendLayer::SPEC_TEX_SLOT, *specular_tex);
     }
 
     VkDescriptorSet descr_sets[2];

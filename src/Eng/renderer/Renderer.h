@@ -226,17 +226,17 @@ class Renderer {
     };
 
     struct FrameTextures {
-        Ren::TexParams color_params;
+        FgImgDesc color_desc;
         FgResRef color;
-        Ren::TexParams albedo_params;
+        FgImgDesc albedo_desc;
         FgResRef albedo;
-        Ren::TexParams specular_params;
+        FgImgDesc specular_desc;
         FgResRef specular;
-        Ren::TexParams normal_params;
+        FgImgDesc normal_desc;
         FgResRef normal;
-        Ren::TexParams depth_params;
+        FgImgDesc depth_desc;
         FgResRef depth, opaque_depth;
-        Ren::TexParams velocity_params;
+        FgImgDesc velocity_desc;
         FgResRef velocity;
         FgResRef disocclusion_mask;
 

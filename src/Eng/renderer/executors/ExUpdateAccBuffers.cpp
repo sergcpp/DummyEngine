@@ -13,7 +13,7 @@ void Eng::ExUpdateAccBuffers::Execute(FgContext &fg) {
 }
 
 void Eng::ExUpdateAccBuffers::Execute_SWRT(FgContext &fg) {
-    FgAllocBuf &rt_geo_instances_buf = fg.AccessRWBuffer(rt_geo_instances_buf_);
+    Ren::Buffer &rt_geo_instances_buf = fg.AccessRWBuffer(rt_geo_instances_buf_);
 
     const auto &rt_geo_instances = p_list_->rt_geo_instances[rt_index_];
     auto &rt_geo_instances_stage_buf = p_list_->rt_geo_instances_stage_buf[rt_index_];
@@ -27,6 +27,6 @@ void Eng::ExUpdateAccBuffers::Execute_SWRT(FgContext &fg) {
         rt_geo_instances_stage_buf->Unmap();
 
         CopyBufferToBuffer(*rt_geo_instances_stage_buf, fg.backend_frame() * RTGeoInstancesBufChunkSize,
-                           *rt_geo_instances_buf.ref, 0, rt_geo_instances_mem_size, fg.cmd_buf());
+                           rt_geo_instances_buf, 0, rt_geo_instances_mem_size, fg.cmd_buf());
     }
 }

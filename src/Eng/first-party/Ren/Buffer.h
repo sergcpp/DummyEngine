@@ -93,8 +93,8 @@ class Buffer : public RefCounter {
 #endif
     eBufType type_ = eBufType::Undefined;
     uint32_t size_ = 0, size_alignment_ = 1;
-    uint8_t *mapped_ptr_ = nullptr;
-    uint32_t mapped_offset_ = 0xffffffff;
+    mutable uint8_t *mapped_ptr_ = nullptr;
+    mutable uint32_t mapped_offset_ = 0xffffffff;
 
     static int g_GenCounter;
 
@@ -149,11 +149,11 @@ class Buffer : public RefCounter {
     void Free();
     void FreeImmediate();
 
-    uint32_t AlignMapOffset(uint32_t offset);
+    uint32_t AlignMapOffset(uint32_t offset) const;
 
-    uint8_t *Map(const bool persistent = false) { return MapRange(0, size_, persistent); }
-    uint8_t *MapRange(uint32_t offset, uint32_t size, bool persistent = false);
-    void Unmap();
+    uint8_t *Map(const bool persistent = false) const { return MapRange(0, size_, persistent); }
+    uint8_t *MapRange(uint32_t offset, uint32_t size, bool persistent = false) const;
+    void Unmap() const;
 
     void Fill(uint32_t dst_offset, uint32_t size, uint32_t data, CommandBuffer cmd_buf);
     void UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, CommandBuffer cmd_buf);
@@ -163,7 +163,7 @@ class Buffer : public RefCounter {
     mutable eResState resource_state = eResState::Undefined;
 };
 
-void CopyBufferToBuffer(Buffer &src, uint32_t src_offset, Buffer &dst, uint32_t dst_offset, uint32_t size,
+void CopyBufferToBuffer(const Buffer &src, uint32_t src_offset, Buffer &dst, uint32_t dst_offset, uint32_t size,
                         CommandBuffer cmd_buf);
 // Update buffer using stage buffer
 bool UpdateBuffer(Buffer &dst, uint32_t dst_offset, uint32_t data_size, const void *data, Buffer &stage,

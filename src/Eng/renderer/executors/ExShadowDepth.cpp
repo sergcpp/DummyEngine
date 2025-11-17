@@ -6,18 +6,19 @@
 #include "../Renderer_Structs.h"
 
 void Eng::ExShadowDepth::Execute(FgContext &fg) {
-    FgAllocBuf &vtx_buf1 = fg.AccessROBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = fg.AccessROBuffer(vtx_buf2_);
-    FgAllocBuf &ndx_buf = fg.AccessROBuffer(ndx_buf_);
+    Ren::WeakBufRef vtx_buf1 = fg.AccessROBufferRef(vtx_buf1_);
+    Ren::WeakBufRef vtx_buf2 = fg.AccessROBufferRef(vtx_buf2_);
+    Ren::WeakBufRef ndx_buf = fg.AccessROBufferRef(ndx_buf_);
 
-    FgAllocTex &shadow_depth_tex = fg.AccessRWTexture(shadow_depth_tex_);
+    Ren::WeakTexRef shadow_depth_tex = fg.AccessRWTextureRef(shadow_depth_tex_);
 
     LazyInit(fg.ren_ctx(), fg.sh(), vtx_buf1, vtx_buf2, ndx_buf, shadow_depth_tex);
     DrawShadowMaps(fg);
 }
 
-void Eng::ExShadowDepth::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
-                                  FgAllocBuf &ndx_buf, FgAllocTex &shadow_depth_tex) {
+void Eng::ExShadowDepth::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
+                                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf,
+                                  const Ren::WeakTexRef &shadow_depth_tex) {
     if (!initialized) {
 #if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
@@ -31,31 +32,31 @@ void Eng::ExShadowDepth::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
             vi_depth_pass_vege_alpha;
 
         { // VertexInput for solid shadow pass (uses position attribute only)
-            const Ren::VtxAttribDesc attribs[] = {{vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
-            vi_depth_pass_solid = sh.LoadVertexInput(attribs, ndx_buf.ref);
+            const Ren::VtxAttribDesc attribs[] = {{vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
+            vi_depth_pass_solid = sh.LoadVertexInput(attribs, ndx_buf);
         }
 
         { // VertexInput for for solid shadow pass of vegetation (uses position and secondary uv attributes)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            vi_depth_pass_vege_solid = sh.LoadVertexInput(attribs, ndx_buf.ref);
+                {vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf2, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+            vi_depth_pass_vege_solid = sh.LoadVertexInput(attribs, ndx_buf);
         }
 
         { // VertexInput for for alpha-tested shadow pass (uses position and uv attributes)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
-            vi_depth_pass_alpha = sh.LoadVertexInput(attribs, ndx_buf.ref);
+                {vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
+            vi_depth_pass_alpha = sh.LoadVertexInput(attribs, ndx_buf);
         }
 
         { // VertexInput for for alpha-tested shadow pass of vegetation (uses position, primary and
           // secondary uv attributes)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
-                {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            vi_depth_pass_vege_alpha = sh.LoadVertexInput(attribs, ndx_buf.ref);
+                {vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+                {vtx_buf2, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+            vi_depth_pass_vege_alpha = sh.LoadVertexInput(attribs, ndx_buf);
         }
 
         Ren::ProgramRef shadow_solid_prog =
@@ -74,7 +75,7 @@ void Eng::ExShadowDepth::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
                            bindless ? "internal/shadow_depth@ALPHATEST.frag.glsl"
                                     : "internal/shadow_depth@ALPHATEST;NO_BINDLESS.frag.glsl");
 
-        const Ren::RenderTarget depth_target = {shadow_depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
+        const Ren::RenderTarget depth_target = {shadow_depth_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
         Ren::RenderPassRef rp_depth_only = sh.LoadRenderPass(depth_target, {});
 
@@ -108,7 +109,7 @@ void Eng::ExShadowDepth::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
         initialized = true;
     }
 
-    if (!shadow_fb_.Setup(ctx.api_ctx(), *pi_solid_[0]->render_pass(), w_, h_, shadow_depth_tex.ref, {},
+    if (!shadow_fb_.Setup(ctx.api_ctx(), *pi_solid_[0]->render_pass(), w_, h_, shadow_depth_tex, {},
                           Ren::Span<const Ren::WeakTexRef>{}, false, ctx.log())) {
         ctx.log()->Error("ExShadowMaps: shadow_fb_ init failed!");
     }

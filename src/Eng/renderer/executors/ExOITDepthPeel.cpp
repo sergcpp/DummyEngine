@@ -29,18 +29,19 @@ Eng::ExOITDepthPeel::ExOITDepthPeel(const DrawList **p_list, const view_state_t 
 }
 
 void Eng::ExOITDepthPeel::Execute(FgContext &fg) {
-    FgAllocBuf &vtx_buf1 = fg.AccessROBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = fg.AccessROBuffer(vtx_buf2_);
-    FgAllocBuf &ndx_buf = fg.AccessROBuffer(ndx_buf_);
-    FgAllocTex &depth_tex = fg.AccessRWTexture(depth_tex_);
+    Ren::WeakBufRef vtx_buf1 = fg.AccessROBufferRef(vtx_buf1_);
+    Ren::WeakBufRef vtx_buf2 = fg.AccessROBufferRef(vtx_buf2_);
+    Ren::WeakBufRef ndx_buf = fg.AccessROBufferRef(ndx_buf_);
+    Ren::WeakTexRef depth_tex = fg.AccessRWTextureRef(depth_tex_);
 
     LazyInit(fg.ren_ctx(), fg.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex);
     DrawTransparent(fg);
 }
 
-void Eng::ExOITDepthPeel::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
-                                   FgAllocBuf &ndx_buf, FgAllocTex &depth_tex) {
-    const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
+void Eng::ExOITDepthPeel::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
+                                   const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf,
+                                   const Ren::WeakTexRef depth_tex) {
+    const Ren::RenderTarget depth_target = {depth_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::Store};
     if (!pi_simple_[0]) {
 #if defined(REN_GL_BACKEND)
@@ -54,8 +55,8 @@ void Eng::ExOITDepthPeel::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgA
         Ren::VertexInputRef vi_simple;
 
         { // VertexInput for simple and skinned meshes
-            const Ren::VtxAttribDesc attribs[] = {{vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
-            vi_simple = sh.LoadVertexInput(attribs, ndx_buf.ref);
+            const Ren::VtxAttribDesc attribs[] = {{vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
+            vi_simple = sh.LoadVertexInput(attribs, ndx_buf);
         }
 
         Ren::ProgramRef depth_peel_simple;
@@ -92,7 +93,7 @@ void Eng::ExOITDepthPeel::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgA
     fb_to_use_ = (fb_to_use_ + 1) % 2;
 
     if (!main_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), *pi_simple_[0]->render_pass(),
-                                                              depth_tex.desc.w, depth_tex.desc.h, depth_target,
+                                                              depth_tex->params.w, depth_tex->params.h, depth_target,
                                                               depth_target, {}, ctx.log())) {
         ctx.log()->Error("[ExOITDepthPeel::LazyInit]: main_draw_fb_ init failed!");
     }

@@ -8,19 +8,21 @@
 #include <Ren/RastState.h>
 #include <Ren/VKCtx.h>
 
-void Eng::ExTransparent::DrawTransparent_Simple(FgContext &fg, FgAllocBuf &instances_buf,
-                                                FgAllocBuf &instance_indices_buf, FgAllocBuf &unif_shared_data_buf,
-                                                FgAllocBuf &materials_buf, FgAllocBuf &cells_buf, FgAllocBuf &items_buf,
-                                                FgAllocBuf &lights_buf, FgAllocBuf &decals_buf, FgAllocTex &shad_tex,
-                                                FgAllocTex &color_tex, FgAllocTex &ssao_tex) {
+void Eng::ExTransparent::DrawTransparent_Simple(FgContext &fg, const Ren::Buffer &instances_buf,
+                                                const Ren::Buffer &instance_indices_buf,
+                                                const Ren::Buffer &unif_shared_data_buf,
+                                                const Ren::Buffer &materials_buf, const Ren::Buffer &cells_buf,
+                                                const Ren::Buffer &items_buf, const Ren::Buffer &lights_buf,
+                                                const Ren::Buffer &decals_buf, const Ren::Texture &shad_tex,
+                                                const Ren::WeakTexRef &color_tex, const Ren::Texture &ssao_tex) {
     auto *api_ctx = fg.ren_ctx().api_ctx();
 
-    [[maybe_unused]] FgAllocTex &brdf_lut = fg.AccessROTexture(brdf_lut_);
-    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
-    [[maybe_unused]] FgAllocTex &cone_rt_lut = fg.AccessROTexture(cone_rt_lut_);
-    FgAllocTex &dummy_black = fg.AccessROTexture(dummy_black_);
+    [[maybe_unused]] const Ren::Texture &brdf_lut = fg.AccessROTexture(brdf_lut_);
+    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
+    [[maybe_unused]] const Ren::Texture &cone_rt_lut = fg.AccessROTexture(cone_rt_lut_);
+    const Ren::Texture &dummy_black = fg.AccessROTexture(dummy_black_);
 
-    FgAllocTex *lm_tex[4];
+    const Ren::Texture *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (lm_tex_[i]) {
             lm_tex[i] = &fg.AccessROTexture(lm_tex_[i]);
@@ -41,40 +43,39 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgContext &fg, FgAllocBuf &insta
     const VkDescriptorSet res_descr_set = fg.descr_alloc().Alloc(descr_sizes, descr_set_layout_);
 
     { // update descriptor set
-        const VkDescriptorImageInfo shad_info = shad_tex.ref->vk_desc_image_info();
+        const VkDescriptorImageInfo shad_info = shad_tex.vk_desc_image_info();
         VkDescriptorImageInfo lm_infos[4];
 
         if ((*p_list_)->render_settings.enable_lightmap && (*p_list_)->env.lm_direct) {
             for (int sh_l = 0; sh_l < 4; sh_l++) {
-                lm_infos[sh_l] = lm_tex[sh_l]->ref->vk_desc_image_info();
+                lm_infos[sh_l] = lm_tex[sh_l]->vk_desc_image_info();
             }
         } else {
             for (int sh_l = 0; sh_l < 4; sh_l++) {
-                lm_infos[sh_l] = dummy_black.ref->vk_desc_image_info();
+                lm_infos[sh_l] = dummy_black.vk_desc_image_info();
             }
         }
 
-        const VkDescriptorImageInfo decal_info = dummy_black.ref->vk_desc_image_info();
-        const VkDescriptorImageInfo ssao_info = ssao_tex.ref->vk_desc_image_info();
+        const VkDescriptorImageInfo decal_info = dummy_black.vk_desc_image_info();
+        const VkDescriptorImageInfo ssao_info = ssao_tex.vk_desc_image_info();
 
-        const VkDescriptorImageInfo noise_info = noise_tex.ref->vk_desc_image_info();
+        const VkDescriptorImageInfo noise_info = noise_tex.vk_desc_image_info();
         /*const VkDescriptorImageInfo env_info = {(*p_list_)->probe_storage->handle().sampler,
                                                 (*p_list_)->probe_storage->handle().views[0],
                                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};*/
         // const VkDescriptorImageInfo cone_rt_info = cone_rt_lut.ref->vk_desc_image_info();
         // const VkDescriptorImageInfo brdf_info = brdf_lut.ref->vk_desc_image_info();
 
-        const VkBufferView lights_buf_view = lights_buf.ref->view(0).second;
-        const VkBufferView decals_buf_view = decals_buf.ref->view(0).second;
-        const VkBufferView cells_buf_view = cells_buf.ref->view(0).second;
-        const VkBufferView items_buf_view = items_buf.ref->view(0).second;
+        const VkBufferView lights_buf_view = lights_buf.view(0).second;
+        const VkBufferView decals_buf_view = decals_buf.view(0).second;
+        const VkBufferView cells_buf_view = cells_buf.view(0).second;
+        const VkBufferView items_buf_view = items_buf.view(0).second;
 
-        const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
+        const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.vk_handle(), 0, VK_WHOLE_SIZE};
 
-        const VkBufferView instances_buf_view = instances_buf.ref->view(0).second;
-        const VkDescriptorBufferInfo instance_indices_buf_info = {instance_indices_buf.ref->vk_handle(), 0,
-                                                                  VK_WHOLE_SIZE};
-        const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
+        const VkBufferView instances_buf_view = instances_buf.view(0).second;
+        const VkDescriptorBufferInfo instance_indices_buf_info = {instance_indices_buf.vk_handle(), 0, VK_WHOLE_SIZE};
+        const VkDescriptorBufferInfo mat_buf_info = {materials_buf.vk_handle(), 0, VK_WHOLE_SIZE};
 
         Ren::SmallVector<VkWriteDescriptorSet, 16> descr_writes;
 

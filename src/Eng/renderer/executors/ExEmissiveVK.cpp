@@ -21,12 +21,11 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
     //
     // Prepare descriptor sets
     //
-    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
-
-    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
+    const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
+    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
 
     if ((*p_list_)->emissive_start_index == -1) {
         return;
@@ -35,11 +34,11 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
     VkDescriptorSet descr_sets[2];
 
     { // allocate descriptors
-        const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
-                                         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
-                                         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
-                                         {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf},
+                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, instances_buf},
+                                         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, instance_indices_buf},
+                                         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, materials_buf},
+                                         {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, noise_tex}};
         descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[0]->prog()->descr_set_layouts()[0], bindings,
                                              fg.descr_alloc(), fg.log());
         descr_sets[1] = bindless_tex_->textures_descr_sets[0];

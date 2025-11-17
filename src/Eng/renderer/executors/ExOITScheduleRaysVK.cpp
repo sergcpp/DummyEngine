@@ -15,33 +15,32 @@ uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, cons
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 }
 
-void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, FgAllocTex &depth_tex) {
+void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, const Ren::WeakTexRef &depth_tex) {
     using namespace ExSharedInternal;
 
     auto *api_ctx = fg.ren_ctx().api_ctx();
 
-    FgAllocTex &noise_tex = fg.AccessROTexture(noise_tex_);
-    FgAllocBuf &instances_buf = fg.AccessROBuffer(instances_buf_);
-    FgAllocBuf &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
-    FgAllocBuf &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
-    FgAllocBuf &materials_buf = fg.AccessROBuffer(materials_buf_);
-    FgAllocBuf &oit_depth_buf = fg.AccessROBuffer(oit_depth_buf_);
-    FgAllocBuf &ray_counter_buf = fg.AccessRWBuffer(ray_counter_);
-    FgAllocBuf &ray_list_buf = fg.AccessRWBuffer(ray_list_);
+    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
+    const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
+    const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
+    const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
+    const Ren::Buffer &oit_depth_buf = fg.AccessROBuffer(oit_depth_buf_);
+    Ren::Buffer &ray_counter_buf = fg.AccessRWBuffer(ray_counter_);
+    Ren::Buffer &ray_list_buf = fg.AccessRWBuffer(ray_list_);
 
     if ((*p_list_)->alpha_blend_start_index == -1) {
         return;
     }
 
-    const Ren::Binding bindings[] = {
-        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-        {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
-        {Ren::eBindTarget::UTBuf, OITScheduleRays::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.ref},
-        {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
-        {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
-        {Ren::eBindTarget::SBufRO, OITScheduleRays::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-        {Ren::eBindTarget::SBufRO, OITScheduleRays::RAY_LIST_SLOT, *ray_list_buf.ref},
-        {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref}};
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf},
+                                     {Ren::eBindTarget::UTBuf, BIND_INST_BUF, instances_buf},
+                                     {Ren::eBindTarget::UTBuf, OITScheduleRays::OIT_DEPTH_BUF_SLOT, oit_depth_buf},
+                                     {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, instance_indices_buf},
+                                     {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, materials_buf},
+                                     {Ren::eBindTarget::SBufRO, OITScheduleRays::RAY_COUNTER_SLOT, ray_counter_buf},
+                                     {Ren::eBindTarget::SBufRO, OITScheduleRays::RAY_LIST_SLOT, ray_list_buf},
+                                     {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, noise_tex}};
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[0]->prog()->descr_set_layouts()[0], bindings,

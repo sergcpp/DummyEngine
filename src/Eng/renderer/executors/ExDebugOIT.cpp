@@ -13,11 +13,11 @@ Eng::ExDebugOIT::ExDebugOIT(FgContext &fg, const view_state_t *view_state, const
 }
 
 void Eng::ExDebugOIT::Execute(FgContext &fg) {
-    FgAllocBuf &oit_depth_buf = fg.AccessROBuffer(args_->oit_depth_buf);
-    FgAllocTex &output_tex = fg.AccessRWTexture(args_->output_tex);
+    const Ren::Buffer &oit_depth_buf = fg.AccessROBuffer(args_->oit_depth_buf);
+    Ren::Texture &output_tex = fg.AccessRWTexture(args_->output_tex);
 
-    const Ren::Binding bindings[] = {{Ren::eBindTarget::UTBuf, OITDebug::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.ref},
-                                     {Ren::eBindTarget::ImageRW, OITDebug::OUT_IMG_SLOT, *output_tex.ref}};
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::UTBuf, OITDebug::OIT_DEPTH_BUF_SLOT, oit_depth_buf},
+                                     {Ren::eBindTarget::ImageRW, OITDebug::OUT_IMG_SLOT, output_tex}};
 
     const Ren::Vec3u grp_count =
         Ren::Vec3u{(view_state_->ren_res[0] + OITDebug::GRP_SIZE_X - 1u) / OITDebug::GRP_SIZE_X,

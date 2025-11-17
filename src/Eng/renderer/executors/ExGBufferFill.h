@@ -44,9 +44,9 @@ class ExGBufferFill final : public FgExecutor {
     FgResRef out_spec_tex_;
     FgResRef out_depth_tex_;
 
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
-                  FgAllocBuf &ndx_buf, FgAllocTex &albedo_tex, FgAllocTex &normal_tex, FgAllocTex &spec_tex,
-                  FgAllocTex &depth_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
+                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, const Ren::WeakTexRef &albedo_tex,
+                  const Ren::WeakTexRef &normal_tex, const Ren::WeakTexRef &spec_tex, const Ren::WeakTexRef &depth_tex);
     void DrawOpaque(FgContext &fg);
 
   public:

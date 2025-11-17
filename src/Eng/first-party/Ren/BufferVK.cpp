@@ -434,12 +434,12 @@ void Ren::Buffer::FreeImmediate() {
     }
 }
 
-uint32_t Ren::Buffer::AlignMapOffset(const uint32_t offset) {
+uint32_t Ren::Buffer::AlignMapOffset(const uint32_t offset) const {
     const uint32_t align_to = uint32_t(api_ctx_->device_properties.limits.nonCoherentAtomSize);
     return offset - (offset % align_to);
 }
 
-uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const bool persistent) {
+uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const bool persistent) const {
     assert(dedicated_mem_);
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     assert(offset + size <= size_);
@@ -457,7 +457,7 @@ uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const
     return reinterpret_cast<uint8_t *>(mapped);
 }
 
-void Ren::Buffer::Unmap() {
+void Ren::Buffer::Unmap() const {
     assert(dedicated_mem_);
     assert(mapped_offset_ != 0xffffffff && mapped_ptr_);
     api_ctx_->vkUnmapMemory(api_ctx_->device, dedicated_mem_);
@@ -497,7 +497,8 @@ void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uin
     resource_state = eResState::CopyDst;
 }
 
-void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, CommandBuffer cmd_buf) {
+void Ren::Buffer::UpdateImmediate(const uint32_t dst_offset, const uint32_t size, const void *data,
+                                  CommandBuffer cmd_buf) {
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 1> barriers;
 
@@ -546,7 +547,7 @@ int Ren::Buffer::AddBufferView(const eTexFormat format) {
     return int(handle_.views.size()) - 1;
 }
 
-void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst, const uint32_t dst_offset,
+void Ren::CopyBufferToBuffer(const Buffer &src, const uint32_t src_offset, Buffer &dst, const uint32_t dst_offset,
                              const uint32_t size, CommandBuffer cmd_buf) {
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 2> barriers;

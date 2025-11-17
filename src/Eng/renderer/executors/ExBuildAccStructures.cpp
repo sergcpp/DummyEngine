@@ -16,8 +16,8 @@ void Eng::ExBuildAccStructures::Execute(FgContext &fg) {
 }
 
 void Eng::ExBuildAccStructures::Execute_SWRT(FgContext &fg) {
-    FgAllocBuf &rt_obj_instances_buf = fg.AccessRWBuffer(rt_obj_instances_buf_);
-    FgAllocBuf &rt_tlas_buf = fg.AccessRWBuffer(rt_tlas_buf_);
+    Ren::Buffer &rt_obj_instances_buf = fg.AccessRWBuffer(rt_obj_instances_buf_);
+    Ren::Buffer &rt_tlas_buf = fg.AccessRWBuffer(rt_tlas_buf_);
 
     const auto &rt_obj_instances = p_list_->rt_obj_instances[rt_index_];
     auto &rt_obj_instances_stage_buf = p_list_->rt_obj_instances_stage_buf[rt_index_];
@@ -94,7 +94,7 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgContext &fg) {
             }
 
             CopyBufferToBuffer(*rt_obj_instances_stage_buf, fg.backend_frame() * SWRTObjInstancesBufChunkSize,
-                               *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, fg.cmd_buf());
+                               rt_obj_instances_buf, 0, rt_obj_instances_mem_size, fg.cmd_buf());
         }
 
         { // update nodes buf
@@ -108,12 +108,12 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgContext &fg) {
                 fg.log()->Error("ExBuildAccStructures: Failed to map rt tlas stage buffer!");
             }
 
-            CopyBufferToBuffer(*rt_tlas_stage_buf, fg.backend_frame() * SWRTTLASNodesBufChunkSize, *rt_tlas_buf.ref, 0,
+            CopyBufferToBuffer(*rt_tlas_stage_buf, fg.backend_frame() * SWRTTLASNodesBufChunkSize, rt_tlas_buf, 0,
                                rt_nodes_mem_size, fg.cmd_buf());
         }
     } else {
         const gpu_bvh2_node_t dummy_node = {};
-        rt_tlas_buf.ref->UpdateImmediate(0, sizeof(dummy_node), &dummy_node, fg.cmd_buf());
+        rt_tlas_buf.UpdateImmediate(0, sizeof(dummy_node), &dummy_node, fg.cmd_buf());
     }
 }
 

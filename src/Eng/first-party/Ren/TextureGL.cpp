@@ -474,10 +474,10 @@ void Ren::Texture::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, in
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
 
-void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32_t src_level, const uint32_t src_x,
-                           const uint32_t src_y, const uint32_t src_z, Texture &dst_tex, const uint32_t dst_level,
-                           const uint32_t dst_x, const uint32_t dst_y, const uint32_t dst_z, const uint32_t dst_face,
-                           const uint32_t w, const uint32_t h, const uint32_t d) {
+void Ren::CopyImageToImage(CommandBuffer cmd_buf, const Texture &src_tex, const uint32_t src_level,
+                           const uint32_t src_x, const uint32_t src_y, const uint32_t src_z, Texture &dst_tex,
+                           const uint32_t dst_level, const uint32_t dst_x, const uint32_t dst_y, const uint32_t dst_z,
+                           const uint32_t dst_face, const uint32_t w, const uint32_t h, const uint32_t d) {
     glCopyImageSubData(GLuint(src_tex.id()), GL_TEXTURE_2D, GLint(src_level), GLint(src_x), GLint(src_y), GLint(src_z),
                        GLuint(dst_tex.id()), GL_TEXTURE_2D, GLint(dst_level), GLint(dst_x), GLint(dst_y), GLint(dst_z),
                        GLsizei(w), GLsizei(h), GLsizei(d));

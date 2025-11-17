@@ -14,12 +14,12 @@ Eng::ExDebugProbes::ExDebugProbes(PrimDraw &prim_draw, FgContext &fg, const Draw
 }
 
 void Eng::ExDebugProbes::Execute(FgContext &fg) {
-    FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
-    FgAllocTex &off_tex = fg.AccessROTexture(args_->offset_tex);
-    FgAllocTex &irr_tex = fg.AccessROTexture(args_->irradiance_tex);
-    [[maybe_unused]] FgAllocTex &dist_tex = fg.AccessROTexture(args_->distance_tex);
-    FgAllocTex &depth_tex = fg.AccessRWTexture(args_->depth_tex);
-    FgAllocTex &output_tex = fg.AccessRWTexture(args_->output_tex);
+    const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
+    const Ren::Texture &off_tex = fg.AccessROTexture(args_->offset_tex);
+    const Ren::Texture &irr_tex = fg.AccessROTexture(args_->irradiance_tex);
+    [[maybe_unused]] const Ren::Texture &dist_tex = fg.AccessROTexture(args_->distance_tex);
+    Ren::WeakTexRef depth_tex = fg.AccessRWTextureRef(args_->depth_tex);
+    Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(args_->output_tex);
 
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -29,9 +29,9 @@ void Eng::ExDebugProbes::Execute(FgContext &fg) {
     rast_state.depth.test_enabled = true;
     rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
 
-    const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                     {Ren::eBindTarget::TexSampled, ProbeDebug::OFFSET_TEX_SLOT, *off_tex.ref},
-                                     {Ren::eBindTarget::TexSampled, ProbeDebug::IRRADIANCE_TEX_SLOT, *irr_tex.ref}};
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
+                                     {Ren::eBindTarget::TexSampled, ProbeDebug::OFFSET_TEX_SLOT, off_tex},
+                                     {Ren::eBindTarget::TexSampled, ProbeDebug::IRRADIANCE_TEX_SLOT, irr_tex}};
 
     const probe_volume_t &volume = args_->probe_volumes[args_->volume_to_debug];
 
@@ -43,8 +43,8 @@ void Eng::ExDebugProbes::Execute(FgContext &fg) {
         Ren::Vec4i(volume.scroll_diff[0], volume.scroll_diff[1], volume.scroll_diff[2], 0);
     uniform_params.grid_spacing = Ren::Vec4f(volume.spacing[0], volume.spacing[1], volume.spacing[2], 0.0f);
 
-    const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
-    const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
+    const Ren::RenderTarget render_targets[] = {{output_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+    const Ren::RenderTarget depth_target = {depth_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
     prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_probe_debug_, depth_target, render_targets, rast_state,
                         fg.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0,

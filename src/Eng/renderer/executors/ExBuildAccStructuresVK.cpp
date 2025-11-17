@@ -4,9 +4,9 @@
 #include <Ren/VKCtx.h>
 
 void Eng::ExBuildAccStructures::Execute_HWRT(FgContext &fg) {
-    FgAllocBuf &rt_obj_instances_buf = fg.AccessROBuffer(rt_obj_instances_buf_);
-    [[maybe_unused]] FgAllocBuf &rt_tlas_buf = fg.AccessRWBuffer(rt_tlas_buf_);
-    FgAllocBuf &rt_tlas_build_scratch_buf = fg.AccessRWBuffer(rt_tlas_build_scratch_buf_);
+    const Ren::Buffer &rt_obj_instances_buf = fg.AccessROBuffer(rt_obj_instances_buf_);
+    [[maybe_unused]] Ren::Buffer &rt_tlas_buf = fg.AccessRWBuffer(rt_tlas_buf_);
+    Ren::Buffer &rt_tlas_build_scratch_buf = fg.AccessRWBuffer(rt_tlas_build_scratch_buf_);
 
     Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 
@@ -14,7 +14,7 @@ void Eng::ExBuildAccStructures::Execute_HWRT(FgContext &fg) {
 
     VkAccelerationStructureGeometryInstancesDataKHR instances_data = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR};
-    instances_data.data.deviceAddress = rt_obj_instances_buf.ref->vk_device_address();
+    instances_data.data.deviceAddress = rt_obj_instances_buf.vk_device_address();
 
     VkAccelerationStructureGeometryKHR tlas_geo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
     tlas_geo.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
@@ -31,7 +31,7 @@ void Eng::ExBuildAccStructures::Execute_HWRT(FgContext &fg) {
     tlas_build_info.srcAccelerationStructure = VK_NULL_HANDLE;
     tlas_build_info.dstAccelerationStructure = vk_tlas->vk_handle();
 
-    tlas_build_info.scratchData.deviceAddress = rt_tlas_build_scratch_buf.ref->vk_device_address();
+    tlas_build_info.scratchData.deviceAddress = rt_tlas_build_scratch_buf.vk_device_address();
 
     VkAccelerationStructureBuildRangeInfoKHR range_info = {};
     range_info.primitiveOffset = 0;

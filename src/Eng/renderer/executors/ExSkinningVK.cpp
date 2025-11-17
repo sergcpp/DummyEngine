@@ -11,13 +11,13 @@
 void Eng::ExSkinning::Execute(FgContext &fg) {
     LazyInit(fg.ren_ctx(), fg.sh());
 
-    FgAllocBuf &skin_vtx_buf = fg.AccessROBuffer(skin_vtx_buf_);
-    FgAllocBuf &skin_transforms_buf = fg.AccessROBuffer(skin_transforms_buf_);
-    FgAllocBuf &shape_keys_buf = fg.AccessROBuffer(shape_keys_buf_);
-    FgAllocBuf &delta_buf = fg.AccessROBuffer(delta_buf_);
+    const Ren::Buffer &skin_vtx_buf = fg.AccessROBuffer(skin_vtx_buf_);
+    const Ren::Buffer &skin_transforms_buf = fg.AccessROBuffer(skin_transforms_buf_);
+    const Ren::Buffer &shape_keys_buf = fg.AccessROBuffer(shape_keys_buf_);
+    const Ren::Buffer &delta_buf = fg.AccessROBuffer(delta_buf_);
 
-    FgAllocBuf &vtx_buf1 = fg.AccessRWBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = fg.AccessRWBuffer(vtx_buf2_);
+    Ren::Buffer &vtx_buf1 = fg.AccessRWBuffer(vtx_buf1_);
+    Ren::Buffer &vtx_buf2 = fg.AccessRWBuffer(vtx_buf2_);
 
     if (!p_list_->skin_regions.empty()) {
         Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
@@ -30,12 +30,12 @@ void Eng::ExSkinning::Execute(FgContext &fg) {
 
         { // update descriptor set
             const VkDescriptorBufferInfo buf_infos[6] = {
-                {skin_vtx_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE},        // input vertices binding
-                {skin_transforms_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE}, // input matrices binding
-                {shape_keys_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE},      // input shape keys binding
-                {delta_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE},           // input vertex deltas binding
-                {vtx_buf1.ref->vk_handle(), 0, VK_WHOLE_SIZE},            // output vertices0 binding
-                {vtx_buf2.ref->vk_handle(), 0, VK_WHOLE_SIZE}             // output vertices1 binding
+                {skin_vtx_buf.vk_handle(), 0, VK_WHOLE_SIZE},        // input vertices binding
+                {skin_transforms_buf.vk_handle(), 0, VK_WHOLE_SIZE}, // input matrices binding
+                {shape_keys_buf.vk_handle(), 0, VK_WHOLE_SIZE},      // input shape keys binding
+                {delta_buf.vk_handle(), 0, VK_WHOLE_SIZE},           // input vertex deltas binding
+                {vtx_buf1.vk_handle(), 0, VK_WHOLE_SIZE},            // output vertices0 binding
+                {vtx_buf2.vk_handle(), 0, VK_WHOLE_SIZE}             // output vertices1 binding
             };
 
             VkWriteDescriptorSet descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};

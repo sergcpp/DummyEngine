@@ -65,61 +65,61 @@ void Eng::ExRTGICache::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
 void Eng::ExRTGICache::Execute_SWRT(FgContext &fg) {
     Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 
-    FgAllocBuf &geo_data_buf = fg.AccessROBuffer(args_->geo_data);
-    FgAllocBuf &materials_buf = fg.AccessROBuffer(args_->materials);
-    FgAllocBuf &vtx_buf1 = fg.AccessROBuffer(args_->vtx_buf1);
-    FgAllocBuf &ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
-    FgAllocBuf &rt_blas_buf = fg.AccessROBuffer(args_->swrt.rt_blas_buf);
-    FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
-    FgAllocTex &env_tex = fg.AccessROTexture(args_->env_tex);
-    FgAllocBuf &rt_tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
-    FgAllocBuf &prim_ndx_buf = fg.AccessROBuffer(args_->swrt.prim_ndx_buf);
-    FgAllocBuf &mesh_instances_buf = fg.AccessROBuffer(args_->swrt.mesh_instances_buf);
-    FgAllocBuf &lights_buf = fg.AccessROBuffer(args_->lights_buf);
-    FgAllocTex &shadow_depth_tex = fg.AccessROTexture(args_->shadow_depth_tex);
-    FgAllocTex &shadow_color_tex = fg.AccessROTexture(args_->shadow_color_tex);
-    FgAllocTex &ltc_luts_tex = fg.AccessROTexture(args_->ltc_luts_tex);
-    FgAllocBuf &cells_buf = fg.AccessROBuffer(args_->cells_buf);
-    FgAllocBuf &items_buf = fg.AccessROBuffer(args_->items_buf);
-    FgAllocTex &irr_tex = fg.AccessROTexture(args_->irradiance_tex);
-    FgAllocTex &dist_tex = fg.AccessROTexture(args_->distance_tex);
-    FgAllocTex &off_tex = fg.AccessROTexture(args_->offset_tex);
+    const Ren::Buffer &geo_data_buf = fg.AccessROBuffer(args_->geo_data);
+    const Ren::Buffer &materials_buf = fg.AccessROBuffer(args_->materials);
+    const Ren::Buffer &vtx_buf1 = fg.AccessROBuffer(args_->vtx_buf1);
+    const Ren::Buffer &ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
+    const Ren::Buffer &rt_blas_buf = fg.AccessROBuffer(args_->swrt.rt_blas_buf);
+    const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
+    const Ren::Texture &env_tex = fg.AccessROTexture(args_->env_tex);
+    const Ren::Buffer &rt_tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
+    const Ren::Buffer &prim_ndx_buf = fg.AccessROBuffer(args_->swrt.prim_ndx_buf);
+    const Ren::Buffer &mesh_instances_buf = fg.AccessROBuffer(args_->swrt.mesh_instances_buf);
+    const Ren::Buffer &lights_buf = fg.AccessROBuffer(args_->lights_buf);
+    const Ren::Texture &shadow_depth_tex = fg.AccessROTexture(args_->shadow_depth_tex);
+    const Ren::Texture &shadow_color_tex = fg.AccessROTexture(args_->shadow_color_tex);
+    const Ren::Texture &ltc_luts_tex = fg.AccessROTexture(args_->ltc_luts_tex);
+    const Ren::Buffer &cells_buf = fg.AccessROBuffer(args_->cells_buf);
+    const Ren::Buffer &items_buf = fg.AccessROBuffer(args_->items_buf);
+    const Ren::Texture &irr_tex = fg.AccessROTexture(args_->irradiance_tex);
+    const Ren::Texture &dist_tex = fg.AccessROTexture(args_->distance_tex);
+    const Ren::Texture &off_tex = fg.AccessROTexture(args_->offset_tex);
 
-    FgAllocBuf *random_seq_buf = nullptr, *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
+    const Ren::Buffer *random_seq_buf = nullptr, *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
     if (args_->stoch_lights_buf) {
         random_seq_buf = &fg.AccessROBuffer(args_->random_seq);
         stoch_lights_buf = &fg.AccessROBuffer(args_->stoch_lights_buf);
         light_nodes_buf = &fg.AccessROBuffer(args_->light_nodes_buf);
     }
 
-    FgAllocTex &out_ray_data_tex = fg.AccessRWTexture(args_->out_ray_data_tex);
+    Ren::Texture &out_ray_data_tex = fg.AccessRWTexture(args_->out_ray_data_tex);
 
     Ren::SmallVector<Ren::Binding, 16> bindings = {
-        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
         {Ren::eBindTarget::BindlessDescriptors, BIND_BINDLESS_TEX, bindless_tex_->rt_inline_textures},
-        {Ren::eBindTarget::TexSampled, RTGICache::ENV_TEX_SLOT, *env_tex.ref},
-        {Ren::eBindTarget::UTBuf, RTGICache::BLAS_BUF_SLOT, *rt_blas_buf.ref},
-        {Ren::eBindTarget::UTBuf, RTGICache::TLAS_BUF_SLOT, *rt_tlas_buf.ref},
-        {Ren::eBindTarget::UTBuf, RTGICache::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.ref},
-        {Ren::eBindTarget::UTBuf, RTGICache::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.ref},
-        {Ren::eBindTarget::SBufRO, RTGICache::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
-        {Ren::eBindTarget::SBufRO, RTGICache::MATERIAL_BUF_SLOT, *materials_buf.ref},
-        {Ren::eBindTarget::UTBuf, RTGICache::VTX_BUF1_SLOT, *vtx_buf1.ref},
-        {Ren::eBindTarget::UTBuf, RTGICache::NDX_BUF_SLOT, *ndx_buf.ref},
-        {Ren::eBindTarget::SBufRO, RTGICache::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::TexSampled, RTGICache::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
-        {Ren::eBindTarget::TexSampled, RTGICache::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
-        {Ren::eBindTarget::TexSampled, RTGICache::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
-        {Ren::eBindTarget::UTBuf, RTGICache::CELLS_BUF_SLOT, *cells_buf.ref},
-        {Ren::eBindTarget::UTBuf, RTGICache::ITEMS_BUF_SLOT, *items_buf.ref},
-        {Ren::eBindTarget::TexSampled, RTGICache::IRRADIANCE_TEX_SLOT, *irr_tex.ref},
-        {Ren::eBindTarget::TexSampled, RTGICache::DISTANCE_TEX_SLOT, *dist_tex.ref},
-        {Ren::eBindTarget::TexSampled, RTGICache::OFFSET_TEX_SLOT, *off_tex.ref},
-        {Ren::eBindTarget::ImageRW, RTGICache::OUT_RAY_DATA_IMG_SLOT, *out_ray_data_tex.ref}};
+        {Ren::eBindTarget::TexSampled, RTGICache::ENV_TEX_SLOT, env_tex},
+        {Ren::eBindTarget::UTBuf, RTGICache::BLAS_BUF_SLOT, rt_blas_buf},
+        {Ren::eBindTarget::UTBuf, RTGICache::TLAS_BUF_SLOT, rt_tlas_buf},
+        {Ren::eBindTarget::UTBuf, RTGICache::PRIM_NDX_BUF_SLOT, prim_ndx_buf},
+        {Ren::eBindTarget::UTBuf, RTGICache::MESH_INSTANCES_BUF_SLOT, mesh_instances_buf},
+        {Ren::eBindTarget::SBufRO, RTGICache::GEO_DATA_BUF_SLOT, geo_data_buf},
+        {Ren::eBindTarget::SBufRO, RTGICache::MATERIAL_BUF_SLOT, materials_buf},
+        {Ren::eBindTarget::UTBuf, RTGICache::VTX_BUF1_SLOT, vtx_buf1},
+        {Ren::eBindTarget::UTBuf, RTGICache::NDX_BUF_SLOT, ndx_buf},
+        {Ren::eBindTarget::SBufRO, RTGICache::LIGHTS_BUF_SLOT, lights_buf},
+        {Ren::eBindTarget::TexSampled, RTGICache::SHADOW_DEPTH_TEX_SLOT, shadow_depth_tex},
+        {Ren::eBindTarget::TexSampled, RTGICache::SHADOW_COLOR_TEX_SLOT, shadow_color_tex},
+        {Ren::eBindTarget::TexSampled, RTGICache::LTC_LUTS_TEX_SLOT, ltc_luts_tex},
+        {Ren::eBindTarget::UTBuf, RTGICache::CELLS_BUF_SLOT, cells_buf},
+        {Ren::eBindTarget::UTBuf, RTGICache::ITEMS_BUF_SLOT, items_buf},
+        {Ren::eBindTarget::TexSampled, RTGICache::IRRADIANCE_TEX_SLOT, irr_tex},
+        {Ren::eBindTarget::TexSampled, RTGICache::DISTANCE_TEX_SLOT, dist_tex},
+        {Ren::eBindTarget::TexSampled, RTGICache::OFFSET_TEX_SLOT, off_tex},
+        {Ren::eBindTarget::ImageRW, RTGICache::OUT_RAY_DATA_IMG_SLOT, out_ray_data_tex}};
     if (stoch_lights_buf) {
-        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::RANDOM_SEQ_BUF_SLOT, *random_seq_buf->ref);
-        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->ref);
-        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::LIGHT_NODES_BUF_SLOT, *light_nodes_buf->ref);
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::RANDOM_SEQ_BUF_SLOT, *random_seq_buf);
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf);
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::LIGHT_NODES_BUF_SLOT, *light_nodes_buf);
     }
 
     const Ren::Pipeline &pi = *pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update];

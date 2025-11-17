@@ -69,6 +69,18 @@ struct FgBufDesc {
     Ren::SmallVector<Ren::eTexFormat, 1> views;
 };
 
+struct FgImageViewDesc {
+    Ren::eTexFormat format;
+    int mip_level;
+    int mip_count;
+    int base_layer;
+    int layer_count;
+};
+
+struct FgImgDesc : Ren::TexParams {
+    Ren::SmallVector<FgImageViewDesc, 1> views;
+};
+
 inline bool operator==(const FgBufDesc &lhs, const FgBufDesc &rhs) {
     return lhs.size == rhs.size && lhs.type == rhs.type;
 }

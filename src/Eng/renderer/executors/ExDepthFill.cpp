@@ -19,23 +19,24 @@ uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const En
 } // namespace ExSharedInternal
 
 void Eng::ExDepthFill::Execute(FgContext &fg) {
-    FgAllocBuf &vtx_buf1 = fg.AccessROBuffer(vtx_buf1_);
-    FgAllocBuf &vtx_buf2 = fg.AccessROBuffer(vtx_buf2_);
-    FgAllocBuf &ndx_buf = fg.AccessROBuffer(ndx_buf_);
+    Ren::WeakBufRef vtx_buf1 = fg.AccessROBufferRef(vtx_buf1_);
+    Ren::WeakBufRef vtx_buf2 = fg.AccessROBufferRef(vtx_buf2_);
+    Ren::WeakBufRef ndx_buf = fg.AccessROBufferRef(ndx_buf_);
 
-    FgAllocTex &depth_tex = fg.AccessRWTexture(depth_tex_);
-    FgAllocTex &velocity_tex = fg.AccessRWTexture(velocity_tex_);
+    Ren::WeakTexRef depth_tex = fg.AccessRWTextureRef(depth_tex_);
+    Ren::WeakTexRef velocity_tex = fg.AccessRWTextureRef(velocity_tex_);
 
     LazyInit(fg.ren_ctx(), fg.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex, velocity_tex);
-    DrawDepth(fg, vtx_buf1, vtx_buf2, ndx_buf);
+    DrawDepth(fg, *vtx_buf1, *vtx_buf2, *ndx_buf);
 }
 
-void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
-                                FgAllocBuf &ndx_buf, FgAllocTex &depth_tex, FgAllocTex &velocity_tex) {
-    const Ren::RenderTarget velocity_target = {velocity_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
-    const Ren::RenderTarget depth_clear_target = {depth_tex.ref, Ren::eLoadOp::Clear, Ren::eStoreOp::Store,
+void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
+                                const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf,
+                                const Ren::WeakTexRef &depth_tex, const Ren::WeakTexRef &velocity_tex) {
+    const Ren::RenderTarget velocity_target = {velocity_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
+    const Ren::RenderTarget depth_clear_target = {depth_tex, Ren::eLoadOp::Clear, Ren::eStoreOp::Store,
                                                   Ren::eLoadOp::Clear, Ren::eStoreOp::Store};
-    const Ren::RenderTarget depth_load_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store,
+    const Ren::RenderTarget depth_load_target = {depth_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store,
                                                  Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
     if (!initialized) {
@@ -49,45 +50,45 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllo
         Ren::VertexInputRef vi_solid, vi_vege_solid, vi_transp, vi_vege_transp, vi_skin_solid, vi_skin_transp;
 
         { // VertexInput for solid depth-fill pass (uses position attribute only)
-            const Ren::VtxAttribDesc attribs[] = {{vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
-            vi_solid = sh.LoadVertexInput(attribs, ndx_buf.ref);
+            const Ren::VtxAttribDesc attribs[] = {{vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
+            vi_solid = sh.LoadVertexInput(attribs, ndx_buf);
         }
 
         { // VertexInput for solid depth-fill pass of vegetation (uses position and color attributes only)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            vi_vege_solid = sh.LoadVertexInput(attribs, ndx_buf.ref);
+                {vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf2, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+            vi_vege_solid = sh.LoadVertexInput(attribs, ndx_buf);
         }
 
         { // VertexInput for alpha-tested depth-fill pass (uses position and uv attributes)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
-            vi_transp = sh.LoadVertexInput(attribs, ndx_buf.ref);
+                {vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
+            vi_transp = sh.LoadVertexInput(attribs, ndx_buf);
         }
 
         { // VertexInput for alpha-tested depth-fill pass of vegetation (uses position, uvs and color attributes)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
-                {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            vi_vege_transp = sh.LoadVertexInput(attribs, ndx_buf.ref);
+                {vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+                {vtx_buf2, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+            vi_vege_transp = sh.LoadVertexInput(attribs, ndx_buf);
         }
 
         { // VertexInput for depth-fill pass of skinned solid meshes (with velocity output)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride, MAX_SKIN_VERTICES_TOTAL * 16}};
-            vi_skin_solid = sh.LoadVertexInput(attribs, ndx_buf.ref);
+                {vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1, VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride, MAX_SKIN_VERTICES_TOTAL * 16}};
+            vi_skin_solid = sh.LoadVertexInput(attribs, ndx_buf);
         }
 
         { // VertexInput for depth-fill pass of skinned transparent meshes (with velocity output)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
-                {vtx_buf1.ref, VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride, MAX_SKIN_VERTICES_TOTAL * 16}};
-            vi_skin_transp = sh.LoadVertexInput(attribs, ndx_buf.ref);
+                {vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+                {vtx_buf1, VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride, MAX_SKIN_VERTICES_TOTAL * 16}};
+            vi_skin_transp = sh.LoadVertexInput(attribs, ndx_buf);
         }
 
         Ren::ProgramRef fillz_solid_prog = sh.LoadProgram("internal/fillz.vert.glsl", "internal/fillz.frag.glsl");
@@ -290,15 +291,15 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllo
 
     fb_to_use_ = (fb_to_use_ + 1) % 2;
 
-    if (!depth_fill_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), *rp_depth_only_[0], depth_tex.desc.w,
-                                                               depth_tex.desc.h, depth_tex.ref, depth_tex.ref,
+    if (!depth_fill_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), *rp_depth_only_[0], depth_tex->params.w,
+                                                               depth_tex->params.h, depth_tex, depth_tex,
                                                                Ren::Span<const Ren::WeakTexRef>{}, false, ctx.log())) {
         ctx.log()->Error("[ExDepthFill::LazyInit]: depth_fill_fb_ init failed!");
     }
 
     if (!depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), *rp_depth_velocity_[0],
-                                                                   depth_tex.desc.w, depth_tex.desc.h, depth_tex.ref,
-                                                                   depth_tex.ref, velocity_tex.ref, false, ctx.log())) {
+                                                                   depth_tex->params.w, depth_tex->params.h, depth_tex,
+                                                                   depth_tex, velocity_tex, false, ctx.log())) {
         ctx.log()->Error("[ExDepthFill::LazyInit]: depth_fill_vel_load_fb_ init failed!");
     }
 }

@@ -11,15 +11,15 @@
 #include "../shaders/vol_interface.h"
 
 void Eng::ExVolVoxelize::Execute_HWRT(FgContext &fg) {
-    FgAllocBuf &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
-    FgAllocTex &stbn_tex = fg.AccessROTexture(args_->stbn_tex);
+    const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
+    const Ren::Texture &stbn_tex = fg.AccessROTexture(args_->stbn_tex);
 
-    FgAllocBuf &geo_data_buf = fg.AccessROBuffer(args_->geo_data);
-    FgAllocBuf &materials_buf = fg.AccessROBuffer(args_->materials);
-    FgAllocBuf &tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
+    const Ren::Buffer &geo_data_buf = fg.AccessROBuffer(args_->geo_data);
+    const Ren::Buffer &materials_buf = fg.AccessROBuffer(args_->materials);
+    const Ren::Buffer &tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
 
-    FgAllocTex &out_emission_tex = fg.AccessRWTexture(args_->out_emission_tex);
-    FgAllocTex &out_scatter_tex = fg.AccessRWTexture(args_->out_scatter_tex);
+    Ren::Texture &out_emission_tex = fg.AccessRWTexture(args_->out_emission_tex);
+    Ren::Texture &out_scatter_tex = fg.AccessRWTexture(args_->out_scatter_tex);
 
     if (view_state_->skip_volumetrics) {
         return;
@@ -27,16 +27,16 @@ void Eng::ExVolVoxelize::Execute_HWRT(FgContext &fg) {
 
     auto *acc_struct = static_cast<Ren::AccStructureVK *>(args_->tlas);
 
-    const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                     {Ren::eBindTarget::TexSampled, Fog::STBN_TEX_SLOT, *stbn_tex.ref},
-                                     {Ren::eBindTarget::SBufRO, Fog::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
-                                     {Ren::eBindTarget::SBufRO, Fog::MATERIAL_BUF_SLOT, *materials_buf.ref},
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
+                                     {Ren::eBindTarget::TexSampled, Fog::STBN_TEX_SLOT, stbn_tex},
+                                     {Ren::eBindTarget::SBufRO, Fog::GEO_DATA_BUF_SLOT, geo_data_buf},
+                                     {Ren::eBindTarget::SBufRO, Fog::MATERIAL_BUF_SLOT, materials_buf},
                                      {Ren::eBindTarget::AccStruct, Fog::TLAS_SLOT, *acc_struct},
-                                     {Ren::eBindTarget::ImageRW, Fog::OUT_FR_EMISSION_IMG_SLOT, *out_emission_tex.ref},
-                                     {Ren::eBindTarget::ImageRW, Fog::OUT_FR_SCATTER_IMG_SLOT, *out_scatter_tex.ref}};
+                                     {Ren::eBindTarget::ImageRW, Fog::OUT_FR_EMISSION_IMG_SLOT, out_emission_tex},
+                                     {Ren::eBindTarget::ImageRW, Fog::OUT_FR_SCATTER_IMG_SLOT, out_scatter_tex}};
 
     const auto froxel_res =
-        Ren::Vec4i{out_emission_tex.ref->params.w, out_emission_tex.ref->params.h, out_emission_tex.ref->params.d, 0};
+        Ren::Vec4i{out_emission_tex.params.w, out_emission_tex.params.h, out_emission_tex.params.d, 0};
 
     const Ren::Vec3u grp_count = Ren::Vec3u{(froxel_res[0] + Fog::GRP_SIZE_X - 1u) / Fog::GRP_SIZE_X,
                                             (froxel_res[1] + Fog::GRP_SIZE_Y - 1u) / Fog::GRP_SIZE_Y, 1u};

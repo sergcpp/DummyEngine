@@ -147,11 +147,11 @@ class Texture : public RefCounter {
     void CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) const;
 };
 
-void CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, uint32_t src_level, uint32_t src_x, uint32_t src_y,
+void CopyImageToImage(CommandBuffer cmd_buf, const Texture &src_tex, uint32_t src_level, uint32_t src_x, uint32_t src_y,
                       uint32_t src_z, Texture &dst_tex, uint32_t dst_level, uint32_t dst_x, uint32_t dst_y,
                       uint32_t dst_z, uint32_t dst_face, uint32_t w, uint32_t h, uint32_t d);
 
-void ClearImage(const Texture &tex, const ClearColor &col, CommandBuffer cmd_buf);
+void ClearImage(Texture &tex, const ClearColor &col, CommandBuffer cmd_buf);
 
 VkFormat VKFormatFromTexFormat(eTexFormat format);
 

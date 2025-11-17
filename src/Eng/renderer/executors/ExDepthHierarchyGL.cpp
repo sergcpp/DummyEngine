@@ -10,25 +10,22 @@
 #include "../shaders/depth_hierarchy_interface.h"
 
 void Eng::ExDepthHierarchy::Execute(FgContext &fg) {
-    FgAllocTex &depth_tex = fg.AccessROTexture(depth_tex_);
-    FgAllocTex &output_tex = fg.AccessRWTexture(output_tex_);
+    const Ren::Texture &depth_tex = fg.AccessROTexture(depth_tex_);
+    Ren::Texture &output_tex = fg.AccessRWTexture(output_tex_);
 
     glUseProgram(pi_depth_hierarchy_->prog()->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, DepthHierarchy::DEPTH_TEX_SLOT, depth_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, DepthHierarchy::DEPTH_TEX_SLOT, depth_tex.id());
 
     int i = 0;
-    for (; i < output_tex.ref->params.mip_count; ++i) {
-        glBindImageTexture(DepthHierarchy::DEPTH_IMG_SLOT + i, output_tex.ref->id(), i, GL_FALSE, 0, GL_WRITE_ONLY,
-                           GL_R32F);
+    for (; i < output_tex.params.mip_count; ++i) {
+        glBindImageTexture(DepthHierarchy::DEPTH_IMG_SLOT + i, output_tex.id(), i, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
     }
     for (; i < 7; ++i) {
         glBindImageTexture(DepthHierarchy::DEPTH_IMG_SLOT + i, 0, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
     }
 
-    const int grp_x =
-        (output_tex.ref->params.w + DepthHierarchy::GRP_SIZE_X - 1) / DepthHierarchy::GRP_SIZE_X;
-    const int grp_y =
-        (output_tex.ref->params.h + DepthHierarchy::GRP_SIZE_Y - 1) / DepthHierarchy::GRP_SIZE_Y;
+    const int grp_x = (output_tex.params.w + DepthHierarchy::GRP_SIZE_X - 1) / DepthHierarchy::GRP_SIZE_X;
+    const int grp_y = (output_tex.params.h + DepthHierarchy::GRP_SIZE_Y - 1) / DepthHierarchy::GRP_SIZE_Y;
 
     Ren::Buffer temp_unif_buffer =
         Ren::Buffer("Temp uniform buf", nullptr, Ren::eBufType::Uniform, sizeof(DepthHierarchy::Params));
@@ -36,8 +33,8 @@ void Eng::ExDepthHierarchy::Execute(FgContext &fg) {
         Ren::Buffer("Temp upload buf", nullptr, Ren::eBufType::Upload, sizeof(DepthHierarchy::Params));
     {
         DepthHierarchy::Params *stage_data = reinterpret_cast<DepthHierarchy::Params *>(temp_stage_buffer.Map());
-        stage_data->depth_size = Ren::Vec4i{view_state_->ren_res[0], view_state_->ren_res[1],
-                                            output_tex.ref->params.mip_count, grp_x * grp_y};
+        stage_data->depth_size =
+            Ren::Vec4i{view_state_->ren_res[0], view_state_->ren_res[1], output_tex.params.mip_count, grp_x * grp_y};
         stage_data->clip_info = view_state_->clip_info;
 
         temp_stage_buffer.Unmap();
