@@ -7,7 +7,7 @@ bool IsDiffuseSurface(sampler2D depth_tex, usampler2D specular_tex, ivec2 px_coo
         const uint packed_mat_params = texelFetch(specular_tex, px_coords, 0).x;
         vec4 mat_params0, mat_params1;
         UnpackMaterialParams(packed_mat_params, mat_params0, mat_params1);
-        return mat_params1.x < 0.5; // non-metallic
+        return mat_params1.x < 0.95; // non-metallic
     }
     return false;
 }
@@ -17,7 +17,7 @@ bool IsDiffuseSurface(float depth_fetch, usampler2D specular_tex, vec2 uv) {
         const uint packed_mat_params = textureLod(specular_tex, uv, 0.0).x;
         vec4 mat_params0, mat_params1;
         UnpackMaterialParams(packed_mat_params, mat_params0, mat_params1);
-        return mat_params1.x < 0.5; // non-metallic
+        return mat_params1.x < 0.95; // non-metallic
     }
     return false;
 }
