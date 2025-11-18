@@ -253,8 +253,7 @@ void main() {
         }
     }
 
-    if (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT ||
-        transp_depth >= TRANSPARENCY_LIMIT) {
+    if (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
         visibility = 0.0;
     }
 #else // HWRT
@@ -318,7 +317,7 @@ void main() {
         break;
     }
 
-    if (inter.mask != 0 || transp_depth >= TRANSPARENCY_LIMIT) {
+    if (inter.mask != 0) {
         visibility = 0.0;
     }
 #endif // HWRT
