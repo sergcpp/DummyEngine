@@ -1,5 +1,6 @@
 #include "FgBuilder.h"
 
+#include <Ren/Config.h>
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
 #include <Ren/DrawCall.h>
