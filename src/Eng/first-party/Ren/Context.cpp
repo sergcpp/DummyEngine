@@ -240,44 +240,44 @@ Ren::PipelineRef Ren::Context::LoadPipeline(const RastState &rast_state, const P
     return ref;
 }
 
-Ren::TexRef Ren::Context::LoadTexture(std::string_view name, const TexParams &p, MemAllocators *mem_allocs,
-                                      eTexLoadStatus *load_status) {
-    TexRef ref = textures_.FindByName(name);
+Ren::ImgRef Ren::Context::LoadImage(std::string_view name, const ImgParams &p, MemAllocators *mem_allocs,
+                                    eImgLoadStatus *load_status) {
+    ImgRef ref = images_.FindByName(name);
     if (!ref) {
-        ref = textures_.Insert(name, api_ctx_.get(), p, mem_allocs, log_);
-        (*load_status) = eTexLoadStatus::CreatedDefault;
+        ref = images_.Insert(name, api_ctx_.get(), p, mem_allocs, log_);
+        (*load_status) = eImgLoadStatus::CreatedDefault;
     } else if (ref->params != p) {
         ref->Init(p, mem_allocs, log_);
-        (*load_status) = eTexLoadStatus::Reinitialized;
+        (*load_status) = eImgLoadStatus::Reinitialized;
     } else {
-        (*load_status) = eTexLoadStatus::Found;
+        (*load_status) = eImgLoadStatus::Found;
     }
     return ref;
 }
 
-Ren::TexRef Ren::Context::LoadTexture(std::string_view name, const TexHandle &handle, const TexParams &p,
-                                      MemAllocation &&alloc, eTexLoadStatus *load_status) {
-    TexRef ref = textures_.FindByName(name);
+Ren::ImgRef Ren::Context::LoadImage(std::string_view name, const ImgHandle &handle, const ImgParams &p,
+                                    MemAllocation &&alloc, eImgLoadStatus *load_status) {
+    ImgRef ref = images_.FindByName(name);
     if (!ref) {
-        ref = textures_.Insert(name, api_ctx_.get(), handle, p, std::move(alloc), log_);
-        (*load_status) = eTexLoadStatus::CreatedDefault;
+        ref = images_.Insert(name, api_ctx_.get(), handle, p, std::move(alloc), log_);
+        (*load_status) = eImgLoadStatus::CreatedDefault;
     } else if (ref->params != p) {
         ref->Init(handle, p, std::move(alloc), log_);
-        (*load_status) = eTexLoadStatus::Reinitialized;
+        (*load_status) = eImgLoadStatus::Reinitialized;
     } else {
-        (*load_status) = eTexLoadStatus::Found;
+        (*load_status) = eImgLoadStatus::Found;
     }
     return ref;
 }
 
-Ren::TexRef Ren::Context::LoadTexture(std::string_view name, Span<const uint8_t> data, const TexParams &p,
-                                      MemAllocators *mem_allocs, eTexLoadStatus *load_status) {
-    TexRef ref = textures_.FindByName(name);
+Ren::ImgRef Ren::Context::LoadImage(std::string_view name, Span<const uint8_t> data, const ImgParams &p,
+                                    MemAllocators *mem_allocs, eImgLoadStatus *load_status) {
+    ImgRef ref = images_.FindByName(name);
     if (!ref) {
-        ref = textures_.Insert(name, api_ctx_.get(), data, p, mem_allocs, load_status, log_);
+        ref = images_.Insert(name, api_ctx_.get(), data, p, mem_allocs, load_status, log_);
     } else {
-        (*load_status) = eTexLoadStatus::Found;
-        if ((Bitmask<eTexFlags>{ref->params.flags} & eTexFlags::Stub) && !(p.flags & eTexFlags::Stub) &&
+        (*load_status) = eImgLoadStatus::Found;
+        if ((Bitmask<eImgFlags>{ref->params.flags} & eImgFlags::Stub) && !(p.flags & eImgFlags::Stub) &&
             !data.empty()) {
             ref->Init(data, p, mem_allocs, load_status, log_);
         }
@@ -285,14 +285,14 @@ Ren::TexRef Ren::Context::LoadTexture(std::string_view name, Span<const uint8_t>
     return ref;
 }
 
-Ren::TexRef Ren::Context::LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const TexParams &p,
-                                          MemAllocators *mem_allocs, eTexLoadStatus *load_status) {
-    TexRef ref = textures_.FindByName(name);
+Ren::ImgRef Ren::Context::LoadImageCube(std::string_view name, Span<const uint8_t> data[6], const ImgParams &p,
+                                        MemAllocators *mem_allocs, eImgLoadStatus *load_status) {
+    ImgRef ref = images_.FindByName(name);
     if (!ref) {
-        ref = textures_.Insert(name, api_ctx_.get(), data, p, mem_allocs, load_status, log_);
+        ref = images_.Insert(name, api_ctx_.get(), data, p, mem_allocs, load_status, log_);
     } else {
-        (*load_status) = eTexLoadStatus::Found;
-        if ((Bitmask<eTexFlags>{ref->params.flags} & eTexFlags::Stub) && (p.flags & eTexFlags::Stub) && data) {
+        (*load_status) = eImgLoadStatus::Found;
+        if ((Bitmask<eImgFlags>{ref->params.flags} & eImgFlags::Stub) && (p.flags & eImgFlags::Stub) && data) {
             ref->Init(data, p, mem_allocs, load_status, log_);
         }
     }
@@ -300,73 +300,72 @@ Ren::TexRef Ren::Context::LoadTextureCube(std::string_view name, Span<const uint
     return ref;
 }
 
-void Ren::Context::VisitTextures(eTexFlags mask, const std::function<void(Texture &tex)> &callback) {
-    for (Texture &tex : textures_) {
-        if (Bitmask<eTexFlags>{tex.params.flags} & mask) {
+void Ren::Context::VisitImages(eImgFlags mask, const std::function<void(Image &tex)> &callback) {
+    for (Image &tex : images_) {
+        if (Bitmask<eImgFlags>{tex.params.flags} & mask) {
             callback(tex);
         }
     }
 }
 
-int Ren::Context::NumTexturesNotReady() {
-    return int(std::count_if(textures_.begin(), textures_.end(),
-                             [](const Texture &t) { return Bitmask<eTexFlags>{t.params.flags} & eTexFlags::Stub; }));
+int Ren::Context::NumImagesNotReady() {
+    return int(std::count_if(images_.begin(), images_.end(),
+                             [](const Image &t) { return Bitmask<eImgFlags>{t.params.flags} & eImgFlags::Stub; }));
 }
 
-void Ren::Context::ReleaseTextures() {
-    if (textures_.empty()) {
+void Ren::Context::ReleaseImages() {
+    if (images_.empty()) {
         return;
     }
-    log_->Error("---------REMAINING TEXTURES--------");
-    for (const Texture &t : textures_) {
+    log_->Error("----------REMAINING IMAGES---------");
+    for (const Image &t : images_) {
         log_->Error("%s", t.name().c_str());
     }
     log_->Error("-----------------------------------");
-    textures_.clear();
+    images_.clear();
 }
 
-Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, Span<const uint8_t> data,
-                                                      const TexParams &p, CommandBuffer cmd_buf,
-                                                      eTexLoadStatus *load_status) {
-    TextureRegionRef ref = texture_regions_.FindByName(name);
+Ren::ImageRegionRef Ren::Context::LoadImageRegion(std::string_view name, Span<const uint8_t> data, const ImgParams &p,
+                                                  CommandBuffer cmd_buf, eImgLoadStatus *load_status) {
+    ImageRegionRef ref = image_regions_.FindByName(name);
     if (!ref) {
-        ref = texture_regions_.Insert(name, data, p, cmd_buf, &texture_atlas_, load_status);
+        ref = image_regions_.Insert(name, data, p, cmd_buf, &image_atlas_, load_status);
     } else {
         if (ref->ready()) {
-            (*load_status) = eTexLoadStatus::Found;
+            (*load_status) = eImgLoadStatus::Found;
         } else {
-            ref->Init(data, p, cmd_buf, &texture_atlas_, load_status);
+            ref->Init(data, p, cmd_buf, &image_atlas_, load_status);
         }
     }
     return ref;
 }
 
-Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, const Buffer &sbuf, const int data_off,
-                                                      const int data_len, const TexParams &p, CommandBuffer cmd_buf,
-                                                      eTexLoadStatus *load_status) {
-    TextureRegionRef ref = texture_regions_.FindByName(name);
+Ren::ImageRegionRef Ren::Context::LoadImageRegion(std::string_view name, const Buffer &sbuf, const int data_off,
+                                                  const int data_len, const ImgParams &p, CommandBuffer cmd_buf,
+                                                  eImgLoadStatus *load_status) {
+    ImageRegionRef ref = image_regions_.FindByName(name);
     if (!ref) {
-        ref = texture_regions_.Insert(name, sbuf, data_off, data_len, p, cmd_buf, &texture_atlas_, load_status);
+        ref = image_regions_.Insert(name, sbuf, data_off, data_len, p, cmd_buf, &image_atlas_, load_status);
     } else {
         if (ref->ready()) {
-            (*load_status) = eTexLoadStatus::Found;
+            (*load_status) = eImgLoadStatus::Found;
         } else {
-            ref->Init(sbuf, data_off, data_len, p, cmd_buf, &texture_atlas_, load_status);
+            ref->Init(sbuf, data_off, data_len, p, cmd_buf, &image_atlas_, load_status);
         }
     }
     return ref;
 }
 
 void Ren::Context::ReleaseTextureRegions() {
-    if (texture_regions_.empty()) {
+    if (image_regions_.empty()) {
         return;
     }
     log_->Error("-------REMAINING TEX REGIONS-------");
-    for (const TextureRegion &t : texture_regions_) {
+    for (const ImageRegion &t : image_regions_) {
         log_->Error("%s", t.name().c_str());
     }
     log_->Error("-----------------------------------");
-    texture_regions_.clear();
+    image_regions_.clear();
 }
 
 Ren::SamplerRef Ren::Context::LoadSampler(SamplingParams params, eSamplerLoadStatus *load_status) {
@@ -465,17 +464,17 @@ void Ren::Context::ReleaseBuffers() {
 void Ren::Context::InitDefaultBuffers() {
     default_vertex_buf1_ =
         buffers_.Insert("default_vtx_buf1", api_ctx_.get(), eBufType::VertexAttribs, 1 * 1024 * 1024, 16);
-    default_vertex_buf1_->AddBufferView(eTexFormat::RGBA32F);
+    default_vertex_buf1_->AddBufferView(eFormat::RGBA32F);
     default_vertex_buf2_ =
         buffers_.Insert("default_vtx_buf2", api_ctx_.get(), eBufType::VertexAttribs, 1 * 1024 * 1024, 16);
-    default_vertex_buf2_->AddBufferView(eTexFormat::RGBA32UI);
+    default_vertex_buf2_->AddBufferView(eFormat::RGBA32UI);
     default_skin_vertex_buf_ =
         buffers_.Insert("default_skin_vtx_buf", api_ctx_.get(), eBufType::VertexAttribs, 1 * 1024 * 1024, 16);
     default_delta_buf_ =
         buffers_.Insert("default_delta_buf", api_ctx_.get(), eBufType::VertexAttribs, 1 * 1024 * 1024, 16);
     default_indices_buf_ =
         buffers_.Insert("default_ndx_buf", api_ctx_.get(), eBufType::VertexIndices, 1 * 1024 * 1024, 4);
-    default_indices_buf_->AddBufferView(eTexFormat::R32UI);
+    default_indices_buf_->AddBufferView(eFormat::R32UI);
 }
 
 void Ren::Context::ReleaseDefaultBuffers() {
@@ -493,18 +492,18 @@ void Ren::Context::ReleaseAll() {
 
     ReleaseAnims();
     ReleaseMaterials();
-    ReleaseTextures();
+    ReleaseImages();
     ReleaseTextureRegions();
     ReleaseBuffers();
 
-    texture_atlas_ = {};
+    image_atlas_ = {};
 }
 
 int Ren::Context::backend_frame() const { return api_ctx_->backend_frame; }
 
 int Ren::Context::active_present_image() const { return api_ctx_->active_present_image; }
 
-Ren::TexRef Ren::Context::backbuffer_ref() const {
+Ren::ImgRef Ren::Context::backbuffer_ref() const {
     return api_ctx_->present_image_refs[api_ctx_->active_present_image];
 }
 

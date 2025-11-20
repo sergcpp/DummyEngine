@@ -530,7 +530,7 @@ void Ren::Buffer::UpdateImmediate(const uint32_t dst_offset, const uint32_t size
     resource_state = eResState::CopyDst;
 }
 
-int Ren::Buffer::AddBufferView(const eTexFormat format) {
+int Ren::Buffer::AddBufferView(const eFormat format) {
     VkBufferViewCreateInfo view_info = {VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO};
     view_info.buffer = handle_.buf;
     view_info.format = g_formats_vk[size_t(format)];

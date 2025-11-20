@@ -94,7 +94,7 @@ static const uint32_t IndexBits = ~SkipFrustumCheckBit;
 void __push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat4f &world_from_object, Eng::DrawList &list);
 uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, const Eng::AnimState &as, const Ren::Mesh *mesh,
                               Eng::DrawList &list);
-uint32_t __record_texture(std::vector<Eng::TexEntry> &storage, const Ren::TexRef &tex, int prio, uint16_t distance);
+uint32_t __record_texture(std::vector<Eng::TexEntry> &storage, const Ren::ImgRef &tex, int prio, uint16_t distance);
 void __record_textures(std::vector<Eng::TexEntry> &storage, const Ren::Material *mat, bool is_animated,
                        uint16_t distance);
 
@@ -2612,7 +2612,7 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
     return curr_out_offset;
 }
 
-uint32_t RendererInternal::__record_texture(std::vector<Eng::TexEntry> &storage, const Ren::TexRef &tex, const int prio,
+uint32_t RendererInternal::__record_texture(std::vector<Eng::TexEntry> &storage, const Ren::ImgRef &tex, const int prio,
                                             const uint16_t distance) {
     const uint32_t index = tex.index();
 

@@ -3,7 +3,7 @@
 #include <vector>
 
 namespace Ren {
-class TextureSplitter {
+class ImageSplitter {
     struct node_t {
         int parent = -1;
         int child[2] = {-1, -1};
@@ -20,8 +20,8 @@ class TextureSplitter {
     void SafeErase(int i, int *indices, int num);
 
   public:
-    TextureSplitter() = default;
-    TextureSplitter(const int resx, const int resy) {
+    ImageSplitter() = default;
+    ImageSplitter(const int resx, const int resy) {
         nodes_.emplace_back();
         nodes_.back().size[0] = resx;
         nodes_.back().size[1] = resy;

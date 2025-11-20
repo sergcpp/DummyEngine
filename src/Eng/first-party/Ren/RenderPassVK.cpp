@@ -71,7 +71,7 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, const RenderTargetInfo &_depth_r
         const uint32_t att_index = pass_attachments.size();
 
         auto &att_desc = pass_attachments.emplace_back();
-        att_desc.format = Ren::VKFormatFromTexFormat(_depth_rt.format);
+        att_desc.format = Ren::VKFormatFromFormat(_depth_rt.format);
         att_desc.samples = VkSampleCountFlagBits(_depth_rt.samples);
         att_desc.loadOp = vk_load_ops[int(_depth_rt.load)];
         if (att_desc.loadOp == VK_ATTACHMENT_LOAD_OP_NONE_EXT && !api_ctx->renderpass_loadstore_none_supported) {
@@ -107,7 +107,7 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, const RenderTargetInfo &_depth_r
         const uint32_t att_index = pass_attachments.size();
 
         auto &att_desc = pass_attachments.emplace_back();
-        att_desc.format = VKFormatFromTexFormat(_color_rts[i].format);
+        att_desc.format = VKFormatFromFormat(_color_rts[i].format);
         att_desc.samples = VkSampleCountFlagBits(_color_rts[i].samples);
         if (VkImageLayout(_color_rts[i].layout) == VK_IMAGE_LAYOUT_UNDEFINED) {
             att_desc.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;

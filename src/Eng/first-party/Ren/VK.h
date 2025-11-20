@@ -17,3 +17,4 @@
 #undef Success
 #undef True
 #undef GetObject
+#undef LoadImage

@@ -130,7 +130,7 @@ bool Gui::Renderer::Init() {
         const auto &p = ctx_.backbuffer_ref()->params;
         Ren::RenderTargetInfo rt_info = {p.format, p.samples, Ren::eImageLayout::ColorAttachmentOptimal,
                                          Ren::eLoadOp::Load, Ren::eStoreOp::Store};
-        rt_info.flags = (Ren::Bitmask<Ren::eTexFlags>{p.flags} & ~Ren::Bitmask(Ren::eTexFlags::NoOwnership));
+        rt_info.flags = (Ren::Bitmask<Ren::eImgFlags>{p.flags} & ~Ren::Bitmask(Ren::eImgFlags::NoOwnership));
 
         render_pass_ = ctx_.LoadRenderPass({}, {&rt_info, 1});
     }
@@ -205,7 +205,7 @@ void Gui::Renderer::SubmitVertexData(const int vertex_count, const int index_cou
 
 void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer, const uint8_t color[4],
                                   const Vec2f pos[2], const Vec2f uvs_px[2]) {
-    const Vec2f uvs_scale = 1.0f / Vec2f{float(Ren::TextureAtlasWidth), float(Ren::TextureAtlasHeight)};
+    const Vec2f uvs_scale = 1.0f / Vec2f{float(Ren::ImageAtlasWidth), float(Ren::ImageAtlasHeight)};
     Vec4f pos_uvs[2] = {Vec4f{pos[0][0], pos[0][1], uvs_px[0][0] * uvs_scale[0], uvs_px[0][1] * uvs_scale[1]},
                         Vec4f{pos[1][0], pos[1][1], uvs_px[1][0] * uvs_scale[0], uvs_px[1][1] * uvs_scale[1]}};
 
@@ -279,7 +279,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
 
 void Gui::Renderer::PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t color[4], const Vec4f &p0,
                              const Vec4f &p1, const Vec2f &d0, const Vec2f &d1, const Vec4f &thickness) {
-    const Vec2f uvs_scale = 1.0f / Vec2f{float(Ren::TextureAtlasWidth), float(Ren::TextureAtlasHeight)};
+    const Vec2f uvs_scale = 1.0f / Vec2f{float(Ren::ImageAtlasWidth), float(Ren::ImageAtlasHeight)};
 
     const uint16_t u16_tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_layer));
 

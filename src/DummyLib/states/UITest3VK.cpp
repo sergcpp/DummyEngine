@@ -14,7 +14,7 @@ void UITest3::InitBookMaterials() {
     //        "Page framebuffer is not initialized!");
 #if 0
     { // register framebuffer texture
-        Ren::TexParams params;
+        Ren::ImgParams params;
         params.w = page_buf_.w;
         params.h = page_buf_.h;
         params.format = page_buf_.attachments[0].desc.format;
@@ -24,9 +24,9 @@ void UITest3::InitBookMaterials() {
         // prevent texture deletion
         params.flags = Ren::TexNoOwnership;
 
-        page_tex_ = ren_ctx_->textures().Add("__book_page_texture__",
-                                             page_buf_.attachments[0].tex->id(), params,
-                                             log_.get());
+        page_tex_ = ren_ctx_->images().Add("__book_page_texture__",
+                                           page_buf_.attachments[0].tex->id(), params,
+                                           log_.get());
     }
 
     { // replace texture

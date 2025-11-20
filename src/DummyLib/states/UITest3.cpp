@@ -108,9 +108,9 @@ void UITest3::Enter() {
 
     /*{ // init page framebuffer
         FrameBuf::ColorAttachmentDesc attachment;
-        attachment.format = Ren::eTexFormat::RawRGB888;
-        attachment.filter = Ren::eTexFilter::BilinearNoMipmap;
-        attachment.wrap = Ren::eTexWrap::ClampToEdge;
+        attachment.format = Ren::eFormat::RawRGB888;
+        attachment.filter = Ren::eFilter::BilinearNoMipmap;
+        attachment.wrap = Ren::eWrap::ClampToEdge;
 
         page_buf_ = FrameBuf{"Page buf", *ren_ctx_, 3072, 3072, &attachment, 1, {}, 1, log_.get()};
     }*/

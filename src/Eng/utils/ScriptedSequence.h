@@ -42,7 +42,7 @@ struct SeqAction {
     bool dof;
 
     static constexpr float SoundWaveStepS = 0.02f;
-    Ren::TextureRegionRef sound_wave_tex;
+    Ren::ImageRegionRef sound_wave_tex;
 };
 
 enum class eChoiceAlign { Center, Left, Right };
@@ -84,7 +84,7 @@ class ScriptedSequence {
 
     void UpdateAction(uint32_t target_actor, SeqAction &action, double time_cur_s, bool playing);
 
-    Ren::TextureRegionRef RenderSoundWave(std::string_view name, const void *samples_data, int samples_count,
+    Ren::ImageRegionRef RenderSoundWave(std::string_view name, const void *samples_data, int samples_count,
                                           const Snd::BufParams &params);
 
   public:

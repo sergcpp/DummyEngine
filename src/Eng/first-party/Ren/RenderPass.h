@@ -2,7 +2,7 @@
 
 #include "Fwd.h"
 #include "Span.h"
-#include "Texture.h"
+#include "Image.h"
 
 namespace Ren {
 struct ApiContext;
@@ -31,7 +31,7 @@ std::string_view StoreOpName(eStoreOp op);
 eStoreOp StoreOp(std::string_view name);
 
 struct RenderTarget {
-    WeakTexRef ref;
+    WeakImgRef ref;
     uint8_t view_index = 0;
     eLoadOp load = eLoadOp::DontCare;
     eStoreOp store = eStoreOp::DontCare;
@@ -39,10 +39,10 @@ struct RenderTarget {
     eStoreOp stencil_store = eStoreOp::DontCare;
 
     RenderTarget() = default;
-    RenderTarget(WeakTexRef _ref, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
+    RenderTarget(WeakImgRef _ref, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
                  eStoreOp _stencil_store = eStoreOp::DontCare)
         : ref(_ref), load(_load), store(_store), stencil_load(_stencil_load), stencil_store(_stencil_store) {}
-    RenderTarget(WeakTexRef _ref, uint8_t _view_index, eLoadOp _load, eStoreOp _store,
+    RenderTarget(WeakImgRef _ref, uint8_t _view_index, eLoadOp _load, eStoreOp _store,
                  eLoadOp _stencil_load = eLoadOp::DontCare, eStoreOp _stencil_store = eStoreOp::DontCare)
         : ref(_ref), view_index(_view_index), load(_load), store(_store), stencil_load(_stencil_load),
           stencil_store(_stencil_store) {}
@@ -55,47 +55,47 @@ inline bool operator==(const RenderTarget &lhs, const RenderTarget &rhs) {
            lhs.stencil_load == rhs.stencil_load && lhs.stencil_store == rhs.stencil_store;
 }
 
-inline bool operator==(const eTexFormat lhs, const RenderTarget &rhs) {
+inline bool operator==(const eFormat lhs, const RenderTarget &rhs) {
     if (!rhs) {
-        return lhs == eTexFormat::Undefined;
+        return lhs == eFormat::Undefined;
     }
     return lhs == rhs.ref->params.format;
 }
-inline bool operator==(const RenderTarget &lhs, const eTexFormat rhs) {
+inline bool operator==(const RenderTarget &lhs, const eFormat rhs) {
     if (!lhs) {
-        return eTexFormat::Undefined == rhs;
+        return eFormat::Undefined == rhs;
     }
     return lhs.ref->params.format == rhs;
 }
-inline bool operator!=(const eTexFormat lhs, const RenderTarget &rhs) {
+inline bool operator!=(const eFormat lhs, const RenderTarget &rhs) {
     if (!rhs) {
-        return lhs != eTexFormat::Undefined;
+        return lhs != eFormat::Undefined;
     }
     return lhs != rhs.ref->params.format;
 }
-inline bool operator!=(const RenderTarget &lhs, const eTexFormat rhs) {
+inline bool operator!=(const RenderTarget &lhs, const eFormat rhs) {
     if (!lhs) {
-        return eTexFormat::Undefined != rhs;
+        return eFormat::Undefined != rhs;
     }
     return lhs.ref->params.format != rhs;
 }
-inline bool operator<(const eTexFormat lhs, const RenderTarget &rhs) {
+inline bool operator<(const eFormat lhs, const RenderTarget &rhs) {
     if (!rhs) {
-        return lhs < eTexFormat::Undefined;
+        return lhs < eFormat::Undefined;
     }
     return lhs < rhs.ref->params.format;
 }
-inline bool operator<(const RenderTarget &lhs, const eTexFormat rhs) {
+inline bool operator<(const RenderTarget &lhs, const eFormat rhs) {
     if (!lhs) {
-        return eTexFormat::Undefined < rhs;
+        return eFormat::Undefined < rhs;
     }
     return lhs.ref->params.format < rhs;
 }
 
 struct RenderTargetInfo {
-    eTexFormat format = eTexFormat::Undefined;
+    eFormat format = eFormat::Undefined;
     uint8_t samples = 1;
-    Bitmask<eTexFlags> flags;
+    Bitmask<eImgFlags> flags;
     eImageLayout layout = eImageLayout::Undefined;
     eLoadOp load = eLoadOp::DontCare;
     eStoreOp store = eStoreOp::DontCare;
@@ -103,7 +103,7 @@ struct RenderTargetInfo {
     eStoreOp stencil_store = eStoreOp::DontCare;
 
     RenderTargetInfo() = default;
-    RenderTargetInfo(WeakTexRef _ref, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
+    RenderTargetInfo(WeakImgRef _ref, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
                      eStoreOp _stencil_store = eStoreOp::DontCare)
         : format(_ref->params.format), samples(_ref->params.samples), flags(_ref->params.flags),
 #if defined(REN_VK_BACKEND)
@@ -111,7 +111,7 @@ struct RenderTargetInfo {
 #endif
           load(_load), store(_store), stencil_load(_stencil_load), stencil_store(_stencil_store) {
     }
-    RenderTargetInfo(const Texture *tex, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
+    RenderTargetInfo(const Image *tex, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
                      eStoreOp _stencil_store = eStoreOp::DontCare)
         : format(tex->params.format), samples(tex->params.samples), flags(tex->params.flags),
 #if defined(REN_VK_BACKEND)
@@ -119,7 +119,7 @@ struct RenderTargetInfo {
 #endif
           load(_load), store(_store), stencil_load(_stencil_load), stencil_store(_stencil_store) {
     }
-    RenderTargetInfo(eTexFormat _format, uint8_t _samples, eImageLayout _layout, eLoadOp _load, eStoreOp _store,
+    RenderTargetInfo(eFormat _format, uint8_t _samples, eImageLayout _layout, eLoadOp _load, eStoreOp _store,
                      eLoadOp _stencil_load = eLoadOp::DontCare, eStoreOp _stencil_store = eStoreOp::DontCare)
         : format(_format), samples(_samples), layout(_layout), load(_load), store(_store), stencil_load(_stencil_load),
           stencil_store(_stencil_store) {}
@@ -127,7 +127,7 @@ struct RenderTargetInfo {
         if (rt.ref) {
             format = rt.ref->params.format;
             samples = rt.ref->params.samples;
-            flags = Bitmask<eTexFlags>{rt.ref->params.flags};
+            flags = Bitmask<eImgFlags>{rt.ref->params.flags};
 #if defined(REN_VK_BACKEND)
             layout = eImageLayout(VKImageLayoutForState(rt.ref->resource_state));
 #endif
@@ -164,12 +164,12 @@ struct RenderTargetInfo {
                std::tie(rhs.format, rhs.samples, rhs_layout, rhs.load, rhs.store, rhs.stencil_load, rhs.stencil_store);
     }
 
-    operator bool() const { return format != eTexFormat::Undefined; }
+    operator bool() const { return format != eFormat::Undefined; }
 };
 
 inline bool operator==(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
     if (!rhs.ref) {
-        return lhs.format == eTexFormat::Undefined;
+        return lhs.format == eFormat::Undefined;
     }
     const auto &p = rhs.ref->params;
     return lhs.format == p.format && lhs.samples == p.samples &&
@@ -182,7 +182,7 @@ inline bool operator==(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
 inline bool operator!=(const RenderTargetInfo &lhs, const RenderTarget &rhs) { return !operator==(lhs, rhs); }
 inline bool operator<(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
     if (!rhs.ref) {
-        return lhs.format < eTexFormat::Undefined;
+        return lhs.format < eFormat::Undefined;
     }
     const auto &p = rhs.ref->params;
 #if defined(REN_VK_BACKEND)
@@ -195,7 +195,7 @@ inline bool operator<(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
 }
 inline bool operator<(const RenderTarget &lhs, const RenderTargetInfo &rhs) {
     if (!lhs.ref) {
-        return eTexFormat::Undefined < rhs.format;
+        return eFormat::Undefined < rhs.format;
     }
     const auto &p = lhs.ref->params;
 #if defined(REN_VK_BACKEND)
@@ -207,12 +207,12 @@ inline bool operator<(const RenderTarget &lhs, const RenderTargetInfo &rhs) {
            std::tie(rhs.format, rhs.samples, rhs.layout, rhs.load, rhs.store, rhs.stencil_load, rhs.stencil_store);
 }
 
-inline bool operator==(const eTexFormat lhs, const RenderTargetInfo &rhs) { return lhs == rhs.format; }
-inline bool operator==(const RenderTargetInfo &lhs, const eTexFormat rhs) { return lhs.format == rhs; }
-inline bool operator!=(const eTexFormat lhs, const RenderTargetInfo &rhs) { return lhs != rhs.format; }
-inline bool operator!=(const RenderTargetInfo &lhs, const eTexFormat rhs) { return lhs.format != rhs; }
-inline bool operator<(const eTexFormat lhs, const RenderTargetInfo &rhs) { return lhs < rhs.format; }
-inline bool operator<(const RenderTargetInfo &lhs, const eTexFormat rhs) { return lhs.format < rhs; }
+inline bool operator==(const eFormat lhs, const RenderTargetInfo &rhs) { return lhs == rhs.format; }
+inline bool operator==(const RenderTargetInfo &lhs, const eFormat rhs) { return lhs.format == rhs; }
+inline bool operator!=(const eFormat lhs, const RenderTargetInfo &rhs) { return lhs != rhs.format; }
+inline bool operator!=(const RenderTargetInfo &lhs, const eFormat rhs) { return lhs.format != rhs; }
+inline bool operator<(const eFormat lhs, const RenderTargetInfo &rhs) { return lhs < rhs.format; }
+inline bool operator<(const RenderTargetInfo &lhs, const eFormat rhs) { return lhs.format < rhs; }
 
 class RenderPass : public RefCounter {
     ApiContext *api_ctx_ = nullptr;

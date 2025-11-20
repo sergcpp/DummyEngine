@@ -1,22 +1,22 @@
 #pragma once
 
-#include "../Ren/Texture.h"
-#include "../Ren/TextureRegion.h"
+#include "../Ren/Image.h"
+#include "../Ren/ImageRegion.h"
 
 #include "BaseElement.h"
 
 namespace Gui {
 class Image : public BaseElement {
   protected:
-    Ren::TextureRegionRef tex_;
+    Ren::ImageRegionRef tex_;
     Vec2f uvs_px_[2];
 
   public:
-    Image(const Ren::TextureRegionRef &tex, const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
+    Image(const Ren::ImageRegionRef &tex, const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
     Image(Ren::Context &ctx, std::string_view tex_name, const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
 
-    [[nodiscard]] Ren::TextureRegionRef &tex() { return tex_; }
-    [[nodiscard]] const Ren::TextureRegionRef &tex() const { return tex_; }
+    [[nodiscard]] Ren::ImageRegionRef &tex() { return tex_; }
+    [[nodiscard]] const Ren::ImageRegionRef &tex() const { return tex_; }
 
     [[nodiscard]] const Vec2f *uvs_px() const { return uvs_px_; }
 

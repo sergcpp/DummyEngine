@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "../Ren/Context.h"
-#include "../Ren/Texture.h"
+#include "../Ren/Image.h"
 
 #include "MVec.h"
 #include "Renderer.h"
@@ -45,7 +45,7 @@ class BitmapFont {
     [[nodiscard]] float height(const BaseElement *parent) const { return height(default_scale_, parent); }
     [[nodiscard]] eDrawMode draw_mode() const { return draw_mode_; }
     [[nodiscard]] eBlendMode blend_mode() const { return blend_mode_; }
-    [[nodiscard]] Ren::TextureRegionRef tex() const { return tex_; }
+    [[nodiscard]] Ren::ImageRegionRef tex() const { return tex_; }
 
     void set_default_scale(const float scale) { default_scale_ = scale; }
     void set_draw_mode(const eDrawMode mode) { draw_mode_ = mode; }
@@ -73,7 +73,7 @@ class BitmapFont {
   private:
     typgraph_info_t info_ = {};
     float default_scale_ = 1;
-    Ren::TextureRegionRef tex_;
+    Ren::ImageRegionRef tex_;
     uint32_t tex_res_[2] = {};
     eDrawMode draw_mode_ = eDrawMode::Passthrough;
     eBlendMode blend_mode_ = eBlendMode::Alpha;

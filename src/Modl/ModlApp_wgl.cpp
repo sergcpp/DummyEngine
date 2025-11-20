@@ -16,6 +16,7 @@
 #include <Windows.h>
 #undef max
 #undef min
+#undef LoadImage
 
 #if defined(REN_GL_BACKEND)
 #include <Ren/GL.h>
@@ -606,13 +607,13 @@ int ModlApp::Init(const int w, const int h) {
             }
         }
 
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = p.h = checker_res;
-        p.format = Ren::eTexFormat::RGB8;
+        p.format = Ren::eFormat::RGB8;
 
-        Ren::eTexLoadStatus _status;
-        checker_tex_ = ctx_->LoadTexture("__diag_checker", checker_data, p, ctx_->default_mem_allocs(), &_status);
-        assert(_status == Ren::eTexLoadStatus::CreatedFromData);
+        Ren::eImgLoadStatus _status;
+        checker_tex_ = ctx_->LoadImage("__diag_checker", checker_data, p, ctx_->default_mem_allocs(), &_status);
+        assert(_status == Ren::eImgLoadStatus::CreatedFromData);
     }
 
     return 0;
@@ -1879,19 +1880,19 @@ std::vector<Phy::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
     return occlusion;
 }
 
-Ren::TexRef ModlApp::OnTextureNeeded(std::string_view name) {
-    Ren::eTexLoadStatus status;
-    Ren::TexRef ret = ctx_->LoadTexture(name, {}, {}, ctx_->default_mem_allocs(), &status);
-    if (Ren::Bitmask<Ren::eTexFlags>{ret->params.flags} & Ren::eTexFlags::Stub) {
+Ren::ImgRef ModlApp::OnTextureNeeded(std::string_view name) {
+    Ren::eImgLoadStatus status;
+    Ren::ImgRef ret = ctx_->LoadImage(name, {}, {}, ctx_->default_mem_allocs(), &status);
+    if (Ren::Bitmask<Ren::eImgFlags>{ret->params.flags} & Ren::eImgFlags::Stub) {
         Sys::AssetFile in_file(std::string("assets_pc/textures/") + std::string(name));
         std::vector<uint8_t> in_file_data(in_file.size());
         in_file.Read((char *)in_file_data.data(), in_file.size());
 
-        Ren::TexParams p;
-        p.sampling.filter = Ren::eTexFilter::Trilinear;
+        Ren::ImgParams p;
+        p.sampling.filter = Ren::eFilter::Trilinear;
 
-        Ren::eTexLoadStatus _status;
-        ctx_->LoadTexture(name, in_file_data, p, ctx_->default_mem_allocs(), &_status);
+        Ren::eImgLoadStatus _status;
+        ctx_->LoadImage(name, in_file_data, p, ctx_->default_mem_allocs(), &_status);
         printf("Texture %s loaded", name.data());
     }
 

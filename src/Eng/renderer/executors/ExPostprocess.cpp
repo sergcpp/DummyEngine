@@ -28,17 +28,17 @@ Eng::ExPostprocess::ExPostprocess(PrimDraw &prim_draw, ShaderLoader &sh, const v
 }
 
 void Eng::ExPostprocess::Execute(FgContext &fg) {
-    const Ren::Texture &exposure_tex = fg.AccessROTexture(args_->exposure_tex);
-    const Ren::Texture &color_tex = fg.AccessROTexture(args_->color_tex);
-    const Ren::Texture &bloom_tex = fg.AccessROTexture(args_->bloom_tex);
-    Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(args_->output_tex);
-    const Ren::Texture *lut_tex = nullptr;
+    const Ren::Image &exposure_tex = fg.AccessROImage(args_->exposure_tex);
+    const Ren::Image &color_tex = fg.AccessROImage(args_->color_tex);
+    const Ren::Image &bloom_tex = fg.AccessROImage(args_->bloom_tex);
+    Ren::WeakImgRef output_tex = fg.AccessRWImageRef(args_->output_tex);
+    const Ren::Image *lut_tex = nullptr;
     if (args_->lut_tex) {
-        lut_tex = &fg.AccessROTexture(args_->lut_tex);
+        lut_tex = &fg.AccessROImage(args_->lut_tex);
     }
-    Ren::WeakTexRef output_tex2;
+    Ren::WeakImgRef output_tex2;
     if (args_->output_tex2) {
-        output_tex2 = fg.AccessRWTextureRef(args_->output_tex2);
+        output_tex2 = fg.AccessRWImageRef(args_->output_tex2);
     }
 
     Ren::RastState rast_state;

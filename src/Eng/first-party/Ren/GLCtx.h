@@ -6,8 +6,8 @@
 #include "Storage.h"
 
 namespace Ren {
-class Texture;
-using TexRef = StrongRef<Texture, NamedStorage<Texture>>;
+class Image;
+using ImgRef = StrongRef<Image, NamedStorage<Image>>;
 
 struct ApiContext {
     SmallVector<SyncFence, MaxFramesInFlight> in_flight_fences;
@@ -15,7 +15,7 @@ struct ApiContext {
     int active_present_image = 0;
 
     int backend_frame = 0;
-    SmallVector<TexRef, MaxFramesInFlight> present_image_refs;
+    SmallVector<ImgRef, MaxFramesInFlight> present_image_refs;
 
     uint32_t queries[MaxFramesInFlight][MaxTimestampQueries] = {};
     uint32_t query_counts[MaxFramesInFlight] = {};

@@ -13,19 +13,19 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgContext &fg, const Ren::Buffer
                                                 const Ren::Buffer &unif_shared_data_buf,
                                                 const Ren::Buffer &materials_buf, const Ren::Buffer &cells_buf,
                                                 const Ren::Buffer &items_buf, const Ren::Buffer &lights_buf,
-                                                const Ren::Buffer &decals_buf, const Ren::Texture &shad_tex,
-                                                const Ren::WeakTexRef &color_tex, const Ren::Texture &ssao_tex) {
+                                                const Ren::Buffer &decals_buf, const Ren::Image &shad_tex,
+                                                const Ren::WeakImgRef &color_tex, const Ren::Image &ssao_tex) {
     auto *api_ctx = fg.ren_ctx().api_ctx();
 
-    [[maybe_unused]] const Ren::Texture &brdf_lut = fg.AccessROTexture(brdf_lut_);
-    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
-    [[maybe_unused]] const Ren::Texture &cone_rt_lut = fg.AccessROTexture(cone_rt_lut_);
-    const Ren::Texture &dummy_black = fg.AccessROTexture(dummy_black_);
+    [[maybe_unused]] const Ren::Image &brdf_lut = fg.AccessROImage(brdf_lut_);
+    const Ren::Image &noise_tex = fg.AccessROImage(noise_tex_);
+    [[maybe_unused]] const Ren::Image &cone_rt_lut = fg.AccessROImage(cone_rt_lut_);
+    const Ren::Image &dummy_black = fg.AccessROImage(dummy_black_);
 
-    const Ren::Texture *lm_tex[4];
+    const Ren::Image *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (lm_tex_[i]) {
-            lm_tex[i] = &fg.AccessROTexture(lm_tex_[i]);
+            lm_tex[i] = &fg.AccessROImage(lm_tex_[i]);
         } else {
             lm_tex[i] = &dummy_black;
         }

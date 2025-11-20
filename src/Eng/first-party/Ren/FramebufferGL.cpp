@@ -33,22 +33,22 @@ void Ren::Framebuffer::Destroy() {
     }
 }
 
-bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTexRef &_depth_attachment,
-                               const WeakTexRef &_stencil_attachment, Span<const WeakTexRef> _color_attachments) const {
+bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakImgRef &_depth_attachment,
+                               const WeakImgRef &_stencil_attachment, Span<const WeakImgRef> _color_attachments) const {
     return depth_attachment != _depth_attachment || stencil_attachment != _stencil_attachment ||
            Span<const Attachment>(color_attachments) != _color_attachments;
 }
 
-bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTexRef &_depth_attachment,
-                               const WeakTexRef &_stencil_attachment,
+bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakImgRef &_depth_attachment,
+                               const WeakImgRef &_stencil_attachment,
                                Span<const RenderTarget> _color_attachments) const {
     return depth_attachment != _depth_attachment || stencil_attachment != _stencil_attachment ||
            Span<const Attachment>(color_attachments) != _color_attachments;
 }
 
-bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakTexRef &_depth_attachment,
-                                const WeakTexRef &_stencil_attachment,
-                                Span<const WeakTexRef> _color_attachments) const {
+bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakImgRef &_depth_attachment,
+                                const WeakImgRef &_stencil_attachment,
+                                Span<const WeakImgRef> _color_attachments) const {
     if (depth_attachment < _depth_attachment) {
         return true;
     } else if (depth_attachment == _depth_attachment) {
@@ -61,8 +61,8 @@ bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakTexRef 
     return false;
 }
 
-bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakTexRef &_depth_attachment,
-                                const WeakTexRef &_stencil_attachment,
+bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakImgRef &_depth_attachment,
+                                const WeakImgRef &_stencil_attachment,
                                 Span<const RenderTarget> _color_attachments) const {
     if (depth_attachment < _depth_attachment) {
         return true;
@@ -77,8 +77,8 @@ bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakTexRef 
 }
 
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h,
-                             const WeakTexRef _depth_attachment, const WeakTexRef _stencil_attachment,
-                             Span<const WeakTexRef> _color_attachments, const bool is_multisampled, ILog *log) {
+                             const WeakImgRef _depth_attachment, const WeakImgRef _stencil_attachment,
+                             Span<const WeakImgRef> _color_attachments, const bool is_multisampled, ILog *log) {
     if (!Changed(render_pass, _depth_attachment, _stencil_attachment, _color_attachments)) {
         // nothing has changed
         return true;
@@ -102,7 +102,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h,
                              const RenderTarget &_depth_target, const RenderTarget &_stencil_target,
                              Span<const RenderTarget> _color_targets, ILog *log) {
-    SmallVector<WeakTexRef, 4> color_refs;
+    SmallVector<WeakImgRef, 4> color_refs;
     for (int i = 0; i < _color_targets.size(); ++i) {
         color_refs.push_back(_color_targets[i].ref);
     }
@@ -130,7 +130,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         target = GL_TEXTURE_2D_MULTISAMPLE;
     }
     bool cube = false;
-    if (!_color_targets.empty() && (Bitmask<eTexFlags>{_color_targets[0].ref->params.flags} & eTexFlags::CubeMap)) {
+    if (!_color_targets.empty() && (Bitmask<eImgFlags>{_color_targets[0].ref->params.flags} & eImgFlags::CubeMap)) {
         cube = true;
         target = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
     }

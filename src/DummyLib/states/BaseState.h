@@ -10,11 +10,11 @@
 #include <Eng/scene/SceneData.h>
 #include <Ray/Ray.h>
 #include <Ren/Camera.h>
+#include <Ren/Image.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>
 #include <Ren/Program.h>
 #include <Ren/SW/SW.h>
-#include <Ren/Texture.h>
 #include <Sys/SmallVector.h>
 
 class FontStorage;
@@ -113,9 +113,9 @@ class BaseState : public Eng::ViewerState {
 
     bool streaming_finished_ = false;
     enum class eCaptureState { None, UpdateGICache, Warmup, Started } capture_state_ = eCaptureState::None;
-    Ren::TexRef capture_result_;
+    Ren::ImgRef capture_result_;
 
-    Ren::TexRef pt_result_;
+    Ren::ImgRef pt_result_;
 
     struct cam_frame_t {
         Ren::Vec3d pos, dir;
@@ -141,7 +141,7 @@ class BaseState : public Eng::ViewerState {
     Ray::TextureHandle LoadTexture_PT(std::string_view name, bool is_srgb, bool is_YCoCg, bool use_mips);
     void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up, float fov);
     void Clear_PT();
-    void Draw_PT(const Ren::TexRef &target);
+    void Draw_PT(const Ren::ImgRef &target);
 
     void ReloadSceneResources();
 

@@ -1,51 +1,50 @@
-#include "TextureRegion.h"
+#include "ImageRegion.h"
 
 #include "ApiContext.h"
-#include "TextureAtlas.h"
+#include "ImageAtlas.h"
 #include "Utils.h"
 
-Ren::TextureRegion::TextureRegion(std::string_view name, TextureAtlasArray *atlas, const int texture_pos[3])
+Ren::ImageRegion::ImageRegion(std::string_view name, ImageAtlasArray *atlas, const int pos[3])
     : name_(name), atlas_(atlas) {
-    memcpy(texture_pos_, texture_pos, 3 * sizeof(int));
+    memcpy(pos_, pos, 3 * sizeof(int));
 }
 
-Ren::TextureRegion::TextureRegion(std::string_view name, Span<const uint8_t> data, const TexParams &p,
-                                  CommandBuffer cmd_buf, TextureAtlasArray *atlas, eTexLoadStatus *load_status)
+Ren::ImageRegion::ImageRegion(std::string_view name, Span<const uint8_t> data, const ImgParams &p,
+                              CommandBuffer cmd_buf, ImageAtlasArray *atlas, eImgLoadStatus *load_status)
     : name_(name) {
     Init(data, p, cmd_buf, atlas, load_status);
 }
 
-Ren::TextureRegion::TextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len,
-                                  const TexParams &p, CommandBuffer cmd_buf, TextureAtlasArray *atlas,
-                                  eTexLoadStatus *load_status)
+Ren::ImageRegion::ImageRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len, const ImgParams &p,
+                              CommandBuffer cmd_buf, ImageAtlasArray *atlas, eImgLoadStatus *load_status)
     : name_(name) {
     Init(sbuf, data_off, data_len, p, cmd_buf, atlas, load_status);
 }
 
-Ren::TextureRegion::~TextureRegion() {
+Ren::ImageRegion::~ImageRegion() {
     if (atlas_) {
-        atlas_->Free(texture_pos_);
+        atlas_->Free(pos_);
     }
 }
 
-Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept {
+Ren::ImageRegion &Ren::ImageRegion::operator=(ImageRegion &&rhs) noexcept {
     RefCounter::operator=(std::move(rhs));
 
     if (atlas_) {
-        atlas_->Free(texture_pos_);
+        atlas_->Free(pos_);
     }
 
     name_ = std::move(rhs.name_);
     atlas_ = std::exchange(rhs.atlas_, nullptr);
-    memcpy(texture_pos_, rhs.texture_pos_, 3 * sizeof(int));
+    memcpy(pos_, rhs.pos_, 3 * sizeof(int));
     params = rhs.params;
     ready_ = std::exchange(rhs.ready_, false);
 
     return (*this);
 }
 
-void Ren::TextureRegion::Init(Span<const uint8_t> data, const TexParams &p, CommandBuffer _cmd_buf,
-                              TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
+void Ren::ImageRegion::Init(Span<const uint8_t> data, const ImgParams &p, CommandBuffer _cmd_buf,
+                            ImageAtlasArray *atlas, eImgLoadStatus *load_status) {
     if (data.empty()) {
         auto stage_buf = Buffer{"Temp Stage Buf", atlas->api_ctx(), eBufType::Upload, 4};
         { // Update staging buffer
@@ -60,9 +59,9 @@ void Ren::TextureRegion::Init(Span<const uint8_t> data, const TexParams &p, Comm
             cmd_buf = atlas->api_ctx()->BegSingleTimeCommands();
         }
 
-        TexParams _p;
+        ImgParams _p;
         _p.w = _p.h = 1;
-        _p.format = eTexFormat::RGBA8;
+        _p.format = eFormat::RGBA8;
         [[maybe_unused]] const bool res = InitFromRAWData(stage_buf, 0, 4, cmd_buf, _p, atlas);
 
         if (!_cmd_buf) {
@@ -72,10 +71,10 @@ void Ren::TextureRegion::Init(Span<const uint8_t> data, const TexParams &p, Comm
 
         // mark it as not ready
         ready_ = false;
-        (*load_status) = eTexLoadStatus::CreatedDefault;
+        (*load_status) = eImgLoadStatus::CreatedDefault;
     } else {
         if (atlas_) {
-            atlas_->Free(texture_pos_);
+            atlas_->Free(pos_);
         }
 
         if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
@@ -97,20 +96,20 @@ void Ren::TextureRegion::Init(Span<const uint8_t> data, const TexParams &p, Comm
                 stage_buf.FreeImmediate();
             }
         }
-        (*load_status) = ready_ ? eTexLoadStatus::CreatedFromData : eTexLoadStatus::Error;
+        (*load_status) = ready_ ? eImgLoadStatus::CreatedFromData : eImgLoadStatus::Error;
     }
 }
 
-void Ren::TextureRegion::Init(const Buffer &sbuf, int data_off, int data_len, const TexParams &p, CommandBuffer cmd_buf,
-                              TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
+void Ren::ImageRegion::Init(const Buffer &sbuf, int data_off, int data_len, const ImgParams &p, CommandBuffer cmd_buf,
+                            ImageAtlasArray *atlas, eImgLoadStatus *load_status) {
     if (atlas_) {
-        atlas_->Free(texture_pos_);
+        atlas_->Free(pos_);
     }
     ready_ = InitFromRAWData(sbuf, data_off, data_len, cmd_buf, p, atlas);
-    (*load_status) = ready_ ? eTexLoadStatus::CreatedFromData : eTexLoadStatus::Error;
+    (*load_status) = ready_ ? eImgLoadStatus::CreatedFromData : eImgLoadStatus::Error;
 }
 
-bool Ren::TextureRegion::InitFromDDSFile(Span<const uint8_t> data, TexParams p, TextureAtlasArray *atlas) {
+bool Ren::ImageRegion::InitFromDDSFile(Span<const uint8_t> data, ImgParams p, ImageAtlasArray *atlas) {
     uint32_t offset = 0;
     if (data.size() - offset < sizeof(DDSHeader)) {
         return false;
@@ -130,7 +129,7 @@ bool Ren::TextureRegion::InitFromDDSFile(Span<const uint8_t> data, TexParams p, 
         memcpy(&dx10_header, &data[offset], sizeof(DDS_HEADER_DXT10));
         offset += sizeof(DDS_HEADER_DXT10);
 
-        p.format = TexFormatFromDXGIFormat(dx10_header.dxgiFormat);
+        p.format = FormatFromDXGIFormat(dx10_header.dxgiFormat);
     }
 
     const int img_data_len = GetDataLenBytes(p.w, p.h, p.format);
@@ -154,10 +153,10 @@ bool Ren::TextureRegion::InitFromDDSFile(Span<const uint8_t> data, TexParams p, 
     return res;
 }
 
-bool Ren::TextureRegion::InitFromRAWData(const Buffer &sbuf, const int data_off, int const data_len,
-                                         CommandBuffer cmd_buf, const TexParams &p, TextureAtlasArray *atlas) {
+bool Ren::ImageRegion::InitFromRAWData(const Buffer &sbuf, const int data_off, int const data_len,
+                                       CommandBuffer cmd_buf, const ImgParams &p, ImageAtlasArray *atlas) {
     const int res[2] = {p.w, p.h};
-    const int node = atlas->Allocate(sbuf, data_off, data_len, cmd_buf, p.format, res, texture_pos_, 1);
+    const int node = atlas->Allocate(sbuf, data_off, data_len, cmd_buf, p.format, res, pos_, 1);
     if (node == -1) {
         return false;
     }

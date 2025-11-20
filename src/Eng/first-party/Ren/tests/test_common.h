@@ -70,6 +70,7 @@ inline bool operator==(float val, const Approx &app) {
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
+#undef LoadImage
 #elif defined(__linux__)
 #include <X11/Xlib.h>
 #if defined(REN_GL_BACKEND)

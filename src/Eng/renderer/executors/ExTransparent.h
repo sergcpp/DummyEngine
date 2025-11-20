@@ -53,16 +53,16 @@ class ExTransparent final : public FgExecutor {
     FgResRef depth_tex_;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
-                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, const Ren::WeakTexRef &color_tex,
-                  const Ren::WeakTexRef &normal_tex, const Ren::WeakTexRef &spec_tex, const Ren::WeakTexRef &depth_tex);
-    void DrawTransparent(FgContext &fg, const Ren::WeakTexRef &color_tex);
+                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, const Ren::WeakImgRef &color_tex,
+                  const Ren::WeakImgRef &normal_tex, const Ren::WeakImgRef &spec_tex, const Ren::WeakImgRef &depth_tex);
+    void DrawTransparent(FgContext &fg, const Ren::WeakImgRef &color_tex);
 
     void DrawTransparent_Simple(FgContext &fg, const Ren::Buffer &instances_buf,
                                 const Ren::Buffer &instance_indices_buf, const Ren::Buffer &unif_shared_data_buf,
                                 const Ren::Buffer &materials_buf, const Ren::Buffer &cells_buf,
                                 const Ren::Buffer &items_buf, const Ren::Buffer &lights_buf,
-                                const Ren::Buffer &decals_buf, const Ren::Texture &shad_tex,
-                                const Ren::WeakTexRef &color_tex, const Ren::Texture &ssao_tex);
+                                const Ren::Buffer &decals_buf, const Ren::Image &shad_tex,
+                                const Ren::WeakImgRef &color_tex, const Ren::Image &ssao_tex);
     void DrawTransparent_OIT_MomentBased(FgContext &fg);
     void DrawTransparent_OIT_WeightedBlended(FgContext &fg);
 

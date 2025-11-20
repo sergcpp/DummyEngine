@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Ren/Texture.h>
+#include <Ren/Image.h>
 #include <Ren/VertexInput.h>
 
 #include "../Renderer_DrawList.h"

@@ -23,8 +23,8 @@ void Eng::ExDepthFill::Execute(FgContext &fg) {
     Ren::WeakBufRef vtx_buf2 = fg.AccessROBufferRef(vtx_buf2_);
     Ren::WeakBufRef ndx_buf = fg.AccessROBufferRef(ndx_buf_);
 
-    Ren::WeakTexRef depth_tex = fg.AccessRWTextureRef(depth_tex_);
-    Ren::WeakTexRef velocity_tex = fg.AccessRWTextureRef(velocity_tex_);
+    Ren::WeakImgRef depth_tex = fg.AccessRWImageRef(depth_tex_);
+    Ren::WeakImgRef velocity_tex = fg.AccessRWImageRef(velocity_tex_);
 
     LazyInit(fg.ren_ctx(), fg.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex, velocity_tex);
     DrawDepth(fg, *vtx_buf1, *vtx_buf2, *ndx_buf);
@@ -32,7 +32,7 @@ void Eng::ExDepthFill::Execute(FgContext &fg) {
 
 void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
                                 const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf,
-                                const Ren::WeakTexRef &depth_tex, const Ren::WeakTexRef &velocity_tex) {
+                                const Ren::WeakImgRef &depth_tex, const Ren::WeakImgRef &velocity_tex) {
     const Ren::RenderTarget velocity_target = {velocity_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
     const Ren::RenderTarget depth_clear_target = {depth_tex, Ren::eLoadOp::Clear, Ren::eStoreOp::Store,
                                                   Ren::eLoadOp::Clear, Ren::eStoreOp::Store};
@@ -293,7 +293,7 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const 
 
     if (!depth_fill_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), *rp_depth_only_[0], depth_tex->params.w,
                                                                depth_tex->params.h, depth_tex, depth_tex,
-                                                               Ren::Span<const Ren::WeakTexRef>{}, false, ctx.log())) {
+                                                               Ren::Span<const Ren::WeakImgRef>{}, false, ctx.log())) {
         ctx.log()->Error("[ExDepthFill::LazyInit]: depth_fill_fb_ init failed!");
     }
 

@@ -5,11 +5,11 @@
 #include "Utils.h"
 
 Ren::ProbeStorage::ProbeStorage()
-    : format_(eTexFormat::Undefined), res_(0), size_(0), capacity_(0), max_level_(0), reserved_temp_layer_(-1) {}
+    : format_(eFormat::Undefined), res_(0), size_(0), capacity_(0), max_level_(0), reserved_temp_layer_(-1) {}
 
 Ren::ProbeStorage::~ProbeStorage() { Destroy(); }
 
-bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, const eTexFormat format, const int res,
+bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, const eFormat format, const int res,
                                const int capacity, ILog *log) {
     Destroy();
 
@@ -27,7 +27,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
 
     // allocate all mip levels
     if (IsCompressedFormat(format)) {
-        ren_glTextureStorage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, mip_count, GLInternalFormatFromTexFormat(format),
+        ren_glTextureStorage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, mip_count, GLInternalFormatFromFormat(format),
                                     res, res, capacity * 6);
     } else {
         ren_glTextureStorage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, mip_count, compressed_tex_format, res, res,
@@ -66,7 +66,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
                         if (!IsCompressedFormat(format)) {
                             ren_glTextureSubImage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off, y_off,
                                                          (layer * 6 + face), _init_res, _init_res, 1,
-                                                         GLFormatFromTexFormat(format), GL_UNSIGNED_BYTE, blank_block);
+                                                         GLFormatFromFormat(format), GL_UNSIGNED_BYTE, blank_block);
                             CheckError("glTexSubImage2D", log);
                         } else {
                             ren_glCompressedTextureSubImage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off,
@@ -100,7 +100,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
     return true;
 }
 
-bool Ren::ProbeStorage::SetPixelData(const int level, const int layer, const int face, const eTexFormat format,
+bool Ren::ProbeStorage::SetPixelData(const int level, const int layer, const int face, const eFormat format,
                                      const uint8_t *data, const int data_len, ILog *log) {
     if (format_ != format) {
         return false;

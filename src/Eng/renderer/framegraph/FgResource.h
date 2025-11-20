@@ -5,7 +5,7 @@
 #include <Ren/Resource.h>
 
 namespace Eng {
-enum class eFgResType : uint8_t { Undefined, Buffer, Texture };
+enum class eFgResType : uint8_t { Undefined, Buffer, Image };
 
 struct FgResource {
     eFgResType type = eFgResType::Undefined;
@@ -66,18 +66,18 @@ static_assert(sizeof(FgResRef) == 6);
 struct FgBufDesc {
     Ren::eBufType type;
     uint32_t size;
-    Ren::SmallVector<Ren::eTexFormat, 1> views;
+    Ren::SmallVector<Ren::eFormat, 1> views;
 };
 
 struct FgImageViewDesc {
-    Ren::eTexFormat format;
+    Ren::eFormat format;
     int mip_level;
     int mip_count;
     int base_layer;
     int layer_count;
 };
 
-struct FgImgDesc : Ren::TexParams {
+struct FgImgDesc : Ren::ImgParams {
     Ren::SmallVector<FgImageViewDesc, 1> views;
 };
 

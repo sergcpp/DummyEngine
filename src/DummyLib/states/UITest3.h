@@ -10,11 +10,11 @@
 #include <Gui/BaseElement.h>
 #include <Gui/BitmapFont.h>
 #include <Ren/Camera.h>
+#include <Ren/Image.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>
 #include <Ren/Program.h>
 #include <Ren/SW/SW.h>
-#include <Ren/Texture.h>
 
 #include "BaseState.h"
 
@@ -44,7 +44,7 @@ class UITest3 : public BaseState {
 
     std::unique_ptr<Gui::Renderer> page_renderer_;
     // FrameBuf page_buf_;
-    Ren::TexRef page_tex_;
+    Ren::ImgRef page_tex_;
     Ren::MaterialRef orig_page_mat_, page_mat_;
 
     std::optional<Gui::Vec2f> hit_point_screen_, hit_point_ndc_;

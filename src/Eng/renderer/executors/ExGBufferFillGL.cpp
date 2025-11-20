@@ -8,7 +8,7 @@
 #include <Ren/RastState.h>
 
 namespace ExSharedInternal {
-uint32_t _draw_range_ext2(Eng::FgContext &fg, const Ren::MaterialStorage &materials, const Ren::Texture &white_tex,
+uint32_t _draw_range_ext2(Eng::FgContext &fg, const Ren::MaterialStorage &materials, const Ren::Image &white_tex,
                           Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                           uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count) {
     auto &ren_ctx = fg.ren_ctx();
@@ -106,9 +106,9 @@ void Eng::ExGBufferFill::DrawOpaque(FgContext &fg) {
     const Ren::Buffer &items_buf = fg.AccessROBuffer(items_buf_);
     const Ren::Buffer &decals_buf = fg.AccessROBuffer(decals_buf_);
 
-    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
-    const Ren::Texture &dummy_white = fg.AccessROTexture(dummy_white_);
-    const Ren::Texture &dummy_black = fg.AccessROTexture(dummy_black_);
+    const Ren::Image &noise_tex = fg.AccessROImage(noise_tex_);
+    const Ren::Image &dummy_white = fg.AccessROImage(dummy_white_);
+    const Ren::Image &dummy_black = fg.AccessROImage(dummy_black_);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.id()));
     if (fg.ren_ctx().capabilities.bindless_texture) {

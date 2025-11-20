@@ -1,4 +1,4 @@
-#include "TextureAtlas.h"
+#include "ImageAtlas.h"
 
 #include <stdexcept>
 
@@ -8,18 +8,17 @@
 
 namespace Ren {
 extern const VkFormat g_formats_vk[];
-VkImageUsageFlags to_vk_image_usage(Bitmask<eTexUsage> usage, eTexFormat format);
+VkImageUsageFlags to_vk_image_usage(Bitmask<eImgUsage> usage, eFormat format);
 } // namespace Ren
 
-Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res, const int mip_count,
-                                const eTexFormat formats[], const Bitmask<eTexFlags> flags[], eTexFilter filter,
-                                ILog *log)
+Ren::ImageAtlas::ImageAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res, const int mip_count,
+                            const eFormat formats[], const Bitmask<eImgFlags> flags[], eFilter filter, ILog *log)
     : api_ctx_(api_ctx), splitter_(w, h) {
     filter_ = filter;
     mip_count_ = mip_count;
 
-    for (int i = 0; i < MaxTextureCount; i++) {
-        if (formats[i] == eTexFormat::Undefined) {
+    for (int i = 0; i < MaxImageCount; i++) {
+        if (formats[i] == eFormat::Undefined) {
             break;
         }
 
@@ -100,8 +99,8 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
     sampler_.Init(api_ctx_, params);
 }
 
-Ren::TextureAtlas::~TextureAtlas() {
-    for (int i = 0; i < MaxTextureCount; ++i) {
+Ren::ImageAtlas::~ImageAtlas() {
+    for (int i = 0; i < MaxImageCount; ++i) {
         if (img_[i] != VK_NULL_HANDLE) {
             api_ctx_->image_views_to_destroy[api_ctx_->backend_frame].push_back(img_view_[i]);
             api_ctx_->images_to_destroy[api_ctx_->backend_frame].push_back(img_[i]);
@@ -110,11 +109,11 @@ Ren::TextureAtlas::~TextureAtlas() {
     }
 }
 
-Ren::TextureAtlas::TextureAtlas(TextureAtlas &&rhs) noexcept
+Ren::ImageAtlas::ImageAtlas(ImageAtlas &&rhs) noexcept
     : api_ctx_(rhs.api_ctx_), filter_(rhs.filter_), splitter_(std::move(rhs.splitter_)) {
-    for (int i = 0; i < MaxTextureCount; i++) {
+    for (int i = 0; i < MaxImageCount; i++) {
         formats_[i] = rhs.formats_[i];
-        rhs.formats_[i] = eTexFormat::Undefined;
+        rhs.formats_[i] = eFormat::Undefined;
 
         img_[i] = std::exchange(rhs.img_[i], VK_NULL_HANDLE);
         img_view_[i] = std::exchange(rhs.img_view_[i], VK_NULL_HANDLE);
@@ -124,13 +123,13 @@ Ren::TextureAtlas::TextureAtlas(TextureAtlas &&rhs) noexcept
     }
 }
 
-Ren::TextureAtlas &Ren::TextureAtlas::operator=(TextureAtlas &&rhs) noexcept {
+Ren::ImageAtlas &Ren::ImageAtlas::operator=(ImageAtlas &&rhs) noexcept {
     api_ctx_ = rhs.api_ctx_;
     filter_ = rhs.filter_;
 
-    for (int i = 0; i < MaxTextureCount; i++) {
+    for (int i = 0; i < MaxImageCount; i++) {
         formats_[i] = rhs.formats_[i];
-        rhs.formats_[i] = eTexFormat::Undefined;
+        rhs.formats_[i] = eFormat::Undefined;
 
         if (img_[i] != VK_NULL_HANDLE) {
             api_ctx_->image_views_to_destroy[api_ctx_->backend_frame].push_back(img_view_[i]);
@@ -148,14 +147,14 @@ Ren::TextureAtlas &Ren::TextureAtlas::operator=(TextureAtlas &&rhs) noexcept {
     return (*this);
 }
 
-int Ren::TextureAtlas::AllocateRegion(const int res[2], int out_pos[2]) {
+int Ren::ImageAtlas::AllocateRegion(const int res[2], int out_pos[2]) {
     const int index = splitter_.Allocate(res, out_pos);
     return index;
 }
 
-void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const int data_len, CommandBuffer cmd_buf,
-                                   const eTexFormat format, const Bitmask<eTexFlags> flags, const int layer,
-                                   const int level, const int pos[2], const int res[2], ILog *log) {
+void Ren::ImageAtlas::InitRegion(const Buffer &sbuf, const int data_off, const int data_len, CommandBuffer cmd_buf,
+                                 const eFormat format, const Bitmask<eImgFlags> flags, const int layer, const int level,
+                                 const int pos[2], const int res[2], ILog *log) {
 #ifndef NDEBUG
     if (level == 0) {
         int _res[2];
@@ -235,16 +234,16 @@ void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const
                                      VkImageLayout(VKImageLayoutForState(eResState::CopyDst)), 1, &region);
 }
 
-bool Ren::TextureAtlas::Free(const int pos[2]) {
+bool Ren::ImageAtlas::Free(const int pos[2]) {
     // TODO: fill with black in debug
     return splitter_.Free(pos);
 }
 
-void Ren::TextureAtlas::Finalize(CommandBuffer cmd_buf) {
-    SmallVector<VkImageMemoryBarrier, MaxTextureCount> img_barriers;
+void Ren::ImageAtlas::Finalize(CommandBuffer cmd_buf) {
+    SmallVector<VkImageMemoryBarrier, MaxImageCount> img_barriers;
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
 
-    for (int i = 0; i < MaxTextureCount && (resource_state != eResState::ShaderResource); ++i) {
+    for (int i = 0; i < MaxImageCount && (resource_state != eResState::ShaderResource); ++i) {
         if (!img_[i]) {
             continue;
         }
@@ -281,9 +280,9 @@ void Ren::TextureAtlas::Finalize(CommandBuffer cmd_buf) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,
-                                          const int layer_count, const int mip_count, const eTexFormat format,
-                                          const eTexFilter filter, const Bitmask<eTexUsage> usage)
+Ren::ImageAtlasArray::ImageAtlasArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,
+                                      const int layer_count, const int mip_count, const eFormat format,
+                                      const eFilter filter, const Bitmask<eImgUsage> usage)
     : api_ctx_(api_ctx), name_(name), w_(w), h_(h), mip_count_(mip_count), layer_count_(layer_count), format_(format),
       filter_(filter) {
     { // create image
@@ -367,18 +366,18 @@ Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const std::string
 
     sampler_.Init(api_ctx_, params);
 
-    splitters_.resize(layer_count, TextureSplitter{w, h});
+    splitters_.resize(layer_count, ImageSplitter{w, h});
 }
 
-Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rhs) noexcept {
+Ren::ImageAtlasArray &Ren::ImageAtlasArray::operator=(ImageAtlasArray &&rhs) noexcept {
     if (this == &rhs) {
         return (*this);
     }
 
     mip_count_ = std::exchange(rhs.mip_count_, 0);
     layer_count_ = std::exchange(rhs.layer_count_, 0);
-    format_ = std::exchange(rhs.format_, eTexFormat::Undefined);
-    filter_ = std::exchange(rhs.filter_, eTexFilter::Nearest);
+    format_ = std::exchange(rhs.format_, eFormat::Undefined);
+    filter_ = std::exchange(rhs.filter_, eFilter::Nearest);
 
     Free();
 
@@ -395,7 +394,7 @@ Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rh
     return (*this);
 }
 
-void Ren::TextureAtlasArray::Free() {
+void Ren::ImageAtlasArray::Free() {
     if (img_ != VK_NULL_HANDLE) {
         api_ctx_->image_views_to_destroy[api_ctx_->backend_frame].push_back(img_view_);
         api_ctx_->images_to_destroy[api_ctx_->backend_frame].push_back(img_);
@@ -404,7 +403,7 @@ void Ren::TextureAtlasArray::Free() {
     }
 }
 
-void Ren::TextureAtlasArray::FreeImmediate() {
+void Ren::ImageAtlasArray::FreeImmediate() {
     if (img_ != VK_NULL_HANDLE) {
         api_ctx_->vkDestroyImageView(api_ctx_->device, img_view_, nullptr);
         api_ctx_->vkDestroyImage(api_ctx_->device, img_, nullptr);
@@ -413,9 +412,9 @@ void Ren::TextureAtlasArray::FreeImmediate() {
     }
 }
 
-void Ren::TextureAtlasArray::SetSubImage(const int level, const int layer, const int offsetx, const int offsety,
-                                         const int sizex, const int sizey, const eTexFormat format, const Buffer &sbuf,
-                                         const int data_off, const int data_len, CommandBuffer cmd_buf) {
+void Ren::ImageAtlasArray::SetSubImage(const int level, const int layer, const int offsetx, const int offsety,
+                                       const int sizex, const int sizey, const eFormat format, const Buffer &sbuf,
+                                       const int data_off, const int data_len, CommandBuffer cmd_buf) {
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 1> buf_barriers;
 
@@ -484,7 +483,7 @@ void Ren::TextureAtlasArray::SetSubImage(const int level, const int layer, const
                                      VkImageLayout(VKImageLayoutForState(eResState::CopyDst)), 1, &region);
 }
 
-void Ren::TextureAtlasArray::Clear(const float rgba[4], CommandBuffer cmd_buf) {
+void Ren::ImageAtlasArray::Clear(const float rgba[4], CommandBuffer cmd_buf) {
     assert(resource_state == eResState::CopyDst);
 
     VkClearColorValue clear_val = {};

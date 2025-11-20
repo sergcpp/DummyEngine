@@ -8,7 +8,7 @@
 #include <Ren/RastState.h>
 
 namespace ExSharedInternal {
-uint32_t _draw_range_ext2(Eng::FgContext &fg, const Ren::MaterialStorage &materials, const Ren::Texture &white_tex,
+uint32_t _draw_range_ext2(Eng::FgContext &fg, const Ren::MaterialStorage &materials, const Ren::Image &white_tex,
                           Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                           uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
 uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
@@ -51,8 +51,8 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
     const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
     const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
 
-    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
-    const Ren::Texture &dummy_white = fg.AccessROTexture(dummy_white_);
+    const Ren::Image &noise_tex = fg.AccessROImage(noise_tex_);
+    const Ren::Image &dummy_white = fg.AccessROImage(dummy_white_);
 
     if ((*p_list_)->emissive_start_index == -1) {
         return;

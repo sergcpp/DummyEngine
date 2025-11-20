@@ -130,15 +130,15 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
     using namespace SceneManagerInternal;
 
     { // Alloc texture for decals atlas
-        const Ren::eTexFormat formats[] = {Ren::DefaultCompressedRGBA, Ren::eTexFormat::Undefined};
-        const Ren::Bitmask<Ren::eTexFlags> flags[] = {{}};
+        const Ren::eFormat formats[] = {Ren::DefaultCompressedRGBA, Ren::eFormat::Undefined};
+        const Ren::Bitmask<Ren::eImgFlags> flags[] = {{}};
         scene_data_.decals_atlas =
-            Ren::TextureAtlas{ren_ctx.api_ctx(),          DECALS_ATLAS_RESX, DECALS_ATLAS_RESY, 64, 1, formats, flags,
-                              Ren::eTexFilter::Trilinear, ren_ctx_.log()};
+            Ren::ImageAtlas{ren_ctx.api_ctx(),          DECALS_ATLAS_RESX, DECALS_ATLAS_RESY, 64, 1, formats, flags,
+                              Ren::eFilter::Trilinear, ren_ctx_.log()};
     }
 
     { // Create splitter for lightmap atlas
-        scene_data_.lm_splitter = Ren::TextureSplitter(SceneManagerConstants::LIGHTMAP_ATLAS_RESX,
+        scene_data_.lm_splitter = Ren::ImageSplitter(SceneManagerConstants::LIGHTMAP_ATLAS_RESX,
                                                        SceneManagerConstants::LIGHTMAP_ATLAS_RESY);
     }
 
@@ -216,32 +216,32 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
     Ren::ILog *log = ren_ctx_.log();
 
     { // create white texture
-        Ren::TexParams p;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-        p.sampling.filter = Ren::eTexFilter::Bilinear;
-        p.format = Ren::eTexFormat::RGBA8;
+        Ren::ImgParams p;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+        p.sampling.filter = Ren::eFilter::Bilinear;
+        p.format = Ren::eFormat::RGBA8;
         p.w = p.h = 1;
 
         static const uint8_t data[4] = {255, 255, 255, 255};
 
-        Ren::eTexLoadStatus status;
-        white_tex_ = ren_ctx_.LoadTexture("White Tex", data, p, ren_ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+        Ren::eImgLoadStatus status;
+        white_tex_ = ren_ctx_.LoadImage("White Tex", data, p, ren_ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eImgLoadStatus::CreatedFromData);
     }
 
     { // load error texture
         std::string name_buf = paths_.textures_path;
         name_buf += "internal/error.dds";
 
-        Ren::TexParams p;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-        p.sampling.filter = Ren::eTexFilter::Bilinear;
+        Ren::ImgParams p;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+        p.sampling.filter = Ren::eFilter::Bilinear;
 
         const std::vector<uint8_t> data = LoadDDS(name_buf, &p);
         if (!data.empty()) {
-            Ren::eTexLoadStatus status;
-            error_tex_ = ren_ctx_.LoadTexture(name_buf, data, p, ren_ctx_.default_mem_allocs(), &status);
-            assert(status == Ren::eTexLoadStatus::CreatedFromData);
+            Ren::eImgLoadStatus status;
+            error_tex_ = ren_ctx_.LoadImage(name_buf, data, p, ren_ctx_.default_mem_allocs(), &status);
+            assert(status == Ren::eImgLoadStatus::CreatedFromData);
         } else {
             log->Error("SceneManager: Failed to load error.dds!");
         }
@@ -264,21 +264,21 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
 
     scene_data_.persistent_data.vertex_buf1 =
         scene_data_.buffers.Insert("VtxBuf1", api_ctx, Ren::eBufType::VertexAttribs, 128, 16);
-    scene_data_.persistent_data.vertex_buf1->AddBufferView(Ren::eTexFormat::RGBA32F);
+    scene_data_.persistent_data.vertex_buf1->AddBufferView(Ren::eFormat::RGBA32F);
     scene_data_.persistent_data.vertex_buf2 =
         scene_data_.buffers.Insert("VtxBuf2", api_ctx, Ren::eBufType::VertexAttribs, 128, 16);
-    scene_data_.persistent_data.vertex_buf2->AddBufferView(Ren::eTexFormat::RGBA32UI);
+    scene_data_.persistent_data.vertex_buf2->AddBufferView(Ren::eFormat::RGBA32UI);
     scene_data_.persistent_data.skin_vertex_buf =
         scene_data_.buffers.Insert("SkinVtxBuf", api_ctx, Ren::eBufType::VertexAttribs, 128, 16);
     scene_data_.persistent_data.delta_buf =
         scene_data_.buffers.Insert("DeltaBuf", api_ctx, Ren::eBufType::VertexAttribs, 128, 16);
     scene_data_.persistent_data.indices_buf =
         scene_data_.buffers.Insert("NdxBuf", api_ctx, Ren::eBufType::VertexIndices, 128, 4);
-    scene_data_.persistent_data.indices_buf->AddBufferView(Ren::eTexFormat::R32UI);
+    scene_data_.persistent_data.indices_buf->AddBufferView(Ren::eFormat::R32UI);
 
     Ren::SamplingParams sampling_params;
-    sampling_params.filter = Ren::eTexFilter::Trilinear;
-    sampling_params.wrap = Ren::eTexWrap::Repeat;
+    sampling_params.filter = Ren::eFilter::Trilinear;
+    sampling_params.wrap = Ren::eWrap::Repeat;
     sampling_params.lod_bias.from_float(-1.0f);
 
     Ren::eSamplerLoadStatus load_status;
@@ -353,7 +353,7 @@ void Eng::SceneManager::LoadScene(const Sys::JsObjectP &js_scene, const Ren::Bit
         lm_indir_tex_name += tex_ext;
 
         const uint8_t default_l0_color[] = {255, 255, 255, 255};
-        scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name, default_l0_color, Ren::eTexFlags{});
+        scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name, default_l0_color, Ren::eImgFlags{});
         for (int sh_l = 0; sh_l < 4; sh_l++) {
             std::string lm_indir_sh_tex_name = lm_base_tex_name;
             lm_indir_sh_tex_name += "_lm_sh_";
@@ -739,21 +739,21 @@ void Eng::SceneManager::LoadEnvMap() {
             _black_cube[i] = black_cube;
         }
 
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = p.h = 512;
-        p.format = Ren::eTexFormat::RGBA16F;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage |
-                  Ren::eTexUsage::RenderTarget;
-        p.sampling.filter = Ren::eTexFilter::Bilinear;
-        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        p.format = Ren::eFormat::RGBA16F;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled | Ren::eImgUsage::Storage |
+                  Ren::eImgUsage::RenderTarget;
+        p.sampling.filter = Ren::eFilter::Bilinear;
+        p.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-        Ren::eTexLoadStatus status;
-        scene_data_.env.env_map = ren_ctx_.LoadTextureCube("Sky Envmap", _black_cube, p,
+        Ren::eImgLoadStatus status;
+        scene_data_.env.env_map = ren_ctx_.LoadImageCube("Sky Envmap", _black_cube, p,
                                                            scene_data_.persistent_data.mem_allocs.get(), &status);
 
         for (int j = 0; j < scene_data_.env.env_map->params.mip_count; ++j) {
             for (int i = 0; i < 6; ++i) {
-                const int view_index = scene_data_.env.env_map->AddImageView(Ren::eTexFormat::RGBA16F, j, 1, i, 1);
+                const int view_index = scene_data_.env.env_map->AddImageView(Ren::eFormat::RGBA16F, j, 1, i, 1);
                 assert(view_index <= 1 + j * 6 + i);
             }
         }
@@ -781,18 +781,18 @@ void Eng::SceneManager::LoadEnvMap() {
             data[i] = tex_data[i];
         }
 
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = w;
         p.h = h;
         p.mip_count = int(header.dwMipMapCount);
-        p.format = Ren::eTexFormat::RGB9_E5;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-        p.sampling.filter = Ren::eTexFilter::Bilinear;
-        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        p.format = Ren::eFormat::RGB9_E5;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+        p.sampling.filter = Ren::eFilter::Bilinear;
+        p.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-        Ren::eTexLoadStatus load_status;
+        Ren::eImgLoadStatus load_status;
         scene_data_.env.env_map =
-            ren_ctx_.LoadTextureCube("EnvCubemap", data, p, scene_data_.persistent_data.mem_allocs.get(), &load_status);
+            ren_ctx_.LoadImageCube("EnvCubemap", data, p, scene_data_.persistent_data.mem_allocs.get(), &load_status);
     } else {
         static const uint8_t white_cube[6][4] = {{255, 255, 255, 128}, {255, 255, 255, 128}, {255, 255, 255, 128},
                                                  {255, 255, 255, 128}, {255, 255, 255, 128}, {255, 255, 255, 128}};
@@ -802,14 +802,14 @@ void Eng::SceneManager::LoadEnvMap() {
             _white_cube[i] = white_cube[i];
         }
 
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = p.h = 1;
-        p.format = Ren::eTexFormat::RGBA8;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        p.format = Ren::eFormat::RGBA8;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+        p.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-        Ren::eTexLoadStatus status;
-        scene_data_.env.env_map = ren_ctx_.LoadTextureCube("dummy_white_cube", _white_cube, p,
+        Ren::eImgLoadStatus status;
+        scene_data_.env.env_map = ren_ctx_.LoadImageCube("dummy_white_cube", _white_cube, p,
                                                            scene_data_.persistent_data.mem_allocs.get(), &status);
     }
 }
@@ -831,49 +831,49 @@ void Eng::SceneManager::AllocGICache() {
     }
 
     { // ~47.8mb
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = PROBE_VOLUME_RES_X * PROBE_IRRADIANCE_RES;
         p.h = PROBE_VOLUME_RES_Z * PROBE_IRRADIANCE_RES;
         p.d = 2 * PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
-        p.format = Ren::eTexFormat::RGBA16F;
-        p.flags = Ren::eTexFlags::Array;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
-        p.sampling.filter = Ren::eTexFilter::Bilinear;
+        p.format = Ren::eFormat::RGBA16F;
+        p.flags = Ren::eImgFlags::Array;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Storage) | Ren::eImgUsage::Sampled | Ren::eImgUsage::Transfer;
+        p.sampling.filter = Ren::eFilter::Bilinear;
 
-        Ren::eTexLoadStatus status;
+        Ren::eImgLoadStatus status;
         scene_data_.persistent_data.probe_irradiance =
-            ren_ctx_.LoadTexture("Probe Volume Irradiance", p, ren_ctx_.default_mem_allocs(), &status);
-        assert(status != Ren::eTexLoadStatus::Error);
+            ren_ctx_.LoadImage("Probe Volume Irradiance", p, ren_ctx_.default_mem_allocs(), &status);
+        assert(status != Ren::eImgLoadStatus::Error);
     }
     { // ~84.9mb
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = PROBE_VOLUME_RES_X * PROBE_DISTANCE_RES;
         p.h = PROBE_VOLUME_RES_Z * PROBE_DISTANCE_RES;
         p.d = PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
-        p.format = Ren::eTexFormat::RG16F;
-        p.flags = Ren::eTexFlags::Array;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
-        p.sampling.filter = Ren::eTexFilter::Bilinear;
+        p.format = Ren::eFormat::RG16F;
+        p.flags = Ren::eImgFlags::Array;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Storage) | Ren::eImgUsage::Sampled | Ren::eImgUsage::Transfer;
+        p.sampling.filter = Ren::eFilter::Bilinear;
 
-        Ren::eTexLoadStatus status;
+        Ren::eImgLoadStatus status;
         scene_data_.persistent_data.probe_distance =
-            ren_ctx_.LoadTexture("Probe Volume Distance", p, ren_ctx_.default_mem_allocs(), &status);
-        assert(status != Ren::eTexLoadStatus::Error);
+            ren_ctx_.LoadImage("Probe Volume Distance", p, ren_ctx_.default_mem_allocs(), &status);
+        assert(status != Ren::eImgLoadStatus::Error);
     }
     { // ~0.7mb
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = PROBE_VOLUME_RES_X;
         p.h = PROBE_VOLUME_RES_Z;
         p.d = PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
-        p.format = Ren::eTexFormat::RGBA16F;
-        p.flags = Ren::eTexFlags::Array;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
-        p.sampling.filter = Ren::eTexFilter::Bilinear;
+        p.format = Ren::eFormat::RGBA16F;
+        p.flags = Ren::eImgFlags::Array;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Storage) | Ren::eImgUsage::Sampled | Ren::eImgUsage::Transfer;
+        p.sampling.filter = Ren::eFilter::Bilinear;
 
-        Ren::eTexLoadStatus status;
+        Ren::eImgLoadStatus status;
         scene_data_.persistent_data.probe_offset =
-            ren_ctx_.LoadTexture("Probe Volume Offset", p, ren_ctx_.default_mem_allocs(), &status);
-        assert(status != Ren::eTexLoadStatus::Error);
+            ren_ctx_.LoadImage("Probe Volume Offset", p, ren_ctx_.default_mem_allocs(), &status);
+        assert(status != Ren::eImgLoadStatus::Error);
     }
 
     ClearGICache();
@@ -925,9 +925,9 @@ void Eng::SceneManager::AllocMeshBuffers() {
     scene_data_.persistent_data.delta_buf->Resize(16 * 1024 * 1024);
     scene_data_.persistent_data.indices_buf->Resize(16 * 1024 * 1024);
     if (recreate_views) {
-        scene_data_.persistent_data.vertex_buf1->AddBufferView(Ren::eTexFormat::RGBA32F);
-        scene_data_.persistent_data.vertex_buf2->AddBufferView(Ren::eTexFormat::RGBA32UI);
-        scene_data_.persistent_data.indices_buf->AddBufferView(Ren::eTexFormat::R32UI);
+        scene_data_.persistent_data.vertex_buf1->AddBufferView(Ren::eFormat::RGBA32F);
+        scene_data_.persistent_data.vertex_buf2->AddBufferView(Ren::eFormat::RGBA32UI);
+        scene_data_.persistent_data.indices_buf->AddBufferView(Ren::eFormat::R32UI);
     }
 }
 
@@ -1015,7 +1015,7 @@ void Eng::SceneManager::AllocInstanceBuffer() {
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
     scene_data_.persistent_data.instance_buf = scene_data_.buffers.Insert(
         "Instance Buf", api_ctx, Ren::eBufType::Texture, uint32_t(sizeof(instance_data_t) * MAX_INSTANCES_TOTAL));
-    scene_data_.persistent_data.instance_buf->AddBufferView(Ren::eTexFormat::RGBA32F);
+    scene_data_.persistent_data.instance_buf->AddBufferView(Ren::eFormat::RGBA32F);
     for (uint32_t i = 0; i < scene_data_.objects.size(); ++i) {
         instance_data_to_update_.push_back(i);
     }
@@ -1133,7 +1133,7 @@ void Eng::SceneManager::LoadProbeCache() {
                     data_len -= sizeof(uint32_t);
 
                     if (int(len) > data_len || !self->scene_data_.probe_storage.SetPixelData(
-                                                   level, lprobe->layer_index, face_index, Ren::eTexFormat::Compressed,
+                                                   level, lprobe->layer_index, face_index, Ren::eFormat::Compressed,
                                                    &p_data[data_offset], len, self->ren_ctx_.log())) {
                         log->Error("Failed to load probe texture!");
                     }
@@ -1639,23 +1639,23 @@ void Eng::SceneManager::OnLoadPipelines(Ren::Bitmask<Ren::eMatFlags> flags, std:
     init_pipelines_(ret, flags, scene_data_.persistent_data.pipelines, out_pipelines);
 }
 
-Ren::TexRef Eng::SceneManager::OnLoadTexture(const std::string_view name, const uint8_t color[4],
-                                             const Ren::Bitmask<Ren::eTexFlags> flags) {
+Ren::ImgRef Eng::SceneManager::OnLoadTexture(const std::string_view name, const uint8_t color[4],
+                                             const Ren::Bitmask<Ren::eImgFlags> flags) {
     using namespace SceneManagerConstants;
 
-    Ren::TexParams p;
+    Ren::ImgParams p;
     p.w = p.h = 1;
-    p.format = Ren::eTexFormat::RGBA8;
-    p.sampling.filter = Ren::eTexFilter::Trilinear;
-    p.sampling.wrap = Ren::eTexWrap::Repeat;
-    p.flags = Ren::eTexFlags::Stub;
-    p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
+    p.format = Ren::eFormat::RGBA8;
+    p.sampling.filter = Ren::eFilter::Trilinear;
+    p.sampling.wrap = Ren::eWrap::Repeat;
+    p.flags = Ren::eImgFlags::Stub;
+    p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
     p.sampling.lod_bias.from_float(-1.0f); // TAA compensation
 
-    Ren::eTexLoadStatus status;
-    Ren::TexRef ret = LoadTexture(name, Ren::Span{color, color + 4}, p, &status);
+    Ren::eImgLoadStatus status;
+    Ren::ImgRef ret = LoadImage(name, Ren::Span{color, color + 4}, p, &status);
 
-    if (status == Ren::eTexLoadStatus::CreatedFromData) {
+    if (status == Ren::eImgLoadStatus::CreatedFromData) {
         TextureRequest new_req;
         new_req.ref = ret;
 
@@ -1724,18 +1724,18 @@ Ren::MaterialRef Eng::SceneManager::LoadMaterial(std::string_view name, std::str
     return ref;
 }
 
-Ren::TexRef Eng::SceneManager::LoadTexture(std::string_view name, Ren::Span<const uint8_t> data,
-                                           const Ren::TexParams &p, Ren::eTexLoadStatus *load_status) {
-    Ren::TexRef ref = scene_data_.textures.FindByName(name);
+Ren::ImgRef Eng::SceneManager::LoadImage(std::string_view name, Ren::Span<const uint8_t> data,
+                                           const Ren::ImgParams &p, Ren::eImgLoadStatus *load_status) {
+    Ren::ImgRef ref = scene_data_.textures.FindByName(name);
     if (!ref) {
         ref = scene_data_.textures.Insert(name, ren_ctx_.api_ctx(), data, p,
                                           scene_data_.persistent_data.mem_allocs.get(), load_status, ren_ctx_.log());
     } else {
         if (load_status) {
-            (*load_status) = Ren::eTexLoadStatus::Found;
+            (*load_status) = Ren::eImgLoadStatus::Found;
         }
-        if ((Ren::Bitmask<Ren::eTexFlags>{ref->params.flags} & Ren::eTexFlags::Stub) &&
-            !(p.flags & Ren::eTexFlags::Stub) && !data.empty()) {
+        if ((Ren::Bitmask<Ren::eImgFlags>{ref->params.flags} & Ren::eImgFlags::Stub) &&
+            !(p.flags & Ren::eImgFlags::Stub) && !data.empty()) {
             ref->Init(data, p, scene_data_.persistent_data.mem_allocs.get(), load_status, ren_ctx_.log());
         }
     }
@@ -1851,7 +1851,7 @@ Ren::Vec4f Eng::SceneManager::LoadDecalTexture(std::string_view name) {
             break;
         }
 
-        scene_data_.decals_atlas.InitRegion(p_data, len, Ren::eTexFormat::Compressed, 0, 0, level, _pos, _res,
+        scene_data_.decals_atlas.InitRegion(p_data, len, Ren::eFormat::Compressed, 0, 0, level, _pos, _res,
                                             ren_ctx_.log());
 
         data_offset += len;

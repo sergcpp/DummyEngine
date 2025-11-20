@@ -2,11 +2,11 @@
 
 #include <cstdint>
 
+#include "Image.h"
+#include "ImageParams.h"
 #include "RenderPass.h"
 #include "SmallVector.h"
 #include "Span.h"
-#include "Texture.h"
-#include "TextureParams.h"
 
 namespace Ren {
 class Framebuffer {
@@ -18,26 +18,26 @@ class Framebuffer {
     uint32_t id_ = 0;
 #endif
     struct Attachment {
-        WeakTexRef ref;
+        WeakImgRef ref;
         uint8_t view_index = 0;
-        TexHandle handle; // handle is stored to detect texture reallocation
+        ImgHandle handle; // handle is stored to detect image reallocation
 
-        bool operator==(const WeakTexRef &rhs) const {
+        bool operator==(const WeakImgRef &rhs) const {
             if (!rhs) {
                 return !bool(this->ref);
             }
             return this->handle == rhs->handle();
         }
-        bool operator!=(const WeakTexRef &rhs) const { return !operator==(rhs); }
-        bool operator<(const WeakTexRef &rhs) const {
+        bool operator!=(const WeakImgRef &rhs) const { return !operator==(rhs); }
+        bool operator<(const WeakImgRef &rhs) const {
             if (!rhs) {
-                return this->handle < TexHandle();
+                return this->handle < ImgHandle();
             }
             return this->handle < rhs->handle();
         }
-        friend bool operator<(const WeakTexRef &lhs, const Attachment &rhs) {
+        friend bool operator<(const WeakImgRef &lhs, const Attachment &rhs) {
             if (!lhs) {
-                return TexHandle() < rhs.handle;
+                return ImgHandle() < rhs.handle;
             }
             return lhs->handle() < rhs.handle;
         }
@@ -51,7 +51,7 @@ class Framebuffer {
         bool operator!=(const RenderTarget &rhs) const { return !operator==(rhs); }
         bool operator<(const RenderTarget &rhs) const {
             if (!rhs) {
-                return this->handle < TexHandle();
+                return this->handle < ImgHandle();
             }
             if (this->handle < rhs.ref->handle()) {
                 return true;
@@ -62,7 +62,7 @@ class Framebuffer {
         }
         friend bool operator<(const RenderTarget &lhs, const Attachment &rhs) {
             if (!lhs) {
-                return TexHandle() < rhs.handle;
+                return ImgHandle() < rhs.handle;
             }
             if (lhs.ref->handle() < rhs.handle) {
                 return true;
@@ -96,23 +96,23 @@ class Framebuffer {
     [[nodiscard]] uint32_t id() const { return id_; }
 #endif
 
-    [[nodiscard]] bool Changed(const RenderPass &render_pass, const WeakTexRef &depth_attachment,
-                               const WeakTexRef &stencil_attachment, Span<const WeakTexRef> color_attachments) const;
-    [[nodiscard]] bool Changed(const RenderPass &render_pass, const WeakTexRef &depth_attachment,
-                               const WeakTexRef &stencil_attachment, Span<const RenderTarget> color_attachments) const;
+    [[nodiscard]] bool Changed(const RenderPass &render_pass, const WeakImgRef &depth_attachment,
+                               const WeakImgRef &stencil_attachment, Span<const WeakImgRef> color_attachments) const;
+    [[nodiscard]] bool Changed(const RenderPass &render_pass, const WeakImgRef &depth_attachment,
+                               const WeakImgRef &stencil_attachment, Span<const RenderTarget> color_attachments) const;
 
-    [[nodiscard]] bool LessThan(const RenderPass &render_pass, const WeakTexRef &depth_attachment,
-                                const WeakTexRef &stencil_attachment, Span<const WeakTexRef> color_attachments) const;
-    [[nodiscard]] bool LessThan(const RenderPass &render_pass, const WeakTexRef &depth_attachment,
-                                const WeakTexRef &stencil_attachment, Span<const RenderTarget> color_attachments) const;
+    [[nodiscard]] bool LessThan(const RenderPass &render_pass, const WeakImgRef &depth_attachment,
+                                const WeakImgRef &stencil_attachment, Span<const WeakImgRef> color_attachments) const;
+    [[nodiscard]] bool LessThan(const RenderPass &render_pass, const WeakImgRef &depth_attachment,
+                                const WeakImgRef &stencil_attachment, Span<const RenderTarget> color_attachments) const;
 
-    bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, WeakTexRef depth_attachment,
-               WeakTexRef stencil_attachment, Span<const WeakTexRef> color_attachments, bool is_multisampled,
+    bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, WeakImgRef depth_attachment,
+               WeakImgRef stencil_attachment, Span<const WeakImgRef> color_attachments, bool is_multisampled,
                ILog *log);
     bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, const RenderTarget &depth_target,
                const RenderTarget &stencil_target, Span<const RenderTarget> color_attachments, ILog *log);
-    bool Setup(ApiContext *api_ctx, const RenderPass &renderpass, int w, int h, const WeakTexRef depth_attachment,
-               const WeakTexRef stencil_attachment, const WeakTexRef color_attachment, const bool is_multisampled,
+    bool Setup(ApiContext *api_ctx, const RenderPass &renderpass, int w, int h, const WeakImgRef depth_attachment,
+               const WeakImgRef stencil_attachment, const WeakImgRef color_attachment, const bool is_multisampled,
                ILog *log) {
         return Setup(api_ctx, renderpass, w, h, depth_attachment, stencil_attachment, {&color_attachment, 1},
                      is_multisampled, log);

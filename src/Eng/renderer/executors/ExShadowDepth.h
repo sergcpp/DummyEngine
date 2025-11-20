@@ -35,7 +35,7 @@ class ExShadowDepth final : public FgExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
                   const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf,
-                  const Ren::WeakTexRef &shadow_depth_tex);
+                  const Ren::WeakImgRef &shadow_depth_tex);
     void DrawShadowMaps(FgContext &fg);
 
   public:

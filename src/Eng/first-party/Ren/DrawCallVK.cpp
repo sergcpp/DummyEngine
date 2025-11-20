@@ -29,11 +29,11 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
                 if (b.handle.sampler) {
                     info.sampler = b.handle.sampler->vk_handle();
                 } else {
-                    info.sampler = b.handle.tex->handle().sampler;
+                    info.sampler = b.handle.img->handle().sampler;
                 }
             }
-            info.imageView = b.handle.tex->handle().views[b.handle.view_index];
-            info.imageLayout = VkImageLayout(VKImageLayoutForState(b.handle.tex->resource_state));
+            info.imageView = b.handle.img->handle().views[b.handle.view_index];
+            info.imageLayout = VkImageLayout(VKImageLayoutForState(b.handle.img->resource_state));
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -106,8 +106,8 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             used_bindings |= (1ull << b.loc);
         } else if (b.trg == eBindTarget::ImageRO || b.trg == eBindTarget::ImageRW) {
             auto &info = img_storage_infos[descr_sizes.store_img_count++];
-            info.sampler = b.handle.tex->handle().sampler;
-            info.imageView = b.handle.tex->handle().views[b.handle.view_index];
+            info.sampler = b.handle.img->handle().sampler;
+            info.imageView = b.handle.img->handle().views[b.handle.view_index];
             info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
             auto &new_write = descr_writes.emplace_back();

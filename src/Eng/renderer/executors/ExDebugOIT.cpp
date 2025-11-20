@@ -14,7 +14,7 @@ Eng::ExDebugOIT::ExDebugOIT(FgContext &fg, const view_state_t *view_state, const
 
 void Eng::ExDebugOIT::Execute(FgContext &fg) {
     const Ren::Buffer &oit_depth_buf = fg.AccessROBuffer(args_->oit_depth_buf);
-    Ren::Texture &output_tex = fg.AccessRWTexture(args_->output_tex);
+    Ren::Image &output_tex = fg.AccessRWImage(args_->output_tex);
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UTBuf, OITDebug::OIT_DEPTH_BUF_SLOT, oit_depth_buf},
                                      {Ren::eBindTarget::ImageRW, OITDebug::OUT_IMG_SLOT, output_tex}};

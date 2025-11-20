@@ -9,13 +9,13 @@ class Image9Patch : public Image {
     float frame_scale_;
 
   public:
-    Image9Patch(const Ren::TextureRegionRef &tex, const Vec2f &offset_px, float frame_scale, const Vec2f &pos,
+    Image9Patch(const Ren::ImageRegionRef &tex, const Vec2f &offset_px, float frame_scale, const Vec2f &pos,
                 const Vec2f &size, const BaseElement *parent);
     Image9Patch(Ren::Context &ctx, std::string_view tex_name, const Vec2f &offset_px, float frame_scale,
                 const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
 
-    [[nodiscard]] const Ren::TextureRegionRef &tex() const { return tex_; }
-    [[nodiscard]] Ren::TextureRegionRef &tex() { return tex_; }
+    [[nodiscard]] const Ren::ImageRegionRef &tex() const { return tex_; }
+    [[nodiscard]] Ren::ImageRegionRef &tex() { return tex_; }
 
     void set_frame_scale(float scale) { frame_scale_ = scale; }
 

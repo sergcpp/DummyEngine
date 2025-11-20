@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
+#include "Image.h"
 #include "SmallVector.h"
-#include "Texture.h"
 
 namespace Ren {
 // TODO: Refactor this!
@@ -19,18 +19,18 @@ class ProbeStorage {
     void Free(int i);
     void Clear();
 
-    eTexFormat format() const { return format_; }
+    eFormat format() const { return format_; }
     int res() const { return res_; }
     int size() const { return size_; }
     int capacity() const { return capacity_; }
     int max_level() const { return max_level_; }
     int reserved_temp_layer() const { return reserved_temp_layer_; }
 
-    TexHandle handle() const { return handle_; }
+    ImgHandle handle() const { return handle_; }
 
-    bool Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, eTexFormat format, int res, int capacity, ILog *log);
+    bool Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, eFormat format, int res, int capacity, ILog *log);
 
-    bool SetPixelData(int level, int layer, int face, eTexFormat format, const uint8_t *data, int data_len, ILog *log);
+    bool SetPixelData(int level, int layer, int face, eFormat format, const uint8_t *data, int data_len, ILog *log);
     bool GetPixelData(int level, int layer, int face, int buf_size, uint8_t *out_pixels, ILog *log) const;
 
     void Finalize();
@@ -39,11 +39,11 @@ class ProbeStorage {
 
   private:
     ApiContext *api_ctx_ = nullptr;
-    eTexFormat format_ = eTexFormat::Undefined;
+    eFormat format_ = eFormat::Undefined;
     int res_ = 0, size_ = 0, capacity_ = 0, max_level_ = 0;
     int reserved_temp_layer_ = -1;
     SmallVector<int, 32> free_indices_;
-    TexHandle handle_;
+    ImgHandle handle_;
 #if defined(REN_VK_BACKEND)
     MemAllocation alloc_;
 #endif

@@ -5,7 +5,7 @@
 #include "../../utils/ShaderLoader.h"
 
 void Eng::ExReadExposure::Execute(FgContext &fg) {
-    const Ren::Texture &input_tex = fg.AccessROTexture(args_->input_tex);
+    const Ren::Image &input_tex = fg.AccessROImage(args_->input_tex);
     Ren::Buffer &output_buf = fg.AccessRWBuffer(args_->output_buf);
 
     { // Retrieve result of readback from previous frame

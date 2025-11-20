@@ -5,12 +5,12 @@
 
 #include "Bitmask.h"
 #include "Fence.h"
+#include "ImageParams.h"
 #include "MemoryAllocator.h"
 #include "Resource.h"
 #include "SmallVector.h"
 #include "Storage.h"
 #include "String.h"
-#include "TextureParams.h"
 
 namespace Ren {
 class ILog;
@@ -42,10 +42,10 @@ eType Type(std::string_view name);
 struct BufHandle {
 #if defined(REN_VK_BACKEND)
     VkBuffer buf = {};
-    SmallVector<std::pair<eTexFormat, VkBufferView>, 1> views;
+    SmallVector<std::pair<eFormat, VkBufferView>, 1> views;
 #elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
     uint32_t buf = 0;
-    SmallVector<std::pair<eTexFormat, uint32_t>, 1> views;
+    SmallVector<std::pair<eFormat, uint32_t>, 1> views;
 #endif
     uint32_t generation = 0;
 
@@ -127,12 +127,12 @@ class Buffer : public RefCounter {
     [[nodiscard]] ApiContext *api_ctx() const { return api_ctx_; }
 #if defined(REN_VK_BACKEND)
     [[nodiscard]] VkBuffer vk_handle() const { return handle_.buf; }
-    [[nodiscard]] const std::pair<eTexFormat, VkBufferView> &view(const int i) const { return handle_.views[i]; }
+    [[nodiscard]] const std::pair<eFormat, VkBufferView> &view(const int i) const { return handle_.views[i]; }
     [[nodiscard]] VkDeviceMemory mem() const { return dedicated_mem_; }
     [[nodiscard]] VkDeviceAddress vk_device_address() const;
 #elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
     [[nodiscard]] uint32_t id() const { return handle_.buf; }
-    [[nodiscard]] std::pair<eTexFormat, uint32_t> view(const int i) const { return handle_.views[i]; }
+    [[nodiscard]] std::pair<eFormat, uint32_t> view(const int i) const { return handle_.views[i]; }
 #endif
     [[nodiscard]] uint32_t generation() const { return handle_.generation; }
     [[nodiscard]] const MemAllocation &mem_alloc() const { return alloc_; }
@@ -158,7 +158,7 @@ class Buffer : public RefCounter {
     void Fill(uint32_t dst_offset, uint32_t size, uint32_t data, CommandBuffer cmd_buf);
     void UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, CommandBuffer cmd_buf);
 
-    int AddBufferView(eTexFormat format);
+    int AddBufferView(eFormat format);
 
     mutable eResState resource_state = eResState::Undefined;
 };

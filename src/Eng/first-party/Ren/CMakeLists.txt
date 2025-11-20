@@ -71,11 +71,23 @@ set(SOURCE_FILES AccStructure.h
                  FreelistAlloc.cpp
                  MemoryAllocator.h
                  Fence.h
+                 Filter.inl
                  Fixed.h
+                 Format.inl
                  Framebuffer.h
                  Fwd.h
                  HashMap32.h
                  HashSet32.h
+                 Image.h
+                 Image.cpp
+                 ImageAtlas.h
+                 ImageAtlas.cpp
+                 ImageParams.h
+                 ImageParams.cpp
+                 ImageRegion.h
+                 ImageRegion.cpp
+                 ImageSplitter.h
+                 ImageSplitter.cpp
                  Log.h
                  Material.h
                  Material.cpp
@@ -103,27 +115,14 @@ set(SOURCE_FILES AccStructure.h
                  StencilOp.inl
                  Storage.h
                  String.h
-                 Texture.h
-                 Texture.cpp
-                 TextureAtlas.h
-                 TextureAtlas.cpp
-                 TextureCompare.inl
-                 TextureFilter.inl
-                 TextureFormat.inl
-                 TextureParams.h
-                 TextureParams.cpp
-                 TextureRegion.h
-                 TextureRegion.cpp
-                 TextureSplitter.h
-                 TextureSplitter.cpp
-                 TextureWrap.inl
                  Types.inl
                  Utils.h
                  Utils.cpp
                  Utils_AVX.cpp
                  Utils_SSE2.cpp
                  Utils_NEON.cpp
-                 VertexInput.h)
+                 VertexInput.h
+                 Wrap.inl)
 
 if(${REN_BACKEND} STREQUAL "GL")
     set(SOURCE_FILES ${SOURCE_FILES}
@@ -139,6 +138,9 @@ if(${REN_BACKEND} STREQUAL "GL")
                      GLExtDSAEmu.h
                      GLExtDSAEmu.cpp
                      FenceGL.cpp
+                     ImageGL.h
+                     ImageGL.cpp
+                     ImageAtlasGL.cpp
                      MemoryAllocatorGL.cpp
                      ResourceGL.cpp
                      SamplerGL.h
@@ -151,9 +153,6 @@ if(${REN_BACKEND} STREQUAL "GL")
                      ProgramGL.cpp
                      RastStateGL.cpp
                      RenderPassGL.cpp
-                     TextureGL.h
-                     TextureGL.cpp
-                     TextureAtlasGL.cpp
                      VertexInputGL.cpp)
 
     if(WIN32)
@@ -165,10 +164,10 @@ elseif(${REN_BACKEND} STREQUAL "SW")
     set(SOURCE_FILES ${SOURCE_FILES}
                      BufferSW.cpp
                      ContextSW.cpp
+                     ImageSW.h
+                     ImageSW.cpp
                      ProgramSW.h
-                     ProgramSW.cpp
-                     TextureSW.h
-                     TextureSW.cpp)
+                     ProgramSW.cpp)
 elseif(${REN_BACKEND} STREQUAL "VK")
     set(SOURCE_FILES ${SOURCE_FILES}
                      AccStructureVK.cpp
@@ -179,6 +178,9 @@ elseif(${REN_BACKEND} STREQUAL "VK")
                      DrawCallVK.cpp
                      FenceVK.cpp
                      FramebufferVK.cpp
+                     ImageVK.h
+                     ImageVK.cpp
+                     ImageAtlasVK.cpp
                      MemoryAllocatorVK.cpp
                      PipelineVK.cpp
                      ProbeStorageVK.cpp
@@ -190,9 +192,6 @@ elseif(${REN_BACKEND} STREQUAL "VK")
                      SamplerVK.cpp
                      ShaderVK.h
                      ShaderVK.cpp
-                     TextureVK.h
-                     TextureVK.cpp
-                     TextureAtlasVK.cpp
                      VertexInputVK.cpp
                      VK.h
                      VKCtx.h

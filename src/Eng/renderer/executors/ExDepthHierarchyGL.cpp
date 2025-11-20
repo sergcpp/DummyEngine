@@ -10,8 +10,8 @@
 #include "../shaders/depth_hierarchy_interface.h"
 
 void Eng::ExDepthHierarchy::Execute(FgContext &fg) {
-    const Ren::Texture &depth_tex = fg.AccessROTexture(depth_tex_);
-    Ren::Texture &output_tex = fg.AccessRWTexture(output_tex_);
+    const Ren::Image &depth_tex = fg.AccessROImage(depth_tex_);
+    Ren::Image &output_tex = fg.AccessRWImage(output_tex_);
 
     glUseProgram(pi_depth_hierarchy_->prog()->id());
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, DepthHierarchy::DEPTH_TEX_SLOT, depth_tex.id());

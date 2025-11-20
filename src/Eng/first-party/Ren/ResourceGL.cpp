@@ -1,7 +1,7 @@
 #include "Resource.h"
 
 #include "GL.h"
-#include "Texture.h"
+#include "Image.h"
 
 void Ren::TransitionResourceStates(ApiContext *api_context, CommandBuffer cmd_buf,
                                    const Ren::Bitmask<Ren::eStage> src_stages_mask,
@@ -10,11 +10,11 @@ void Ren::TransitionResourceStates(ApiContext *api_context, CommandBuffer cmd_bu
     GLbitfield mem_barrier_bits = 0;
 
     for (const TransitionInfo &tr : transitions) {
-        if (std::holds_alternative<const Texture *>(tr.p_res)) {
+        if (std::holds_alternative<const Image *>(tr.p_res)) {
             eResState old_state = tr.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = std::get<const Texture *>(tr.p_res)->resource_state;
+                old_state = std::get<const Image *>(tr.p_res)->resource_state;
                 if (old_state == tr.new_state) {
                     // transition is not needed
                     continue;
@@ -26,7 +26,7 @@ void Ren::TransitionResourceStates(ApiContext *api_context, CommandBuffer cmd_bu
             }
 
             if (tr.update_internal_state) {
-                std::get<const Texture *>(tr.p_res)->resource_state = tr.new_state;
+                std::get<const Image *>(tr.p_res)->resource_state = tr.new_state;
             }
         } else if (std::holds_alternative<const Buffer *>(tr.p_res)) {
             eResState old_state = tr.old_state;

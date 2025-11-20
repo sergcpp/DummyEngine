@@ -4,7 +4,7 @@
 #include <deque>
 
 #include "CPUFeatures.h"
-#include "Texture.h"
+#include "Image.h"
 
 #ifdef __GNUC__
 #define force_inline __attribute__((always_inline)) inline
@@ -25,125 +25,125 @@
 #define _MAX4(x, y, z, w) _MAX(_MAX((x), (y)), _MAX((z), (w)))
 
 namespace Ren {
-const eTexFormat g_tex_format_from_dxgi_format[] = {
-    eTexFormat::Undefined,   // DXGI_FORMAT_UNKNOWN
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32A32_TYPELESS
-    eTexFormat::RGBA32F,     // DXGI_FORMAT_R32G32B32A32_FLOAT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32A32_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32A32_SINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32_FLOAT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32_SINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_TYPELESS
-    eTexFormat::RGBA16F,     // DXGI_FORMAT_R16G16B16A16_FLOAT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_SNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_SINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32_TYPELESS
-    eTexFormat::RG32F,       // DXGI_FORMAT_R32G32_FLOAT
-    eTexFormat::RG32UI,      // DXGI_FORMAT_R32G32_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32_SINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32G8X24_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_D32_FLOAT_S8X24_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_X32_TYPELESS_G8X24_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R10G10B10A2_TYPELESS
-    eTexFormat::RGB10_A2,    // DXGI_FORMAT_R10G10B10A2_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R10G10B10A2_UINT
-    eTexFormat::RG11F_B10F,  // DXGI_FORMAT_R11G11B10_FLOAT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8B8A8_TYPELESS
-    eTexFormat::RGBA8,       // DXGI_FORMAT_R8G8B8A8_UNORM
-    eTexFormat::RGBA8,       // DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
-    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8B8A8_UINT
-    eTexFormat::RGBA8_snorm, // DXGI_FORMAT_R8G8B8A8_SNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8B8A8_SINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16_TYPELESS
-    eTexFormat::RG16F,       // DXGI_FORMAT_R16G16_FLOAT
-    eTexFormat::RG16,        // DXGI_FORMAT_R16G16_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16_SNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16_SINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_D32_FLOAT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32_FLOAT
-    eTexFormat::R32UI,       // DXGI_FORMAT_R32_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R32_SINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R24G8_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_D24_UNORM_S8_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R24_UNORM_X8_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_X24_TYPELESS_G8_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8_TYPELESS
-    eTexFormat::RG8,         // DXGI_FORMAT_R8G8_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8_SNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8_SINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16_TYPELESS
-    eTexFormat::R16F,        // DXGI_FORMAT_R16_FLOAT
-    eTexFormat::Undefined,   // DXGI_FORMAT_D16_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16_SNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R16_SINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R8_TYPELESS
-    eTexFormat::R8,          // DXGI_FORMAT_R8_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R8_UINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_R8_SNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R8_SINT
-    eTexFormat::Undefined,   // DXGI_FORMAT_A8_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R1_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R9G9B9E5_SHAREDEXP
-    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8_B8G8_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_G8R8_G8B8_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC1_TYPELESS
-    eTexFormat::BC1,         // DXGI_FORMAT_BC1_UNORM
-    eTexFormat::BC1_srgb,    // DXGI_FORMAT_BC1_UNORM_SRGB
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC2_TYPELESS
-    eTexFormat::BC2,         // DXGI_FORMAT_BC2_UNORM
-    eTexFormat::BC2_srgb,    // DXGI_FORMAT_BC2_UNORM_SRGB
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC3_TYPELESS
-    eTexFormat::BC3,         // DXGI_FORMAT_BC3_UNORM
-    eTexFormat::BC3_srgb,    // DXGI_FORMAT_BC3_UNORM_SRGB
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC4_TYPELESS
-    eTexFormat::BC4,         // DXGI_FORMAT_BC4_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC4_SNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC5_TYPELESS
-    eTexFormat::BC5,         // DXGI_FORMAT_BC5_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC5_SNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_B5G6R5_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_B5G5R5A1_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_B8G8R8A8_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_B8G8R8X8_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_B8G8R8A8_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_B8G8R8A8_UNORM_SRGB
-    eTexFormat::Undefined,   // DXGI_FORMAT_B8G8R8X8_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC6H_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC6H_UF16
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC6H_SF16
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC7_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC7_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC7_UNORM_SRGB
-    eTexFormat::Undefined,   // DXGI_FORMAT_AYUV
-    eTexFormat::Undefined,   // DXGI_FORMAT_Y410
-    eTexFormat::Undefined,   // DXGI_FORMAT_Y416
-    eTexFormat::Undefined,   // DXGI_FORMAT_NV12
-    eTexFormat::Undefined,   // DXGI_FORMAT_P010
-    eTexFormat::Undefined,   // DXGI_FORMAT_P016
-    eTexFormat::Undefined,   // DXGI_FORMAT_420_OPAQUE
-    eTexFormat::Undefined,   // DXGI_FORMAT_YUY2
-    eTexFormat::Undefined,   // DXGI_FORMAT_Y210
-    eTexFormat::Undefined,   // DXGI_FORMAT_Y216
-    eTexFormat::Undefined,   // DXGI_FORMAT_NV11
-    eTexFormat::Undefined,   // DXGI_FORMAT_AI44
-    eTexFormat::Undefined,   // DXGI_FORMAT_IA44
-    eTexFormat::Undefined,   // DXGI_FORMAT_P8
-    eTexFormat::Undefined,   // DXGI_FORMAT_A8P8
-    eTexFormat::Undefined,   // DXGI_FORMAT_B4G4R4A4_UNORM = 115
+const eFormat g_format_from_dxgi_format[] = {
+    eFormat::Undefined,   // DXGI_FORMAT_UNKNOWN
+    eFormat::Undefined,   // DXGI_FORMAT_R32G32B32A32_TYPELESS
+    eFormat::RGBA32F,     // DXGI_FORMAT_R32G32B32A32_FLOAT
+    eFormat::Undefined,   // DXGI_FORMAT_R32G32B32A32_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R32G32B32A32_SINT
+    eFormat::Undefined,   // DXGI_FORMAT_R32G32B32_TYPELESS
+    eFormat::Undefined,   // DXGI_FORMAT_R32G32B32_FLOAT
+    eFormat::Undefined,   // DXGI_FORMAT_R32G32B32_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R32G32B32_SINT
+    eFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_TYPELESS
+    eFormat::RGBA16F,     // DXGI_FORMAT_R16G16B16A16_FLOAT
+    eFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_SNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_SINT
+    eFormat::Undefined,   // DXGI_FORMAT_R32G32_TYPELESS
+    eFormat::RG32F,       // DXGI_FORMAT_R32G32_FLOAT
+    eFormat::RG32UI,      // DXGI_FORMAT_R32G32_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R32G32_SINT
+    eFormat::Undefined,   // DXGI_FORMAT_R32G8X24_TYPELESS
+    eFormat::Undefined,   // DXGI_FORMAT_D32_FLOAT_S8X24_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS
+    eFormat::Undefined,   // DXGI_FORMAT_X32_TYPELESS_G8X24_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R10G10B10A2_TYPELESS
+    eFormat::RGB10_A2,    // DXGI_FORMAT_R10G10B10A2_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R10G10B10A2_UINT
+    eFormat::RG11F_B10F,  // DXGI_FORMAT_R11G11B10_FLOAT
+    eFormat::Undefined,   // DXGI_FORMAT_R8G8B8A8_TYPELESS
+    eFormat::RGBA8,       // DXGI_FORMAT_R8G8B8A8_UNORM
+    eFormat::RGBA8,       // DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
+    eFormat::Undefined,   // DXGI_FORMAT_R8G8B8A8_UINT
+    eFormat::RGBA8_snorm, // DXGI_FORMAT_R8G8B8A8_SNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R8G8B8A8_SINT
+    eFormat::Undefined,   // DXGI_FORMAT_R16G16_TYPELESS
+    eFormat::RG16F,       // DXGI_FORMAT_R16G16_FLOAT
+    eFormat::RG16,        // DXGI_FORMAT_R16G16_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R16G16_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R16G16_SNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R16G16_SINT
+    eFormat::Undefined,   // DXGI_FORMAT_R32_TYPELESS
+    eFormat::Undefined,   // DXGI_FORMAT_D32_FLOAT
+    eFormat::Undefined,   // DXGI_FORMAT_R32_FLOAT
+    eFormat::R32UI,       // DXGI_FORMAT_R32_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R32_SINT
+    eFormat::Undefined,   // DXGI_FORMAT_R24G8_TYPELESS
+    eFormat::Undefined,   // DXGI_FORMAT_D24_UNORM_S8_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R24_UNORM_X8_TYPELESS
+    eFormat::Undefined,   // DXGI_FORMAT_X24_TYPELESS_G8_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R8G8_TYPELESS
+    eFormat::RG8,         // DXGI_FORMAT_R8G8_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R8G8_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R8G8_SNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R8G8_SINT
+    eFormat::Undefined,   // DXGI_FORMAT_R16_TYPELESS
+    eFormat::R16F,        // DXGI_FORMAT_R16_FLOAT
+    eFormat::Undefined,   // DXGI_FORMAT_D16_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R16_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R16_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R16_SNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R16_SINT
+    eFormat::Undefined,   // DXGI_FORMAT_R8_TYPELESS
+    eFormat::R8,          // DXGI_FORMAT_R8_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R8_UINT
+    eFormat::Undefined,   // DXGI_FORMAT_R8_SNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R8_SINT
+    eFormat::Undefined,   // DXGI_FORMAT_A8_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R1_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R9G9B9E5_SHAREDEXP
+    eFormat::Undefined,   // DXGI_FORMAT_R8G8_B8G8_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_G8R8_G8B8_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_BC1_TYPELESS
+    eFormat::BC1,         // DXGI_FORMAT_BC1_UNORM
+    eFormat::BC1_srgb,    // DXGI_FORMAT_BC1_UNORM_SRGB
+    eFormat::Undefined,   // DXGI_FORMAT_BC2_TYPELESS
+    eFormat::BC2,         // DXGI_FORMAT_BC2_UNORM
+    eFormat::BC2_srgb,    // DXGI_FORMAT_BC2_UNORM_SRGB
+    eFormat::Undefined,   // DXGI_FORMAT_BC3_TYPELESS
+    eFormat::BC3,         // DXGI_FORMAT_BC3_UNORM
+    eFormat::BC3_srgb,    // DXGI_FORMAT_BC3_UNORM_SRGB
+    eFormat::Undefined,   // DXGI_FORMAT_BC4_TYPELESS
+    eFormat::BC4,         // DXGI_FORMAT_BC4_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_BC4_SNORM
+    eFormat::Undefined,   // DXGI_FORMAT_BC5_TYPELESS
+    eFormat::BC5,         // DXGI_FORMAT_BC5_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_BC5_SNORM
+    eFormat::Undefined,   // DXGI_FORMAT_B5G6R5_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_B5G5R5A1_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_B8G8R8A8_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_B8G8R8X8_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_B8G8R8A8_TYPELESS
+    eFormat::Undefined,   // DXGI_FORMAT_B8G8R8A8_UNORM_SRGB
+    eFormat::Undefined,   // DXGI_FORMAT_B8G8R8X8_TYPELESS
+    eFormat::Undefined,   // DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
+    eFormat::Undefined,   // DXGI_FORMAT_BC6H_TYPELESS
+    eFormat::Undefined,   // DXGI_FORMAT_BC6H_UF16
+    eFormat::Undefined,   // DXGI_FORMAT_BC6H_SF16
+    eFormat::Undefined,   // DXGI_FORMAT_BC7_TYPELESS
+    eFormat::Undefined,   // DXGI_FORMAT_BC7_UNORM
+    eFormat::Undefined,   // DXGI_FORMAT_BC7_UNORM_SRGB
+    eFormat::Undefined,   // DXGI_FORMAT_AYUV
+    eFormat::Undefined,   // DXGI_FORMAT_Y410
+    eFormat::Undefined,   // DXGI_FORMAT_Y416
+    eFormat::Undefined,   // DXGI_FORMAT_NV12
+    eFormat::Undefined,   // DXGI_FORMAT_P010
+    eFormat::Undefined,   // DXGI_FORMAT_P016
+    eFormat::Undefined,   // DXGI_FORMAT_420_OPAQUE
+    eFormat::Undefined,   // DXGI_FORMAT_YUY2
+    eFormat::Undefined,   // DXGI_FORMAT_Y210
+    eFormat::Undefined,   // DXGI_FORMAT_Y216
+    eFormat::Undefined,   // DXGI_FORMAT_NV11
+    eFormat::Undefined,   // DXGI_FORMAT_AI44
+    eFormat::Undefined,   // DXGI_FORMAT_IA44
+    eFormat::Undefined,   // DXGI_FORMAT_P8
+    eFormat::Undefined,   // DXGI_FORMAT_A8P8
+    eFormat::Undefined,   // DXGI_FORMAT_B4G4R4A4_UNORM = 115
 };
-static_assert(std::size(g_tex_format_from_dxgi_format) == 116);
+static_assert(std::size(g_format_from_dxgi_format) == 116);
 
 uint16_t f32_to_f16(const float value) {
     int32_t i;
@@ -443,7 +443,7 @@ void rgb9e5_to_float3(rgb9e5 v, float retval[3]) {
 
 } // namespace Ren
 
-std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(Span<const uint8_t> data, int &w, int &h, eTexFormat &format) {
+std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(Span<const uint8_t> data, int &w, int &h, eFormat &format) {
     uint32_t img_size;
     ReadTGAFile(data, w, h, format, nullptr, img_size);
 
@@ -453,7 +453,7 @@ std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(Span<const uint8_t> data, int &w, in
     return image_ret;
 }
 
-bool Ren::ReadTGAFile(Span<const uint8_t> data, int &w, int &h, eTexFormat &format, uint8_t *out_data,
+bool Ren::ReadTGAFile(Span<const uint8_t> data, int &w, int &h, eFormat &format, uint8_t *out_data,
                       uint32_t &out_size) {
     const uint8_t tga_header[12] = {0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     const uint8_t *tga_compare = data.data();
@@ -490,9 +490,9 @@ bool Ren::ReadTGAFile(Span<const uint8_t> data, int &w, int &h, eTexFormat &form
     const uint32_t bpp = img_header[4];
     const uint32_t bytes_per_pixel = bpp / 8;
     if (bpp == 32) {
-        format = eTexFormat::RGBA8;
+        format = eFormat::RGBA8;
     } else if (bpp == 24) {
-        format = eTexFormat::RGB8;
+        format = eFormat::RGB8;
     }
 
     if (out_data && out_size < w * h * bytes_per_pixel) {
@@ -780,7 +780,7 @@ std::unique_ptr<uint8_t[]> Ren::ConvertCoCgxY_to_RGB(const uint8_t image_data[],
     return u8_data;
 }
 
-Ren::eTexFormat Ren::TexFormatFromDXGIFormat(const DXGI_FORMAT f) { return g_tex_format_from_dxgi_format[int(f)]; }
+Ren::eFormat Ren::FormatFromDXGIFormat(const DXGI_FORMAT f) { return g_format_from_dxgi_format[int(f)]; }
 
 int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16], const int channels,
                      const eMipOp op[4], const int min_tex_dim) {

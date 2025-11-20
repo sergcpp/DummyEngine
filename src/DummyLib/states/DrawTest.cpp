@@ -189,7 +189,7 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::Off;
             } else {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
-                renderer_->SetTonemapLUT(Ray::LUT_DIMS, Ren::eTexFormat::RGB10_A2, RayLUTByName(js_view_transform.val));
+                renderer_->SetTonemapLUT(Ray::LUT_DIMS, Ren::eFormat::RGB10_A2, RayLUTByName(js_view_transform.val));
             }
         }
 

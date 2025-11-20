@@ -45,7 +45,7 @@ GLbitfield GetGLBufStorageFlags(const eBufType type) {
 }
 #endif
 
-uint32_t GLInternalFormatFromTexFormat(eTexFormat format);
+uint32_t GLInternalFormatFromFormat(eFormat format);
 } // namespace Ren
 
 int Ren::Buffer::g_GenCounter = 0;
@@ -239,14 +239,14 @@ void Ren::Buffer::UpdateImmediate(const uint32_t dst_offset, const uint32_t size
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
-int Ren::Buffer::AddBufferView(const eTexFormat format) {
+int Ren::Buffer::AddBufferView(const eFormat format) {
     GLuint tex_id;
     glCreateTextures(GL_TEXTURE_BUFFER, 1, &tex_id);
 #ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
     glBindTexture(GL_TEXTURE_BUFFER, tex_id);
-    glTexBufferRange(GL_TEXTURE_BUFFER, GLInternalFormatFromTexFormat(format), GLuint(handle_.buf), 0, size_);
+    glTexBufferRange(GL_TEXTURE_BUFFER, GLInternalFormatFromFormat(format), GLuint(handle_.buf), 0, size_);
     glBindTexture(GL_TEXTURE_BUFFER, 0);
 
     handle_.views.emplace_back(format, tex_id);

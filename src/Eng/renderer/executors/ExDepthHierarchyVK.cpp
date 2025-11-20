@@ -9,9 +9,9 @@
 #include "../shaders/depth_hierarchy_interface.h"
 
 void Eng::ExDepthHierarchy::Execute(FgContext &fg) {
-    const Ren::Texture &depth_tex = fg.AccessROTexture(depth_tex_);
+    const Ren::Image &depth_tex = fg.AccessROImage(depth_tex_);
     Ren::Buffer &atomic_buf = fg.AccessRWBuffer(atomic_buf_);
-    Ren::Texture &output_tex = fg.AccessRWTexture(output_tex_);
+    Ren::Image &output_tex = fg.AccessRWImage(output_tex_);
 
     Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 

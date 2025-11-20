@@ -12,13 +12,13 @@
 #include <Ren/Framebuffer.h>
 #include <Ren/Fwd.h>
 #include <Ren/HashMap32.h>
+#include <Ren/Image.h>
 #include <Ren/Log.h>
 #include <Ren/Pipeline.h>
 #include <Ren/RastState.h>
 #include <Ren/Sampler.h>
 #include <Ren/SmallVector.h>
 #include <Ren/SparseArray.h>
-#include <Ren/Texture.h>
 #include <Sys/MonoAlloc.h>
 
 #include "FgResource.h"
@@ -103,10 +103,10 @@ struct FgAllocBuf : public FgAllocRes {
     Ren::BufRef strong_ref;
 };
 
-struct FgAllocTex : public FgAllocRes {
+struct FgAllocImg : public FgAllocRes {
     FgImgDesc desc;
-    Ren::WeakTexRef ref;
-    Ren::TexRef strong_ref;
+    Ren::WeakImgRef ref;
+    Ren::ImgRef strong_ref;
 };
 
 enum class eFgQueueType : uint8_t { Graphics, Compute, Transfer };
@@ -123,8 +123,8 @@ class FgContext {
     Ren::SparseArray<FgAllocBuf> buffers_;
     Ren::HashMap32<std::string, uint16_t> name_to_buffer_;
 
-    Ren::SparseArray<FgAllocTex> textures_;
-    Ren::HashMap32<std::string, uint16_t> name_to_texture_;
+    Ren::SparseArray<FgAllocImg> images_;
+    Ren::HashMap32<std::string, uint16_t> name_to_image_;
 
     FgContext(Ren::Context &ctx, ShaderLoader &sh) : ctx_(ctx), sh_(sh) {}
 
@@ -142,15 +142,15 @@ class FgContext {
     int backend_frame() const;
 
     const Ren::Buffer &AccessROBuffer(FgResRef handle);
-    const Ren::Texture &AccessROTexture(FgResRef handle);
+    const Ren::Image &AccessROImage(FgResRef handle);
 
     Ren::Buffer &AccessRWBuffer(FgResRef handle);
-    Ren::Texture &AccessRWTexture(FgResRef handle);
+    Ren::Image &AccessRWImage(FgResRef handle);
 
     // TODO: Get rid of these!
     Ren::WeakBufRef AccessROBufferRef(FgResRef handle);
-    Ren::WeakTexRef AccessROTextureRef(FgResRef handle);
-    Ren::WeakTexRef AccessRWTextureRef(FgResRef handle);
+    Ren::WeakImgRef AccessROImageRef(FgResRef handle);
+    Ren::WeakImgRef AccessRWImageRef(FgResRef handle);
 };
 
 class FgBuilder : public FgContext {
@@ -178,9 +178,9 @@ class FgBuilder : public FgContext {
     void ClearBuffer_AsTransfer(Ren::BufRef &buf, Ren::CommandBuffer cmd_buf);
     void ClearBuffer_AsStorage(Ren::BufRef &buf, Ren::CommandBuffer cmd_buf);
 
-    void ClearImage_AsTransfer(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf);
-    void ClearImage_AsStorage(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf);
-    void ClearImage_AsTarget(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf);
+    void ClearImage_AsTransfer(Ren::ImgRef &img, Ren::CommandBuffer cmd_buf);
+    void ClearImage_AsStorage(Ren::ImgRef &img, Ren::CommandBuffer cmd_buf);
+    void ClearImage_AsTarget(Ren::ImgRef &img, Ren::CommandBuffer cmd_buf);
 
     static const int AllocBufSize = 4 * 1024 * 1024;
     std::unique_ptr<char[]> alloc_buf_;
@@ -195,10 +195,10 @@ class FgBuilder : public FgContext {
         // no deallocation is needed
     }
 
-    std::vector<Ren::SmallVector<int, 4>> tex_alias_chains_, buf_alias_chains_;
+    std::vector<Ren::SmallVector<int, 4>> img_alias_chains_, buf_alias_chains_;
     std::vector<Ren::MemHeap> memory_heaps_;
 
-    Ren::PipelineRef pi_clear_image_[3][int(Ren::eTexFormat::_Count)];
+    Ren::PipelineRef pi_clear_image_[3][int(Ren::eFormat::_Count)];
     Ren::PipelineRef pi_clear_buffer_;
 
   public:
@@ -213,10 +213,10 @@ class FgBuilder : public FgContext {
 
     std::string GetResourceDebugInfo(const FgResource &res) const;
     void GetResourceFrameLifetime(const FgAllocBuf &b, uint16_t out_lifetime[2][2]) const;
-    void GetResourceFrameLifetime(const FgAllocTex &t, uint16_t out_lifetime[2][2]) const;
+    void GetResourceFrameLifetime(const FgAllocImg &t, uint16_t out_lifetime[2][2]) const;
 
     const Ren::SparseArray<FgAllocBuf> &buffers() const { return buffers_; }
-    const Ren::SparseArray<FgAllocTex> &textures() const { return textures_; }
+    const Ren::SparseArray<FgAllocImg> &images() const { return images_; }
 
     template <typename T, class... Args> T *AllocNodeData(Args &&...args) {
         char *mem = alloc_.allocate(sizeof(T) + alignof(T));
@@ -230,16 +230,16 @@ class FgBuilder : public FgContext {
     FgResRef ReadBuffer(const Ren::WeakBufRef &ref, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
                         FgNode &node, int slot_index = -1);
 
-    FgResRef ReadTexture(FgResRef handle, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages, FgNode &node);
-    FgResRef ReadTexture(std::string_view name, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
-                         FgNode &node);
-    FgResRef ReadTexture(const Ren::WeakTexRef &ref, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
-                         FgNode &node);
+    FgResRef ReadImage(FgResRef handle, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages, FgNode &node);
+    FgResRef ReadImage(std::string_view name, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
+                       FgNode &node);
+    FgResRef ReadImage(const Ren::WeakImgRef &ref, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
+                       FgNode &node);
 
-    FgResRef ReadHistoryTexture(FgResRef handle, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
-                                FgNode &node);
-    FgResRef ReadHistoryTexture(std::string_view name, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
-                                FgNode &node);
+    FgResRef ReadHistoryImage(FgResRef handle, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
+                              FgNode &node);
+    FgResRef ReadHistoryImage(std::string_view name, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
+                              FgNode &node);
 
     FgResRef WriteBuffer(FgResRef handle, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages, FgNode &node);
     FgResRef WriteBuffer(std::string_view name, const FgBufDesc &desc, Ren::eResState desired_state,
@@ -247,16 +247,15 @@ class FgBuilder : public FgContext {
     FgResRef WriteBuffer(const Ren::WeakBufRef &ref, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
                          FgNode &node);
 
-    FgResRef WriteTexture(FgResRef handle, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
-                          FgNode &node);
-    FgResRef WriteTexture(std::string_view name, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
-                          FgNode &node);
-    FgResRef WriteTexture(std::string_view name, const FgImgDesc &desc, Ren::eResState desired_state,
-                          Ren::Bitmask<Ren::eStage> stages, FgNode &node);
-    FgResRef WriteTexture(const Ren::WeakTexRef &ref, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
-                          FgNode &node, int slot_index = -1);
+    FgResRef WriteImage(FgResRef handle, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages, FgNode &node);
+    FgResRef WriteImage(std::string_view name, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
+                        FgNode &node);
+    FgResRef WriteImage(std::string_view name, const FgImgDesc &desc, Ren::eResState desired_state,
+                        Ren::Bitmask<Ren::eStage> stages, FgNode &node);
+    FgResRef WriteImage(const Ren::WeakImgRef &ref, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
+                        FgNode &node, int slot_index = -1);
 
-    FgResRef MakeTextureResource(const Ren::WeakTexRef &ref);
+    FgResRef ImportResource(const Ren::WeakImgRef &ref);
 
     void Reset();
     void Compile(Ren::Span<const FgResRef> backbuffer_sources = {});

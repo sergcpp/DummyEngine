@@ -20,7 +20,7 @@ class ExGBufferFill final : public FgExecutor {
     const view_state_t *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
-    const Ren::TextureAtlas *decals_atlas_ = nullptr;
+    const Ren::ImageAtlas *decals_atlas_ = nullptr;
 
     const DrawList **p_list_ = nullptr;
 
@@ -45,8 +45,8 @@ class ExGBufferFill final : public FgExecutor {
     FgResRef out_depth_tex_;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
-                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, const Ren::WeakTexRef &albedo_tex,
-                  const Ren::WeakTexRef &normal_tex, const Ren::WeakTexRef &spec_tex, const Ren::WeakTexRef &depth_tex);
+                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, const Ren::WeakImgRef &albedo_tex,
+                  const Ren::WeakImgRef &normal_tex, const Ren::WeakImgRef &spec_tex, const Ren::WeakImgRef &depth_tex);
     void DrawOpaque(FgContext &fg);
 
   public:

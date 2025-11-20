@@ -216,9 +216,9 @@ void BaseState::Enter() {
 
     /*{ // Create temporary buffer to update probes
         FrameBuf::ColorAttachmentDesc desc;
-        desc.format = Ren::eTexFormat::RawRGB16F;
-        desc.filter = Ren::eTexFilter::NoFilter;
-        desc.wrap = Ren::eTexWrap::ClampToEdge;
+        desc.format = Ren::eFormat::RawRGB16F;
+        desc.filter = Ren::eFilter::NoFilter;
+        desc.wrap = Ren::eWrap::ClampToEdge;
 
         const int res = scene_manager_->scene_data().probe_storage.res();
         temp_probe_buf_ = FrameBuf("Temp probe", *ren_ctx_, res, res, &desc, 1, {}, 1, ren_ctx_->log());
@@ -310,21 +310,21 @@ void BaseState::Enter() {
             if (args[1].num > 3.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
-                    Ray::LUT_DIMS, Ren::eTexFormat::RGB10_A2,
+                    Ray::LUT_DIMS, Ren::eFormat::RGB10_A2,
                     Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
                                                  Ray::transform_luts[int(Ray::eViewTransform::Filmic_HighContrast)]),
                                              4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
             } else if (args[1].num > 2.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
-                    Ray::LUT_DIMS, Ren::eTexFormat::RGB10_A2,
+                    Ray::LUT_DIMS, Ren::eFormat::RGB10_A2,
                     Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
                                                  Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]),
                                              4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
             } else if (args[1].num > 1.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
-                    Ray::LUT_DIMS, Ren::eTexFormat::RGB10_A2,
+                    Ray::LUT_DIMS, Ren::eFormat::RGB10_A2,
                     Ren::Span<const uint8_t>(
                         reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]),
                         reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]) +
@@ -441,7 +441,7 @@ void BaseState::Enter() {
         const int res = scene_data.probe_storage.res(), capacity = scene_data.probe_storage.capacity();
         const bool result =
             scene_data.probe_storage.Resize(ren_ctx_->api_ctx(), ren_ctx_->default_mem_allocs(),
-                                            Ren::eTexFormat::RawRGBA8888, res, capacity, ren_ctx_->log());
+                                            Ren::eFormat::RGBA8888, res, capacity, ren_ctx_->log());
         assert(result);
 
         update_all_probes_ = true;
@@ -780,21 +780,21 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
     probes_dirty_ = false;
 
     if (!viewer_->app_params.ref_name.empty()) {
-        Ren::TexParams params;
+        Ren::ImgParams params;
         params.w = viewer_->width;
         params.h = viewer_->height;
 #if defined(REN_GL_BACKEND)
-        params.format = Ren::eTexFormat::RGBA8_srgb;
+        params.format = Ren::eFormat::RGBA8_srgb;
 #else
-        params.format = Ren::eTexFormat::RGBA8;
+        params.format = Ren::eFormat::RGBA8;
 #endif
-        params.sampling.filter = Ren::eTexFilter::Bilinear;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-        params.usage = Ren::Bitmask(Ren::eTexUsage::RenderTarget) | Ren::eTexUsage::Transfer;
+        params.sampling.filter = Ren::eFilter::Bilinear;
+        params.sampling.wrap = Ren::eWrap::ClampToEdge;
+        params.usage = Ren::Bitmask(Ren::eImgUsage::RenderTarget) | Ren::eImgUsage::Transfer;
 
-        Ren::eTexLoadStatus status;
-        capture_result_ = ren_ctx_->LoadTexture("Capture Result", params, ren_ctx_->default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedDefault);
+        Ren::eImgLoadStatus status;
+        capture_result_ = ren_ctx_->LoadImage("Capture Result", params, ren_ctx_->default_mem_allocs(), &status);
+        assert(status == Ren::eImgLoadStatus::CreatedDefault);
     }
 
     if (viewer_->app_params.gfx_preset == eGfxPreset::Medium) {
@@ -925,7 +925,7 @@ void BaseState::Draw() {
         }
     }
 
-    Ren::TexRef render_target;
+    Ren::ImgRef render_target;
     if (capture_state_ != eCaptureState::None) {
         if (use_pt_) {
             const int iteration = ray_reg_ctx_.empty() ? 0 : ray_reg_ctx_[0][0].iteration;
@@ -1343,7 +1343,7 @@ void BaseState::InitRenderer_PT() {
             scene_manager_->Release_TLAS(true /* immediate */);
             scene_manager_->ReleaseLightTree(true /* immediate */);
             scene_manager_->ReleaseMeshBuffers(true /* immediate */);
-            scene_manager_->ReleaseTextures(true /* immediate */);
+            scene_manager_->ReleaseImages(true /* immediate */);
             scene_manager_->ReleaseMaterialsBuffer(true /* immediate */);
             scene_manager_->ReleaseInstanceBuffer(true /* immediate */);
         }
@@ -1559,7 +1559,7 @@ void BaseState::InitScene_PT() {
     std::map<std::string, Ray::MaterialHandle> loaded_materials;
     std::map<std::string, Ray::TextureHandle> loaded_textures;
 
-    auto load_texture = [&](const Ren::Texture &tex, const bool is_srgb = false, const bool is_YCoCg = false,
+    auto load_texture = [&](const Ren::Image &tex, const bool is_srgb = false, const bool is_YCoCg = false,
                             const bool use_mips = true) {
         if (tex.name() == "default_basecolor.dds" || tex.name() == "default_normalmap.dds" ||
             tex.name() == "default_roughness.dds" || tex.name() == "default_metallic.dds" ||
@@ -1819,21 +1819,21 @@ Ray::TextureHandle BaseState::LoadTexture_PT(const std::string_view name, const 
     Ren::DDSHeader header = {};
     in_file.read((char *)&header, sizeof(Ren::DDSHeader));
 
-    Ren::TexParams temp_params;
+    Ren::ImgParams temp_params;
     Ren::ParseDDSHeader(header, &temp_params);
 
     Ray::tex_desc_t tex_desc;
     switch (temp_params.format) {
-    case Ren::eTexFormat::BC1:
+    case Ren::eFormat::BC1:
         tex_desc.format = Ray::eTextureFormat::BC1;
         break;
-    case Ren::eTexFormat::BC3:
+    case Ren::eFormat::BC3:
         tex_desc.format = Ray::eTextureFormat::BC3;
         break;
-    case Ren::eTexFormat::BC4:
+    case Ren::eFormat::BC4:
         tex_desc.format = Ray::eTextureFormat::BC4;
         break;
-    case Ren::eTexFormat::BC5:
+    case Ren::eFormat::BC5:
         tex_desc.format = Ray::eTextureFormat::BC5;
         break;
     default:
@@ -1918,7 +1918,7 @@ void BaseState::Clear_PT() {
     ray_renderer_->Clear({});
 }
 
-void BaseState::Draw_PT(const Ren::TexRef &target) {
+void BaseState::Draw_PT(const Ren::ImgRef &target) {
     using namespace BaseStateInternal;
 
 #if defined(REN_VK_BACKEND)
@@ -2073,32 +2073,32 @@ void BaseState::Draw_PT(const Ren::TexRef &target) {
     if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
         const Ray::GpuImage pt_image = ray_renderer_->get_native_raw_pixels();
         if (!pt_result_) {
-            Ren::TexHandle handle = {};
+            Ren::ImgHandle handle = {};
             handle.img = pt_image.vk_image;
             handle.views[0] = pt_image.vk_image_view;
 
-            Ren::TexParams params = {};
+            Ren::ImgParams params = {};
             params.w = res_x;
             params.h = res_y;
-            params.format = Ren::eTexFormat::RGBA32F;
-            params.flags = Ren::eTexFlags::NoOwnership;
+            params.format = Ren::eFormat::RGBA32F;
+            params.flags = Ren::eImgFlags::NoOwnership;
 
-            Ren::eTexLoadStatus status;
-            pt_result_ = ren_ctx_->LoadTexture("PT Result Ref", handle, params, {}, &status);
-            assert(status == Ren::eTexLoadStatus::CreatedDefault);
+            Ren::eImgLoadStatus status;
+            pt_result_ = ren_ctx_->LoadImage("PT Result Ref", handle, params, {}, &status);
+            assert(status == Ren::eImgLoadStatus::CreatedDefault);
             pt_result_->resource_state = to_ren_state(pt_image.state);
         }
         pt_result_->resource_state = to_ren_state(pt_image.state);
-        renderer_->BlitImageTonemap(pt_result_, res_x, res_y, Ren::eTexFormat::RGBA32F,
-                                    scene_manager_->main_cam().gamma, scene_manager_->main_cam().min_exposure,
-                                    scene_manager_->main_cam().max_exposure, target, false, true);
+        renderer_->BlitImageTonemap(pt_result_, res_x, res_y, Ren::eFormat::RGBA32F, scene_manager_->main_cam().gamma,
+                                    scene_manager_->main_cam().min_exposure, scene_manager_->main_cam().max_exposure,
+                                    target, false, true);
         ray_renderer_->set_native_raw_pixels_state(to_ray_state(pt_result_->resource_state));
     } else
 #endif
     {
         const Ray::color_data_rgba_t pixels = ray_renderer_->get_raw_pixels_ref();
         renderer_->BlitPixelsTonemap(reinterpret_cast<const uint8_t *>(pixels.ptr), res_x, res_y, pixels.pitch,
-                                     Ren::eTexFormat::RGBA32F, scene_manager_->main_cam().gamma,
+                                     Ren::eFormat::RGBA32F, scene_manager_->main_cam().gamma,
                                      scene_manager_->main_cam().min_exposure, scene_manager_->main_cam().max_exposure,
                                      target, false, true);
     }

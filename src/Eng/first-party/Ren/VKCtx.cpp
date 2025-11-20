@@ -7,9 +7,9 @@
 #endif
 
 #include "Config.h"
+#include "Image.h"
 #include "Log.h"
 #include "SmallVector.h"
-#include "Texture.h"
 
 namespace Ren {
 #if defined(_WIN32)
@@ -657,8 +657,7 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], const int enabl
     pageable_mem_features.pageableDeviceLocalMemory = VK_TRUE;
 
     VkPhysicalDeviceMemoryPriorityFeaturesEXT memory_prio_features = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT
-    };
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT};
     memory_prio_features.memoryPriority = VK_TRUE;
 
     if (this->pageable_memory_supported) {
@@ -815,7 +814,8 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
         SmallVector<VkQueueFamilyProperties, 8> queue_family_properties(queue_family_count);
         vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i], &queue_family_count, &queue_family_properties[0]);
 
-        uint32_t present_family_index = 0xffffffff, graphics_family_index = 0xffffffff, compute_family_index = 0xffffffff;
+        uint32_t present_family_index = 0xffffffff, graphics_family_index = 0xffffffff,
+                 compute_family_index = 0xffffffff;
 
         for (uint32_t j = 0; j < queue_family_count; j++) {
             VkBool32 supports_present = VK_FALSE;

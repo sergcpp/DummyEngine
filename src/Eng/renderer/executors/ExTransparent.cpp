@@ -10,16 +10,16 @@ void Eng::ExTransparent::Execute(FgContext &fg) {
     Ren::WeakBufRef vtx_buf2 = fg.AccessROBufferRef(vtx_buf2_);
     Ren::WeakBufRef ndx_buf = fg.AccessROBufferRef(ndx_buf_);
 
-    Ren::WeakTexRef color_tex = fg.AccessRWTextureRef(color_tex_);
-    Ren::WeakTexRef normal_tex = fg.AccessRWTextureRef(normal_tex_);
-    Ren::WeakTexRef spec_tex = fg.AccessRWTextureRef(spec_tex_);
-    Ren::WeakTexRef depth_tex = fg.AccessRWTextureRef(depth_tex_);
+    Ren::WeakImgRef color_tex = fg.AccessRWImageRef(color_tex_);
+    Ren::WeakImgRef normal_tex = fg.AccessRWImageRef(normal_tex_);
+    Ren::WeakImgRef spec_tex = fg.AccessRWImageRef(spec_tex_);
+    Ren::WeakImgRef depth_tex = fg.AccessRWImageRef(depth_tex_);
 
     LazyInit(fg.ren_ctx(), fg.sh(), vtx_buf1, vtx_buf2, ndx_buf, color_tex, normal_tex, spec_tex, depth_tex);
     DrawTransparent(fg, color_tex);
 }
 
-void Eng::ExTransparent::DrawTransparent(FgContext &fg, const Ren::WeakTexRef &color_tex) {
+void Eng::ExTransparent::DrawTransparent(FgContext &fg, const Ren::WeakImgRef &color_tex) {
     const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
     const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
     const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
@@ -29,8 +29,8 @@ void Eng::ExTransparent::DrawTransparent(FgContext &fg, const Ren::WeakTexRef &c
     const Ren::Buffer &lights_buf = fg.AccessROBuffer(lights_buf_);
     const Ren::Buffer &decals_buf = fg.AccessROBuffer(decals_buf_);
 
-    const Ren::Texture &shad_tex = fg.AccessROTexture(shad_tex_);
-    const Ren::Texture &ssao_tex = fg.AccessROTexture(ssao_tex_);
+    const Ren::Image &shad_tex = fg.AccessROImage(shad_tex_);
+    const Ren::Image &ssao_tex = fg.AccessROImage(ssao_tex_);
 
     DrawTransparent_Simple(fg, instances_buf, instance_indices_buf, unif_shared_data_buf, materials_buf, cells_buf,
                            items_buf, lights_buf, decals_buf, shad_tex, color_tex, ssao_tex);
@@ -38,8 +38,8 @@ void Eng::ExTransparent::DrawTransparent(FgContext &fg, const Ren::WeakTexRef &c
 
 void Eng::ExTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
                                   const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf,
-                                  const Ren::WeakTexRef &color_tex, const Ren::WeakTexRef &normal_tex,
-                                  const Ren::WeakTexRef &spec_tex, const Ren::WeakTexRef &depth_tex) {
+                                  const Ren::WeakImgRef &color_tex, const Ren::WeakImgRef &normal_tex,
+                                  const Ren::WeakImgRef &spec_tex, const Ren::WeakImgRef &depth_tex) {
     const Ren::RenderTarget color_targets[] = {{color_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
                                                {normal_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
                                                {spec_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
@@ -93,7 +93,7 @@ void Eng::ExTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, cons
 #endif
 
     /*if (moments_b0_.id && moments_z_and_z2_.id && moments_z3_and_z4_.id) {
-        const Ren::TexHandle attachments[] = {moments_b0_, moments_z_and_z2_,
+        const Ren::ImgHandle attachments[] = {moments_b0_, moments_z_and_z2_,
                                               moments_z3_and_z4_};
         if (!moments_fb_.Setup(attachments, 3, depth_tex.ref->handle(), {},
                                view_state_->is_multisampled)) {

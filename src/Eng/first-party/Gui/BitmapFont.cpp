@@ -95,16 +95,16 @@ bool Gui::BitmapFont::Load(std::string_view name, std::istream &data, Ren::Conte
 
             Ren::CommandBuffer cmd_buf = ctx.BegTempSingleTimeCommands();
 
-            Ren::TexParams p;
+            Ren::ImgParams p;
             p.w = img_data_w;
             p.h = img_data_h;
-            p.format = Ren::eTexFormat::RGBA8;
+            p.format = Ren::eFormat::RGBA8;
             p.sampling.filter =
-                draw_mode_ == eDrawMode::Passthrough ? Ren::eTexFilter::Nearest : Ren::eTexFilter::Bilinear;
-            p.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+                draw_mode_ == eDrawMode::Passthrough ? Ren::eFilter::Nearest : Ren::eFilter::Bilinear;
+            p.sampling.wrap = Ren::eWrap::ClampToBorder;
 
-            Ren::eTexLoadStatus status;
-            tex_ = ctx.LoadTextureRegion(name, stage_buf, 0, img_data_size, p, cmd_buf, &status);
+            Ren::eImgLoadStatus status;
+            tex_ = ctx.LoadImageRegion(name, stage_buf, 0, img_data_size, p, cmd_buf, &status);
 
             ctx.EndTempSingleTimeCommands(cmd_buf);
             stage_buf.FreeImmediate();
@@ -200,7 +200,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f 
 
     int cur_x = 0;
 
-    const Vec2f uvs_scale = 1.0f / Vec2f{float(Ren::TextureAtlasWidth), float(Ren::TextureAtlasHeight)};
+    const Vec2f uvs_scale = 1.0f / Vec2f{float(Ren::ImageAtlasWidth), float(Ren::ImageAtlasHeight)};
 
     const std::optional<Vec4f> clip = r->GetClipArea();
 

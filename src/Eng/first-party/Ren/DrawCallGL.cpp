@@ -5,10 +5,10 @@
 #include "Bindless.h"
 #include "Buffer.h"
 #include "GL.h"
+#include "Image.h"
 #include "Pipeline.h"
 #include "ProbeStorage.h"
 #include "Sampler.h"
-#include "Texture.h"
 
 namespace Ren {
 extern const uint32_t g_internal_formats_gl[];
@@ -33,15 +33,15 @@ static_assert(std::size(g_gl_bind_target_index) == int(eBindTarget::_Count));
 int g_param_buf_binding;
 } // namespace Ren
 
-uint32_t Ren::GLBindTarget(const Texture &tex, const int view) {
+uint32_t Ren::GLBindTarget(const Image &img, const int view) {
     if (view == 0) {
         // NOTE: Assume all additional views are 2D textures
         return GL_TEXTURE_2D;
     }
-    if (Bitmask<eTexFlags>{tex.params.flags} & eTexFlags::Array) {
+    if (Bitmask<eImgFlags>{img.params.flags} & eImgFlags::Array) {
         return GL_TEXTURE_2D_ARRAY;
     }
-    if (tex.params.d != 0) {
+    if (img.params.d != 0) {
         return GL_TEXTURE_3D;
     }
     return GL_TEXTURE_2D;
@@ -54,11 +54,11 @@ void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u gr
         assert((occupied[g_gl_bind_target_index[int(b.trg)]] & (1u << (b.loc + b.offset))) == 0);
         occupied[g_gl_bind_target_index[int(b.trg)]] |= (1u << (b.loc + b.offset));
         if (b.trg == eBindTarget::Tex || b.trg == eBindTarget::TexSampled) {
-            auto texture_id = GLuint(b.handle.tex->id());
+            auto texture_id = GLuint(b.handle.img->id());
             if (b.handle.view_index) {
-                texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
+                texture_id = GLuint(b.handle.img->handle().views[b.handle.view_index - 1]);
             }
-            ren_glBindTextureUnit_Comp(GLBindTarget(*b.handle.tex, b.handle.view_index), GLuint(b.loc + b.offset),
+            ren_glBindTextureUnit_Comp(GLBindTarget(*b.handle.img, b.handle.view_index), GLuint(b.loc + b.offset),
                                        texture_id);
             if (b.handle.sampler) {
                 ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
@@ -77,22 +77,22 @@ void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u gr
         } else if (b.trg == eBindTarget::STBufRO) {
             glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(b.handle.view_index).second), 0,
                                GL_FALSE, 0, GL_READ_ONLY,
-                               GLInternalFormatFromTexFormat(b.handle.buf->view(b.handle.view_index).first));
+                               GLInternalFormatFromFormat(b.handle.buf->view(b.handle.view_index).first));
         } else if (b.trg == eBindTarget::STBufRW) {
             glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(b.handle.view_index).second), 0,
                                GL_FALSE, 0, GL_READ_WRITE,
-                               GLInternalFormatFromTexFormat(b.handle.buf->view(b.handle.view_index).first));
+                               GLInternalFormatFromFormat(b.handle.buf->view(b.handle.view_index).first));
         } else if (b.trg == eBindTarget::Sampler) {
             ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
         } else if (b.trg == eBindTarget::ImageRO || b.trg == eBindTarget::ImageRW) {
-            auto texture_id = GLuint(b.handle.tex->id());
+            auto texture_id = GLuint(b.handle.img->id());
             if (b.handle.view_index) {
-                texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
+                texture_id = GLuint(b.handle.img->handle().views[b.handle.view_index - 1]);
             }
-            const bool layered = Bitmask<eTexFlags>(b.handle.tex->params.flags) & eTexFlags::Array;
+            const bool layered = Bitmask<eImgFlags>(b.handle.img->params.flags) & eImgFlags::Array;
             glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, layered ? GL_TRUE : GL_FALSE, 0,
                                b.trg == eBindTarget::ImageRO ? GL_READ_ONLY : GL_READ_WRITE,
-                               GLInternalFormatFromTexFormat(b.handle.tex->params.format));
+                               GLInternalFormatFromFormat(b.handle.img->params.format));
         } else if (b.trg == eBindTarget::BindlessDescriptors) {
             glBindBufferRange(GL_SHADER_STORAGE_BUFFER, b.loc, b.handle.bindless->buf->id(), b.offset,
                               b.size ? b.size : b.handle.bindless->buf->size());
@@ -131,11 +131,11 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
         assert((occupied[g_gl_bind_target_index[int(b.trg)]] & (1u << (b.loc + b.offset))) == 0);
         occupied[g_gl_bind_target_index[int(b.trg)]] |= (1u << (b.loc + b.offset));
         if (b.trg == eBindTarget::Tex || b.trg == eBindTarget::TexSampled) {
-            auto texture_id = GLuint(b.handle.tex->id());
+            auto texture_id = GLuint(b.handle.img->id());
             if (b.handle.view_index) {
-                texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
+                texture_id = GLuint(b.handle.img->handle().views[b.handle.view_index - 1]);
             }
-            ren_glBindTextureUnit_Comp(GLBindTarget(*b.handle.tex, b.handle.view_index), GLuint(b.loc + b.offset),
+            ren_glBindTextureUnit_Comp(GLBindTarget(*b.handle.img, b.handle.view_index), GLuint(b.loc + b.offset),
                                        texture_id);
             if (b.handle.sampler) {
                 ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
@@ -154,22 +154,22 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
         } else if (b.trg == eBindTarget::STBufRO) {
             glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(b.handle.view_index).second), 0,
                                GL_FALSE, 0, GL_READ_ONLY,
-                               GLInternalFormatFromTexFormat(b.handle.buf->view(b.handle.view_index).first));
+                               GLInternalFormatFromFormat(b.handle.buf->view(b.handle.view_index).first));
         } else if (b.trg == eBindTarget::STBufRW) {
             glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(b.handle.view_index).second), 0,
                                GL_FALSE, 0, GL_READ_WRITE,
-                               GLInternalFormatFromTexFormat(b.handle.buf->view(b.handle.view_index).first));
+                               GLInternalFormatFromFormat(b.handle.buf->view(b.handle.view_index).first));
         } else if (b.trg == eBindTarget::Sampler) {
             ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
         } else if (b.trg == eBindTarget::ImageRO || b.trg == eBindTarget::ImageRW) {
-            auto texture_id = GLuint(b.handle.tex->id());
+            auto texture_id = GLuint(b.handle.img->id());
             if (b.handle.view_index) {
-                texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
+                texture_id = GLuint(b.handle.img->handle().views[b.handle.view_index - 1]);
             }
-            const bool layered = Bitmask<eTexFlags>(b.handle.tex->params.flags) & eTexFlags::Array;
+            const bool layered = Bitmask<eImgFlags>(b.handle.img->params.flags) & eImgFlags::Array;
             glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, layered ? GL_TRUE : GL_FALSE, 0,
                                b.trg == eBindTarget::ImageRO ? GL_READ_ONLY : GL_READ_WRITE,
-                               GLInternalFormatFromTexFormat(b.handle.tex->params.format));
+                               GLInternalFormatFromFormat(b.handle.img->params.format));
         } else if (b.trg == eBindTarget::BindlessDescriptors) {
             glBindBufferRange(GL_SHADER_STORAGE_BUFFER, b.loc, b.handle.bindless->buf->id(), b.offset,
                               b.size ? b.size : b.handle.bindless->buf->size());

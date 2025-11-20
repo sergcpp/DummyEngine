@@ -233,7 +233,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = InstanceIndicesBufChunkSize;
-        desc.views.push_back(Ren::eTexFormat::RG32UI);
+        desc.views.push_back(Ren::eFormat::RG32UI);
         common_buffers.instance_indices = update_bufs.AddTransferOutput("Instance Indices", desc);
     }
     FgResRef shared_data_res;
@@ -492,42 +492,42 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = CellsBufChunkSize;
-        desc.views.push_back(Ren::eTexFormat::RG32UI);
+        desc.views.push_back(Ren::eFormat::RG32UI);
         common_buffers.cells = update_light_bufs.AddTransferOutput("Cells Buffer", desc);
     }
     { // create RT cells buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = CellsBufChunkSize;
-        desc.views.push_back(Ren::eTexFormat::RG32UI);
+        desc.views.push_back(Ren::eFormat::RG32UI);
         common_buffers.rt_cells = update_light_bufs.AddTransferOutput("RT Cells Buffer", desc);
     }
     { // create lights buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = LightsBufChunkSize;
-        desc.views.push_back(Ren::eTexFormat::RGBA32UI);
+        desc.views.push_back(Ren::eFormat::RGBA32UI);
         common_buffers.lights = update_light_bufs.AddTransferOutput("Lights Buffer", desc);
     }
     { // create decals buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = DecalsBufChunkSize;
-        desc.views.push_back(Ren::eTexFormat::RGBA32F);
+        desc.views.push_back(Ren::eFormat::RGBA32F);
         common_buffers.decals = update_light_bufs.AddTransferOutput("Decals Buffer", desc);
     }
     { // create items buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = ItemsBufChunkSize;
-        desc.views.push_back(Ren::eTexFormat::RG32UI);
+        desc.views.push_back(Ren::eFormat::RG32UI);
         common_buffers.items = update_light_bufs.AddTransferOutput("Items Buffer", desc);
     }
     { // create RT items buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = ItemsBufChunkSize;
-        desc.views.push_back(Ren::eTexFormat::RG32UI);
+        desc.views.push_back(Ren::eFormat::RG32UI);
         common_buffers.rt_items = update_light_bufs.AddTransferOutput("RT Items Buffer", desc);
     }
 
@@ -773,21 +773,21 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         const Ren::Buffer &lights_buf = fg.AccessROBuffer(data->lights_buf);
         const Ren::Buffer &decals_buf = fg.AccessROBuffer(data->decals_buf);
 
-        const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-        const Ren::Texture &albedo_tex = fg.AccessROTexture(data->albedo_tex);
-        const Ren::Texture &normal_tex = fg.AccessROTexture(data->normal_tex);
-        const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
+        const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+        const Ren::Image &albedo_tex = fg.AccessROImage(data->albedo_tex);
+        const Ren::Image &normal_tex = fg.AccessROImage(data->normal_tex);
+        const Ren::Image &spec_tex = fg.AccessROImage(data->spec_tex);
 
-        const Ren::Texture &shad_depth_tex = fg.AccessROTexture(data->shadow_depth_tex);
-        const Ren::Texture &shad_color_tex = fg.AccessROTexture(data->shadow_color_tex);
-        const Ren::Texture &ssao_tex = fg.AccessROTexture(data->ssao_tex);
-        const Ren::Texture &gi_tex = fg.AccessROTexture(data->gi_tex);
-        const Ren::Texture &sun_shadow_tex = fg.AccessROTexture(data->sun_shadow_tex);
+        const Ren::Image &shad_depth_tex = fg.AccessROImage(data->shadow_depth_tex);
+        const Ren::Image &shad_color_tex = fg.AccessROImage(data->shadow_color_tex);
+        const Ren::Image &ssao_tex = fg.AccessROImage(data->ssao_tex);
+        const Ren::Image &gi_tex = fg.AccessROImage(data->gi_tex);
+        const Ren::Image &sun_shadow_tex = fg.AccessROImage(data->sun_shadow_tex);
 
-        const Ren::Texture &ltc_luts = fg.AccessROTexture(data->ltc_luts_tex);
-        const Ren::Texture &env_tex = fg.AccessROTexture(data->env_tex);
+        const Ren::Image &ltc_luts = fg.AccessROImage(data->ltc_luts_tex);
+        const Ren::Image &env_tex = fg.AccessROImage(data->env_tex);
 
-        Ren::Texture &out_color_tex = fg.AccessRWTexture(data->output_tex);
+        Ren::Image &out_color_tex = fg.AccessRWImage(data->output_tex);
 
         const Ren::Binding bindings[] = {
             {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf},
@@ -874,9 +874,9 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
 
     static_vel.set_execute_cb([this, data](FgContext &fg) {
         const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(data->shared_data);
-        Ren::WeakTexRef depth_tex = fg.AccessROTextureRef(data->depth_tex);
+        Ren::WeakImgRef depth_tex = fg.AccessROImageRef(data->depth_tex);
 
-        Ren::WeakTexRef velocity_tex = fg.AccessRWTextureRef(data->velocity_tex);
+        Ren::WeakImgRef velocity_tex = fg.AccessRWImageRef(data->velocity_tex);
 
         Ren::RastState rast_state;
         rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -920,16 +920,16 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::R32UI;
-            desc.sampling.filter = Ren::eTexFilter::Nearest;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+            desc.format = Ren::eFormat::R32UI;
+            desc.sampling.filter = Ren::eFilter::Nearest;
+            desc.sampling.wrap = Ren::eWrap::ClampToBorder;
 
             reconstructed_depth = data->reconstructed_depth =
                 clear_reconstructed.AddClearImageOutput("Reconstructed Prev. Depth", desc);
         }
 
         clear_reconstructed.set_execute_cb([data](FgContext &fg) {
-            Ren::Texture &reconstructed_depth = fg.AccessRWTexture(data->reconstructed_depth);
+            Ren::Image &reconstructed_depth = fg.AccessRWImage(data->reconstructed_depth);
 
             Ren::ClearImage(reconstructed_depth, {}, fg.cmd_buf());
         });
@@ -957,9 +957,9 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::R32F;
-            desc.sampling.filter = Ren::eTexFilter::Nearest;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+            desc.format = Ren::eFormat::R32F;
+            desc.sampling.filter = Ren::eFilter::Nearest;
+            desc.sampling.wrap = Ren::eWrap::ClampToBorder;
 
             dilated_depth = data->out_dilated_depth_tex =
                 reconstruct.AddStorageImageOutput("Dilated Depth", desc, Stg::ComputeShader);
@@ -968,9 +968,9 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RG16F;
-            desc.sampling.filter = Ren::eTexFilter::Nearest;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+            desc.format = Ren::eFormat::RG16F;
+            desc.sampling.filter = Ren::eFilter::Nearest;
+            desc.sampling.wrap = Ren::eWrap::ClampToBorder;
 
             dilated_velocity = data->out_dilated_velocity_tex =
                 reconstruct.AddStorageImageOutput("Dilated Velocity", desc, Stg::ComputeShader);
@@ -979,12 +979,12 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
         reconstruct.set_execute_cb([this, data](FgContext &fg) {
             using namespace ReconstructDepth;
 
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &velocity_tex = fg.AccessROTexture(data->velocity_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &velocity_tex = fg.AccessROImage(data->velocity_tex);
 
-            Ren::Texture &reconstructed_depth_tex = fg.AccessRWTexture(data->out_reconstructed_depth_tex);
-            Ren::Texture &dilated_depth_tex = fg.AccessRWTexture(data->out_dilated_depth_tex);
-            Ren::Texture &dilated_velocity_tex = fg.AccessRWTexture(data->out_dilated_velocity_tex);
+            Ren::Image &reconstructed_depth_tex = fg.AccessRWImage(data->out_reconstructed_depth_tex);
+            Ren::Image &dilated_depth_tex = fg.AccessRWImage(data->out_dilated_depth_tex);
+            Ren::Image &dilated_velocity_tex = fg.AccessRWImage(data->out_dilated_velocity_tex);
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},
@@ -1022,13 +1022,13 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
         data->reconstructed_depth_tex = prep_disocclusion.AddTextureInput(reconstructed_depth, Stg::ComputeShader);
         data->velocity_tex = prep_disocclusion.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
 
-        { // Texture that holds disocclusion
+        { // Image that holds disocclusion
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RG8;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+            desc.format = Ren::eFormat::RG8;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToBorder;
 
             frame_textures.disocclusion_mask = data->output_tex =
                 prep_disocclusion.AddStorageImageOutput("Disocclusion Mask", desc, Stg::ComputeShader);
@@ -1037,12 +1037,12 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
         prep_disocclusion.set_execute_cb([this, data](FgContext &fg) {
             using namespace PrepareDisocclusion;
 
-            const Ren::Texture &dilated_depth_tex = fg.AccessROTexture(data->dilated_depth_tex);
-            const Ren::Texture &dilated_velocity_tex = fg.AccessROTexture(data->dilated_velocity_tex);
-            const Ren::Texture &reconstructed_depth_tex = fg.AccessROTexture(data->reconstructed_depth_tex);
-            const Ren::Texture &velocity_tex = fg.AccessROTexture(data->velocity_tex);
+            const Ren::Image &dilated_depth_tex = fg.AccessROImage(data->dilated_depth_tex);
+            const Ren::Image &dilated_velocity_tex = fg.AccessROImage(data->dilated_velocity_tex);
+            const Ren::Image &reconstructed_depth_tex = fg.AccessROImage(data->reconstructed_depth_tex);
+            const Ren::Image &velocity_tex = fg.AccessROImage(data->velocity_tex);
 
-            Ren::Texture &output_tex = fg.AccessRWTexture(data->output_tex);
+            Ren::Image &output_tex = fg.AccessRWImage(data->output_tex);
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::TexSampled, DILATED_DEPTH_TEX_SLOT, dilated_depth_tex},
@@ -1085,13 +1085,13 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
         data->dilated_velocity_tex = taa.AddTextureInput(dilated_velocity, Stg::FragmentShader);
         data->disocclusion_mask_tex = taa.AddTextureInput(frame_textures.disocclusion_mask, Stg::FragmentShader);
 
-        { // Texture that holds resolved color
+        { // Image that holds resolved color
             FgImgDesc desc;
             desc.w = view_state_.out_res[0];
             desc.h = view_state_.out_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToBorder;
 
             resolved_color = data->output_tex = taa.AddColorOutput("Resolved Color", desc);
             data->output_history_tex = taa.AddColorOutput("Color History", desc);
@@ -1099,14 +1099,14 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
         data->history_tex = taa.AddHistoryTextureInput(data->output_history_tex, Stg::FragmentShader);
 
         taa.set_execute_cb([this, data, static_accumulation](FgContext &fg) {
-            const Ren::Texture &color_tex = fg.AccessROTexture(data->color_tex);
-            const Ren::Texture &history_tex = fg.AccessROTexture(data->history_tex);
-            const Ren::Texture &dilated_depth_tex = fg.AccessROTexture(data->dilated_depth_tex);
-            const Ren::Texture &dilated_velocity_tex = fg.AccessROTexture(data->dilated_velocity_tex);
-            const Ren::Texture &disocclusion_mask_tex = fg.AccessROTexture(data->disocclusion_mask_tex);
+            const Ren::Image &color_tex = fg.AccessROImage(data->color_tex);
+            const Ren::Image &history_tex = fg.AccessROImage(data->history_tex);
+            const Ren::Image &dilated_depth_tex = fg.AccessROImage(data->dilated_depth_tex);
+            const Ren::Image &dilated_velocity_tex = fg.AccessROImage(data->dilated_velocity_tex);
+            const Ren::Image &disocclusion_mask_tex = fg.AccessROImage(data->disocclusion_mask_tex);
 
-            Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
-            Ren::WeakTexRef output_history_tex = fg.AccessRWTextureRef(data->output_history_tex);
+            Ren::WeakImgRef output_tex = fg.AccessRWImageRef(data->output_tex);
+            Ren::WeakImgRef output_history_tex = fg.AccessRWImageRef(data->output_history_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1162,20 +1162,20 @@ Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextur
         auto *data = classify_h.AllocNodeData<PassData>();
         data->in_velocity_tex = classify_h.AddTextureInput(frame_textures.velocity, Ren::eStage::ComputeShader);
 
-        { // Texture that holds horizontal tiles
+        { // Image that holds horizontal tiles
             FgImgDesc desc;
             desc.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             tiles_tex = data->out_tiles_tex =
                 classify_h.AddStorageImageOutput("MB Tiles H", desc, Ren::eStage::ComputeShader);
         }
 
         classify_h.set_execute_cb([this, data](FgContext &fg) {
-            const Ren::Texture &in_velocity_tex = fg.AccessROTexture(data->in_velocity_tex);
-            Ren::Texture &out_tiles_tex = fg.AccessRWTexture(data->out_tiles_tex);
+            const Ren::Image &in_velocity_tex = fg.AccessROImage(data->in_velocity_tex);
+            Ren::Image &out_tiles_tex = fg.AccessRWImage(data->out_tiles_tex);
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::TexSampled, MotionBlur::VELOCITY_TEX_SLOT, in_velocity_tex},
@@ -1203,12 +1203,12 @@ Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextur
         auto *data = classify_v.AllocNodeData<PassData>();
         data->in_velocity_tex = classify_v.AddTextureInput(tiles_tex, Ren::eStage::ComputeShader);
 
-        { // Texture that holds final tiles
+        { // Image that holds final tiles
             FgImgDesc desc;
             desc.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
             desc.h = (view_state_.ren_res[1] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             tiles_tex = data->out_tiles_tex =
                 classify_v.AddStorageImageOutput("MB Tiles V", desc, Ren::eStage::ComputeShader);
@@ -1217,8 +1217,8 @@ Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextur
         classify_v.set_execute_cb([this, data](FgContext &fg) {
             using namespace MotionBlur;
 
-            const Ren::Texture &in_velocity_tex = fg.AccessROTexture(data->in_velocity_tex);
-            Ren::Texture &out_tiles_tex = fg.AccessRWTexture(data->out_tiles_tex);
+            const Ren::Image &in_velocity_tex = fg.AccessROImage(data->in_velocity_tex);
+            Ren::Image &out_tiles_tex = fg.AccessRWImage(data->out_tiles_tex);
 
             const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, in_velocity_tex},
                                              {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_tiles_tex}};
@@ -1244,13 +1244,13 @@ Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextur
         auto *data = dilate.AllocNodeData<PassData>();
         data->in_tiles_tex = dilate.AddTextureInput(tiles_tex, Ren::eStage::ComputeShader);
 
-        { // Texture that holds dilated tiles
+        { // Image that holds dilated tiles
             FgImgDesc desc;
             desc.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
             desc.h = (view_state_.ren_res[1] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             tiles_tex = data->out_tiles_tex =
                 dilate.AddStorageImageOutput("MB Tiles Dilated", desc, Ren::eStage::ComputeShader);
@@ -1259,8 +1259,8 @@ Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextur
         dilate.set_execute_cb([this, data](FgContext &fg) {
             using namespace MotionBlur;
 
-            const Ren::Texture &in_tiles_tex = fg.AccessROTexture(data->in_tiles_tex);
-            Ren::Texture &out_tiles_tex = fg.AccessRWTexture(data->out_tiles_tex);
+            const Ren::Image &in_tiles_tex = fg.AccessROImage(data->in_tiles_tex);
+            Ren::Image &out_tiles_tex = fg.AccessRWImage(data->out_tiles_tex);
 
             const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, TILES_TEX_SLOT, in_tiles_tex},
                                              {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_tiles_tex}};
@@ -1293,12 +1293,12 @@ Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextur
         data->in_velocity_tex = filter.AddTextureInput(frame_textures.velocity, Ren::eStage::ComputeShader);
         data->in_tiles_tex = filter.AddTextureInput(tiles_tex, Ren::eStage::ComputeShader);
 
-        { // Texture that holds filtered color
+        { // Image that holds filtered color
             FgImgDesc desc;
             desc.w = view_state_.out_res[0];
             desc.h = view_state_.out_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             output_tex = data->output_tex = filter.AddStorageImageOutput("MB Output", desc, Ren::eStage::ComputeShader);
         }
@@ -1306,11 +1306,11 @@ Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextur
         filter.set_execute_cb([this, data](FgContext &fg) {
             using namespace MotionBlur;
 
-            const Ren::Texture &in_color_tex = fg.AccessROTexture(data->in_color_tex);
-            const Ren::Texture &in_depth_tex = fg.AccessROTexture(data->in_depth_tex);
-            const Ren::Texture &in_velocity_tex = fg.AccessROTexture(data->in_velocity_tex);
-            const Ren::Texture &in_tiles_tex = fg.AccessROTexture(data->in_tiles_tex);
-            Ren::Texture &output_tex = fg.AccessRWTexture(data->output_tex);
+            const Ren::Image &in_color_tex = fg.AccessROImage(data->in_color_tex);
+            const Ren::Image &in_depth_tex = fg.AccessROImage(data->in_depth_tex);
+            const Ren::Image &in_velocity_tex = fg.AccessROImage(data->in_velocity_tex);
+            const Ren::Image &in_tiles_tex = fg.AccessROImage(data->in_tiles_tex);
+            Ren::Image &output_tex = fg.AccessRWImage(data->output_tex);
 
             const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, COLOR_TEX_SLOT, in_color_tex},
                                              {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {in_depth_tex, 1}},
@@ -1345,19 +1345,19 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
     auto *data = downsample_depth.AllocNodeData<PassData>();
     data->in_depth_tex = downsample_depth.AddTextureInput(depth_tex, Ren::eStage::FragmentShader);
 
-    { // Texture that holds 2x downsampled linear depth
+    { // Image that holds 2x downsampled linear depth
         FgImgDesc desc;
         desc.w = view_state_.ren_res[0] / 2;
         desc.h = view_state_.ren_res[1] / 2;
-        desc.format = Ren::eTexFormat::R32F;
-        desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        desc.format = Ren::eFormat::R32F;
+        desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
         out_depth_down_2x = data->out_depth_tex = downsample_depth.AddColorOutput("Depth Down 2X", desc);
     }
 
     downsample_depth.set_execute_cb([this, data](FgContext &fg) {
-        const Ren::Texture &depth_tex = fg.AccessROTexture(data->in_depth_tex);
-        Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->out_depth_tex);
+        const Ren::Image &depth_tex = fg.AccessROImage(data->in_depth_tex);
+        Ren::WeakImgRef output_tex = fg.AccessRWImageRef(data->out_depth_tex);
 
         Ren::RastState rast_state;
 
@@ -1394,16 +1394,16 @@ Eng::FgResRef Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity) {
         FgImgDesc desc;
         desc.w = view_state_.out_res[0];
         desc.h = view_state_.out_res[1];
-        desc.format = Ren::eTexFormat::RGBA8;
-        desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        desc.format = Ren::eFormat::RGBA8;
+        desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
         output_tex = data->out_color_tex =
             debug_motion.AddStorageImageOutput("Motion Debug", desc, Ren::eStage::ComputeShader);
     }
 
     debug_motion.set_execute_cb([this, data](FgContext &fg) {
-        const Ren::Texture &velocity_tex = fg.AccessROTexture(data->in_velocity_tex);
-        Ren::Texture &output_tex = fg.AccessRWTexture(data->out_color_tex);
+        const Ren::Image &velocity_tex = fg.AccessROImage(data->in_velocity_tex);
+        Ren::Image &output_tex = fg.AccessRWImage(data->out_color_tex);
 
         const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, DebugVelocity::VELOCITY_TEX_SLOT, velocity_tex},
                                          {Ren::eBindTarget::ImageRW, DebugVelocity::OUT_IMG_SLOT, output_tex}};
@@ -1444,19 +1444,19 @@ Eng::FgResRef Eng::Renderer::AddDebugGBufferPass(const FrameTextures &frame_text
         FgImgDesc desc;
         desc.w = view_state_.out_res[0];
         desc.h = view_state_.out_res[1];
-        desc.format = Ren::eTexFormat::RGBA8;
-        desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        desc.format = Ren::eFormat::RGBA8;
+        desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
         output_tex = data->out_color_tex =
             debug_gbuffer.AddStorageImageOutput("GBuffer Debug", desc, Ren::eStage::ComputeShader);
     }
 
     debug_gbuffer.set_execute_cb([this, data, pi_index](FgContext &fg) {
-        const Ren::Texture &depth_tex = fg.AccessROTexture(data->in_depth_tex);
-        const Ren::Texture &albedo_tex = fg.AccessROTexture(data->in_albedo_tex);
-        const Ren::Texture &normals_tex = fg.AccessROTexture(data->in_normals_tex);
-        const Ren::Texture &specular_tex = fg.AccessROTexture(data->in_specular_tex);
-        Ren::Texture &output_tex = fg.AccessRWTexture(data->out_color_tex);
+        const Ren::Image &depth_tex = fg.AccessROImage(data->in_depth_tex);
+        const Ren::Image &albedo_tex = fg.AccessROImage(data->in_albedo_tex);
+        const Ren::Image &normals_tex = fg.AccessROImage(data->in_normals_tex);
+        const Ren::Image &specular_tex = fg.AccessROImage(data->in_specular_tex);
+        Ren::Image &output_tex = fg.AccessRWImage(data->out_color_tex);
 
         const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, DebugGBuffer::DEPTH_TEX_SLOT, {depth_tex, 1}},
                                          {Ren::eBindTarget::TexSampled, DebugGBuffer::ALBEDO_TEX_SLOT, albedo_tex},

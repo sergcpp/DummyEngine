@@ -20,14 +20,14 @@ void test_material() {
         };
 
         auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4],
-                                         const Bitmask<eTexFlags> flags) {
-            eTexLoadStatus status;
-            TexParams p;
+                                         const Bitmask<eImgFlags> flags) {
+            eImgLoadStatus status;
+            ImgParams p;
             p.w = p.h = 1;
-            p.format = eTexFormat::RGBA8;
-            p.usage = eTexUsage::Transfer;
-            p.flags = eTexFlags::Stub;
-            return test.LoadTexture(name, Span{color, color + 4}, p, test.default_mem_allocs(), &status);
+            p.format = eFormat::RGBA8;
+            p.usage = eImgUsage::Transfer;
+            p.flags = eImgFlags::Stub;
+            return test.LoadImage(name, Span{color, color + 4}, p, test.default_mem_allocs(), &status);
         };
 
         auto on_sampler_needed = [&test](SamplingParams params) {
@@ -62,10 +62,10 @@ void test_material() {
         require(m_ref->ready());
         require(m_ref->name() == "mat1.mat");
 
-        TexRef t0 = m_ref->textures[0];
-        TexRef t1 = m_ref->textures[1];
-        TexRef t2 = m_ref->textures[2];
-        TexRef t3 = m_ref->textures[3];
+        ImgRef t0 = m_ref->textures[0];
+        ImgRef t1 = m_ref->textures[1];
+        ImgRef t2 = m_ref->textures[2];
+        ImgRef t3 = m_ref->textures[3];
 
         require(t0 == t1);
         require(t0 == t3);

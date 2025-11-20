@@ -1,3 +1,4 @@
+X(None,     VK_COMPARE_OP_NEVER,            0xffffffff)
 X(Always,   VK_COMPARE_OP_ALWAYS,           GL_ALWAYS)
 X(Never,    VK_COMPARE_OP_NEVER,            GL_NEVER)
 X(Less,     VK_COMPARE_OP_LESS,             GL_LESS)

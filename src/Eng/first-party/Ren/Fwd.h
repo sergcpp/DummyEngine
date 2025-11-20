@@ -58,10 +58,10 @@ struct RastState;
 class RenderPass;
 class Sampler;
 class Shader;
-class Texture;
-class TextureAtlas;
+class Image;
+class ImageAtlas;
 class Texture2DAtlas;
-class TextureSplitter;
+class ImageSplitter;
 class VertexInput;
 
 using AnimSeqRef = StrongRef<AnimSequence, NamedStorage<AnimSequence>>;
@@ -75,8 +75,8 @@ using ProgramRef = StrongRef<Program, SortedStorage<Program>>;
 using SamplerRef = StrongRef<Sampler, SparseArray<Sampler>>;
 using WeakSamplerRef = WeakRef<Sampler, SparseArray<Sampler>>;
 using ShaderRef = StrongRef<Shader, NamedStorage<Shader>>;
-using TexRef = StrongRef<Texture, NamedStorage<Texture>>;
-using WeakTexRef = WeakRef<Texture, NamedStorage<Texture>>;
+using ImgRef = StrongRef<Image, NamedStorage<Image>>;
+using WeakImgRef = WeakRef<Image, NamedStorage<Image>>;
 
 const char *Version();
 } // namespace Ren

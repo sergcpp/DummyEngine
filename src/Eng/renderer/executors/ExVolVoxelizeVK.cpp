@@ -1,8 +1,8 @@
 #include "ExVolVoxelize.h"
 
 #include <Ren/Context.h>
+#include <Ren/Image.h>
 #include <Ren/RastState.h>
-#include <Ren/Texture.h>
 #include <Ren/VKCtx.h>
 
 #include "../../utils/ShaderLoader.h"
@@ -12,14 +12,14 @@
 
 void Eng::ExVolVoxelize::Execute_HWRT(FgContext &fg) {
     const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
-    const Ren::Texture &stbn_tex = fg.AccessROTexture(args_->stbn_tex);
+    const Ren::Image &stbn_tex = fg.AccessROImage(args_->stbn_tex);
 
     const Ren::Buffer &geo_data_buf = fg.AccessROBuffer(args_->geo_data);
     const Ren::Buffer &materials_buf = fg.AccessROBuffer(args_->materials);
     const Ren::Buffer &tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
 
-    Ren::Texture &out_emission_tex = fg.AccessRWTexture(args_->out_emission_tex);
-    Ren::Texture &out_scatter_tex = fg.AccessRWTexture(args_->out_scatter_tex);
+    Ren::Image &out_emission_tex = fg.AccessRWImage(args_->out_emission_tex);
+    Ren::Image &out_scatter_tex = fg.AccessRWImage(args_->out_scatter_tex);
 
     if (view_state_->skip_volumetrics) {
         return;

@@ -116,18 +116,18 @@ void Eng::ExOpaque::DrawOpaque(FgContext &fg) {
     const Ren::Buffer &lights_buf = fg.AccessROBuffer(lights_buf_);
     const Ren::Buffer &decals_buf = fg.AccessROBuffer(decals_buf_);
 
-    const Ren::Texture &shad_tex = fg.AccessROTexture(shad_tex_);
-    [[maybe_unused]] const Ren::Texture &brdf_lut = fg.AccessROTexture(brdf_lut_);
-    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
-    [[maybe_unused]] const Ren::Texture &cone_rt_lut = fg.AccessROTexture(cone_rt_lut_);
+    const Ren::Image &shad_tex = fg.AccessROImage(shad_tex_);
+    [[maybe_unused]] const Ren::Image &brdf_lut = fg.AccessROImage(brdf_lut_);
+    const Ren::Image &noise_tex = fg.AccessROImage(noise_tex_);
+    [[maybe_unused]] const Ren::Image &cone_rt_lut = fg.AccessROImage(cone_rt_lut_);
 
-    const Ren::Texture &dummy_black = fg.AccessROTexture(dummy_black_);
-    const Ren::Texture &ssao_tex = fg.AccessROTexture(ssao_tex_);
+    const Ren::Image &dummy_black = fg.AccessROImage(dummy_black_);
+    const Ren::Image &ssao_tex = fg.AccessROImage(ssao_tex_);
 
-    const Ren::Texture *lm_tex[4];
+    const Ren::Image *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (lm_tex_[i]) {
-            lm_tex[i] = &fg.AccessROTexture(lm_tex_[i]);
+            lm_tex[i] = &fg.AccessROImage(lm_tex_[i]);
         } else {
             lm_tex[i] = &dummy_black;
         }

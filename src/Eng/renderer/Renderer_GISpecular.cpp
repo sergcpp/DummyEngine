@@ -106,34 +106,34 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
             refl_tex = data->out_refl_tex = ssr_classify.AddStorageImageOutput("SSR Temp 2", desc, Stg::ComputeShader);
         }
         { // blue noise texture
             FgImgDesc desc;
             desc.w = desc.h = 128;
-            desc.format = Ren::eTexFormat::RGBA8;
-            desc.sampling.filter = Ren::eTexFilter::Nearest;
-            desc.sampling.wrap = Ren::eTexWrap::Repeat;
+            desc.format = Ren::eFormat::RGBA8;
+            desc.sampling.filter = Ren::eFilter::Nearest;
+            desc.sampling.wrap = Ren::eWrap::Repeat;
             noise_tex = data->out_noise_tex = ssr_classify.AddStorageImageOutput("BN Tex", desc, Stg::ComputeShader);
         }
 
         ssr_classify.set_execute_cb([this, data, tile_count, SamplesPerQuad](FgContext &fg) {
             using namespace SSRClassifyTiles;
 
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth);
-            const Ren::Texture &spec_tex = fg.AccessROTexture(data->specular);
-            const Ren::Texture &norm_tex = fg.AccessROTexture(data->normal);
-            const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_history);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth);
+            const Ren::Image &spec_tex = fg.AccessROImage(data->specular);
+            const Ren::Image &norm_tex = fg.AccessROImage(data->normal);
+            const Ren::Image &variance_tex = fg.AccessROImage(data->variance_history);
             const Ren::Buffer &bn_pmj_seq = fg.AccessROBuffer(data->bn_pmj_seq);
 
             Ren::Buffer &ray_counter_buf = fg.AccessRWBuffer(data->ray_counter);
             Ren::Buffer &ray_list_buf = fg.AccessRWBuffer(data->ray_list);
             Ren::Buffer &tile_list_buf = fg.AccessRWBuffer(data->tile_list);
-            Ren::Texture &refl_tex = fg.AccessRWTexture(data->out_refl_tex);
-            Ren::Texture &noise_tex = fg.AccessRWTexture(data->out_noise_tex);
+            Ren::Image &refl_tex = fg.AccessRWImage(data->out_refl_tex);
+            Ren::Image &noise_tex = fg.AccessRWImage(data->out_noise_tex);
 
             const Ren::Binding bindings[] = {
                 {Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}}, {Trg::TexSampled, SPEC_TEX_SLOT, spec_tex},
@@ -241,27 +241,27 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         ssr_trace_hq.set_execute_cb([this, data](FgContext &fg) {
             using namespace SSRTraceHQ;
 
-            const Ren::Texture &noise_tex = fg.AccessROTexture(data->noise_tex);
+            const Ren::Image &noise_tex = fg.AccessROImage(data->noise_tex);
             const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &color_tex = fg.AccessROTexture(data->color_tex);
-            const Ren::Texture &normal_tex = fg.AccessROTexture(data->normal_tex);
-            const Ren::Texture &depth_hierarchy_tex = fg.AccessROTexture(data->depth_hierarchy);
+            const Ren::Image &color_tex = fg.AccessROImage(data->color_tex);
+            const Ren::Image &normal_tex = fg.AccessROImage(data->normal_tex);
+            const Ren::Image &depth_hierarchy_tex = fg.AccessROImage(data->depth_hierarchy);
             const Ren::Buffer &in_ray_list_buf = fg.AccessROBuffer(data->in_ray_list);
             const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-            const Ren::Texture *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr,
+            const Ren::Image *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr,
                                *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
             if (data->irradiance_tex) {
-                albedo_tex = &fg.AccessROTexture(data->albedo_tex);
-                specular_tex = &fg.AccessROTexture(data->specular_tex);
-                ltc_luts_tex = &fg.AccessROTexture(data->ltc_luts_tex);
+                albedo_tex = &fg.AccessROImage(data->albedo_tex);
+                specular_tex = &fg.AccessROImage(data->specular_tex);
+                ltc_luts_tex = &fg.AccessROImage(data->ltc_luts_tex);
 
-                irr_tex = &fg.AccessROTexture(data->irradiance_tex);
-                dist_tex = &fg.AccessROTexture(data->distance_tex);
-                off_tex = &fg.AccessROTexture(data->offset_tex);
+                irr_tex = &fg.AccessROImage(data->irradiance_tex);
+                dist_tex = &fg.AccessROImage(data->distance_tex);
+                off_tex = &fg.AccessROImage(data->offset_tex);
             }
 
-            Ren::Texture &out_refl_tex = fg.AccessRWTexture(data->refl_tex);
+            Ren::Image &out_refl_tex = fg.AccessRWImage(data->refl_tex);
             Ren::Buffer &inout_ray_counter_buf = fg.AccessRWBuffer(data->inout_ray_counter);
             Ren::Buffer &out_ray_list_buf = fg.AccessRWBuffer(data->out_ray_list);
 
@@ -436,9 +436,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             reproj_refl_tex = data->out_reprojected_tex =
                 ssr_reproject.AddStorageImageOutput("SSR Reprojected", desc, Stg::ComputeShader);
@@ -447,9 +447,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgImgDesc desc;
             desc.w = (view_state_.ren_res[0] + 7) / 8;
             desc.h = (view_state_.ren_res[1] + 7) / 8;
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             avg_refl_tex = data->out_avg_refl_tex =
                 ssr_reproject.AddStorageImageOutput("Average Refl", desc, Stg::ComputeShader);
@@ -458,9 +458,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::R16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             variance_temp_tex = data->out_variance_tex =
                 ssr_reproject.AddStorageImageOutput("Variance Temp", desc, Stg::ComputeShader);
@@ -469,9 +469,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::R16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             sample_count_tex = data->out_sample_count_tex =
                 ssr_reproject.AddStorageImageOutput("Sample Count", desc, Stg::ComputeShader);
@@ -482,21 +482,21 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
         ssr_reproject.set_execute_cb([this, data, tile_count](FgContext &fg) {
             const Ren::Buffer &shared_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
-            const Ren::Texture &velocity_tex = fg.AccessROTexture(data->velocity_tex);
-            const Ren::Texture &depth_hist_tex = fg.AccessROTexture(data->depth_hist_tex);
-            const Ren::Texture &norm_hist_tex = fg.AccessROTexture(data->norm_hist_tex);
-            const Ren::Texture &refl_hist_tex = fg.AccessROTexture(data->refl_hist_tex);
-            const Ren::Texture &variance_hist_tex = fg.AccessROTexture(data->variance_hist_tex);
-            const Ren::Texture &sample_count_hist_tex = fg.AccessROTexture(data->sample_count_hist_tex);
-            const Ren::Texture &relf_tex = fg.AccessROTexture(data->refl_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &norm_tex = fg.AccessROImage(data->norm_tex);
+            const Ren::Image &velocity_tex = fg.AccessROImage(data->velocity_tex);
+            const Ren::Image &depth_hist_tex = fg.AccessROImage(data->depth_hist_tex);
+            const Ren::Image &norm_hist_tex = fg.AccessROImage(data->norm_hist_tex);
+            const Ren::Image &refl_hist_tex = fg.AccessROImage(data->refl_hist_tex);
+            const Ren::Image &variance_hist_tex = fg.AccessROImage(data->variance_hist_tex);
+            const Ren::Image &sample_count_hist_tex = fg.AccessROImage(data->sample_count_hist_tex);
+            const Ren::Image &relf_tex = fg.AccessROImage(data->refl_tex);
             const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
             const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
-            Ren::Texture &out_reprojected_tex = fg.AccessRWTexture(data->out_reprojected_tex);
-            Ren::Texture &out_avg_refl_tex = fg.AccessRWTexture(data->out_avg_refl_tex);
-            Ren::Texture &out_variance_tex = fg.AccessRWTexture(data->out_variance_tex);
-            Ren::Texture &out_sample_count_tex = fg.AccessRWTexture(data->out_sample_count_tex);
+            Ren::Image &out_reprojected_tex = fg.AccessRWImage(data->out_reprojected_tex);
+            Ren::Image &out_avg_refl_tex = fg.AccessRWImage(data->out_avg_refl_tex);
+            Ren::Image &out_variance_tex = fg.AccessRWImage(data->out_variance_tex);
+            Ren::Image &out_sample_count_tex = fg.AccessRWImage(data->out_sample_count_tex);
 
             { // Process tiles
                 using namespace SSRReproject;
@@ -572,9 +572,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             prefiltered_refl = data->out_refl_tex =
                 ssr_prefilter.AddStorageImageOutput("GI Specular 1", desc, Stg::ComputeShader);
@@ -582,17 +582,17 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
         ssr_prefilter.set_execute_cb([this, data, tile_count](FgContext &fg) {
             const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
-            const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
-            const Ren::Texture &refl_tex = fg.AccessROTexture(data->refl_tex);
-            const Ren::Texture &avg_refl_tex = fg.AccessROTexture(data->avg_refl_tex);
-            const Ren::Texture &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
-            const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &spec_tex = fg.AccessROImage(data->spec_tex);
+            const Ren::Image &norm_tex = fg.AccessROImage(data->norm_tex);
+            const Ren::Image &refl_tex = fg.AccessROImage(data->refl_tex);
+            const Ren::Image &avg_refl_tex = fg.AccessROImage(data->avg_refl_tex);
+            const Ren::Image &sample_count_tex = fg.AccessROImage(data->sample_count_tex);
+            const Ren::Image &variance_tex = fg.AccessROImage(data->variance_tex);
             const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
             const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-            Ren::Texture &out_refl_tex = fg.AccessRWTexture(data->out_refl_tex);
+            Ren::Image &out_refl_tex = fg.AccessRWImage(data->out_refl_tex);
 
             { // Filter tiles
                 using namespace SSRFilter;
@@ -663,9 +663,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             gi_specular_tex = data->out_refl_tex =
                 ssr_temporal.AddStorageImageOutput("GI Specular", desc, Stg::ComputeShader);
@@ -677,9 +677,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::R16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             ssr_variance_tex = data->out_variance_tex =
                 ssr_temporal.AddStorageImageOutput(SPECULAR_VARIANCE_TEX, desc, Stg::ComputeShader);
@@ -687,17 +687,17 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
         ssr_temporal.set_execute_cb([this, data, tile_count](FgContext &fg) {
             const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
-            const Ren::Texture &avg_refl_tex = fg.AccessROTexture(data->avg_refl_tex);
-            const Ren::Texture &refl_tex = fg.AccessROTexture(data->refl_tex);
-            const Ren::Texture &reproj_refl_tex = fg.AccessROTexture(data->reproj_refl_tex);
-            const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_tex);
-            const Ren::Texture &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
+            const Ren::Image &norm_tex = fg.AccessROImage(data->norm_tex);
+            const Ren::Image &avg_refl_tex = fg.AccessROImage(data->avg_refl_tex);
+            const Ren::Image &refl_tex = fg.AccessROImage(data->refl_tex);
+            const Ren::Image &reproj_refl_tex = fg.AccessROImage(data->reproj_refl_tex);
+            const Ren::Image &variance_tex = fg.AccessROImage(data->variance_tex);
+            const Ren::Image &sample_count_tex = fg.AccessROImage(data->sample_count_tex);
             const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
             const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-            Ren::Texture &out_refl_tex = fg.AccessRWTexture(data->out_refl_tex);
-            Ren::Texture &out_variance_tex = fg.AccessRWTexture(data->out_variance_tex);
+            Ren::Image &out_refl_tex = fg.AccessRWImage(data->out_refl_tex);
+            Ren::Image &out_variance_tex = fg.AccessRWImage(data->out_variance_tex);
 
             { // Process tiles
                 using namespace SSRResolveTemporal;
@@ -770,9 +770,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 FgImgDesc desc;
                 desc.w = view_state_.ren_res[0];
                 desc.h = view_state_.ren_res[1];
-                desc.format = Ren::eTexFormat::RGBA16F;
-                desc.sampling.filter = Ren::eTexFilter::Bilinear;
-                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                desc.format = Ren::eFormat::RGBA16F;
+                desc.sampling.filter = Ren::eFilter::Bilinear;
+                desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
                 gi_specular2_tex = data->out_refl_tex =
                     ssr_filter.AddStorageImageOutput("GI Specular 2", desc, Stg::ComputeShader);
@@ -780,16 +780,16 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             ssr_filter.set_execute_cb([this, data, tile_count](FgContext &fg) {
                 const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-                const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-                const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
-                const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
-                const Ren::Texture &refl_tex = fg.AccessROTexture(data->refl_tex);
-                const Ren::Texture &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
-                const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_tex);
+                const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+                const Ren::Image &spec_tex = fg.AccessROImage(data->spec_tex);
+                const Ren::Image &norm_tex = fg.AccessROImage(data->norm_tex);
+                const Ren::Image &refl_tex = fg.AccessROImage(data->refl_tex);
+                const Ren::Image &sample_count_tex = fg.AccessROImage(data->sample_count_tex);
+                const Ren::Image &variance_tex = fg.AccessROImage(data->variance_tex);
                 const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
                 const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-                Ren::Texture &out_refl_tex = fg.AccessRWTexture(data->out_refl_tex);
+                Ren::Image &out_refl_tex = fg.AccessRWImage(data->out_refl_tex);
 
                 { // Filter tiles
                     using namespace SSRFilter;
@@ -858,9 +858,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 FgImgDesc desc;
                 desc.w = view_state_.ren_res[0];
                 desc.h = view_state_.ren_res[1];
-                desc.format = Ren::eTexFormat::RGBA16F;
-                desc.sampling.filter = Ren::eTexFilter::Bilinear;
-                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                desc.format = Ren::eFormat::RGBA16F;
+                desc.sampling.filter = Ren::eFilter::Bilinear;
+                desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
                 gi_specular3_tex = data->out_refl_tex =
                     ssr_post_filter.AddStorageImageOutput("GI Specular Filtered", desc, Stg::ComputeShader);
@@ -868,16 +868,16 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             ssr_post_filter.set_execute_cb([this, data, tile_count](FgContext &fg) {
                 const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-                const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-                const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
-                const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
-                const Ren::Texture &refl_tex = fg.AccessROTexture(data->refl_tex);
-                const Ren::Texture &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
-                const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_tex);
+                const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+                const Ren::Image &spec_tex = fg.AccessROImage(data->spec_tex);
+                const Ren::Image &norm_tex = fg.AccessROImage(data->norm_tex);
+                const Ren::Image &refl_tex = fg.AccessROImage(data->refl_tex);
+                const Ren::Image &sample_count_tex = fg.AccessROImage(data->sample_count_tex);
+                const Ren::Image &variance_tex = fg.AccessROImage(data->variance_tex);
                 const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
                 const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-                Ren::Texture &out_refl_tex = fg.AccessRWTexture(data->out_refl_tex);
+                Ren::Image &out_refl_tex = fg.AccessRWImage(data->out_refl_tex);
 
                 { // Filter tiles
                     using namespace SSRFilter;
@@ -934,9 +934,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 FgImgDesc desc;
                 desc.w = view_state_.ren_res[0];
                 desc.h = view_state_.ren_res[1];
-                desc.format = Ren::eTexFormat::RGBA16F;
-                desc.sampling.filter = Ren::eTexFilter::Bilinear;
-                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                desc.format = Ren::eFormat::RGBA16F;
+                desc.sampling.filter = Ren::eFilter::Bilinear;
+                desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
                 gi_specular4_tex = data->out_ssr_tex =
                     ssr_stabilization.AddStorageImageOutput("GI Specular 4", desc, Stg::ComputeShader);
@@ -947,12 +947,12 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             ssr_stabilization.set_execute_cb([this, data](FgContext &fg) {
                 using namespace SSRStabilization;
 
-                const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-                const Ren::Texture &velocity_tex = fg.AccessROTexture(data->velocity_tex);
-                const Ren::Texture &gi_tex = fg.AccessROTexture(data->ssr_tex);
-                const Ren::Texture &gi_hist_tex = fg.AccessROTexture(data->ssr_hist_tex);
+                const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+                const Ren::Image &velocity_tex = fg.AccessROImage(data->velocity_tex);
+                const Ren::Image &gi_tex = fg.AccessROImage(data->ssr_tex);
+                const Ren::Image &gi_hist_tex = fg.AccessROImage(data->ssr_hist_tex);
 
-                Ren::Texture &out_gi_tex = fg.AccessRWTexture(data->out_ssr_tex);
+                Ren::Image &out_gi_tex = fg.AccessRWImage(data->out_ssr_tex);
 
                 const Ren::Binding bindings[] = {{Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},
                                                  {Trg::TexSampled, VELOCITY_TEX_SLOT, velocity_tex},
@@ -1015,14 +1015,14 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         using namespace SSRCompose;
 
         const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-        const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-        const Ren::Texture &normal_tex = fg.AccessROTexture(data->normal_tex);
-        const Ren::Texture &albedo_tex = fg.AccessROTexture(data->albedo_tex);
-        const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
-        const Ren::Texture &refl_tex = fg.AccessROTexture(data->refl_tex);
-        const Ren::Texture &ltc_luts = fg.AccessROTexture(data->ltc_luts);
+        const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+        const Ren::Image &normal_tex = fg.AccessROImage(data->normal_tex);
+        const Ren::Image &albedo_tex = fg.AccessROImage(data->albedo_tex);
+        const Ren::Image &spec_tex = fg.AccessROImage(data->spec_tex);
+        const Ren::Image &refl_tex = fg.AccessROImage(data->refl_tex);
+        const Ren::Image &ltc_luts = fg.AccessROImage(data->ltc_luts);
 
-        Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
+        Ren::WeakImgRef output_tex = fg.AccessRWImageRef(data->output_tex);
 
         Ren::RastState rast_state;
         rast_state.depth.test_enabled = false;
@@ -1086,19 +1086,19 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
             FgImgDesc desc;
             desc.w = (view_state_.ren_res[0] / 2);
             desc.h = (view_state_.ren_res[1] / 2);
-            desc.format = Ren::eTexFormat::RGB10_A2;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGB10_A2;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             ssr_temp1 = data->output_tex = ssr_trace.AddColorOutput("SSR Temp 1", desc);
         }
 
         ssr_trace.set_execute_cb([this, data](FgContext &fg) {
             const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &normal_tex = fg.AccessROTexture(data->normal_tex);
-            const Ren::Texture &depth_down_2x_tex = fg.AccessROTexture(data->depth_down_2x_tex);
+            const Ren::Image &normal_tex = fg.AccessROImage(data->normal_tex);
+            const Ren::Image &depth_down_2x_tex = fg.AccessROImage(data->depth_down_2x_tex);
 
-            Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
+            Ren::WeakImgRef output_tex = fg.AccessRWImageRef(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = false;
@@ -1141,17 +1141,17 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
             FgImgDesc desc;
             desc.w = (view_state_.ren_res[0] / 2);
             desc.h = (view_state_.ren_res[1] / 2);
-            desc.format = Ren::eTexFormat::RGB10_A2;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGB10_A2;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             ssr_temp2 = data->output_tex = ssr_dilate.AddColorOutput("SSR Temp 2", desc);
         }
 
         ssr_dilate.set_execute_cb([this, data](FgContext &fg) {
-            const Ren::Texture &ssr_tex = fg.AccessROTexture(data->ssr_tex);
+            const Ren::Image &ssr_tex = fg.AccessROImage(data->ssr_tex);
 
-            Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
+            Ren::WeakImgRef output_tex = fg.AccessRWImageRef(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = false;

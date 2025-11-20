@@ -137,7 +137,7 @@ Ren::RastState Eng::ParseRastState(const Sys::JsObjectP &js_rast_state) {
 
 Ren::RenderTargetInfo Eng::ParseRTInfo(const Sys::JsObjectP &js_rt_info) {
     Ren::RenderTargetInfo ret;
-    ret.format = Ren::TexFormat(js_rt_info.at("format").as_str().val);
+    ret.format = Ren::Format(js_rt_info.at("format").as_str().val);
     ret.load = Ren::LoadOp(js_rt_info.at("load").as_str().val);
     ret.store = Ren::StoreOp(js_rt_info.at("store").as_str().val);
     if (const size_t stencil_load_ndx = js_rt_info.IndexOf("stencil_load"); stencil_load_ndx < js_rt_info.Size()) {

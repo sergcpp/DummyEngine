@@ -1,7 +1,7 @@
 #include "ExDebugRT.h"
 
 #include <Ren/Context.h>
-#include <Ren/Texture.h>
+#include <Ren/Image.h>
 #include <Ren/VKCtx.h>
 
 #include "../../utils/ShaderLoader.h"
@@ -16,21 +16,21 @@ void Eng::ExDebugRT::Execute_HWRT(FgContext &fg) {
     const Ren::Buffer &ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
     const Ren::Buffer &lights_buf = fg.AccessROBuffer(args_->lights_buf);
     const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
-    const Ren::Texture &env_tex = fg.AccessROTexture(args_->env_tex);
-    const Ren::Texture &shadow_depth_tex = fg.AccessROTexture(args_->shadow_depth_tex);
-    const Ren::Texture &shadow_color_tex = fg.AccessROTexture(args_->shadow_color_tex);
-    const Ren::Texture &ltc_luts_tex = fg.AccessROTexture(args_->ltc_luts_tex);
+    const Ren::Image &env_tex = fg.AccessROImage(args_->env_tex);
+    const Ren::Image &shadow_depth_tex = fg.AccessROImage(args_->shadow_depth_tex);
+    const Ren::Image &shadow_color_tex = fg.AccessROImage(args_->shadow_color_tex);
+    const Ren::Image &ltc_luts_tex = fg.AccessROImage(args_->ltc_luts_tex);
     const Ren::Buffer &cells_buf = fg.AccessROBuffer(args_->cells_buf);
     const Ren::Buffer &items_buf = fg.AccessROBuffer(args_->items_buf);
 
-    const Ren::Texture *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
+    const Ren::Image *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (args_->irradiance_tex) {
-        irr_tex = &fg.AccessROTexture(args_->irradiance_tex);
-        dist_tex = &fg.AccessROTexture(args_->distance_tex);
-        off_tex = &fg.AccessROTexture(args_->offset_tex);
+        irr_tex = &fg.AccessROImage(args_->irradiance_tex);
+        dist_tex = &fg.AccessROImage(args_->distance_tex);
+        off_tex = &fg.AccessROImage(args_->offset_tex);
     }
 
-    Ren::Texture &output_tex = fg.AccessRWTexture(args_->output_tex);
+    Ren::Image &output_tex = fg.AccessRWImage(args_->output_tex);
 
     Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 

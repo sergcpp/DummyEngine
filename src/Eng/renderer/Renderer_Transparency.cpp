@@ -38,7 +38,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Texture;
             desc.size = oit_layer_count * view_state_.ren_res[0] * view_state_.ren_res[1] * sizeof(uint32_t);
-            desc.views.push_back(Ren::eTexFormat::R32UI);
+            desc.views.push_back(Ren::eFormat::R32UI);
             oit_depth_buf = data->oit_depth_buf = oit_clear.AddTransferOutput("Depth Values", desc);
         }
 
@@ -49,9 +49,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             FgImgDesc desc;
             desc.w = (view_state_.ren_res[0] / 2);
             desc.h = (view_state_.ren_res[1] / 2);
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             oit_specular[i] = data->oit_specular[i] = oit_clear.AddClearImageOutput(tex_name, desc);
         }
@@ -74,7 +74,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 out_depth_buf.Fill(0, out_depth_buf.size(), 0, fg.cmd_buf());
             }
             for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
-                Ren::Texture &oit_specular = fg.AccessRWTexture(data->oit_specular[i]);
+                Ren::Image &oit_specular = fg.AccessRWImage(data->oit_specular[i]);
                 if (p_list_->alpha_blend_start_index != -1) {
                     Ren::ClearImage(oit_specular, {}, fg.cmd_buf());
                 }
@@ -246,27 +246,27 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
             const Ren::Buffer &oit_depth_buf = fg.AccessROBuffer(data->oit_depth_buf);
             const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &color_tex = fg.AccessROTexture(data->color_tex);
-            const Ren::Texture &normal_tex = fg.AccessROTexture(data->normal_tex);
-            const Ren::Texture &depth_hierarchy_tex = fg.AccessROTexture(data->depth_hierarchy);
+            const Ren::Image &color_tex = fg.AccessROImage(data->color_tex);
+            const Ren::Image &normal_tex = fg.AccessROImage(data->normal_tex);
+            const Ren::Image &depth_hierarchy_tex = fg.AccessROImage(data->depth_hierarchy);
             const Ren::Buffer &in_ray_list_buf = fg.AccessROBuffer(data->in_ray_list);
             const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-            const Ren::Texture *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr,
+            const Ren::Image *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr,
                                *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
             if (data->irradiance_tex) {
-                albedo_tex = &fg.AccessROTexture(data->albedo_tex);
-                specular_tex = &fg.AccessROTexture(data->specular_tex);
-                ltc_luts_tex = &fg.AccessROTexture(data->ltc_luts_tex);
+                albedo_tex = &fg.AccessROImage(data->albedo_tex);
+                specular_tex = &fg.AccessROImage(data->specular_tex);
+                ltc_luts_tex = &fg.AccessROImage(data->ltc_luts_tex);
 
-                irr_tex = &fg.AccessROTexture(data->irradiance_tex);
-                dist_tex = &fg.AccessROTexture(data->distance_tex);
-                off_tex = &fg.AccessROTexture(data->offset_tex);
+                irr_tex = &fg.AccessROImage(data->irradiance_tex);
+                dist_tex = &fg.AccessROImage(data->distance_tex);
+                off_tex = &fg.AccessROImage(data->offset_tex);
             }
 
-            const Ren::Texture *out_refl_tex[OIT_REFLECTION_LAYERS] = {};
+            const Ren::Image *out_refl_tex[OIT_REFLECTION_LAYERS] = {};
             for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
-                out_refl_tex[i] = &fg.AccessRWTexture(data->out_ssr_tex[i]);
+                out_refl_tex[i] = &fg.AccessRWImage(data->out_ssr_tex[i]);
             }
             Ren::Buffer &inout_ray_counter_buf = fg.AccessRWBuffer(data->inout_ray_counter);
             Ren::Buffer &out_ray_list_buf = fg.AccessRWBuffer(data->out_ray_list);
@@ -434,10 +434,10 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             }
 
             oit_back.set_execute_cb([this, data, i](FgContext &fg) {
-                const Ren::Texture &in_back_color_tex = fg.AccessROTexture(data->in_back_color);
-                const Ren::Texture &in_back_depth_tex = fg.AccessROTexture(data->in_back_depth);
-                Ren::Texture &out_back_color_tex = fg.AccessRWTexture(data->out_back_color);
-                Ren::Texture &out_back_depth_tex = fg.AccessRWTexture(data->out_back_depth);
+                const Ren::Image &in_back_color_tex = fg.AccessROImage(data->in_back_color);
+                const Ren::Image &in_back_depth_tex = fg.AccessROImage(data->in_back_depth);
+                Ren::Image &out_back_color_tex = fg.AccessRWImage(data->out_back_color);
+                Ren::Image &out_back_depth_tex = fg.AccessRWImage(data->out_back_depth);
 
                 const int w = in_back_color_tex.params.w, h = in_back_color_tex.params.h;
 

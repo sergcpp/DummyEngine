@@ -10,31 +10,32 @@ namespace Ren {
 using Fixed8 = Fixed<int8_t, 3>;
 
 #define X(_0, _1, _2, _3, _4) _0,
-enum class eTexFilter : uint8_t {
-#include "TextureFilter.inl"
+enum class eFilter : uint8_t {
+#include "Filter.inl"
 };
 #undef X
 
 #define X(_0, _1, _2) _0,
-enum class eTexWrap : uint8_t {
-#include "TextureWrap.inl"
+enum class eWrap : uint8_t {
+#include "Wrap.inl"
 };
 #undef X
 
 #define X(_0, _1, _2) _0,
-enum class eTexCompare : uint8_t {
-#include "TextureCompare.inl"
+enum class eCompareOp : uint8_t {
+#include "CompareOp.inl"
+    _Count
 };
 #undef X
 
 struct SamplingParams {
-    eTexFilter filter = eTexFilter::Nearest;
-    eTexWrap wrap = eTexWrap::Repeat;
-    eTexCompare compare = eTexCompare::None;
+    eFilter filter = eFilter::Nearest;
+    eWrap wrap = eWrap::Repeat;
+    eCompareOp compare = eCompareOp::None;
     Fixed8 lod_bias;
 
     SamplingParams() = default;
-    SamplingParams(const eTexFilter _filter, const eTexWrap _wrap, const eTexCompare _compare, const Fixed8 _lod_bias)
+    SamplingParams(const eFilter _filter, const eWrap _wrap, const eCompareOp _compare, const Fixed8 _lod_bias)
         : filter(_filter), wrap(_wrap), compare(_compare), lod_bias(_lod_bias) {}
 };
 static_assert(sizeof(SamplingParams) == 4);
@@ -60,7 +61,7 @@ struct SamplingParamsPacked {
     }
 
     operator SamplingParams() const {
-        return SamplingParams{eTexFilter(filter), eTexWrap(wrap), eTexCompare(compare), lod_bias};
+        return SamplingParams{eFilter(filter), eWrap(wrap), eCompareOp(compare), lod_bias};
     }
 };
 static_assert(sizeof(SamplingParamsPacked) == 2);

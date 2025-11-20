@@ -21,14 +21,14 @@ void Eng::ExSkydomeCube::Execute(FgContext &fg) {
     LazyInit(fg.ren_ctx(), fg.sh());
 
     const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
-    const Ren::Texture &transmittance_lut = fg.AccessROTexture(args_->transmittance_lut);
-    const Ren::Texture &multiscatter_lut = fg.AccessROTexture(args_->multiscatter_lut);
-    const Ren::Texture &moon_tex = fg.AccessROTexture(args_->moon_tex);
-    const Ren::Texture &weather_tex = fg.AccessROTexture(args_->weather_tex);
-    const Ren::Texture &cirrus_tex = fg.AccessROTexture(args_->cirrus_tex);
-    const Ren::Texture &curl_tex = fg.AccessROTexture(args_->curl_tex);
-    const Ren::Texture &noise3d_tex = fg.AccessROTexture(args_->noise3d_tex);
-    Ren::WeakTexRef color_tex = fg.AccessRWTextureRef(args_->color_tex);
+    const Ren::Image &transmittance_lut = fg.AccessROImage(args_->transmittance_lut);
+    const Ren::Image &multiscatter_lut = fg.AccessROImage(args_->multiscatter_lut);
+    const Ren::Image &moon_tex = fg.AccessROImage(args_->moon_tex);
+    const Ren::Image &weather_tex = fg.AccessROImage(args_->weather_tex);
+    const Ren::Image &cirrus_tex = fg.AccessROImage(args_->cirrus_tex);
+    const Ren::Image &curl_tex = fg.AccessROImage(args_->curl_tex);
+    const Ren::Image &noise3d_tex = fg.AccessROImage(args_->noise3d_tex);
+    Ren::WeakImgRef color_tex = fg.AccessRWImageRef(args_->color_tex);
 
     if (view_state_->env_generation == generation_) {
         return;
@@ -174,7 +174,7 @@ void Eng::ExSkydomeScreen::Execute(FgContext &fg) {
 
     const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
 
-    Ren::WeakTexRef color_tex = fg.AccessRWTextureRef(args_->color_tex);
+    Ren::WeakImgRef color_tex = fg.AccessRWImageRef(args_->color_tex);
 
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
@@ -199,14 +199,14 @@ void Eng::ExSkydomeScreen::Execute(FgContext &fg) {
     const Ren::RenderTarget color_targets[] = {{color_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
     if (args_->sky_quality == eSkyQuality::Ultra) {
-        const Ren::Texture &transmittance_lut = fg.AccessROTexture(args_->phys.transmittance_lut);
-        const Ren::Texture &multiscatter_lut = fg.AccessROTexture(args_->phys.multiscatter_lut);
-        const Ren::Texture &moon_tex = fg.AccessROTexture(args_->phys.moon_tex);
-        const Ren::Texture &weather_tex = fg.AccessROTexture(args_->phys.weather_tex);
-        const Ren::Texture &cirrus_tex = fg.AccessROTexture(args_->phys.cirrus_tex);
-        const Ren::Texture &curl_tex = fg.AccessROTexture(args_->phys.curl_tex);
-        const Ren::Texture &noise3d_tex = fg.AccessROTexture(args_->phys.noise3d_tex);
-        Ren::WeakTexRef depth_tex = fg.AccessRWTextureRef(args_->depth_tex);
+        const Ren::Image &transmittance_lut = fg.AccessROImage(args_->phys.transmittance_lut);
+        const Ren::Image &multiscatter_lut = fg.AccessROImage(args_->phys.multiscatter_lut);
+        const Ren::Image &moon_tex = fg.AccessROImage(args_->phys.moon_tex);
+        const Ren::Image &weather_tex = fg.AccessROImage(args_->phys.weather_tex);
+        const Ren::Image &cirrus_tex = fg.AccessROImage(args_->phys.cirrus_tex);
+        const Ren::Image &curl_tex = fg.AccessROImage(args_->phys.curl_tex);
+        const Ren::Image &noise3d_tex = fg.AccessROImage(args_->phys.noise3d_tex);
+        Ren::WeakImgRef depth_tex = fg.AccessRWImageRef(args_->depth_tex);
 
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::TRANSMITTANCE_LUT_SLOT, transmittance_lut);
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::MULTISCATTER_LUT_SLOT, multiscatter_lut);
@@ -224,14 +224,14 @@ void Eng::ExSkydomeScreen::Execute(FgContext &fg) {
         prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_[0], depth_target, color_targets, rast_state,
                             fg.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
     } else if (args_->sky_quality == eSkyQuality::High) {
-        const Ren::Texture &transmittance_lut = fg.AccessROTexture(args_->phys.transmittance_lut);
-        const Ren::Texture &multiscatter_lut = fg.AccessROTexture(args_->phys.multiscatter_lut);
-        const Ren::Texture &moon_tex = fg.AccessROTexture(args_->phys.moon_tex);
-        const Ren::Texture &weather_tex = fg.AccessROTexture(args_->phys.weather_tex);
-        const Ren::Texture &cirrus_tex = fg.AccessROTexture(args_->phys.cirrus_tex);
-        const Ren::Texture &curl_tex = fg.AccessROTexture(args_->phys.curl_tex);
-        const Ren::Texture &noise3d_tex = fg.AccessROTexture(args_->phys.noise3d_tex);
-        const Ren::Texture &depth_tex = fg.AccessROTexture(args_->depth_tex);
+        const Ren::Image &transmittance_lut = fg.AccessROImage(args_->phys.transmittance_lut);
+        const Ren::Image &multiscatter_lut = fg.AccessROImage(args_->phys.multiscatter_lut);
+        const Ren::Image &moon_tex = fg.AccessROImage(args_->phys.moon_tex);
+        const Ren::Image &weather_tex = fg.AccessROImage(args_->phys.weather_tex);
+        const Ren::Image &cirrus_tex = fg.AccessROImage(args_->phys.cirrus_tex);
+        const Ren::Image &curl_tex = fg.AccessROImage(args_->phys.curl_tex);
+        const Ren::Image &noise3d_tex = fg.AccessROImage(args_->phys.noise3d_tex);
+        const Ren::Image &depth_tex = fg.AccessROImage(args_->depth_tex);
 
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::TRANSMITTANCE_LUT_SLOT, transmittance_lut);
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::MULTISCATTER_LUT_SLOT, multiscatter_lut);
@@ -248,8 +248,8 @@ void Eng::ExSkydomeScreen::Execute(FgContext &fg) {
         prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_[1], {}, color_targets, rast_state,
                             fg.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
     } else {
-        const Ren::Texture &env_tex = fg.AccessROTexture(args_->env_tex);
-        Ren::WeakTexRef depth_tex = fg.AccessRWTextureRef(args_->depth_tex);
+        const Ren::Image &env_tex = fg.AccessROImage(args_->env_tex);
+        Ren::WeakImgRef depth_tex = fg.AccessRWImageRef(args_->depth_tex);
 
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::ENV_TEX_SLOT, env_tex);
 

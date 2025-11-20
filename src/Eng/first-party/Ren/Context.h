@@ -3,6 +3,9 @@
 #include "Anim.h"
 #include "Buffer.h"
 #include "Common.h"
+#include "Image.h"
+#include "ImageAtlas.h"
+#include "ImageRegion.h"
 #include "Material.h"
 #include "MemoryAllocator.h"
 #include "Mesh.h"
@@ -10,14 +13,11 @@
 #include "Program.h"
 #include "Sampler.h"
 #include "Shader.h"
-#include "Texture.h"
-#include "TextureAtlas.h"
-#include "TextureRegion.h"
 
 struct SWcontext;
 
 namespace Ren {
-const int TextureAtlasWidth = 1024, TextureAtlasHeight = 512, TextureAtlasLayers = 4;
+const int ImageAtlasWidth = 1024, ImageAtlasHeight = 512, ImageAtlasLayers = 4;
 const int StageBufferCount = 2;
 
 struct ApiContext;
@@ -70,8 +70,8 @@ class Context {
     RenderPassStorage render_passes_;
     PipelineStorage pipelines_;
     ShaderStorage shaders_;
-    TextureStorage textures_;
-    TextureRegionStorage texture_regions_;
+    ImageStorage images_;
+    ImageRegionStorage image_regions_;
     SamplerStorage samplers_;
     AnimSeqStorage anims_;
     BufferStorage buffers_;
@@ -84,7 +84,7 @@ class Context {
     std::unique_ptr<DescrMultiPoolAlloc> default_descr_alloc_[MaxFramesInFlight];
 #endif
 
-    TextureAtlasArray texture_atlas_;
+    ImageAtlasArray image_atlas_;
 
 #if defined(REN_VK_BACKEND) || defined(REN_GL_BACKEND)
     std::unique_ptr<ApiContext> api_ctx_;
@@ -115,7 +115,7 @@ class Context {
 
     ILog *log() const { return log_; }
 
-    TextureStorage &textures() { return textures_; }
+    ImageStorage &images() { return images_; }
     MaterialStorage &materials() { return materials_; }
     ProgramStorage &programs() { return programs_; }
 
@@ -136,7 +136,7 @@ class Context {
 
     CommandBuffer current_cmd_buf();
 
-    TextureAtlasArray &texture_atlas() { return texture_atlas_; }
+    ImageAtlasArray &image_atlas() { return image_atlas_; }
 
     void Resize(int w, int h);
 
@@ -201,25 +201,24 @@ class Context {
     PipelineRef LoadPipeline(const RastState &rast_state, const ProgramRef &prog, const VertexInputRef &vtx_input,
                              const RenderPassRef &render_pass, uint32_t subpass_index);
 
-    /*** Texture ***/
-    TexRef LoadTexture(std::string_view name, const TexParams &p, MemAllocators *mem_allocs,
-                       eTexLoadStatus *load_status);
-    TexRef LoadTexture(std::string_view name, const TexHandle &handle, const TexParams &p, MemAllocation &&alloc,
-                       eTexLoadStatus *load_status);
-    TexRef LoadTexture(std::string_view name, Span<const uint8_t> data, const TexParams &p, MemAllocators *mem_allocs,
-                       eTexLoadStatus *load_status);
-    TexRef LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const TexParams &p,
-                           MemAllocators *mem_allocs, eTexLoadStatus *load_status);
+    /*** Image ***/
+    ImgRef LoadImage(std::string_view name, const ImgParams &p, MemAllocators *mem_allocs, eImgLoadStatus *load_status);
+    ImgRef LoadImage(std::string_view name, const ImgHandle &handle, const ImgParams &p, MemAllocation &&alloc,
+                     eImgLoadStatus *load_status);
+    ImgRef LoadImage(std::string_view name, Span<const uint8_t> data, const ImgParams &p, MemAllocators *mem_allocs,
+                     eImgLoadStatus *load_status);
+    ImgRef LoadImageCube(std::string_view name, Span<const uint8_t> data[6], const ImgParams &p,
+                         MemAllocators *mem_allocs, eImgLoadStatus *load_status);
 
-    void VisitTextures(eTexFlags mask, const std::function<void(Texture &tex)> &callback);
-    int NumTexturesNotReady();
-    void ReleaseTextures();
+    void VisitImages(eImgFlags mask, const std::function<void(Image &img)> &callback);
+    int NumImagesNotReady();
+    void ReleaseImages();
 
-    /** Texture regions (placed on default atlas) **/
-    TextureRegionRef LoadTextureRegion(std::string_view name, Span<const uint8_t> data, const TexParams &p,
-                                       CommandBuffer cmd_buf, eTexLoadStatus *load_status);
-    TextureRegionRef LoadTextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len,
-                                       const TexParams &p, CommandBuffer cmd_buf, eTexLoadStatus *load_status);
+    /** Image regions (placed on default atlas) **/
+    ImageRegionRef LoadImageRegion(std::string_view name, Span<const uint8_t> data, const ImgParams &p,
+                                     CommandBuffer cmd_buf, eImgLoadStatus *load_status);
+    ImageRegionRef LoadImageRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len,
+                                     const ImgParams &p, CommandBuffer cmd_buf, eImgLoadStatus *load_status);
 
     void ReleaseTextureRegions();
 
@@ -248,7 +247,7 @@ class Context {
     int backend_frame() const;
     int active_present_image() const;
 
-    TexRef backbuffer_ref() const;
+    ImgRef backbuffer_ref() const;
 
     int WriteTimestamp(bool start);
     uint64_t GetTimestampIntervalDurationUs(int query_start, int query_end) const;

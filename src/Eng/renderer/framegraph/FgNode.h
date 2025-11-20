@@ -65,10 +65,10 @@ class FgNode {
     FgResRef AddTransferOutput(const Ren::WeakBufRef &buf);
     FgResRef AddTransferOutput(FgResRef handle);
 
-    FgResRef AddTransferImageInput(const Ren::WeakTexRef &tex);
+    FgResRef AddTransferImageInput(const Ren::WeakImgRef &tex);
     FgResRef AddTransferImageInput(FgResRef handle);
     FgResRef AddTransferImageOutput(std::string_view name, const FgImgDesc &desc);
-    FgResRef AddTransferImageOutput(const Ren::WeakTexRef &tex);
+    FgResRef AddTransferImageOutput(const Ren::WeakImgRef &tex);
     FgResRef AddTransferImageOutput(FgResRef handle);
 
     FgResRef AddStorageReadonlyInput(FgResRef handle, Ren::Bitmask<Ren::eStage> stages);
@@ -79,30 +79,30 @@ class FgNode {
 
     FgResRef AddStorageImageOutput(std::string_view name, const FgImgDesc &desc, Ren::Bitmask<Ren::eStage> stages);
     FgResRef AddStorageImageOutput(FgResRef handle, Ren::Bitmask<Ren::eStage> stages);
-    FgResRef AddStorageImageOutput(const Ren::WeakTexRef &tex, Ren::Bitmask<Ren::eStage> stages);
+    FgResRef AddStorageImageOutput(const Ren::WeakImgRef &tex, Ren::Bitmask<Ren::eStage> stages);
 
     FgResRef AddClearImageOutput(std::string_view name, const FgImgDesc &desc) {
         return AddTransferImageOutput(name, desc);
     }
-    FgResRef AddClearImageOutput(const Ren::WeakTexRef &tex) { return AddTransferImageOutput(tex); }
+    FgResRef AddClearImageOutput(const Ren::WeakImgRef &tex) { return AddTransferImageOutput(tex); }
     FgResRef AddClearImageOutput(FgResRef handle) { return AddTransferImageOutput(handle); }
 
     FgResRef AddColorOutput(std::string_view name, const FgImgDesc &desc);
     FgResRef AddColorOutput(FgResRef handle);
-    FgResRef AddColorOutput(const Ren::WeakTexRef &tex);
+    FgResRef AddColorOutput(const Ren::WeakImgRef &tex);
     FgResRef AddColorOutput(std::string_view name);
     FgResRef AddDepthOutput(std::string_view name, const FgImgDesc &desc);
     FgResRef AddDepthOutput(FgResRef handle);
-    FgResRef AddDepthOutput(const Ren::WeakTexRef &tex);
+    FgResRef AddDepthOutput(const Ren::WeakImgRef &tex);
 
     // TODO: try to get rid of this
     FgResRef ReplaceTransferInput(int slot_index, const Ren::WeakBufRef &buf);
-    FgResRef ReplaceColorOutput(int slot_index, const Ren::WeakTexRef &tex);
+    FgResRef ReplaceColorOutput(int slot_index, const Ren::WeakImgRef &tex);
 
     FgResRef AddUniformBufferInput(FgResRef handle, Ren::Bitmask<Ren::eStage> stages);
 
     FgResRef AddTextureInput(FgResRef handle, Ren::Bitmask<Ren::eStage> stages);
-    FgResRef AddTextureInput(const Ren::WeakTexRef &tex, Ren::Bitmask<Ren::eStage> stages);
+    FgResRef AddTextureInput(const Ren::WeakImgRef &tex, Ren::Bitmask<Ren::eStage> stages);
     FgResRef AddTextureInput(std::string_view name, Ren::Bitmask<Ren::eStage> stages);
 
     FgResRef AddHistoryTextureInput(FgResRef handle, Ren::Bitmask<Ren::eStage> stages);

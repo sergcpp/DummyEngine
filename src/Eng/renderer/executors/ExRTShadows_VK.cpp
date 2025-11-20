@@ -1,8 +1,8 @@
 #include "ExRTShadows.h"
 
 #include <Ren/Context.h>
+#include <Ren/Image.h>
 #include <Ren/RastState.h>
-#include <Ren/Texture.h>
 #include <Ren/VKCtx.h>
 
 #include "../../utils/ShaderLoader.h"
@@ -15,14 +15,14 @@ void Eng::ExRTShadows::Execute_HWRT(FgContext &fg) {
     const Ren::Buffer &vtx_buf1 = fg.AccessROBuffer(args_->vtx_buf1);
     const Ren::Buffer &ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
     const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
-    const Ren::Texture &noise_tex = fg.AccessROTexture(args_->noise_tex);
-    const Ren::Texture &depth_tex = fg.AccessROTexture(args_->depth_tex);
-    const Ren::Texture &normal_tex = fg.AccessROTexture(args_->normal_tex);
+    const Ren::Image &noise_tex = fg.AccessROImage(args_->noise_tex);
+    const Ren::Image &depth_tex = fg.AccessROImage(args_->depth_tex);
+    const Ren::Image &normal_tex = fg.AccessROImage(args_->normal_tex);
     [[maybe_unused]] const Ren::Buffer &tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
     const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(args_->tile_list_buf);
     const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(args_->indir_args);
 
-    Ren::Texture &out_shadow_tex = fg.AccessRWTexture(args_->out_shadow_tex);
+    Ren::Image &out_shadow_tex = fg.AccessRWImage(args_->out_shadow_tex);
 
     Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 

@@ -25,7 +25,7 @@ void Eng::ExEmissive::DrawOpaque(FgContext &fg) {
     const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
     const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
     const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
-    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Image &noise_tex = fg.AccessROImage(noise_tex_);
 
     if ((*p_list_)->emissive_start_index == -1) {
         return;

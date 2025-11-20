@@ -21,13 +21,13 @@ extern const int SphereIndicesCount = __sphere_indices_count;
 // aligned to vertex stride
 const size_t SphereVerticesSize = sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16);
 
-bool framebuffer_eq(const Ren::Framebuffer &fb, const Ren::RenderPass &rp, const Ren::WeakTexRef &depth_attachment,
-                    const Ren::WeakTexRef &stencil_attachment,
+bool framebuffer_eq(const Ren::Framebuffer &fb, const Ren::RenderPass &rp, const Ren::WeakImgRef &depth_attachment,
+                    const Ren::WeakImgRef &stencil_attachment,
                     const Ren::Span<const Ren::RenderTarget> color_attachments) {
     return !fb.Changed(rp, depth_attachment, stencil_attachment, color_attachments);
 }
-bool framebuffer_lt(const Ren::Framebuffer &fb, const Ren::RenderPass &rp, const Ren::WeakTexRef &depth_attachment,
-                    const Ren::WeakTexRef &stencil_attachment,
+bool framebuffer_lt(const Ren::Framebuffer &fb, const Ren::RenderPass &rp, const Ren::WeakImgRef &depth_attachment,
+                    const Ren::WeakImgRef &stencil_attachment,
                     const Ren::Span<const Ren::RenderTarget> color_attachments) {
     return fb.LessThan(rp, depth_attachment, stencil_attachment, color_attachments);
 }
@@ -163,7 +163,7 @@ const Ren::Framebuffer *Eng::PrimDraw::FindOrCreateFramebuffer(const Ren::Render
                                                                Ren::Span<const Ren::RenderTarget> color_targets) {
     using namespace PrimDrawInternal;
 
-    Ren::WeakTexRef depth_ref = depth_target.ref, stencil_ref = stencil_target.ref;
+    Ren::WeakImgRef depth_ref = depth_target.ref, stencil_ref = stencil_target.ref;
 
     int start = 0, count = int(framebuffers_.size());
     while (count > 0) {

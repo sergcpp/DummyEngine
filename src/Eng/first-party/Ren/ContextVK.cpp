@@ -258,33 +258,33 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
 
     InitDefaultBuffers();
 
-    texture_atlas_ =
-        TextureAtlasArray{api_ctx_.get(),     "Texture Atlas",      TextureAtlasWidth,
-                          TextureAtlasHeight, TextureAtlasLayers,   1,
-                          eTexFormat::RGBA8,  eTexFilter::Bilinear, Bitmask(eTexUsage::Transfer) | eTexUsage::Sampled};
+    image_atlas_ =
+        ImageAtlasArray{api_ctx_.get(),   "Image Atlas",     ImageAtlasWidth,
+                        ImageAtlasHeight, ImageAtlasLayers,  1,
+                        eFormat::RGBA8,   eFilter::Bilinear, Bitmask(eImgUsage::Transfer) | eImgUsage::Sampled};
 
     for (size_t i = 0; i < api_ctx_->present_images.size(); ++i) {
         char name_buf[24];
         snprintf(name_buf, sizeof(name_buf), "Present Image [%i]", int(i));
 
-        TexParams params;
+        ImgParams params;
         params.w = w;
         params.h = h;
         if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_UNORM) {
-            params.format = eTexFormat::RGBA8;
+            params.format = eFormat::RGBA8;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_SRGB) {
-            params.format = eTexFormat::RGBA8_srgb;
+            params.format = eFormat::RGBA8_srgb;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_UNORM) {
-            params.format = eTexFormat::BGRA8;
+            params.format = eFormat::BGRA8;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_SRGB) {
-            params.format = eTexFormat::BGRA8_srgb;
+            params.format = eFormat::BGRA8_srgb;
         }
-        params.usage = Bitmask(eTexUsage::RenderTarget);
-        params.flags |= eTexFlags::NoOwnership;
+        params.usage = Bitmask(eImgUsage::RenderTarget);
+        params.flags |= eImgFlags::NoOwnership;
 
-        api_ctx_->present_image_refs.emplace_back(textures_.Insert(
+        api_ctx_->present_image_refs.emplace_back(images_.Insert(
             name_buf, api_ctx_.get(),
-            TexHandle{api_ctx_->present_images[i], api_ctx_->present_image_views[i], VkImageView{}, VkSampler{}, 0},
+            ImgHandle{api_ctx_->present_images[i], api_ctx_->present_image_views[i], VkImageView{}, VkSampler{}, 0},
             params, MemAllocation{}, log_));
     }
 
@@ -349,29 +349,29 @@ void Ren::Context::Resize(const int w, const int h) {
         char name_buf[24];
         snprintf(name_buf, sizeof(name_buf), "Present Image [%i]", int(i));
 
-        TexParams params;
+        ImgParams params;
         params.w = w;
         params.h = h;
         if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_UNORM) {
-            params.format = eTexFormat::RGBA8;
+            params.format = eFormat::RGBA8;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_UNORM) {
-            params.format = eTexFormat::BGRA8;
+            params.format = eFormat::BGRA8;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_SRGB) {
-            params.format = eTexFormat::BGRA8_srgb;
+            params.format = eFormat::BGRA8_srgb;
         }
-        params.usage = Bitmask(eTexUsage::RenderTarget);
-        params.flags |= eTexFlags::NoOwnership;
+        params.usage = Bitmask(eImgUsage::RenderTarget);
+        params.flags |= eImgFlags::NoOwnership;
 
-        TexRef ref = textures_.FindByName(name_buf);
+        ImgRef ref = images_.FindByName(name_buf);
         if (ref) {
             ref->Init(
-                TexHandle{api_ctx_->present_images[i], api_ctx_->present_image_views[i], VkImageView{}, VkSampler{}, 0},
+                ImgHandle{api_ctx_->present_images[i], api_ctx_->present_image_views[i], VkImageView{}, VkSampler{}, 0},
                 params, MemAllocation{}, log_);
             api_ctx_->present_image_refs.emplace_back(std::move(ref));
         } else {
-            api_ctx_->present_image_refs.emplace_back(textures_.Insert(
+            api_ctx_->present_image_refs.emplace_back(images_.Insert(
                 name_buf, api_ctx_.get(),
-                TexHandle{api_ctx_->present_images[i], api_ctx_->present_image_views[i], VkImageView{}, VkSampler{}, 0},
+                ImgHandle{api_ctx_->present_images[i], api_ctx_->present_image_views[i], VkImageView{}, VkSampler{}, 0},
                 params, MemAllocation{}, log_));
         }
     }

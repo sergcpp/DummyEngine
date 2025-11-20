@@ -56,9 +56,9 @@ class ExOITBlendLayer final : public FgExecutor {
     FgResRef color_tex_;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
-                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, const Ren::WeakTexRef &depth_tex,
-                  const Ren::WeakTexRef &color_tex);
-    void DrawTransparent(FgContext &fg, const Ren::WeakTexRef &depth_tex);
+                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, const Ren::WeakImgRef &depth_tex,
+                  const Ren::WeakImgRef &color_tex);
+    void DrawTransparent(FgContext &fg, const Ren::WeakImgRef &depth_tex);
 
   public:
     ExOITBlendLayer(PrimDraw &prim_draw, const DrawList **p_list, const view_state_t *view_state, FgResRef vtx_buf1,

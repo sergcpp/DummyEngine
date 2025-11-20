@@ -13,7 +13,7 @@
 namespace Ren {
 uint8_t from_hex_char(const char c) { return (c >= 'A') ? (c >= 'a') ? (c - 'a' + 10) : (c - 'A' + 10) : (c - '0'); }
 
-const SamplingParams g_default_mat_sampler = {eTexFilter::Trilinear, eTexWrap::Repeat, eTexCompare::None, Fixed8{}};
+const SamplingParams g_default_mat_sampler = {eFilter::Trilinear, eWrap::Repeat, eCompareOp::None, Fixed8{}};
 } // namespace Ren
 
 Ren::Material::Material(std::string_view name, std::string_view mat_src, eMatLoadStatus *status,
@@ -24,14 +24,14 @@ Ren::Material::Material(std::string_view name, std::string_view mat_src, eMatLoa
 }
 
 Ren::Material::Material(std::string_view name, Bitmask<eMatFlags> flags, Span<const PipelineRef> _pipelines,
-                        Span<const TexRef> _textures, Span<const SamplerRef> _samplers, Span<const Vec4f> _params,
+                        Span<const ImgRef> _textures, Span<const SamplerRef> _samplers, Span<const Vec4f> _params,
                         ILog *log) {
     name_ = String{name};
     Init(flags, _pipelines, _textures, _samplers, _params, log);
 }
 
 void Ren::Material::Init(const Bitmask<eMatFlags> _flags, Span<const PipelineRef> _pipelines,
-                         Span<const TexRef> _textures, Span<const SamplerRef> _samplers, Span<const Vec4f> _params,
+                         Span<const ImgRef> _textures, Span<const SamplerRef> _samplers, Span<const Vec4f> _params,
                          ILog *log) {
     flags = _flags;
     ready_ = true;
@@ -191,7 +191,7 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
                 const std::string texture_name = std::string(p, q);
                 if (texture_name != "none") {
                     uint8_t texture_color[] = {0, 255, 255, 255};
-                    Bitmask<eTexFlags> texture_flags;
+                    Bitmask<eImgFlags> texture_flags;
 
                     const char *_p = q + 1;
                     const char *_q = strpbrk(_p, delims);
@@ -217,7 +217,7 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
                             assert(false && "Deprecated flag!");
                         } else if (strncmp(flag, "norepeat", flag_len) == 0) {
                             assert(false && "Deprecated flag!");
-                            sampler_params.wrap = eTexWrap::ClampToEdge;
+                            sampler_params.wrap = eWrap::ClampToEdge;
                         } else {
                             break;
                         }

@@ -36,24 +36,24 @@ Eng::FgResRef Eng::FgNode::AddTransferOutput(FgResRef handle) {
     return builder_.WriteBuffer(handle, Ren::eResState::CopyDst, Ren::eStage::Transfer, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddTransferImageInput(const Ren::WeakTexRef &tex) {
-    return builder_.ReadTexture(tex, Ren::eResState::CopySrc, Ren::eStage::Transfer, *this);
+Eng::FgResRef Eng::FgNode::AddTransferImageInput(const Ren::WeakImgRef &tex) {
+    return builder_.ReadImage(tex, Ren::eResState::CopySrc, Ren::eStage::Transfer, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddTransferImageInput(const FgResRef handle) {
-    return builder_.ReadTexture(handle, Ren::eResState::CopySrc, Ren::eStage::Transfer, *this);
+    return builder_.ReadImage(handle, Ren::eResState::CopySrc, Ren::eStage::Transfer, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddTransferImageOutput(std::string_view name, const FgImgDesc &desc) {
-    return builder_.WriteTexture(name, desc, Ren::eResState::CopyDst, Ren::eStage::Transfer, *this);
+    return builder_.WriteImage(name, desc, Ren::eResState::CopyDst, Ren::eStage::Transfer, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddTransferImageOutput(const Ren::WeakTexRef &tex) {
-    return builder_.WriteTexture(tex, Ren::eResState::CopyDst, Ren::eStage::Transfer, *this);
+Eng::FgResRef Eng::FgNode::AddTransferImageOutput(const Ren::WeakImgRef &tex) {
+    return builder_.WriteImage(tex, Ren::eResState::CopyDst, Ren::eStage::Transfer, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddTransferImageOutput(const FgResRef handle) {
-    return builder_.WriteTexture(handle, Ren::eResState::CopyDst, Ren::eStage::Transfer, *this);
+    return builder_.WriteImage(handle, Ren::eResState::CopyDst, Ren::eStage::Transfer, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddStorageReadonlyInput(FgResRef handle, Ren::Bitmask<Ren::eStage> stages) {
@@ -79,51 +79,51 @@ Eng::FgResRef Eng::FgNode::AddStorageOutput(const Ren::WeakBufRef &buf, const Re
 
 Eng::FgResRef Eng::FgNode::AddStorageImageOutput(std::string_view name, const FgImgDesc &desc,
                                                  const Ren::Bitmask<Ren::eStage> stages) {
-    return builder_.WriteTexture(name, desc, Ren::eResState::UnorderedAccess, stages, *this);
+    return builder_.WriteImage(name, desc, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddStorageImageOutput(const FgResRef handle, const Ren::Bitmask<Ren::eStage> stages) {
-    return builder_.WriteTexture(handle, Ren::eResState::UnorderedAccess, stages, *this);
+    return builder_.WriteImage(handle, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddStorageImageOutput(const Ren::WeakTexRef &tex, const Ren::Bitmask<Ren::eStage> stages) {
-    return builder_.WriteTexture(tex, Ren::eResState::UnorderedAccess, stages, *this);
+Eng::FgResRef Eng::FgNode::AddStorageImageOutput(const Ren::WeakImgRef &tex, const Ren::Bitmask<Ren::eStage> stages) {
+    return builder_.WriteImage(tex, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddColorOutput(std::string_view name, const FgImgDesc &desc) {
-    return builder_.WriteTexture(name, desc, Ren::eResState::RenderTarget, Ren::eStage::ColorAttachment, *this);
+    return builder_.WriteImage(name, desc, Ren::eResState::RenderTarget, Ren::eStage::ColorAttachment, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddColorOutput(const FgResRef handle) {
-    return builder_.WriteTexture(handle, Ren::eResState::RenderTarget, Ren::eStage::ColorAttachment, *this);
+    return builder_.WriteImage(handle, Ren::eResState::RenderTarget, Ren::eStage::ColorAttachment, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddColorOutput(const Ren::WeakTexRef &tex) {
-    return builder_.WriteTexture(tex, Ren::eResState::RenderTarget, Ren::eStage::ColorAttachment, *this);
+Eng::FgResRef Eng::FgNode::AddColorOutput(const Ren::WeakImgRef &tex) {
+    return builder_.WriteImage(tex, Ren::eResState::RenderTarget, Ren::eStage::ColorAttachment, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddColorOutput(std::string_view name) {
-    return builder_.WriteTexture(name, Ren::eResState::RenderTarget, Ren::eStage::ColorAttachment, *this);
+    return builder_.WriteImage(name, Ren::eResState::RenderTarget, Ren::eStage::ColorAttachment, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddDepthOutput(std::string_view name, const FgImgDesc &desc) {
-    return builder_.WriteTexture(name, desc, Ren::eResState::DepthWrite, Ren::eStage::DepthAttachment, *this);
+    return builder_.WriteImage(name, desc, Ren::eResState::DepthWrite, Ren::eStage::DepthAttachment, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddDepthOutput(const FgResRef handle) {
-    return builder_.WriteTexture(handle, Ren::eResState::DepthWrite, Ren::eStage::DepthAttachment, *this);
+    return builder_.WriteImage(handle, Ren::eResState::DepthWrite, Ren::eStage::DepthAttachment, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddDepthOutput(const Ren::WeakTexRef &tex) {
-    return builder_.WriteTexture(tex, Ren::eResState::DepthWrite, Ren::eStage::DepthAttachment, *this);
+Eng::FgResRef Eng::FgNode::AddDepthOutput(const Ren::WeakImgRef &tex) {
+    return builder_.WriteImage(tex, Ren::eResState::DepthWrite, Ren::eStage::DepthAttachment, *this);
 }
 
 Eng::FgResRef Eng::FgNode::ReplaceTransferInput(const int slot_index, const Ren::WeakBufRef &buf) {
     return builder_.ReadBuffer(buf, Ren::eResState::CopySrc, Ren::eStage::Transfer, *this, slot_index);
 }
 
-Eng::FgResRef Eng::FgNode::ReplaceColorOutput(const int slot_index, const Ren::WeakTexRef &tex) {
-    return builder_.WriteTexture(tex, Ren::eResState::RenderTarget, Ren::eStage::ColorAttachment, *this, slot_index);
+Eng::FgResRef Eng::FgNode::ReplaceColorOutput(const int slot_index, const Ren::WeakImgRef &tex) {
+    return builder_.WriteImage(tex, Ren::eResState::RenderTarget, Ren::eStage::ColorAttachment, *this, slot_index);
 }
 
 Eng::FgResRef Eng::FgNode::AddUniformBufferInput(const FgResRef handle, const Ren::Bitmask<Ren::eStage> stages) {
@@ -131,28 +131,28 @@ Eng::FgResRef Eng::FgNode::AddUniformBufferInput(const FgResRef handle, const Re
 }
 
 Eng::FgResRef Eng::FgNode::AddTextureInput(const FgResRef handle, const Ren::Bitmask<Ren::eStage> stages) {
-    return builder_.ReadTexture(handle, Ren::eResState::ShaderResource, stages, *this);
+    return builder_.ReadImage(handle, Ren::eResState::ShaderResource, stages, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddTextureInput(const Ren::WeakTexRef &tex, const Ren::Bitmask<Ren::eStage> stages) {
-    return builder_.ReadTexture(tex, Ren::eResState::ShaderResource, stages, *this);
+Eng::FgResRef Eng::FgNode::AddTextureInput(const Ren::WeakImgRef &tex, const Ren::Bitmask<Ren::eStage> stages) {
+    return builder_.ReadImage(tex, Ren::eResState::ShaderResource, stages, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddTextureInput(std::string_view name, const Ren::Bitmask<Ren::eStage> stages) {
-    return builder_.ReadTexture(name, Ren::eResState::ShaderResource, stages, *this);
+    return builder_.ReadImage(name, Ren::eResState::ShaderResource, stages, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddHistoryTextureInput(FgResRef handle, const Ren::Bitmask<Ren::eStage> stages) {
-    return builder_.ReadHistoryTexture(handle, Ren::eResState::ShaderResource, stages, *this);
+    return builder_.ReadHistoryImage(handle, Ren::eResState::ShaderResource, stages, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddHistoryTextureInput(std::string_view name, const Ren::Bitmask<Ren::eStage> stages) {
-    return builder_.ReadHistoryTexture(name, Ren::eResState::ShaderResource, stages, *this);
+    return builder_.ReadHistoryImage(name, Ren::eResState::ShaderResource, stages, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddCustomTextureInput(const FgResRef handle, const Ren::eResState desired_state,
                                                  const Ren::Bitmask<Ren::eStage> stages) {
-    return builder_.ReadTexture(handle, desired_state, stages, *this);
+    return builder_.ReadImage(handle, desired_state, stages, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddVertexBufferInput(const FgResRef handle) {

@@ -95,10 +95,10 @@ void test_mesh() {
                                       SmallVectorImpl<PipelineRef> &out_pipelines) {};
 
         auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4],
-                                         const Bitmask<eTexFlags> flags) {
-            eTexLoadStatus status;
-            TexParams p;
-            return test.LoadTexture(name, {}, p, nullptr, &status);
+                                         const Bitmask<eImgFlags> flags) {
+            eImgLoadStatus status;
+            ImgParams p;
+            return test.LoadImage(name, {}, p, nullptr, &status);
         };
 
         auto on_sampler_needed = [&test](SamplingParams params) {
@@ -163,9 +163,9 @@ void test_mesh() {
 #endif
         };
 
-        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const eTexFlags flags) {
-            eTexLoadStatus status;
-            TexParams p;
+        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const eImgFlags flags) {
+            eImgLoadStatus status;
+            ImgParams p;
             return test.LoadTexture2D(name, {}, p, nullptr, &status);
         };
 

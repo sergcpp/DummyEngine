@@ -15,12 +15,12 @@ uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, cons
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 }
 
-void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, const Ren::WeakTexRef &depth_tex) {
+void Eng::ExOITScheduleRays::DrawTransparent(FgContext &fg, const Ren::WeakImgRef &depth_tex) {
     using namespace ExSharedInternal;
 
     auto *api_ctx = fg.ren_ctx().api_ctx();
 
-    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Image &noise_tex = fg.AccessROImage(noise_tex_);
     const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
     const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
     const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);

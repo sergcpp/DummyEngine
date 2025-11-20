@@ -216,7 +216,7 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, Ren::S
             const Sys::JsStringP &js_view_transform = js_cam[view_transform_ndx].second.as_str();
             if (js_view_transform.val == "agx") {
                 renderer->settings.tonemap_mode = eTonemapMode::LUT;
-                renderer->SetTonemapLUT(LUT_DIMS, Ren::eTexFormat::RGB10_A2,
+                renderer->SetTonemapLUT(LUT_DIMS, Ren::eFormat::RGB10_A2,
                                         Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(__agx),
                                                                  reinterpret_cast<const uint8_t *>(__agx) +
                                                                      4 * LUT_DIMS * LUT_DIMS * LUT_DIMS));
@@ -354,20 +354,20 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, Ren::S
     // NOTE: Temporarily placed here
     std::lock_guard<std::mutex> _(g_stbi_mutex);
 
-    Ren::TexParams params;
+    Ren::ImgParams params;
     params.w = ref_w;
     params.h = ref_h;
 #if defined(REN_GL_BACKEND)
-    params.format = Ren::eTexFormat::RGBA8_srgb;
+    params.format = Ren::eFormat::RGBA8_srgb;
 #else
-    params.format = Ren::eTexFormat::RGBA8;
+    params.format = Ren::eFormat::RGBA8;
 #endif
-    params.sampling.filter = Ren::eTexFilter::Bilinear;
-    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-    params.usage = Ren::Bitmask(Ren::eTexUsage::RenderTarget) | Ren::eTexUsage::Transfer;
+    params.sampling.filter = Ren::eFilter::Bilinear;
+    params.sampling.wrap = Ren::eWrap::ClampToEdge;
+    params.usage = Ren::Bitmask(Ren::eImgUsage::RenderTarget) | Ren::eImgUsage::Transfer;
 
-    Ren::eTexLoadStatus status;
-    Ren::TexRef render_result = ren_ctx.LoadTexture("Render Result", params, ren_ctx.default_mem_allocs(), &status);
+    Ren::eImgLoadStatus status;
+    Ren::ImgRef render_result = ren_ctx.LoadImage("Render Result", params, ren_ctx.default_mem_allocs(), &status);
 
     auto begin_frame = [&ren_ctx]() {
         Ren::ApiContext *api_ctx = ren_ctx.api_ctx();

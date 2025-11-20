@@ -10,7 +10,7 @@ void Eng::ExShadowDepth::Execute(FgContext &fg) {
     Ren::WeakBufRef vtx_buf2 = fg.AccessROBufferRef(vtx_buf2_);
     Ren::WeakBufRef ndx_buf = fg.AccessROBufferRef(ndx_buf_);
 
-    Ren::WeakTexRef shadow_depth_tex = fg.AccessRWTextureRef(shadow_depth_tex_);
+    Ren::WeakImgRef shadow_depth_tex = fg.AccessRWImageRef(shadow_depth_tex_);
 
     LazyInit(fg.ren_ctx(), fg.sh(), vtx_buf1, vtx_buf2, ndx_buf, shadow_depth_tex);
     DrawShadowMaps(fg);
@@ -18,7 +18,7 @@ void Eng::ExShadowDepth::Execute(FgContext &fg) {
 
 void Eng::ExShadowDepth::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
                                   const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf,
-                                  const Ren::WeakTexRef &shadow_depth_tex) {
+                                  const Ren::WeakImgRef &shadow_depth_tex) {
     if (!initialized) {
 #if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
@@ -110,7 +110,7 @@ void Eng::ExShadowDepth::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, cons
     }
 
     if (!shadow_fb_.Setup(ctx.api_ctx(), *pi_solid_[0]->render_pass(), w_, h_, shadow_depth_tex, {},
-                          Ren::Span<const Ren::WeakTexRef>{}, false, ctx.log())) {
+                          Ren::Span<const Ren::WeakImgRef>{}, false, ctx.log())) {
         ctx.log()->Error("ExShadowMaps: shadow_fb_ init failed!");
     }
 }

@@ -174,19 +174,19 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     { // create dummy texture
         char name_buf[] = "Present Image [0]";
 
-        TexParams params;
-        params.format = eTexFormat::RGBA8;
-        params.flags = eTexFlags::NoOwnership;
-        params.usage = Bitmask(eTexUsage::RenderTarget);
+        ImgParams params;
+        params.format = eFormat::RGBA8;
+        params.flags = eImgFlags::NoOwnership;
+        params.usage = Bitmask(eImgUsage::RenderTarget);
 
         api_ctx_->present_image_refs.emplace_back(
-            textures_.Insert(name_buf, api_ctx_.get(), TexHandle{}, params, MemAllocation{}, log_));
+            images_.Insert(name_buf, api_ctx_.get(), ImgHandle{}, params, MemAllocation{}, log_));
     }
 
-    texture_atlas_ =
-        TextureAtlasArray{api_ctx_.get(),     "Texture Atlas",      TextureAtlasWidth,
-                          TextureAtlasHeight, TextureAtlasLayers,   1,
-                          eTexFormat::RGBA8,  eTexFilter::Bilinear, Bitmask(eTexUsage::Transfer) | eTexUsage::Sampled};
+    image_atlas_ =
+        ImageAtlasArray{api_ctx_.get(),   "Image Atlas",     ImageAtlasWidth,
+                        ImageAtlasHeight, ImageAtlasLayers,  1,
+                        eFormat::RGBA8,   eFilter::Bilinear, Bitmask(eImgUsage::Transfer) | eImgUsage::Sampled};
 
     return true;
 }

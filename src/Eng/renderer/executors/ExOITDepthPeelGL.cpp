@@ -24,7 +24,7 @@ uint32_t _draw_list_range_full_rev(Eng::FgContext &fg, const Ren::MaterialStorag
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                    Eng::backend_info_t &backend_info);
-uint32_t _draw_range_ext2(Eng::FgContext &fg, const Ren::MaterialStorage &materials, const Ren::Texture &white_tex,
+uint32_t _draw_range_ext2(Eng::FgContext &fg, const Ren::MaterialStorage &materials, const Ren::Image &white_tex,
                           Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                           uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
 } // namespace ExSharedInternal
@@ -36,7 +36,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgContext &fg) {
     const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
     const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
     const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
-    const Ren::Texture &dummy_white = fg.AccessROTexture(dummy_white_);
+    const Ren::Image &dummy_white = fg.AccessROImage(dummy_white_);
 
     Ren::Buffer &out_depth_buf = fg.AccessRWBuffer(out_depth_buf_);
 

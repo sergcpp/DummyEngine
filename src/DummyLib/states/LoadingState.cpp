@@ -42,14 +42,14 @@ LoadingState::~LoadingState() = default;
 void LoadingState::Enter() {
     sh_loader_->LoadPipelineCache("assets_pc/");
 
-    Ren::TexParams params;
+    Ren::ImgParams params;
     params.w = params.h = 1;
-    params.format = Ren::eTexFormat::RGBA8;
+    params.format = Ren::eFormat::RGBA8;
 
-    Ren::eTexLoadStatus load_status;
+    Ren::eImgLoadStatus load_status;
     dummy_white_ =
-        ren_ctx_->LoadTextureRegion("dummy_white", Gui::ColorWhite, params, ren_ctx_->current_cmd_buf(), &load_status);
-    assert(load_status == Ren::eTexLoadStatus::CreatedFromData);
+        ren_ctx_->LoadImageRegion("dummy_white", Gui::ColorWhite, params, ren_ctx_->current_cmd_buf(), &load_status);
+    assert(load_status == Ren::eImgLoadStatus::CreatedFromData);
 
     { // Init loading program
         blit_loading_prog_ = sh_loader_->LoadProgram("blit_loading.vert.glsl", "blit_loading.frag.glsl");

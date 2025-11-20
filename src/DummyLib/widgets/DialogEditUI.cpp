@@ -35,7 +35,7 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
         const Gui::Vec2f elem_size = 2 * ElementSizePx / Gui::Vec2f{size_px()};
         const Gui::Vec2f spacing = 2 * ElementSpacingPx / Gui::Vec2f{size_px()};
 
-        const Ren::TextureRegionRef &line_tex = line_img_.tex();
+        const Ren::ImageRegionRef &line_tex = line_img_.tex();
 
         const Gui::Vec2f line_width = Gui::Vec2f{1, aspect()} * 4 / Gui::Vec2f{size_px()};
 
@@ -115,7 +115,7 @@ void DialogEditUI::Resize() { BaseElement::Resize(); }
 
 void DialogEditUI::DrawLineLocal(Gui::Renderer *r, const Gui::Vec2f &_p0, const Gui::Vec2f &_p1,
                                  const Gui::Vec2f &width) const {
-    const Ren::TextureRegionRef &line_tex = line_img_.tex();
+    const Ren::ImageRegionRef &line_tex = line_img_.tex();
     const Gui::Vec2f *_uvs = line_img_.uvs_px();
 
     const auto p0 =
@@ -132,7 +132,7 @@ void DialogEditUI::DrawLineLocal(Gui::Renderer *r, const Gui::Vec2f &_p0, const 
 
 void DialogEditUI::DrawCurveLocal(Gui::Renderer *r, const Gui::Vec2f &_p0, const Gui::Vec2f &_p1, const Gui::Vec2f &_p2,
                                   const Gui::Vec2f &_p3, const Gui::Vec2f &width, const uint8_t color[4]) const {
-    const Ren::TextureRegionRef &line_tex = line_img_.tex();
+    const Ren::ImageRegionRef &line_tex = line_img_.tex();
     const Gui::Vec2f *_uvs = line_img_.uvs_px();
 
     const auto p0 =

@@ -10,10 +10,10 @@ void Eng::ExGBufferFill::Execute(FgContext &fg) {
     Ren::WeakBufRef vtx_buf2 = fg.AccessROBufferRef(vtx_buf2_);
     Ren::WeakBufRef ndx_buf = fg.AccessROBufferRef(ndx_buf_);
 
-    Ren::WeakTexRef albedo_tex = fg.AccessRWTextureRef(out_albedo_tex_);
-    Ren::WeakTexRef normal_tex = fg.AccessRWTextureRef(out_normal_tex_);
-    Ren::WeakTexRef spec_tex = fg.AccessRWTextureRef(out_spec_tex_);
-    Ren::WeakTexRef depth_tex = fg.AccessRWTextureRef(out_depth_tex_);
+    Ren::WeakImgRef albedo_tex = fg.AccessRWImageRef(out_albedo_tex_);
+    Ren::WeakImgRef normal_tex = fg.AccessRWImageRef(out_normal_tex_);
+    Ren::WeakImgRef spec_tex = fg.AccessRWImageRef(out_spec_tex_);
+    Ren::WeakImgRef depth_tex = fg.AccessRWImageRef(out_depth_tex_);
 
     LazyInit(fg.ren_ctx(), fg.sh(), vtx_buf1, vtx_buf2, ndx_buf, albedo_tex, normal_tex, spec_tex, depth_tex);
     DrawOpaque(fg);
@@ -21,8 +21,8 @@ void Eng::ExGBufferFill::Execute(FgContext &fg) {
 
 void Eng::ExGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
                                   const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf,
-                                  const Ren::WeakTexRef &albedo_tex, const Ren::WeakTexRef &normal_tex,
-                                  const Ren::WeakTexRef &spec_tex, const Ren::WeakTexRef &depth_tex) {
+                                  const Ren::WeakImgRef &albedo_tex, const Ren::WeakImgRef &normal_tex,
+                                  const Ren::WeakImgRef &spec_tex, const Ren::WeakImgRef &depth_tex) {
     const Ren::RenderTarget color_targets[] = {{albedo_tex, Ren::eLoadOp::Clear, Ren::eStoreOp::Store},
                                                {normal_tex, Ren::eLoadOp::Clear, Ren::eStoreOp::Store},
                                                {spec_tex, Ren::eLoadOp::Clear, Ren::eStoreOp::Store}};

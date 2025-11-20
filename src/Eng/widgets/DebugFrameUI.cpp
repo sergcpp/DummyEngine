@@ -733,7 +733,7 @@ void Eng::DebugFrameUI::DrawConnectionCurves(Gui::Renderer *r, const int pass_in
 
 void Eng::DebugFrameUI::DrawLine(Gui::Renderer *r, const Gui::Vec2f &_p0, const Gui::Vec2f &_p1,
                                  const Gui::Vec2f &width, const uint8_t color[4]) const {
-    const Ren::TextureRegionRef &line_tex = line_.tex();
+    const Ren::ImageRegionRef &line_tex = line_.tex();
     const Gui::Vec2f *_uvs = line_.uvs_px();
 
     const auto p0 = Gui::Vec4f{dims_[0][0] + 0.5f * (_p0[0] + 1) * dims_[1][0],
@@ -749,7 +749,7 @@ void Eng::DebugFrameUI::DrawLine(Gui::Renderer *r, const Gui::Vec2f &_p0, const 
 void Eng::DebugFrameUI::DrawCurve(Gui::Renderer *r, const Gui::Vec2f &_p0, const Gui::Vec2f &_p1, const Gui::Vec2f &_p2,
                                   const Gui::Vec2f &_p3, const Gui::Vec2f &width, const uint8_t color[4],
                                   const bool backward) const {
-    const Ren::TextureRegionRef &line_tex = line_.tex();
+    const Ren::ImageRegionRef &line_tex = line_.tex();
     const Gui::Vec2f *_uvs = line_.uvs_px();
 
     auto p0 = Gui::Vec4f{dims_[0][0] + 0.5f * (_p0[0] + 1) * dims_[1][0],

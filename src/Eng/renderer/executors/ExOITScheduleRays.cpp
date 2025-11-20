@@ -37,7 +37,7 @@ void Eng::ExOITScheduleRays::Execute(FgContext &fg) {
     Ren::WeakBufRef vtx_buf1 = fg.AccessROBufferRef(vtx_buf1_);
     Ren::WeakBufRef vtx_buf2 = fg.AccessROBufferRef(vtx_buf2_);
     Ren::WeakBufRef ndx_buf = fg.AccessROBufferRef(ndx_buf_);
-    Ren::WeakTexRef depth_tex = fg.AccessRWTextureRef(depth_tex_);
+    Ren::WeakImgRef depth_tex = fg.AccessRWImageRef(depth_tex_);
 
     LazyInit(fg.ren_ctx(), fg.sh(), vtx_buf1, vtx_buf2, ndx_buf, depth_tex);
     DrawTransparent(fg, depth_tex);
@@ -45,7 +45,7 @@ void Eng::ExOITScheduleRays::Execute(FgContext &fg) {
 
 void Eng::ExOITScheduleRays::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
                                       const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf,
-                                      const Ren::WeakTexRef &depth_tex) {
+                                      const Ren::WeakImgRef &depth_tex) {
     const Ren::RenderTarget depth_target = {depth_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::Store};
     if (!initialized) {

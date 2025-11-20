@@ -133,7 +133,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         api_ctx->vkCmdCopyBuffer(cmd_buf, index_stage_buf_->vk_handle(), index_buf_->vk_handle(), 1, &region_to_copy);
     }
 
-    auto &atlas = ctx_.texture_atlas();
+    auto &atlas = ctx_.image_atlas();
 
     //
     // Insert needed barriers before drawing
@@ -211,7 +211,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     //
     framebuffers_.resize(api_ctx->present_images.size());
     if (!framebuffers_[api_ctx->active_present_image].Setup(api_ctx, *render_pass_, w, h, ctx_.backbuffer_ref(), {},
-                                                            Ren::WeakTexRef{}, false, ctx_.log())) {
+                                                            Ren::WeakImgRef{}, false, ctx_.log())) {
         ctx_.log()->Error("Failed to create framebuffer!");
     }
 
@@ -226,8 +226,8 @@ void Gui::Renderer::Draw(const int w, const int h) {
 
     VkDescriptorImageInfo img_info = {};
     img_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    img_info.imageView = ctx_.texture_atlas().img_view();
-    img_info.sampler = ctx_.texture_atlas().sampler().vk_handle();
+    img_info.imageView = ctx_.image_atlas().img_view();
+    img_info.sampler = ctx_.image_atlas().sampler().vk_handle();
 
     VkWriteDescriptorSet descr_write;
     descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};

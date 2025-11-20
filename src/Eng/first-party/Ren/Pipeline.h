@@ -2,11 +2,11 @@
 
 #include "Buffer.h"
 #include "Fwd.h"
+#include "ImageParams.h"
 #include "Program.h"
 #include "RastState.h"
 #include "RenderPass.h"
 #include "Span.h"
-#include "TextureParams.h"
 #include "VertexInput.h"
 
 namespace Ren {

@@ -1,4 +1,4 @@
-#include "TextureAtlas.h"
+#include "ImageAtlas.h"
 
 #include "Context.h"
 #include "GL.h"
@@ -10,14 +10,13 @@ extern const uint32_t g_mag_filter_gl[];
 extern const uint32_t g_wrap_mode_gl[];
 } // namespace Ren
 
-Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res, const int mip_count,
-                                const eTexFormat formats[], const Bitmask<eTexFlags> flags[], eTexFilter filter,
-                                ILog *log)
+Ren::ImageAtlas::ImageAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res, const int mip_count,
+                            const eFormat formats[], const Bitmask<eImgFlags> flags[], eFilter filter, ILog *log)
     : splitter_(w, h) {
     filter_ = filter;
 
-    for (int i = 0; i < MaxTextureCount; i++) {
-        if (formats[i] == eTexFormat::Undefined) {
+    for (int i = 0; i < MaxImageCount; i++) {
+        if (formats[i] == eFormat::Undefined) {
             break;
         }
 
@@ -51,7 +50,7 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
             }
             internal_format = compressed_tex_format;
         } else {
-            internal_format = GLInternalFormatFromTexFormat(formats_[i]);
+            internal_format = GLInternalFormatFromFormat(formats_[i]);
         }
 
         ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, w, h);
@@ -95,7 +94,7 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
     }
 }
 
-Ren::TextureAtlas::~TextureAtlas() {
+Ren::ImageAtlas::~ImageAtlas() {
     for (const uint32_t tex_id : tex_ids_) {
         if (tex_id != 0xffffffff) {
             auto _tex_id = GLuint(tex_id);
@@ -104,23 +103,22 @@ Ren::TextureAtlas::~TextureAtlas() {
     }
 }
 
-Ren::TextureAtlas::TextureAtlas(TextureAtlas &&rhs) noexcept
-    : splitter_(std::move(rhs.splitter_)), filter_(rhs.filter_) {
-    for (int i = 0; i < MaxTextureCount; i++) {
+Ren::ImageAtlas::ImageAtlas(ImageAtlas &&rhs) noexcept : splitter_(std::move(rhs.splitter_)), filter_(rhs.filter_) {
+    for (int i = 0; i < MaxImageCount; i++) {
         formats_[i] = rhs.formats_[i];
-        rhs.formats_[i] = eTexFormat::Undefined;
+        rhs.formats_[i] = eFormat::Undefined;
 
         tex_ids_[i] = rhs.tex_ids_[i];
         rhs.tex_ids_[i] = 0xffffffff;
     }
 }
 
-Ren::TextureAtlas &Ren::TextureAtlas::operator=(TextureAtlas &&rhs) noexcept {
+Ren::ImageAtlas &Ren::ImageAtlas::operator=(ImageAtlas &&rhs) noexcept {
     filter_ = rhs.filter_;
 
-    for (int i = 0; i < MaxTextureCount; i++) {
+    for (int i = 0; i < MaxImageCount; i++) {
         formats_[i] = rhs.formats_[i];
-        rhs.formats_[i] = eTexFormat::Undefined;
+        rhs.formats_[i] = eFormat::Undefined;
 
         if (tex_ids_[i] != 0xffffffff) {
             auto tex_id = GLuint(tex_ids_[i]);
@@ -134,14 +132,14 @@ Ren::TextureAtlas &Ren::TextureAtlas::operator=(TextureAtlas &&rhs) noexcept {
     return (*this);
 }
 
-int Ren::TextureAtlas::AllocateRegion(const int res[2], int out_pos[2]) {
+int Ren::ImageAtlas::AllocateRegion(const int res[2], int out_pos[2]) {
     const int index = splitter_.Allocate(res, out_pos);
     return index;
 }
 
-void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const int data_len, CommandBuffer cmd_buf,
-                                   const eTexFormat format, const Bitmask<eTexFlags> flags, const int layer,
-                                   const int level, const int pos[2], const int res[2], ILog *log) {
+void Ren::ImageAtlas::InitRegion(const Buffer &sbuf, const int data_off, const int data_len, CommandBuffer cmd_buf,
+                                 const eFormat format, const Bitmask<eImgFlags> flags, const int layer, const int level,
+                                 const int pos[2], const int res[2], ILog *log) {
 #ifndef NDEBUG
     if (level == 0) {
         int _res[2];
@@ -165,7 +163,7 @@ void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const
                                                reinterpret_cast<const void *>(uintptr_t(data_off)));
     } else {
         ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(tex_ids_[layer]), level, pos[0], pos[1], res[0], res[1],
-                                     GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
+                                     GLFormatFromFormat(format), GLTypeFromFormat(format),
                                      reinterpret_cast<const void *>(uintptr_t(data_off)));
     }
 
@@ -174,14 +172,14 @@ void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const
     CheckError("init sub image", log);
 }
 
-bool Ren::TextureAtlas::Free(const int pos[2]) {
+bool Ren::ImageAtlas::Free(const int pos[2]) {
     // TODO: fill with black in debug
     return splitter_.Free(pos);
 }
 
-void Ren::TextureAtlas::Finalize(CommandBuffer cmd_buf) {
-    if (filter_ == eTexFilter::Trilinear || filter_ == eTexFilter::Bilinear) {
-        for (int i = 0; i < MaxTextureCount && (formats_[i] != eTexFormat::Undefined); i++) {
+void Ren::ImageAtlas::Finalize(CommandBuffer cmd_buf) {
+    if (filter_ == eFilter::Trilinear || filter_ == eFilter::Bilinear) {
+        for (int i = 0; i < MaxImageCount && (formats_[i] != eFormat::Undefined); i++) {
             if (!IsCompressedFormat(formats_[i])) {
                 ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, GLuint(tex_ids_[i]));
             }
@@ -191,14 +189,14 @@ void Ren::TextureAtlas::Finalize(CommandBuffer cmd_buf) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,
-                                          const int layer_count, const int mip_count, const eTexFormat format,
-                                          const eTexFilter filter, const Bitmask<eTexUsage> usage)
+Ren::ImageAtlasArray::ImageAtlasArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,
+                                      const int layer_count, const int mip_count, const eFormat format,
+                                      const eFilter filter, const Bitmask<eImgUsage> usage)
     : api_ctx_(api_ctx), name_(name), w_(w), h_(h), layer_count_(layer_count), format_(format), filter_(filter) {
     GLuint tex_id;
     ren_glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &tex_id);
 
-    ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count, GLInternalFormatFromTexFormat(format), w, h,
+    ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count, GLInternalFormatFromFormat(format), w, h,
                                 layer_count);
 
     ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_MIN_FILTER, g_min_filter_gl[size_t(filter_)]);
@@ -206,10 +204,10 @@ Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const std::string
 
     tex_id_ = uint32_t(tex_id);
 
-    splitters_.resize(layer_count, TextureSplitter{w, h});
+    splitters_.resize(layer_count, ImageSplitter{w, h});
 }
 
-void Ren::TextureAtlasArray::Free() {
+void Ren::ImageAtlasArray::Free() {
     if (tex_id_ != 0xffffffff) {
         auto tex_id = GLuint(tex_id_);
         glDeleteTextures(1, &tex_id);
@@ -217,9 +215,9 @@ void Ren::TextureAtlasArray::Free() {
     }
 }
 
-void Ren::TextureAtlasArray::FreeImmediate() { Free(); }
+void Ren::ImageAtlasArray::FreeImmediate() { Free(); }
 
-Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rhs) noexcept {
+Ren::ImageAtlasArray &Ren::ImageAtlasArray::operator=(ImageAtlasArray &&rhs) noexcept {
     if (this == &rhs) {
         return (*this);
     }
@@ -231,8 +229,8 @@ Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rh
 
     mip_count_ = std::exchange(rhs.mip_count_, 0);
     layer_count_ = std::exchange(rhs.layer_count_, 0);
-    format_ = std::exchange(rhs.format_, eTexFormat::Undefined);
-    filter_ = std::exchange(rhs.filter_, eTexFilter::Nearest);
+    format_ = std::exchange(rhs.format_, eFormat::Undefined);
+    filter_ = std::exchange(rhs.filter_, eFilter::Nearest);
 
     resource_state = std::exchange(rhs.resource_state, eResState::Undefined);
 
@@ -243,18 +241,18 @@ Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rh
     return (*this);
 }
 
-void Ren::TextureAtlasArray::SetSubImage(const int level, const int layer, const int offsetx, const int offsety,
-                                         const int sizex, const int sizey, const eTexFormat format, const Buffer &sbuf,
-                                         const int data_off, const int data_len, void *) {
+void Ren::ImageAtlasArray::SetSubImage(const int level, const int layer, const int offsetx, const int offsety,
+                                       const int sizex, const int sizey, const eFormat format, const Buffer &sbuf,
+                                       const int data_off, const int data_len, void *) {
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
 
     ren_glTextureSubImage3D_Comp(GL_TEXTURE_2D_ARRAY, GLuint(tex_id_), level, offsetx, offsety, layer, sizex, sizey, 1,
-                                 GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
+                                 GLFormatFromFormat(format), GLTypeFromFormat(format),
                                  reinterpret_cast<const void *>(uintptr_t(data_off)));
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }
 
-void Ren::TextureAtlasArray::Clear(const float rgba[4], void *) {
+void Ren::ImageAtlasArray::Clear(const float rgba[4], void *) {
     glClearTexImage(GLuint(tex_id_), 0, GL_RGBA, GL_FLOAT, rgba);
 }

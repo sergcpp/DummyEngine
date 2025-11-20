@@ -128,7 +128,7 @@ class SceneManager {
         }
         changed_objects_.insert(changed_objects_.end(), indices.begin(), indices.end());
     }
-    void InvalidateTexture(const Ren::TexRef &ref);
+    void InvalidateTexture(const Ren::ImgRef &ref);
 
     void LoadScene(const Sys::JsObjectP &js_scene, Ren::Bitmask<eSceneLoadFlags> load_flags = SceneLoadAll);
     void SaveScene(Sys::JsObjectP &js_scene);
@@ -147,7 +147,7 @@ class SceneManager {
     void LoadMeshBuffers();
     void ReleaseMeshBuffers(bool immediate = false);
 
-    void ReleaseTextures(bool immediate = false);
+    void ReleaseImages(bool immediate = false);
 
     void RebuildLightTree();
     void ReleaseLightTree(bool immediate = false);
@@ -209,7 +209,7 @@ class SceneManager {
     void OnLoadPipelines(Ren::Bitmask<Ren::eMatFlags> flags, std::string_view v_shader, std::string_view f_shader,
                          std::string_view tc_shader, std::string_view te_shader,
                          Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
-    Ren::TexRef OnLoadTexture(std::string_view name, const uint8_t color[4], Ren::Bitmask<Ren::eTexFlags> flags);
+    Ren::ImgRef OnLoadTexture(std::string_view name, const uint8_t color[4], Ren::Bitmask<Ren::eImgFlags> flags);
     Ren::SamplerRef OnLoadSampler(Ren::SamplingParams params);
 
     Ren::MeshRef LoadMesh(std::string_view name, std::istream *data, const Ren::material_load_callback &on_mat_load,
@@ -218,8 +218,8 @@ class SceneManager {
                                   const Ren::pipelines_load_callback &on_pipes_load,
                                   const Ren::texture_load_callback &on_tex_load,
                                   const Ren::sampler_load_callback &on_sampler_load);
-    Ren::TexRef LoadTexture(std::string_view name, Ren::Span<const uint8_t> data, const Ren::TexParams &p,
-                            Ren::eTexLoadStatus *load_status);
+    Ren::ImgRef LoadImage(std::string_view name, Ren::Span<const uint8_t> data, const Ren::ImgParams &p,
+                            Ren::eImgLoadStatus *load_status);
     Ren::Vec4f LoadDecalTexture(std::string_view name);
 
     void EstimateTextureMemory(int portion_size);
@@ -248,7 +248,7 @@ class SceneManager {
     Eng::ShaderLoader &sh_;
     Snd::Context *snd_ctx_ = nullptr;
     Ren::MeshRef cam_rig_;
-    Ren::TexRef white_tex_, error_tex_;
+    Ren::ImgRef white_tex_, error_tex_;
     Sys::ThreadPool &threads_;
     path_config_t paths_;
 
@@ -265,12 +265,12 @@ class SceneManager {
     std::function<PostLoadFunc> component_post_load_[Eng::MAX_COMPONENT_TYPES];
 
     struct TextureRequest {
-        Ren::TexRef ref;
+        Ren::ImgRef ref;
         uint32_t sort_key = 0xffffffff;
 
         uint16_t frame_dist = 0;
 
-        Ren::eTexFormat orig_format = Ren::eTexFormat::Undefined;
+        Ren::eFormat orig_format = Ren::eFormat::Undefined;
         uint16_t read_offset = 0;
         uint16_t orig_w, orig_h;
         uint8_t orig_mip_count;

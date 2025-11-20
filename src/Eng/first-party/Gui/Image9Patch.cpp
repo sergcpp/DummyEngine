@@ -4,7 +4,7 @@
 
 #include "Renderer.h"
 
-Gui::Image9Patch::Image9Patch(const Ren::TextureRegionRef &tex, const Vec2f &offset_px, float frame_scale,
+Gui::Image9Patch::Image9Patch(const Ren::ImageRegionRef &tex, const Vec2f &offset_px, float frame_scale,
                               const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
     : Image(tex, pos, size, parent), offset_px_(offset_px), frame_scale_(frame_scale) {}
 
@@ -13,7 +13,7 @@ Gui::Image9Patch::Image9Patch(Ren::Context &ctx, std::string_view tex_name, cons
     : Image(ctx, tex_name, pos, size, parent), offset_px_(offset_px), frame_scale_(frame_scale) {}
 
 void Gui::Image9Patch::Draw(Renderer *r) {
-    const Ren::TexParams &p = tex_->params;
+    const Ren::ImgParams &p = tex_->params;
     const int tex_layer = tex_->pos(2);
 
     const Vec2f offset_norm = offset_px_ * dims_[1] / Vec2f{dims_px_[1]};

@@ -12,7 +12,7 @@ class Buffer;
 class DescrMultiPoolAlloc;
 class ILog;
 class Pipeline;
-class Texture;
+class Image;
 struct BindlessDescriptors;
 
 enum class eBindTarget : uint16_t {
@@ -33,13 +33,13 @@ enum class eBindTarget : uint16_t {
 };
 
 #if defined(REN_GL_BACKEND)
-uint32_t GLBindTarget(const Texture &tex, int view);
+uint32_t GLBindTarget(const Image &img, int view);
 extern int g_param_buf_binding;
 #endif
 
 struct OpaqueHandle {
     union {
-        const Texture *tex;
+        const Image *img;
         const Buffer *buf;
         const BindlessDescriptors *bindless;
 #if defined(REN_VK_BACKEND)
@@ -51,9 +51,9 @@ struct OpaqueHandle {
     int view_index = 0;
 
     OpaqueHandle() = default;
-    OpaqueHandle(const Texture &_tex, int _view_index = 0) : tex(&_tex), view_index(_view_index) {}
-    OpaqueHandle(const Texture &_tex, const Sampler &_sampler, int _view_index = 0)
-        : tex(&_tex), sampler(&_sampler), view_index(_view_index) {}
+    OpaqueHandle(const Image &_img, int _view_index = 0) : img(&_img), view_index(_view_index) {}
+    OpaqueHandle(const Image &_img, const Sampler &_sampler, int _view_index = 0)
+        : img(&_img), sampler(&_sampler), view_index(_view_index) {}
     OpaqueHandle(const Buffer &_buf, int _view_index = 0) : buf(&_buf), view_index(_view_index) {}
     OpaqueHandle(const Sampler &_sampler) : ptr(nullptr), sampler(&_sampler) {}
     OpaqueHandle(const BindlessDescriptors &_bindless) : bindless(&_bindless) {}

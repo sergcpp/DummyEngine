@@ -3,10 +3,10 @@
 #include <Ren/DrawCall.h>
 #include <Ren/Framebuffer.h>
 #include <Ren/Fwd.h>
+#include <Ren/Image.h>
 #include <Ren/MMat.h>
 #include <Ren/Pipeline.h>
 #include <Ren/RenderPass.h>
-#include <Ren/Texture.h>
 #include <Ren/VertexInput.h>
 
 #if defined(REN_VK_BACKEND)

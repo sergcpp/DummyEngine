@@ -51,9 +51,9 @@ void Eng::ExRTGI::Execute_SWRT(FgContext &fg) {
     const Ren::Buffer &ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
     const Ren::Buffer &rt_blas_buf = fg.AccessROBuffer(args_->swrt.rt_blas_buf);
     const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
-    const Ren::Texture &noise_tex = fg.AccessROTexture(args_->noise_tex);
-    const Ren::Texture &depth_tex = fg.AccessROTexture(args_->depth_tex);
-    const Ren::Texture &normal_tex = fg.AccessROTexture(args_->normal_tex);
+    const Ren::Image &noise_tex = fg.AccessROImage(args_->noise_tex);
+    const Ren::Image &depth_tex = fg.AccessROImage(args_->depth_tex);
+    const Ren::Image &normal_tex = fg.AccessROImage(args_->normal_tex);
     const Ren::Buffer &ray_counter_buf = fg.AccessROBuffer(args_->ray_counter);
     const Ren::Buffer &ray_list_buf = fg.AccessROBuffer(args_->ray_list);
     const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(args_->indir_args);

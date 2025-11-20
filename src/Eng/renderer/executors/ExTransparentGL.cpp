@@ -30,8 +30,8 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgContext &fg, const Ren::Buffer
                                                 const Ren::Buffer &unif_shared_data_buf,
                                                 const Ren::Buffer &materials_buf, const Ren::Buffer &cells_buf,
                                                 const Ren::Buffer &items_buf, const Ren::Buffer &lights_buf,
-                                                const Ren::Buffer &decals_buf, const Ren::Texture &shad_tex,
-                                                const Ren::WeakTexRef &color_tex, const Ren::Texture &ssao_tex) {
+                                                const Ren::Buffer &decals_buf, const Ren::Image &shad_tex,
+                                                const Ren::WeakImgRef &color_tex, const Ren::Image &ssao_tex) {
     using namespace ExSharedInternal;
 
     Ren::RastState _rast_state;
@@ -66,10 +66,10 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgContext &fg, const Ren::Buffer
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
 
-    const Ren::Texture &brdf_lut = fg.AccessROTexture(brdf_lut_);
-    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
-    const Ren::Texture &cone_rt_lut = fg.AccessROTexture(cone_rt_lut_);
-    const Ren::Texture &dummy_black = fg.AccessROTexture(dummy_black_);
+    const Ren::Image &brdf_lut = fg.AccessROImage(brdf_lut_);
+    const Ren::Image &noise_tex = fg.AccessROImage(noise_tex_);
+    const Ren::Image &cone_rt_lut = fg.AccessROImage(cone_rt_lut_);
+    const Ren::Image &dummy_black = fg.AccessROImage(dummy_black_);
 
     if (/*!(*p_list_)->probe_storage ||*/ (*p_list_)->alpha_blend_start_index == -1) {
         return;

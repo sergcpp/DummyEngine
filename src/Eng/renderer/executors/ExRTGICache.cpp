@@ -71,19 +71,19 @@ void Eng::ExRTGICache::Execute_SWRT(FgContext &fg) {
     const Ren::Buffer &ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
     const Ren::Buffer &rt_blas_buf = fg.AccessROBuffer(args_->swrt.rt_blas_buf);
     const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
-    const Ren::Texture &env_tex = fg.AccessROTexture(args_->env_tex);
+    const Ren::Image &env_tex = fg.AccessROImage(args_->env_tex);
     const Ren::Buffer &rt_tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
     const Ren::Buffer &prim_ndx_buf = fg.AccessROBuffer(args_->swrt.prim_ndx_buf);
     const Ren::Buffer &mesh_instances_buf = fg.AccessROBuffer(args_->swrt.mesh_instances_buf);
     const Ren::Buffer &lights_buf = fg.AccessROBuffer(args_->lights_buf);
-    const Ren::Texture &shadow_depth_tex = fg.AccessROTexture(args_->shadow_depth_tex);
-    const Ren::Texture &shadow_color_tex = fg.AccessROTexture(args_->shadow_color_tex);
-    const Ren::Texture &ltc_luts_tex = fg.AccessROTexture(args_->ltc_luts_tex);
+    const Ren::Image &shadow_depth_tex = fg.AccessROImage(args_->shadow_depth_tex);
+    const Ren::Image &shadow_color_tex = fg.AccessROImage(args_->shadow_color_tex);
+    const Ren::Image &ltc_luts_tex = fg.AccessROImage(args_->ltc_luts_tex);
     const Ren::Buffer &cells_buf = fg.AccessROBuffer(args_->cells_buf);
     const Ren::Buffer &items_buf = fg.AccessROBuffer(args_->items_buf);
-    const Ren::Texture &irr_tex = fg.AccessROTexture(args_->irradiance_tex);
-    const Ren::Texture &dist_tex = fg.AccessROTexture(args_->distance_tex);
-    const Ren::Texture &off_tex = fg.AccessROTexture(args_->offset_tex);
+    const Ren::Image &irr_tex = fg.AccessROImage(args_->irradiance_tex);
+    const Ren::Image &dist_tex = fg.AccessROImage(args_->distance_tex);
+    const Ren::Image &off_tex = fg.AccessROImage(args_->offset_tex);
 
     const Ren::Buffer *random_seq_buf = nullptr, *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
     if (args_->stoch_lights_buf) {
@@ -92,7 +92,7 @@ void Eng::ExRTGICache::Execute_SWRT(FgContext &fg) {
         light_nodes_buf = &fg.AccessROBuffer(args_->light_nodes_buf);
     }
 
-    Ren::Texture &out_ray_data_tex = fg.AccessRWTexture(args_->out_ray_data_tex);
+    Ren::Image &out_ray_data_tex = fg.AccessRWImage(args_->out_ray_data_tex);
 
     Ren::SmallVector<Ren::Binding, 16> bindings = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},

@@ -8,7 +8,7 @@
 #include "shaders/probe_classify_interface.h"
 #include "shaders/probe_relocate_interface.h"
 
-void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const CommonBuffers &common_buffers,
+void Eng::Renderer::AddGICachePasses(const Ren::WeakImgRef &env_map, const CommonBuffers &common_buffers,
                                      const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,
                                      const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
@@ -74,9 +74,9 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             desc.w = PROBE_TOTAL_RAYS_COUNT;
             desc.h = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z;
             desc.d = 4 * PROBE_VOLUME_RES_Y;
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.flags = Ren::eTexFlags::Array;
-            desc.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.flags = Ren::eImgFlags::Array;
+            desc.usage = Ren::Bitmask(Ren::eImgUsage::Storage) | Ren::eImgUsage::Sampled | Ren::eImgUsage::Transfer;
 
             ray_data = data->out_ray_data_tex = rt_gi_cache.AddStorageImageOutput("Probe Volume RayData", desc, stage);
         }
@@ -106,9 +106,9 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             probe_blend.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
 
         probe_blend.set_execute_cb([this, data, &persistent_data](FgContext &fg) {
-            const Ren::Texture &ray_data_tex = fg.AccessROTexture(data->ray_data);
-            const Ren::Texture &offset_tex = fg.AccessROTexture(data->offset_tex);
-            Ren::Texture &out_irr_tex = fg.AccessRWTexture(data->output_tex);
+            const Ren::Image &ray_data_tex = fg.AccessROImage(data->ray_data);
+            const Ren::Image &offset_tex = fg.AccessROImage(data->offset_tex);
+            Ren::Image &out_irr_tex = fg.AccessRWImage(data->output_tex);
 
             const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeBlend::RAY_DATA_TEX_SLOT, ray_data_tex},
                                              {Trg::TexSampled, ProbeBlend::OFFSET_TEX_SLOT, offset_tex},
@@ -167,9 +167,9 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             probe_blend.AddStorageImageOutput(persistent_data.probe_distance, Stg::ComputeShader);
 
         probe_blend.set_execute_cb([this, data, &persistent_data](FgContext &fg) {
-            const Ren::Texture &ray_data_tex = fg.AccessROTexture(data->ray_data);
-            const Ren::Texture &offset_tex = fg.AccessROTexture(data->offset_tex);
-            Ren::Texture &out_dist_tex = fg.AccessRWTexture(data->output_tex);
+            const Ren::Image &ray_data_tex = fg.AccessROImage(data->ray_data);
+            const Ren::Image &offset_tex = fg.AccessROImage(data->offset_tex);
+            Ren::Image &out_dist_tex = fg.AccessRWImage(data->output_tex);
 
             const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeBlend::RAY_DATA_TEX_SLOT, ray_data_tex},
                                              {Trg::TexSampled, ProbeBlend::OFFSET_TEX_SLOT, offset_tex},
@@ -214,8 +214,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             probe_relocate.AddStorageImageOutput(persistent_data.probe_offset, Stg::ComputeShader);
 
         probe_relocate.set_execute_cb([this, data, &persistent_data](FgContext &fg) {
-            const Ren::Texture &ray_data_tex = fg.AccessROTexture(data->ray_data);
-            Ren::Texture &out_dist_tex = fg.AccessRWTexture(data->output_tex);
+            const Ren::Image &ray_data_tex = fg.AccessROImage(data->ray_data);
+            Ren::Image &out_dist_tex = fg.AccessRWImage(data->output_tex);
 
             const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeRelocate::RAY_DATA_TEX_SLOT, ray_data_tex},
                                              {Trg::ImageRW, ProbeRelocate::OUT_IMG_SLOT, out_dist_tex}};
@@ -267,8 +267,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
 
         probe_classify.set_execute_cb([this, data, &persistent_data](FgContext &fg) {
             const Ren::Buffer &shared_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &ray_data_tex = fg.AccessROTexture(data->ray_data);
-            Ren::Texture &out_dist_tex = fg.AccessRWTexture(data->output_tex);
+            const Ren::Image &ray_data_tex = fg.AccessROImage(data->ray_data);
+            Ren::Image &out_dist_tex = fg.AccessRWImage(data->output_tex);
 
             const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, shared_data_buf},
                                              {Trg::TexSampled, ProbeClassify::RAY_DATA_TEX_SLOT, ray_data_tex},

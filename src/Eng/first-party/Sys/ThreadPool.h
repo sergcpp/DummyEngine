@@ -26,6 +26,7 @@
 #undef DrawText
 #undef near
 #undef far
+#undef LoadImage
 #else
 #include <sched.h>
 #endif

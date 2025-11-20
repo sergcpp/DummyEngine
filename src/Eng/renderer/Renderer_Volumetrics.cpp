@@ -28,52 +28,52 @@ void Eng::Renderer::InitSkyResources() {
         if (!sky_transmittance_lut_) {
             const std::vector<Ren::Vec4f> transmittance_lut = Generate_SkyTransmittanceLUT(p_list_->env.atmosphere);
             { // Init transmittance LUT
-                Ren::TexParams p;
+                Ren::ImgParams p;
                 p.w = SKY_TRANSMITTANCE_LUT_W;
                 p.h = SKY_TRANSMITTANCE_LUT_H;
-                p.format = Ren::eTexFormat::RGBA32F;
-                p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-                p.sampling.filter = Ren::eTexFilter::Bilinear;
-                p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                p.format = Ren::eFormat::RGBA32F;
+                p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+                p.sampling.filter = Ren::eFilter::Bilinear;
+                p.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-                Ren::eTexLoadStatus status;
-                sky_transmittance_lut_ = ctx_.LoadTexture(
+                Ren::eImgLoadStatus status;
+                sky_transmittance_lut_ = ctx_.LoadImage(
                     "Sky Transmittance LUT",
                     Ren::Span{(const uint8_t *)transmittance_lut.data(), transmittance_lut.size() * sizeof(Ren::Vec4f)},
                     p, ctx_.default_mem_allocs(), &status);
-                assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                assert(status == Ren::eImgLoadStatus::CreatedFromData);
             }
             { // Init multiscatter LUT
                 const std::vector<Ren::Vec4f> multiscatter_lut =
                     Generate_SkyMultiscatterLUT(p_list_->env.atmosphere, transmittance_lut);
 
-                Ren::TexParams p;
+                Ren::ImgParams p;
                 p.w = p.h = SKY_MULTISCATTER_LUT_RES;
-                p.format = Ren::eTexFormat::RGBA32F;
-                p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-                p.sampling.filter = Ren::eTexFilter::Bilinear;
-                p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                p.format = Ren::eFormat::RGBA32F;
+                p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+                p.sampling.filter = Ren::eFilter::Bilinear;
+                p.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-                Ren::eTexLoadStatus status;
-                sky_multiscatter_lut_ = ctx_.LoadTexture(
+                Ren::eImgLoadStatus status;
+                sky_multiscatter_lut_ = ctx_.LoadImage(
                     "Sky Multiscatter LUT",
                     Ren::Span{(const uint8_t *)multiscatter_lut.data(), multiscatter_lut.size() * sizeof(Ren::Vec4f)},
                     p, ctx_.default_mem_allocs(), &status);
-                assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                assert(status == Ren::eImgLoadStatus::CreatedFromData);
             }
             { // Init Moon texture
                 const std::string_view moon_diff = "assets_pc/textures/internal/moon_diff.dds";
 
-                Ren::TexParams p;
-                p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-                p.sampling.filter = Ren::eTexFilter::Bilinear;
-                p.sampling.wrap = Ren::eTexWrap::Repeat;
+                Ren::ImgParams p;
+                p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+                p.sampling.filter = Ren::eFilter::Bilinear;
+                p.sampling.wrap = Ren::eWrap::Repeat;
 
                 const std::vector<uint8_t> data = LoadDDS(moon_diff, &p);
                 if (!data.empty()) {
-                    Ren::eTexLoadStatus status;
-                    sky_moon_tex_ = ctx_.LoadTexture(moon_diff, data, p, ctx_.default_mem_allocs(), &status);
-                    assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                    Ren::eImgLoadStatus status;
+                    sky_moon_tex_ = ctx_.LoadImage(moon_diff, data, p, ctx_.default_mem_allocs(), &status);
+                    assert(status == Ren::eImgLoadStatus::CreatedFromData);
                 } else {
                     ctx_.log()->Error("Failed to load %s", moon_diff.data());
                 }
@@ -81,18 +81,18 @@ void Eng::Renderer::InitSkyResources() {
             { // Init Weather texture
                 const std::string_view weather = "assets_pc/textures/internal/weather.dds";
 
-                Ren::TexParams p;
-                p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-                p.sampling.filter = Ren::eTexFilter::Bilinear;
-                p.sampling.wrap = Ren::eTexWrap::Repeat;
+                Ren::ImgParams p;
+                p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+                p.sampling.filter = Ren::eFilter::Bilinear;
+                p.sampling.wrap = Ren::eWrap::Repeat;
 
                 const std::vector<uint8_t> data = LoadDDS(weather, &p);
                 if (!data.empty()) {
-                    assert(p.format == Ren::eTexFormat::BC1_srgb);
-                    p.format = Ren::eTexFormat::BC1;
-                    Ren::eTexLoadStatus status;
-                    sky_weather_tex_ = ctx_.LoadTexture(weather, data, p, ctx_.default_mem_allocs(), &status);
-                    assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                    assert(p.format == Ren::eFormat::BC1_srgb);
+                    p.format = Ren::eFormat::BC1;
+                    Ren::eImgLoadStatus status;
+                    sky_weather_tex_ = ctx_.LoadImage(weather, data, p, ctx_.default_mem_allocs(), &status);
+                    assert(status == Ren::eImgLoadStatus::CreatedFromData);
                 } else {
                     ctx_.log()->Error("Failed to load %s", weather.data());
                 }
@@ -100,16 +100,16 @@ void Eng::Renderer::InitSkyResources() {
             { // Init Cirrus texture
                 const std::string_view cirrus = "assets_pc/textures/internal/cirrus.dds";
 
-                Ren::TexParams p;
-                p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-                p.sampling.filter = Ren::eTexFilter::Bilinear;
-                p.sampling.wrap = Ren::eTexWrap::Repeat;
+                Ren::ImgParams p;
+                p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+                p.sampling.filter = Ren::eFilter::Bilinear;
+                p.sampling.wrap = Ren::eWrap::Repeat;
 
                 const std::vector<uint8_t> data = LoadDDS(cirrus, &p);
                 if (!data.empty()) {
-                    Ren::eTexLoadStatus status;
-                    sky_cirrus_tex_ = ctx_.LoadTexture(cirrus, data, p, ctx_.default_mem_allocs(), &status);
-                    assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                    Ren::eImgLoadStatus status;
+                    sky_cirrus_tex_ = ctx_.LoadImage(cirrus, data, p, ctx_.default_mem_allocs(), &status);
+                    assert(status == Ren::eImgLoadStatus::CreatedFromData);
                 } else {
                     ctx_.log()->Error("Failed to load %s", cirrus.data());
                 }
@@ -117,20 +117,20 @@ void Eng::Renderer::InitSkyResources() {
             { // Init Curl texture
                 const std::string_view curl = "assets_pc/textures/internal/curl.dds";
 
-                Ren::TexParams p;
-                // p.flags = Ren::eTexFlags::SRGB;
-                p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-                p.sampling.filter = Ren::eTexFilter::Bilinear;
-                p.sampling.wrap = Ren::eTexWrap::Repeat;
+                Ren::ImgParams p;
+                // p.flags = Ren::eImgFlags::SRGB;
+                p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+                p.sampling.filter = Ren::eFilter::Bilinear;
+                p.sampling.wrap = Ren::eWrap::Repeat;
 
                 const std::vector<uint8_t> data = LoadDDS(curl, &p);
-                assert(p.format == Ren::eTexFormat::RGBA8);
-                p.format = Ren::eTexFormat::RGBA8_srgb;
+                assert(p.format == Ren::eFormat::RGBA8);
+                p.format = Ren::eFormat::RGBA8_srgb;
 
                 if (!data.empty()) {
-                    Ren::eTexLoadStatus status;
-                    sky_curl_tex_ = ctx_.LoadTexture(curl, data, p, ctx_.default_mem_allocs(), &status);
-                    assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                    Ren::eImgLoadStatus status;
+                    sky_curl_tex_ = ctx_.LoadImage(curl, data, p, ctx_.default_mem_allocs(), &status);
+                    assert(status == Ren::eImgLoadStatus::CreatedFromData);
                 } else {
                     ctx_.log()->Error("Failed to load %s", curl.data());
                 }
@@ -138,14 +138,14 @@ void Eng::Renderer::InitSkyResources() {
             { // Init 3d noise texture
                 const std::string_view noise = "assets_pc/textures/internal/3dnoise.dds";
 
-                Ren::TexParams p;
-                p.usage = Ren::Bitmask(Ren::eTexUsage::Sampled) | Ren::eTexUsage::Transfer;
-                p.sampling.filter = Ren::eTexFilter::Bilinear;
-                p.sampling.wrap = Ren::eTexWrap::Repeat;
+                Ren::ImgParams p;
+                p.usage = Ren::Bitmask(Ren::eImgUsage::Sampled) | Ren::eImgUsage::Transfer;
+                p.sampling.filter = Ren::eFilter::Bilinear;
+                p.sampling.wrap = Ren::eWrap::Repeat;
 
                 std::vector<uint8_t> data = LoadDDS(noise, &p);
                 if (!data.empty()) {
-                    assert(p.format == Ren::eTexFormat::BC4);
+                    assert(p.format == Ren::eFormat::BC4);
                     if (!ctx_.capabilities.bc4_3d_texture_format) {
                         // Decompress texture
                         std::vector<uint8_t> decompressed_data(p.w * p.h * p.d);
@@ -186,13 +186,13 @@ void Eng::Renderer::InitSkyResources() {
                                 }
                             }
                         }
-                        p.format = Ren::eTexFormat::R8;
+                        p.format = Ren::eFormat::R8;
                         data = std::move(decompressed_data);
                     }
 
-                    Ren::eTexLoadStatus status;
-                    sky_noise3d_tex_ = ctx_.LoadTexture(noise, data, p, ctx_.default_mem_allocs(), &status);
-                    assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                    Ren::eImgLoadStatus status;
+                    sky_noise3d_tex_ = ctx_.LoadImage(noise, data, p, ctx_.default_mem_allocs(), &status);
+                    assert(status == Ren::eImgLoadStatus::CreatedFromData);
                 } else {
                     ctx_.log()->Error("Failed to load %s", noise.data());
                 }
@@ -259,9 +259,9 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                 FgImgDesc desc;
                 desc.w = (view_state_.ren_res[0] + 3) / 4;
                 desc.h = (view_state_.ren_res[1] + 3) / 4;
-                desc.format = Ren::eTexFormat::RGBA16F;
-                desc.sampling.filter = Ren::eTexFilter::Bilinear;
-                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                desc.format = Ren::eFormat::RGBA16F;
+                desc.sampling.filter = Ren::eFilter::Bilinear;
+                desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
                 sky_temp = data->color_tex = skymap.AddColorOutput("SKY TEMP", desc);
             } else {
@@ -301,19 +301,19 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             sky_upsampled = data->output_tex = sky_upsample.AddStorageImageOutput("SKY HIST", desc, Stg::ComputeShader);
             data->sky_hist_tex = sky_upsample.AddHistoryTextureInput(sky_upsampled, Stg::ComputeShader);
 
             sky_upsample.set_execute_cb([data, this](FgContext &fg) {
                 const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-                const Ren::Texture &env_map_tex = fg.AccessROTexture(data->env_map);
-                const Ren::Texture &sky_temp_tex = fg.AccessROTexture(data->sky_temp_tex);
-                const Ren::Texture &sky_hist_tex = fg.AccessROTexture(data->sky_hist_tex);
-                Ren::Texture &output_tex = fg.AccessRWTexture(data->output_tex);
+                const Ren::Image &env_map_tex = fg.AccessROImage(data->env_map);
+                const Ren::Image &sky_temp_tex = fg.AccessROImage(data->sky_temp_tex);
+                const Ren::Image &sky_hist_tex = fg.AccessROImage(data->sky_hist_tex);
+                Ren::Image &output_tex = fg.AccessRWImage(data->output_tex);
 
                 const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
                                                  {Trg::TexSampled, Skydome::ENV_TEX_SLOT, env_map_tex},
@@ -352,9 +352,9 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                 sky_blit.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_desc);
 
             sky_blit.set_execute_cb([data, this](FgContext &fg) {
-                const Ren::Texture &sky_tex = fg.AccessROTexture(data->sky_tex);
-                Ren::WeakTexRef depth_tex = fg.AccessRWTextureRef(data->depth_tex);
-                Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
+                const Ren::Image &sky_tex = fg.AccessROImage(data->sky_tex);
+                Ren::WeakImgRef depth_tex = fg.AccessRWImageRef(data->depth_tex);
+                Ren::WeakImgRef output_tex = fg.AccessRWImageRef(data->output_tex);
 
                 Ren::RastState rast_state;
                 rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -421,12 +421,12 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
 
         sun_color.set_execute_cb([data, this](FgContext &fg) {
             const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &transmittance_lut = fg.AccessROTexture(data->transmittance_lut);
-            const Ren::Texture &multiscatter_lut = fg.AccessROTexture(data->multiscatter_lut);
-            const Ren::Texture &moon_tex = fg.AccessROTexture(data->moon_tex);
-            const Ren::Texture &weather_tex = fg.AccessROTexture(data->weather_tex);
-            const Ren::Texture &cirrus_tex = fg.AccessROTexture(data->cirrus_tex);
-            const Ren::Texture &noise3d_tex = fg.AccessROTexture(data->noise3d_tex);
+            const Ren::Image &transmittance_lut = fg.AccessROImage(data->transmittance_lut);
+            const Ren::Image &multiscatter_lut = fg.AccessROImage(data->multiscatter_lut);
+            const Ren::Image &moon_tex = fg.AccessROImage(data->moon_tex);
+            const Ren::Image &weather_tex = fg.AccessROImage(data->weather_tex);
+            const Ren::Image &cirrus_tex = fg.AccessROImage(data->cirrus_tex);
+            const Ren::Image &noise3d_tex = fg.AccessROImage(data->noise3d_tex);
             Ren::Buffer &output_buf = fg.AccessRWBuffer(data->output_buf);
 
             const Ren::Binding bindings[] = {
@@ -512,9 +512,9 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             desc.w = (view_state_.ren_res[0] + TileSize - 1) / TileSize;
             desc.h = (view_state_.ren_res[1] + TileSize - 1) / TileSize;
             desc.d = 144;
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             fr_emission_tex = data->out_emission_tex =
                 voxelize.AddStorageImageOutput("Vol Emission/Density", desc, Stg::ComputeShader);
@@ -565,28 +565,28 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
         scatter.set_execute_cb([data, this, AllCascades](FgContext &fg) {
             const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
 
-            const Ren::Texture &stbn_tex = fg.AccessROTexture(data->stbn_tex);
-            const Ren::Texture &shad_depth_tex = fg.AccessROTexture(data->shadow_depth_tex);
-            const Ren::Texture &shad_color_tex = fg.AccessROTexture(data->shadow_color_tex);
+            const Ren::Image &stbn_tex = fg.AccessROImage(data->stbn_tex);
+            const Ren::Image &shad_depth_tex = fg.AccessROImage(data->shadow_depth_tex);
+            const Ren::Image &shad_color_tex = fg.AccessROImage(data->shadow_color_tex);
 
-            const Ren::Texture &fr_emission_tex = fg.AccessROTexture(data->fr_emission_tex);
-            const Ren::Texture &fr_scatter_tex = fg.AccessROTexture(data->fr_scatter_tex);
+            const Ren::Image &fr_emission_tex = fg.AccessROImage(data->fr_emission_tex);
+            const Ren::Image &fr_scatter_tex = fg.AccessROImage(data->fr_scatter_tex);
 
             const Ren::Buffer &cells_buf = fg.AccessROBuffer(data->cells_buf);
             const Ren::Buffer &items_buf = fg.AccessROBuffer(data->items_buf);
             const Ren::Buffer &lights_buf = fg.AccessROBuffer(data->lights_buf);
             const Ren::Buffer &decals_buf = fg.AccessROBuffer(data->decals_buf);
-            const Ren::Texture &envmap_tex = fg.AccessROTexture(data->envmap_tex);
+            const Ren::Image &envmap_tex = fg.AccessROImage(data->envmap_tex);
 
-            const Ren::Texture *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
+            const Ren::Image *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
             if (data->irradiance_tex) {
-                irr_tex = &fg.AccessROTexture(data->irradiance_tex);
-                dist_tex = &fg.AccessROTexture(data->distance_tex);
-                off_tex = &fg.AccessROTexture(data->offset_tex);
+                irr_tex = &fg.AccessROImage(data->irradiance_tex);
+                dist_tex = &fg.AccessROImage(data->distance_tex);
+                off_tex = &fg.AccessROImage(data->offset_tex);
             }
 
-            Ren::Texture &out_emission_tex = fg.AccessRWTexture(data->out_emission_tex);
-            Ren::Texture &out_scatter_tex = fg.AccessRWTexture(data->out_scatter_tex);
+            Ren::Image &out_emission_tex = fg.AccessRWImage(data->out_emission_tex);
+            Ren::Image &out_scatter_tex = fg.AccessRWImage(data->out_scatter_tex);
 
             if (view_state_.skip_volumetrics) {
                 return;
@@ -656,9 +656,9 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             desc.w = (view_state_.ren_res[0] + TileSize - 1) / TileSize;
             desc.h = (view_state_.ren_res[1] + TileSize - 1) / TileSize;
             desc.d = 144;
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             froxel_tex = data->output_tex =
                 ray_march.AddStorageImageOutput("Vol Scattering Final", desc, Stg::ComputeShader);
@@ -666,10 +666,10 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
 
         ray_march.set_execute_cb([data, this](FgContext &fg) {
             const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &fr_emission_tex = fg.AccessROTexture(data->fr_emission_tex);
-            const Ren::Texture &fr_scatter_tex = fg.AccessROTexture(data->fr_scatter_tex);
+            const Ren::Image &fr_emission_tex = fg.AccessROImage(data->fr_emission_tex);
+            const Ren::Image &fr_scatter_tex = fg.AccessROImage(data->fr_scatter_tex);
 
-            Ren::Texture &output_tex = fg.AccessRWTexture(data->output_tex);
+            Ren::Image &output_tex = fg.AccessRWImage(data->output_tex);
 
             if (view_state_.skip_volumetrics) {
                 return;
@@ -713,10 +713,10 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
 
         apply.set_execute_cb([data, this](FgContext &fg) {
             const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &froxel_tex = fg.AccessROTexture(data->froxel_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &froxel_tex = fg.AccessROImage(data->froxel_tex);
 
-            Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
+            Ren::WeakImgRef output_tex = fg.AccessRWImageRef(data->output_tex);
 
             if (view_state_.skip_volumetrics) {
                 return;

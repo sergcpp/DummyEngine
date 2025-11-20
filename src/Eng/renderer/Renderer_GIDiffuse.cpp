@@ -33,8 +33,8 @@ static const float GTAORandSamples[32][2] = {
     {0.978491f, 0.693668f}, {0.195222f, 0.323286f}, {0.566908f, 0.055406f}, {0.256133f, 0.988877f}};
 }
 
-void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::WeakTexRef &lm_direct,
-                                     const Ren::WeakTexRef lm_indir_sh[4], const bool debug_denoise,
+void Eng::Renderer::AddDiffusePasses(const Ren::WeakImgRef &env_map, const Ren::WeakImgRef &lm_direct,
+                                     const Ren::WeakImgRef lm_indir_sh[4], const bool debug_denoise,
                                      const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,
                                      const BindlessTextureData &bindless, const FgResRef depth_hierarchy,
@@ -73,9 +73,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             gi_fallback = data->out_tex = probe_sample.AddStorageImageOutput("GI Tex", desc, Stg::ComputeShader);
         }
@@ -84,13 +84,13 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             using namespace ProbeSample;
 
             const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &normals_tex = fg.AccessROTexture(data->normals_tex);
-            const Ren::Texture &ssao_tex = fg.AccessROTexture(data->ssao_tex);
-            const Ren::Texture &irr_tex = fg.AccessROTexture(data->irradiance_tex);
-            const Ren::Texture &dist_tex = fg.AccessROTexture(data->distance_tex);
-            const Ren::Texture &off_tex = fg.AccessROTexture(data->offset_tex);
-            Ren::Texture &out_tex = fg.AccessRWTexture(data->out_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &normals_tex = fg.AccessROImage(data->normals_tex);
+            const Ren::Image &ssao_tex = fg.AccessROImage(data->ssao_tex);
+            const Ren::Image &irr_tex = fg.AccessROImage(data->irradiance_tex);
+            const Ren::Image &dist_tex = fg.AccessROImage(data->distance_tex);
+            const Ren::Image &off_tex = fg.AccessROImage(data->offset_tex);
+            Ren::Image &out_tex = fg.AccessRWImage(data->out_tex);
 
             const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf},
                                              {Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},
@@ -118,7 +118,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                             fg.descr_alloc(), fg.log());
         });
     } else {
-        gi_fallback = fg_builder_.MakeTextureResource(dummy_black_);
+        gi_fallback = fg_builder_.ImportResource(dummy_black_);
     }
 
     if (settings.gi_quality <= eGIQuality::Medium) {
@@ -207,33 +207,33 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
             gi_tex = data->out_gi_tex = gi_classify.AddStorageImageOutput("GI Final", desc, Stg::ComputeShader);
         }
         { // blue noise texture
             FgImgDesc desc;
             desc.w = desc.h = 128;
-            desc.format = Ren::eTexFormat::RGBA8;
-            desc.sampling.filter = Ren::eTexFilter::Nearest;
-            desc.sampling.wrap = Ren::eTexWrap::Repeat;
+            desc.format = Ren::eFormat::RGBA8;
+            desc.sampling.filter = Ren::eFilter::Nearest;
+            desc.sampling.wrap = Ren::eWrap::Repeat;
             noise_tex = data->out_noise_tex = gi_classify.AddStorageImageOutput("GI BN Tex", desc, Stg::ComputeShader);
         }
 
         gi_classify.set_execute_cb([this, data, tile_count, SamplesPerQuad](FgContext &fg) {
             using namespace GIClassifyTiles;
 
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth);
-            const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
-            const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_history);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth);
+            const Ren::Image &spec_tex = fg.AccessROImage(data->spec_tex);
+            const Ren::Image &variance_tex = fg.AccessROImage(data->variance_history);
             const Ren::Buffer &bn_pmj_seq_buf = fg.AccessROBuffer(data->bn_pmj_seq);
 
             Ren::Buffer &ray_counter_buf = fg.AccessRWBuffer(data->ray_counter);
             Ren::Buffer &ray_list_buf = fg.AccessRWBuffer(data->ray_list);
             Ren::Buffer &tile_list_buf = fg.AccessRWBuffer(data->tile_list);
-            Ren::Texture &gi_tex = fg.AccessRWTexture(data->out_gi_tex);
-            Ren::Texture &noise_tex = fg.AccessRWTexture(data->out_noise_tex);
+            Ren::Image &gi_tex = fg.AccessRWImage(data->out_gi_tex);
+            Ren::Image &noise_tex = fg.AccessRWImage(data->out_noise_tex);
 
             const Ren::Binding bindings[] = {
                 {Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},  {Trg::TexSampled, SPEC_TEX_SLOT, spec_tex},
@@ -329,15 +329,15 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
         gi_trace_ss.set_execute_cb([this, data](FgContext &fg) {
             using namespace GITraceSS;
 
-            const Ren::Texture &noise_tex = fg.AccessROTexture(data->noise_tex);
+            const Ren::Image &noise_tex = fg.AccessROImage(data->noise_tex);
             const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &color_tex = fg.AccessROTexture(data->color_tex);
-            const Ren::Texture &normal_tex = fg.AccessROTexture(data->normal_tex);
-            const Ren::Texture &depth_hierarchy_tex = fg.AccessROTexture(data->depth_hierarchy);
+            const Ren::Image &color_tex = fg.AccessROImage(data->color_tex);
+            const Ren::Image &normal_tex = fg.AccessROImage(data->normal_tex);
+            const Ren::Image &depth_hierarchy_tex = fg.AccessROImage(data->depth_hierarchy);
             const Ren::Buffer &in_ray_list_buf = fg.AccessROBuffer(data->in_ray_list);
             const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-            Ren::Texture &out_gi_tex = fg.AccessRWTexture(data->out_gi_tex);
+            Ren::Image &out_gi_tex = fg.AccessRWImage(data->out_gi_tex);
             Ren::Buffer &inout_ray_counter_buf = fg.AccessRWBuffer(data->inout_ray_counter);
             Ren::Buffer &out_ray_list_buf = fg.AccessRWBuffer(data->out_ray_list);
 
@@ -557,26 +557,26 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             gi_shade.set_execute_cb([this, &bindless, two_bounces, data](FgContext &fg) {
                 using namespace RTGI;
 
-                const Ren::Texture &noise_tex = fg.AccessROTexture(data->noise_tex);
+                const Ren::Image &noise_tex = fg.AccessROImage(data->noise_tex);
                 const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-                const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-                const Ren::Texture &normal_tex = fg.AccessROTexture(data->normal_tex);
-                const Ren::Texture &env_tex = fg.AccessROTexture(data->env_tex);
+                const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+                const Ren::Image &normal_tex = fg.AccessROImage(data->normal_tex);
+                const Ren::Image &env_tex = fg.AccessROImage(data->env_tex);
                 const Ren::Buffer &mesh_instances_buf = fg.AccessROBuffer(data->mesh_instances_buf);
                 const Ren::Buffer &geo_data_buf = fg.AccessROBuffer(data->geo_data_buf);
                 const Ren::Buffer &materials_buf = fg.AccessROBuffer(data->materials_buf);
                 const Ren::Buffer &vtx_data0_buf = fg.AccessROBuffer(data->vtx_data0_buf);
                 const Ren::Buffer &ndx_buf = fg.AccessROBuffer(data->ndx_buf);
                 const Ren::Buffer &lights_buf = fg.AccessROBuffer(data->lights_buf);
-                const Ren::Texture &shadow_depth_tex = fg.AccessROTexture(data->shadow_depth_tex);
-                const Ren::Texture &shadow_color_tex = fg.AccessROTexture(data->shadow_color_tex);
-                const Ren::Texture &ltc_luts_tex = fg.AccessROTexture(data->ltc_luts_tex);
+                const Ren::Image &shadow_depth_tex = fg.AccessROImage(data->shadow_depth_tex);
+                const Ren::Image &shadow_color_tex = fg.AccessROImage(data->shadow_color_tex);
+                const Ren::Image &ltc_luts_tex = fg.AccessROImage(data->ltc_luts_tex);
                 const Ren::Buffer &cells_buf = fg.AccessROBuffer(data->cells_buf);
                 const Ren::Buffer &items_buf = fg.AccessROBuffer(data->items_buf);
 
-                const Ren::Texture &irr_tex = fg.AccessROTexture(data->irradiance_tex);
-                const Ren::Texture &dist_tex = fg.AccessROTexture(data->distance_tex);
-                const Ren::Texture &off_tex = fg.AccessROTexture(data->offset_tex);
+                const Ren::Image &irr_tex = fg.AccessROImage(data->irradiance_tex);
+                const Ren::Image &dist_tex = fg.AccessROImage(data->distance_tex);
+                const Ren::Image &off_tex = fg.AccessROImage(data->offset_tex);
 
                 const Ren::Buffer *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
                 if (data->stoch_lights_buf) {
@@ -588,7 +588,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
                 Ren::Buffer &inout_ray_counter_buf = fg.AccessRWBuffer(data->inout_ray_counter);
 
-                Ren::Texture &out_gi_tex = fg.AccessRWTexture(data->out_gi_tex);
+                Ren::Image &out_gi_tex = fg.AccessRWImage(data->out_gi_tex);
 
                 Ren::Buffer *out_ray_list_buf = nullptr;
                 if (data->out_ray_list_buf) {
@@ -827,33 +827,33 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 gi_shade.set_execute_cb([this, &bindless, data](FgContext &fg) {
                     using namespace RTGI;
 
-                    const Ren::Texture &noise_tex = fg.AccessROTexture(data->noise_tex);
+                    const Ren::Image &noise_tex = fg.AccessROImage(data->noise_tex);
                     const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-                    const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-                    const Ren::Texture &normal_tex = fg.AccessROTexture(data->normal_tex);
-                    const Ren::Texture &env_tex = fg.AccessROTexture(data->env_tex);
+                    const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+                    const Ren::Image &normal_tex = fg.AccessROImage(data->normal_tex);
+                    const Ren::Image &env_tex = fg.AccessROImage(data->env_tex);
                     const Ren::Buffer &mesh_instances_buf = fg.AccessROBuffer(data->mesh_instances_buf);
                     const Ren::Buffer &geo_data_buf = fg.AccessROBuffer(data->geo_data_buf);
                     const Ren::Buffer &materials_buf = fg.AccessROBuffer(data->materials_buf);
                     const Ren::Buffer &vtx_data0_buf = fg.AccessROBuffer(data->vtx_data0_buf);
                     const Ren::Buffer &ndx_buf = fg.AccessROBuffer(data->ndx_buf);
                     const Ren::Buffer &lights_buf = fg.AccessROBuffer(data->lights_buf);
-                    const Ren::Texture &shadow_depth_tex = fg.AccessROTexture(data->shadow_depth_tex);
-                    const Ren::Texture &shadow_color_tex = fg.AccessROTexture(data->shadow_color_tex);
-                    const Ren::Texture &ltc_luts_tex = fg.AccessROTexture(data->ltc_luts_tex);
+                    const Ren::Image &shadow_depth_tex = fg.AccessROImage(data->shadow_depth_tex);
+                    const Ren::Image &shadow_color_tex = fg.AccessROImage(data->shadow_color_tex);
+                    const Ren::Image &ltc_luts_tex = fg.AccessROImage(data->ltc_luts_tex);
                     const Ren::Buffer &cells_buf = fg.AccessROBuffer(data->cells_buf);
                     const Ren::Buffer &items_buf = fg.AccessROBuffer(data->items_buf);
 
-                    const Ren::Texture &irr_tex = fg.AccessROTexture(data->irradiance_tex);
-                    const Ren::Texture &dist_tex = fg.AccessROTexture(data->distance_tex);
-                    const Ren::Texture &off_tex = fg.AccessROTexture(data->offset_tex);
+                    const Ren::Image &irr_tex = fg.AccessROImage(data->irradiance_tex);
+                    const Ren::Image &dist_tex = fg.AccessROImage(data->distance_tex);
+                    const Ren::Image &off_tex = fg.AccessROImage(data->offset_tex);
 
                     const Ren::Buffer &in_ray_list_buf = fg.AccessROBuffer(data->in_ray_list);
                     const Ren::Buffer &in_ray_hits_buf = fg.AccessROBuffer(data->in_ray_hits);
                     const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
                     Ren::Buffer &inout_ray_counter_buf = fg.AccessRWBuffer(data->inout_ray_counter);
 
-                    Ren::Texture &out_gi_tex = fg.AccessRWTexture(data->out_gi_tex);
+                    Ren::Image &out_gi_tex = fg.AccessRWImage(data->out_gi_tex);
 
                     Ren::SmallVector<Ren::Binding, 16> bindings = {
                         {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
@@ -944,9 +944,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 FgImgDesc desc;
                 desc.w = view_state_.ren_res[0];
                 desc.h = view_state_.ren_res[1];
-                desc.format = Ren::eTexFormat::RGBA16F;
-                desc.sampling.filter = Ren::eTexFilter::Bilinear;
-                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                desc.format = Ren::eFormat::RGBA16F;
+                desc.sampling.filter = Ren::eFilter::Bilinear;
+                desc.sampling.wrap = Ren::eWrap::ClampToEdge;
                 data->out_specular_tex = sample_lights.AddStorageImageOutput("SSR Temp 2", desc, Stg::ComputeShader);
             }
 
@@ -997,9 +997,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             reproj_gi_tex = data->out_reprojected_tex =
                 gi_reproject.AddStorageImageOutput("GI Reprojected", desc, Stg::ComputeShader);
@@ -1008,9 +1008,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             FgImgDesc desc;
             desc.w = (view_state_.ren_res[0] + 7) / 8;
             desc.h = (view_state_.ren_res[1] + 7) / 8;
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             avg_gi_tex = data->out_avg_gi_tex =
                 gi_reproject.AddStorageImageOutput("Average GI", desc, Stg::ComputeShader);
@@ -1019,9 +1019,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::R16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             variance_temp_tex = data->out_variance_tex =
                 gi_reproject.AddStorageImageOutput("GI Variance Temp", desc, Stg::ComputeShader);
@@ -1030,9 +1030,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::R16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             sample_count_tex = data->out_sample_count_tex =
                 gi_reproject.AddStorageImageOutput("GI Sample Count", desc, Stg::ComputeShader);
@@ -1043,21 +1043,21 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
         gi_reproject.set_execute_cb([this, data, tile_count](FgContext &fg) {
             const Ren::Buffer &shared_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
-            const Ren::Texture &velocity_tex = fg.AccessROTexture(data->velocity_tex);
-            const Ren::Texture &depth_hist_tex = fg.AccessROTexture(data->depth_hist_tex);
-            const Ren::Texture &norm_hist_tex = fg.AccessROTexture(data->norm_hist_tex);
-            const Ren::Texture &gi_hist_tex = fg.AccessROTexture(data->gi_hist_tex);
-            const Ren::Texture &variance_hist_tex = fg.AccessROTexture(data->variance_hist_tex);
-            const Ren::Texture &sample_count_hist_tex = fg.AccessROTexture(data->sample_count_hist_tex);
-            const Ren::Texture &gi_tex = fg.AccessROTexture(data->gi_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &norm_tex = fg.AccessROImage(data->norm_tex);
+            const Ren::Image &velocity_tex = fg.AccessROImage(data->velocity_tex);
+            const Ren::Image &depth_hist_tex = fg.AccessROImage(data->depth_hist_tex);
+            const Ren::Image &norm_hist_tex = fg.AccessROImage(data->norm_hist_tex);
+            const Ren::Image &gi_hist_tex = fg.AccessROImage(data->gi_hist_tex);
+            const Ren::Image &variance_hist_tex = fg.AccessROImage(data->variance_hist_tex);
+            const Ren::Image &sample_count_hist_tex = fg.AccessROImage(data->sample_count_hist_tex);
+            const Ren::Image &gi_tex = fg.AccessROImage(data->gi_tex);
             const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
             const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
-            Ren::Texture &out_reprojected_tex = fg.AccessRWTexture(data->out_reprojected_tex);
-            Ren::Texture &out_avg_gi_tex = fg.AccessRWTexture(data->out_avg_gi_tex);
-            Ren::Texture &out_variance_tex = fg.AccessRWTexture(data->out_variance_tex);
-            Ren::Texture &out_sample_count_tex = fg.AccessRWTexture(data->out_sample_count_tex);
+            Ren::Image &out_reprojected_tex = fg.AccessRWImage(data->out_reprojected_tex);
+            Ren::Image &out_avg_gi_tex = fg.AccessRWImage(data->out_avg_gi_tex);
+            Ren::Image &out_variance_tex = fg.AccessRWImage(data->out_variance_tex);
+            Ren::Image &out_sample_count_tex = fg.AccessRWImage(data->out_sample_count_tex);
 
             { // Process tiles
                 using namespace GIReproject;
@@ -1133,9 +1133,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             prefiltered_gi = data->out_gi_tex =
                 gi_prefilter.AddStorageImageOutput("GI Diffuse 1", desc, Stg::ComputeShader);
@@ -1143,16 +1143,16 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
         gi_prefilter.set_execute_cb([this, data, tile_count](FgContext &fg) {
             const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
-            const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
-            const Ren::Texture &gi_tex = fg.AccessROTexture(data->gi_tex);
-            const Ren::Texture &avg_gi_tex = fg.AccessROTexture(data->avg_gi_tex);
-            const Ren::Texture &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &spec_tex = fg.AccessROImage(data->spec_tex);
+            const Ren::Image &norm_tex = fg.AccessROImage(data->norm_tex);
+            const Ren::Image &gi_tex = fg.AccessROImage(data->gi_tex);
+            const Ren::Image &avg_gi_tex = fg.AccessROImage(data->avg_gi_tex);
+            const Ren::Image &sample_count_tex = fg.AccessROImage(data->sample_count_tex);
             const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
             const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-            Ren::Texture &out_gi_tex = fg.AccessRWTexture(data->out_gi_tex);
+            Ren::Image &out_gi_tex = fg.AccessRWImage(data->out_gi_tex);
 
             { // Filter tiles
                 using namespace GIFilter;
@@ -1223,9 +1223,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::RGBA16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             gi_diffuse_tex = data->out_gi_tex =
                 gi_temporal.AddStorageImageOutput("GI Diffuse", desc, Stg::ComputeShader);
@@ -1236,9 +1236,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::R16F;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             gi_variance_tex = data->out_variance_tex =
                 gi_temporal.AddStorageImageOutput(DIFFUSE_VARIANCE_TEX, desc, Stg::ComputeShader);
@@ -1246,18 +1246,18 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
         gi_temporal.set_execute_cb([this, data, tile_count](FgContext &fg) {
             const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-            const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
-            const Ren::Texture &avg_gi_tex = fg.AccessROTexture(data->avg_gi_tex);
-            const Ren::Texture &fallback_gi_tex = fg.AccessROTexture(data->fallback_gi_tex);
-            const Ren::Texture &gi_tex = fg.AccessROTexture(data->gi_tex);
-            const Ren::Texture &reproj_gi_tex = fg.AccessROTexture(data->reproj_gi_tex);
-            const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_tex);
-            const Ren::Texture &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
+            const Ren::Image &norm_tex = fg.AccessROImage(data->norm_tex);
+            const Ren::Image &avg_gi_tex = fg.AccessROImage(data->avg_gi_tex);
+            const Ren::Image &fallback_gi_tex = fg.AccessROImage(data->fallback_gi_tex);
+            const Ren::Image &gi_tex = fg.AccessROImage(data->gi_tex);
+            const Ren::Image &reproj_gi_tex = fg.AccessROImage(data->reproj_gi_tex);
+            const Ren::Image &variance_tex = fg.AccessROImage(data->variance_tex);
+            const Ren::Image &sample_count_tex = fg.AccessROImage(data->sample_count_tex);
             const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
             const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-            Ren::Texture &out_gi_tex = fg.AccessRWTexture(data->out_gi_tex);
-            Ren::Texture &out_variance_tex = fg.AccessRWTexture(data->out_variance_tex);
+            Ren::Image &out_gi_tex = fg.AccessRWImage(data->out_gi_tex);
+            Ren::Image &out_variance_tex = fg.AccessRWImage(data->out_variance_tex);
 
             { // Process tiles
                 using namespace GIResolveTemporal;
@@ -1328,9 +1328,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 FgImgDesc desc;
                 desc.w = view_state_.ren_res[0];
                 desc.h = view_state_.ren_res[1];
-                desc.format = Ren::eTexFormat::RGBA16F;
-                desc.sampling.filter = Ren::eTexFilter::Bilinear;
-                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                desc.format = Ren::eFormat::RGBA16F;
+                desc.sampling.filter = Ren::eFilter::Bilinear;
+                desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
                 gi_diffuse2_tex = data->out_gi_tex =
                     gi_filter.AddStorageImageOutput("GI Diffuse 2", desc, Stg::ComputeShader);
@@ -1338,16 +1338,16 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
             gi_filter.set_execute_cb([this, data, tile_count](FgContext &fg) {
                 const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-                const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-                const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
-                const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
-                const Ren::Texture &gi_tex = fg.AccessROTexture(data->gi_tex);
-                const Ren::Texture &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
-                // const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_tex);
+                const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+                const Ren::Image &spec_tex = fg.AccessROImage(data->spec_tex);
+                const Ren::Image &norm_tex = fg.AccessROImage(data->norm_tex);
+                const Ren::Image &gi_tex = fg.AccessROImage(data->gi_tex);
+                const Ren::Image &sample_count_tex = fg.AccessROImage(data->sample_count_tex);
+                // const Ren::Image &variance_tex = fg.AccessROImage(data->variance_tex);
                 const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
                 const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-                Ren::Texture &out_gi_tex = fg.AccessRWTexture(data->out_gi_tex);
+                Ren::Image &out_gi_tex = fg.AccessRWImage(data->out_gi_tex);
 
                 { // Filter tiles
                     using namespace GIFilter;
@@ -1415,9 +1415,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 FgImgDesc desc;
                 desc.w = view_state_.ren_res[0];
                 desc.h = view_state_.ren_res[1];
-                desc.format = Ren::eTexFormat::RGBA16F;
-                desc.sampling.filter = Ren::eTexFilter::Bilinear;
-                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                desc.format = Ren::eFormat::RGBA16F;
+                desc.sampling.filter = Ren::eFilter::Bilinear;
+                desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
                 gi_diffuse3_tex = data->out_gi_tex =
                     gi_post_filter.AddStorageImageOutput("GI Diffuse Filtered", desc, Stg::ComputeShader);
@@ -1425,16 +1425,16 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
             gi_post_filter.set_execute_cb([this, data, tile_count](FgContext &fg) {
                 const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(data->shared_data);
-                const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-                const Ren::Texture &spec_tex = fg.AccessROTexture(data->spec_tex);
-                const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
-                const Ren::Texture &gi_tex = fg.AccessROTexture(data->gi_tex);
-                const Ren::Texture &sample_count_tex = fg.AccessROTexture(data->sample_count_tex);
-                // const Ren::Texture &variance_tex = fg.AccessROTexture(data->variance_tex);
+                const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+                const Ren::Image &spec_tex = fg.AccessROImage(data->spec_tex);
+                const Ren::Image &norm_tex = fg.AccessROImage(data->norm_tex);
+                const Ren::Image &gi_tex = fg.AccessROImage(data->gi_tex);
+                const Ren::Image &sample_count_tex = fg.AccessROImage(data->sample_count_tex);
+                // const Ren::Image &variance_tex = fg.AccessROImage(data->variance_tex);
                 const Ren::Buffer &tile_list_buf = fg.AccessROBuffer(data->tile_list);
                 const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(data->indir_args);
 
-                Ren::Texture &out_gi_tex = fg.AccessRWTexture(data->out_gi_tex);
+                Ren::Image &out_gi_tex = fg.AccessRWImage(data->out_gi_tex);
 
                 { // Filter tiles
                     using namespace GIFilter;
@@ -1491,9 +1491,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 FgImgDesc desc;
                 desc.w = view_state_.ren_res[0];
                 desc.h = view_state_.ren_res[1];
-                desc.format = Ren::eTexFormat::RGBA16F;
-                desc.sampling.filter = Ren::eTexFilter::Bilinear;
-                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                desc.format = Ren::eFormat::RGBA16F;
+                desc.sampling.filter = Ren::eFilter::Bilinear;
+                desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
                 gi_diffuse4_tex = data->out_gi_tex =
                     gi_stabilization.AddStorageImageOutput("GI Diffuse 4", desc, Stg::ComputeShader);
@@ -1504,12 +1504,12 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             gi_stabilization.set_execute_cb([this, data](FgContext &fg) {
                 using namespace GIStabilization;
 
-                const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-                const Ren::Texture &velocity_tex = fg.AccessROTexture(data->velocity_tex);
-                const Ren::Texture &gi_tex = fg.AccessROTexture(data->gi_tex);
-                const Ren::Texture &gi_hist_tex = fg.AccessROTexture(data->gi_hist_tex);
+                const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+                const Ren::Image &velocity_tex = fg.AccessROImage(data->velocity_tex);
+                const Ren::Image &gi_tex = fg.AccessROImage(data->gi_tex);
+                const Ren::Image &gi_hist_tex = fg.AccessROImage(data->gi_hist_tex);
 
-                Ren::Texture &out_gi_tex = fg.AccessRWTexture(data->out_gi_tex);
+                Ren::Image &out_gi_tex = fg.AccessRWImage(data->out_gi_tex);
 
                 const Ren::Binding bindings[] = {{Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},
                                                  {Trg::TexSampled, VELOCITY_TEX_SLOT, velocity_tex},
@@ -1561,17 +1561,17 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0] / 2;
             desc.h = view_state_.ren_res[1] / 2;
-            desc.format = Ren::eTexFormat::R8;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R8;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             ssao_raw = data->output_tex = ssao.AddColorOutput("SSAO RAW", desc);
         }
 
         ssao.set_execute_cb([this, data](FgContext &fg) {
-            const Ren::Texture &down_depth_2x_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &rand_tex = fg.AccessROTexture(data->rand_tex);
-            Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
+            const Ren::Image &down_depth_2x_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &rand_tex = fg.AccessROImage(data->rand_tex);
+            Ren::WeakImgRef output_tex = fg.AccessRWImageRef(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1612,17 +1612,17 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             FgImgDesc desc;
             desc.w = (view_state_.ren_res[0] / 2);
             desc.h = (view_state_.ren_res[1] / 2);
-            desc.format = Ren::eTexFormat::R8;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R8;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             ssao_blurred1 = data->output_tex = ssao_blur_h.AddColorOutput("SSAO BLUR TEMP1", desc);
         }
 
         ssao_blur_h.set_execute_cb([this, data](FgContext &fg) {
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &input_tex = fg.AccessROTexture(data->input_tex);
-            Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &input_tex = fg.AccessROImage(data->input_tex);
+            Ren::WeakImgRef output_tex = fg.AccessRWImageRef(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1666,17 +1666,17 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             FgImgDesc desc;
             desc.w = (view_state_.ren_res[0] / 2);
             desc.h = (view_state_.ren_res[1] / 2);
-            desc.format = Ren::eTexFormat::R8;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R8;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             ssao_blurred2 = data->output_tex = ssao_blur_v.AddColorOutput("SSAO BLUR TEMP2", desc);
         }
 
         ssao_blur_v.set_execute_cb([this, data](FgContext &fg) {
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &input_tex = fg.AccessROTexture(data->input_tex);
-            Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &input_tex = fg.AccessROImage(data->input_tex);
+            Ren::WeakImgRef output_tex = fg.AccessRWImageRef(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1721,18 +1721,18 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::R8;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R8;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             out_ssao = data->output_tex = ssao_upscale.AddColorOutput("SSAO Final", desc);
         }
 
         ssao_upscale.set_execute_cb([this, data](FgContext &fg) {
-            const Ren::Texture &down_depth_2x_tex = fg.AccessROTexture(data->depth_down_2x_tex);
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &input_tex = fg.AccessROTexture(data->input_tex);
-            Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(data->output_tex);
+            const Ren::Image &down_depth_2x_tex = fg.AccessROImage(data->depth_down_2x_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &input_tex = fg.AccessROImage(data->input_tex);
+            Ren::WeakImgRef output_tex = fg.AccessRWImageRef(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1778,18 +1778,18 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
             FgImgDesc desc;
             desc.w = (quality == eSSAOQuality::Ultra) ? view_state_.ren_res[0] : (view_state_.ren_res[0] / 2);
             desc.h = (quality == eSSAOQuality::Ultra) ? view_state_.ren_res[1] : (view_state_.ren_res[1] / 2);
-            desc.format = Ren::eTexFormat::R8;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R8;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             gtao_result = data->output_tex = gtao_main.AddStorageImageOutput("GTAO RAW", desc, Stg::ComputeShader);
         }
 
         gtao_main.set_execute_cb([this, data, quality](FgContext &fg) {
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &norm_tex = fg.AccessROTexture(data->norm_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &norm_tex = fg.AccessROImage(data->norm_tex);
 
-            Ren::Texture &output_tex = fg.AccessRWTexture(data->output_tex);
+            Ren::Image &output_tex = fg.AccessRWImage(data->output_tex);
 
             const Ren::Binding bindings[] = {{Trg::TexSampled, GTAO::DEPTH_TEX_SLOT, {depth_tex, 1}},
                                              {Trg::TexSampled, GTAO::NORM_TEX_SLOT, norm_tex},
@@ -1832,19 +1832,19 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
             FgImgDesc desc;
             desc.w = (quality == eSSAOQuality::Ultra) ? view_state_.ren_res[0] : (view_state_.ren_res[0] / 2);
             desc.h = (quality == eSSAOQuality::Ultra) ? view_state_.ren_res[1] : (view_state_.ren_res[1] / 2);
-            desc.format = Ren::eTexFormat::R8;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R8;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             gtao_result = data->out_ao_tex =
                 gtao_filter.AddStorageImageOutput("GTAO FILTERED", desc, Stg::ComputeShader);
         }
 
         gtao_filter.set_execute_cb([this, data, quality](FgContext &fg) {
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &ao_tex = fg.AccessROTexture(data->ao_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &ao_tex = fg.AccessROImage(data->ao_tex);
 
-            Ren::Texture &out_ao_tex = fg.AccessRWTexture(data->out_ao_tex);
+            Ren::Image &out_ao_tex = fg.AccessRWImage(data->out_ao_tex);
 
             const Ren::Binding bindings[] = {{Trg::TexSampled, GTAO::DEPTH_TEX_SLOT, {depth_tex, 1}},
                                              {Trg::TexSampled, GTAO::GTAO_TEX_SLOT, ao_tex},
@@ -1884,9 +1884,9 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
             FgImgDesc desc;
             desc.w = (quality == eSSAOQuality::Ultra) ? view_state_.ren_res[0] : (view_state_.ren_res[0] / 2);
             desc.h = (quality == eSSAOQuality::Ultra) ? view_state_.ren_res[1] : (view_state_.ren_res[1] / 2);
-            desc.format = Ren::eTexFormat::R8;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R8;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             gtao_result = data->out_ao_tex =
                 gtao_accumulation.AddStorageImageOutput("GTAO PRE FINAL", desc, Stg::ComputeShader);
@@ -1895,13 +1895,13 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
         data->ao_hist_tex = gtao_accumulation.AddHistoryTextureInput(gtao_result, Stg::ComputeShader);
 
         gtao_accumulation.set_execute_cb([this, data, quality](FgContext &fg) {
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &depth_hist_tex = fg.AccessROTexture(data->depth_hist_tex);
-            const Ren::Texture &velocity_tex = fg.AccessROTexture(data->velocity_tex);
-            const Ren::Texture &ao_tex = fg.AccessROTexture(data->ao_tex);
-            const Ren::Texture &ao_hist_tex = fg.AccessROTexture(data->ao_hist_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &depth_hist_tex = fg.AccessROImage(data->depth_hist_tex);
+            const Ren::Image &velocity_tex = fg.AccessROImage(data->velocity_tex);
+            const Ren::Image &ao_tex = fg.AccessROImage(data->ao_tex);
+            const Ren::Image &ao_hist_tex = fg.AccessROImage(data->ao_hist_tex);
 
-            Ren::Texture &out_ao_tex = fg.AccessRWTexture(data->out_ao_tex);
+            Ren::Image &out_ao_tex = fg.AccessRWImage(data->out_ao_tex);
 
             const Ren::Binding bindings[] = {{Trg::TexSampled, GTAO::DEPTH_TEX_SLOT, {depth_tex, 1}},
                                              {Trg::TexSampled, GTAO::DEPTH_HIST_TEX_SLOT, {depth_hist_tex, 1}},
@@ -1942,19 +1942,19 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eTexFormat::R8;
-            desc.sampling.filter = Ren::eTexFilter::Bilinear;
-            desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            desc.format = Ren::eFormat::R8;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             gtao_result = data->out_ao_tex =
                 gtao_upsample.AddStorageImageOutput("GTAO FINAL", desc, Stg::ComputeShader);
         }
 
         gtao_upsample.set_execute_cb([this, data](FgContext &fg) {
-            const Ren::Texture &depth_tex = fg.AccessROTexture(data->depth_tex);
-            const Ren::Texture &ao_tex = fg.AccessROTexture(data->ao_tex);
+            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
+            const Ren::Image &ao_tex = fg.AccessROImage(data->ao_tex);
 
-            Ren::Texture &out_ao_tex = fg.AccessRWTexture(data->out_ao_tex);
+            Ren::Image &out_ao_tex = fg.AccessRWImage(data->out_ao_tex);
 
             const Ren::Binding bindings[] = {{Trg::TexSampled, GTAO::DEPTH_TEX_SLOT, {depth_tex, 1}},
                                              {Trg::TexSampled, GTAO::GTAO_TEX_SLOT, ao_tex},

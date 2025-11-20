@@ -6,12 +6,12 @@
 #include <string_view>
 
 #include "Fwd.h"
+#include "Image.h"
 #include "Program.h"
 #include "Sampler.h"
 #include "SmallVector.h"
 #include "Storage.h"
 #include "String.h"
-#include "Texture.h"
 
 #include "MVec.h"
 
@@ -23,7 +23,7 @@ enum class eMatFlags { AlphaTest, AlphaBlend, DepthWrite, TwoSided, Emissive, Cu
 enum class eMatLoadStatus { Found, SetToDefault, CreatedFromData, CreatedFromData_NeedsMore };
 
 using texture_load_callback =
-    std::function<TexRef(std::string_view name, const uint8_t color[4], Bitmask<eTexFlags> flags)>;
+    std::function<ImgRef(std::string_view name, const uint8_t color[4], Bitmask<eImgFlags> flags)>;
 using sampler_load_callback = std::function<SamplerRef(SamplingParams params)>;
 using pipelines_load_callback =
     std::function<void(Bitmask<eMatFlags> flags, std::string_view arg1, std::string_view arg2, std::string_view arg3,
@@ -39,7 +39,7 @@ class Material : public RefCounter {
   public:
     Bitmask<eMatFlags> flags;
     SmallVector<PipelineRef, 4> pipelines;
-    SmallVector<TexRef, 4> textures;
+    SmallVector<ImgRef, 4> textures;
     SmallVector<SamplerRef, 4> samplers;
     SmallVector<Vec4f, 4> params;
     SmallVector<uint32_t, 4> next_texture_user;
@@ -49,7 +49,7 @@ class Material : public RefCounter {
              const pipelines_load_callback &on_pipes_load, const texture_load_callback &on_tex_load,
              const sampler_load_callback &on_sampler_load, ILog *log);
     Material(std::string_view name, Bitmask<eMatFlags> flags, Span<const PipelineRef> pipelines,
-             Span<const TexRef> textures, Span<const SamplerRef> samplers, Span<const Vec4f> params, ILog *log);
+             Span<const ImgRef> textures, Span<const SamplerRef> samplers, Span<const Vec4f> params, ILog *log);
 
     Material(const Mesh &rhs) = delete;
     Material(Material &&rhs) = default;
@@ -60,7 +60,7 @@ class Material : public RefCounter {
     bool ready() const { return ready_; }
     const String &name() const { return name_; }
 
-    void Init(Bitmask<eMatFlags> flags, Span<const PipelineRef> _pipelines, Span<const TexRef> _textures,
+    void Init(Bitmask<eMatFlags> flags, Span<const PipelineRef> _pipelines, Span<const ImgRef> _textures,
               Span<const SamplerRef> _samplers, Span<const Vec4f> _params, ILog *log);
     void Init(std::string_view mat_src, eMatLoadStatus *status, const pipelines_load_callback &on_pipes_load,
               const texture_load_callback &on_tex_load, const sampler_load_callback &on_sampler_load, ILog *log);

@@ -39,9 +39,9 @@ void Eng::PrimDraw::DrawPrim(Ren::CommandBuffer cmd_buf, const ePrim prim, const
 
         for (const auto &b : bindings) {
             if (b.trg == Ren::eBindTarget::Tex || b.trg == Ren::eBindTarget::TexSampled) {
-                assert(b.handle.tex->resource_state == Ren::eResState::ShaderResource ||
-                       b.handle.tex->resource_state == Ren::eResState::DepthRead ||
-                       b.handle.tex->resource_state == Ren::eResState::StencilTestDepthFetch);
+                assert(b.handle.img->resource_state == Ren::eResState::ShaderResource ||
+                       b.handle.img->resource_state == Ren::eResState::DepthRead ||
+                       b.handle.img->resource_state == Ren::eResState::StencilTestDepthFetch);
             }
         }
 

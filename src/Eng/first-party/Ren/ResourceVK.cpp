@@ -1,7 +1,7 @@
 #include "Resource.h"
 
 #include "Bitmask.h"
-#include "Texture.h"
+#include "Image.h"
 #include "VKCtx.h"
 
 namespace Ren {
@@ -170,11 +170,11 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
             if (tr.update_internal_state) {
                 std::get<const Buffer *>(tr.p_res)->resource_state = tr.new_state;
             }
-        } else if (std::holds_alternative<const Texture *>(tr.p_res)) {
+        } else if (std::holds_alternative<const Image *>(tr.p_res)) {
             eResState old_state = tr.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = std::get<const Texture *>(tr.p_res)->resource_state;
+                old_state = std::get<const Image *>(tr.p_res)->resource_state;
                 if (old_state == tr.new_state && !IsRWState(old_state)) {
                     // transition is not needed
                     continue;
@@ -196,10 +196,10 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
             }
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.image = std::get<const Texture *>(tr.p_res)->handle().img;
-            if (IsDepthStencilFormat(std::get<const Texture *>(tr.p_res)->params.format)) {
+            new_barrier.image = std::get<const Image *>(tr.p_res)->handle().img;
+            if (IsDepthStencilFormat(std::get<const Image *>(tr.p_res)->params.format)) {
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-            } else if (IsDepthFormat(std::get<const Texture *>(tr.p_res)->params.format)) {
+            } else if (IsDepthFormat(std::get<const Image *>(tr.p_res)->params.format)) {
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
             } else {
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -214,7 +214,7 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
             dst_stages |= VKPipelineStagesForState(tr.new_state);
 
             if (tr.update_internal_state) {
-                std::get<const Texture *>(tr.p_res)->resource_state = tr.new_state;
+                std::get<const Image *>(tr.p_res)->resource_state = tr.new_state;
             }
         }
     }

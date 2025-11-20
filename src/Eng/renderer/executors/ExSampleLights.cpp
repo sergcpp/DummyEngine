@@ -46,13 +46,13 @@ void Eng::ExSampleLights::Execute_SWRT(FgContext &fg) {
     const Ren::Buffer &prim_ndx_buf = fg.AccessROBuffer(args_->swrt.prim_ndx_buf);
     const Ren::Buffer &mesh_instances_buf = fg.AccessROBuffer(args_->swrt.mesh_instances_buf);
 
-    const Ren::Texture &albedo_tex = fg.AccessROTexture(args_->albedo_tex);
-    const Ren::Texture &depth_tex = fg.AccessROTexture(args_->depth_tex);
-    const Ren::Texture &norm_tex = fg.AccessROTexture(args_->norm_tex);
-    const Ren::Texture &spec_tex = fg.AccessROTexture(args_->spec_tex);
+    const Ren::Image &albedo_tex = fg.AccessROImage(args_->albedo_tex);
+    const Ren::Image &depth_tex = fg.AccessROImage(args_->depth_tex);
+    const Ren::Image &norm_tex = fg.AccessROImage(args_->norm_tex);
+    const Ren::Image &spec_tex = fg.AccessROImage(args_->spec_tex);
 
-    Ren::Texture &out_diffuse_tex = fg.AccessRWTexture(args_->out_diffuse_tex);
-    Ren::Texture &out_specular_tex = fg.AccessRWTexture(args_->out_specular_tex);
+    Ren::Image &out_diffuse_tex = fg.AccessRWImage(args_->out_diffuse_tex);
+    Ren::Image &out_specular_tex = fg.AccessRWImage(args_->out_specular_tex);
 
     if (!args_->lights_buf) {
         return;

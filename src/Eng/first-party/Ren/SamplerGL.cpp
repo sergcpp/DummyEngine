@@ -5,25 +5,25 @@
 namespace Ren {
 #define X(_0, _1, _2, _3, _4) _3,
 extern const uint32_t g_min_filter_gl[] = {
-#include "TextureFilter.inl"
+#include "Filter.inl"
 };
 #undef X
 
 #define X(_0, _1, _2, _3, _4) _4,
 extern const uint32_t g_mag_filter_gl[] = {
-#include "TextureFilter.inl"
+#include "Filter.inl"
 };
 #undef X
 
 #define X(_0, _1, _2) _2,
 extern const uint32_t g_wrap_mode_gl[] = {
-#include "../TextureWrap.inl"
+#include "../Wrap.inl"
 };
 #undef X
 
 #define X(_0, _1, _2) _2,
 extern const uint32_t g_compare_func_gl[] = {
-#include "../TextureCompare.inl"
+#include "../CompareOp.inl"
 };
 #undef X
 
@@ -65,7 +65,7 @@ void Ren::Sampler::Init(ApiContext *api_ctx, const SamplingParams params) {
     glSamplerParameteri(new_sampler, GL_TEXTURE_WRAP_T, g_wrap_mode_gl[size_t(params.wrap)]);
     glSamplerParameteri(new_sampler, GL_TEXTURE_WRAP_R, g_wrap_mode_gl[size_t(params.wrap)]);
 
-    if (params.compare != eTexCompare::None) {
+    if (params.compare != eCompareOp::None) {
         glSamplerParameteri(new_sampler, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
         glSamplerParameteri(new_sampler, GL_TEXTURE_COMPARE_FUNC, g_compare_func_gl[int(params.compare)]);
     } else {

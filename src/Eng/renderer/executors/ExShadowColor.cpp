@@ -10,8 +10,8 @@ void Eng::ExShadowColor::Execute(FgContext &fg) {
     Ren::WeakBufRef vtx_buf2 = fg.AccessROBufferRef(vtx_buf2_);
     Ren::WeakBufRef ndx_buf = fg.AccessROBufferRef(ndx_buf_);
 
-    Ren::WeakTexRef shadow_depth_tex = fg.AccessRWTextureRef(shadow_depth_tex_);
-    Ren::WeakTexRef shadow_color_tex = fg.AccessRWTextureRef(shadow_color_tex_);
+    Ren::WeakImgRef shadow_depth_tex = fg.AccessRWImageRef(shadow_depth_tex_);
+    Ren::WeakImgRef shadow_color_tex = fg.AccessRWImageRef(shadow_color_tex_);
 
     LazyInit(fg.ren_ctx(), fg.sh(), vtx_buf1, vtx_buf2, ndx_buf, shadow_depth_tex, shadow_color_tex);
     DrawShadowMaps(fg);
@@ -19,7 +19,7 @@ void Eng::ExShadowColor::Execute(FgContext &fg) {
 
 void Eng::ExShadowColor::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
                                   const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf,
-                                  const Ren::WeakTexRef &shadow_depth_tex, const Ren::WeakTexRef &shadow_color_tex) {
+                                  const Ren::WeakImgRef &shadow_depth_tex, const Ren::WeakImgRef &shadow_color_tex) {
     const Ren::RenderTarget depth_target = {shadow_depth_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
     const Ren::RenderTarget color_targets[] = {{shadow_color_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 

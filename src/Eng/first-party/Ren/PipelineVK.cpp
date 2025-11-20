@@ -288,14 +288,14 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         SmallVector<VkFormat, 4> color_attachment_formats;
         if (!render_pass) {
             for (const auto &att : render_pass->color_rts) {
-                color_attachment_formats.push_back(VKFormatFromTexFormat(att.format));
+                color_attachment_formats.push_back(VKFormatFromFormat(att.format));
             }
 
             pipeline_rendering_create_info.colorAttachmentCount = color_attachment_formats.size();
             pipeline_rendering_create_info.pColorAttachmentFormats = color_attachment_formats.data();
-            pipeline_rendering_create_info.depthAttachmentFormat = VKFormatFromTexFormat(render_pass->depth_rt.format);
+            pipeline_rendering_create_info.depthAttachmentFormat = VKFormatFromFormat(render_pass->depth_rt.format);
             pipeline_rendering_create_info.stencilAttachmentFormat =
-                rast_state.stencil.enabled ? VKFormatFromTexFormat(render_pass->depth_rt.format) : VK_FORMAT_UNDEFINED;
+                rast_state.stencil.enabled ? VKFormatFromFormat(render_pass->depth_rt.format) : VK_FORMAT_UNDEFINED;
 
             pipeline_create_info.pNext = &pipeline_rendering_create_info;
         }

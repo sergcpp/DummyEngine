@@ -74,7 +74,7 @@ void Eng::ExDepthFill::DrawDepth(FgContext &fg, const Ren::Buffer &vtx_buf1, con
     const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
     const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
     const Ren::Buffer &materials_buf = fg.AccessROBuffer(materials_buf_);
-    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
+    const Ren::Image &noise_tex = fg.AccessROImage(noise_tex_);
 
     Ren::ApiContext *api_ctx = fg.ren_ctx().api_ctx();
 

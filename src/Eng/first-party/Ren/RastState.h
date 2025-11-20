@@ -9,14 +9,9 @@
 
 #undef Always
 
-namespace Ren {
-#define X(_0, ...) _0,
-enum class eCompareOp : uint8_t {
-#include "CompareOp.inl"
-    _Count
-};
-#undef X
+#include "SamplingParams.h"
 
+namespace Ren {
 #define X(_0, ...) _0,
 enum class eStencilOp : uint8_t {
 #include "StencilOp.inl"

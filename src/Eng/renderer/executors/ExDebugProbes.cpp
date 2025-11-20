@@ -15,11 +15,11 @@ Eng::ExDebugProbes::ExDebugProbes(PrimDraw &prim_draw, FgContext &fg, const Draw
 
 void Eng::ExDebugProbes::Execute(FgContext &fg) {
     const Ren::Buffer &unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
-    const Ren::Texture &off_tex = fg.AccessROTexture(args_->offset_tex);
-    const Ren::Texture &irr_tex = fg.AccessROTexture(args_->irradiance_tex);
-    [[maybe_unused]] const Ren::Texture &dist_tex = fg.AccessROTexture(args_->distance_tex);
-    Ren::WeakTexRef depth_tex = fg.AccessRWTextureRef(args_->depth_tex);
-    Ren::WeakTexRef output_tex = fg.AccessRWTextureRef(args_->output_tex);
+    const Ren::Image &off_tex = fg.AccessROImage(args_->offset_tex);
+    const Ren::Image &irr_tex = fg.AccessROImage(args_->irradiance_tex);
+    [[maybe_unused]] const Ren::Image &dist_tex = fg.AccessROImage(args_->distance_tex);
+    Ren::WeakImgRef depth_tex = fg.AccessRWImageRef(args_->depth_tex);
+    Ren::WeakImgRef output_tex = fg.AccessRWImageRef(args_->output_tex);
 
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);

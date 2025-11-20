@@ -20,7 +20,7 @@ class ExEmissive final : public FgExecutor {
     const view_state_t *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
-    const Ren::TextureAtlas *decals_atlas_ = nullptr;
+    const Ren::ImageAtlas *decals_atlas_ = nullptr;
 
     const DrawList **p_list_ = nullptr;
 
@@ -38,8 +38,8 @@ class ExEmissive final : public FgExecutor {
     FgResRef out_depth_tex_;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
-                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, const Ren::WeakTexRef &color_tex,
-                  const Ren::WeakTexRef &depth_tex);
+                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, const Ren::WeakImgRef &color_tex,
+                  const Ren::WeakImgRef &depth_tex);
     void DrawOpaque(FgContext &fg);
 
   public:

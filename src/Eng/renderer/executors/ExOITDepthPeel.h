@@ -34,7 +34,7 @@ class ExOITDepthPeel final : public FgExecutor {
     FgResRef out_depth_buf_;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::WeakBufRef &vtx_buf1,
-                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, Ren::WeakTexRef depth_tex);
+                  const Ren::WeakBufRef &vtx_buf2, const Ren::WeakBufRef &ndx_buf, Ren::WeakImgRef depth_tex);
     void DrawTransparent(FgContext &fg);
 
   public:

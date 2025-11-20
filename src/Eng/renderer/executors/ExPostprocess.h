@@ -1,7 +1,7 @@
 #pragma once
 
+#include <Ren/Image.h>
 #include <Ren/RenderPass.h>
-#include <Ren/Texture.h>
 
 #include "../framegraph/FgNode.h"
 
@@ -20,7 +20,6 @@ class ExPostprocess final : public FgExecutor {
         FgResRef output_tex2;
 
         Ren::SamplerRef linear_sampler;
-        
 
         int tonemap_mode = 1;
         float inv_gamma = 1.0f, fade = 0.0f;

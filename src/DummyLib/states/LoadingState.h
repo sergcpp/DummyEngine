@@ -4,8 +4,8 @@
 
 #include <Eng/ViewerState.h>
 #include <Eng/utils/FrameInfo.h>
+#include <Ren/ImageRegion.h>
 #include <Ren/RastState.h>
-#include <Ren/TextureRegion.h>
 #include <Sys/Json.h>
 #include <Sys/PoolAlloc.h>
 
@@ -40,7 +40,7 @@ class LoadingState : public Eng::ViewerState {
     Gui::BaseElement *ui_root_ = nullptr;
     const Gui::BitmapFont *font_ = nullptr;
 
-    Ren::TextureRegionRef dummy_white_;
+    Ren::ImageRegionRef dummy_white_;
 
     Ren::ProgramRef blit_loading_prog_;
     Ren::RastState curr_rast_state_;

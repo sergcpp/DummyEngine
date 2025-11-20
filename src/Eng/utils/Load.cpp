@@ -3,11 +3,11 @@
 #include <memory>
 #include <sstream>
 
-#include <Ren/Texture.h>
+#include <Ren/Image.h>
 #include <Sys/AssetFile.h>
 #include <Sys/MemBuf.h>
 
-std::vector<uint8_t> Eng::LoadDDS(std::string_view path, Ren::TexParams *p) {
+std::vector<uint8_t> Eng::LoadDDS(std::string_view path, Ren::ImgParams *p) {
     Sys::AssetFile in_file(path);
     if (!in_file) {
         return {};
@@ -26,27 +26,27 @@ std::vector<uint8_t> Eng::LoadDDS(std::string_view path, Ren::TexParams *p) {
         if (bytes_read != sizeof(Ren::DDS_HEADER_DXT10)) {
             return {};
         }
-        p->format = Ren::TexFormatFromDXGIFormat(dx10_header.dxgiFormat);
-    } else if (p->format == Ren::eTexFormat::Undefined) {
+        p->format = Ren::FormatFromDXGIFormat(dx10_header.dxgiFormat);
+    } else if (p->format == Ren::eFormat::Undefined) {
         // Try to use least significant bits of FourCC as format
         const uint8_t val = (header.sPixelFormat.dwFourCC & 0xff);
         if (val == 0x6f) {
-            p->format = Ren::eTexFormat::R16F;
+            p->format = Ren::eFormat::R16F;
         } else if (val == 0x70) {
-            p->format = Ren::eTexFormat::RG16F;
+            p->format = Ren::eFormat::RG16F;
         } else if (val == 0x71) {
-            p->format = Ren::eTexFormat::RGBA16F;
+            p->format = Ren::eFormat::RGBA16F;
         } else if (val == 0x72) {
-            p->format = Ren::eTexFormat::R32F;
+            p->format = Ren::eFormat::R32F;
         } else if (val == 0x73) {
-            p->format = Ren::eTexFormat::RG32F;
+            p->format = Ren::eFormat::RG32F;
         } else if (val == 0x74) {
-            p->format = Ren::eTexFormat::RGBA32F;
+            p->format = Ren::eFormat::RGBA32F;
         } else if (val == 0) {
             if (header.sPixelFormat.dwRGBBitCount == 8) {
-                p->format = Ren::eTexFormat::R8;
+                p->format = Ren::eFormat::R8;
             } else if (header.sPixelFormat.dwRGBBitCount == 16) {
-                p->format = Ren::eTexFormat::RG8;
+                p->format = Ren::eFormat::RG8;
                 assert(header.sPixelFormat.dwRBitMask == 0x00ff);
                 assert(header.sPixelFormat.dwGBitMask == 0xff00);
             }

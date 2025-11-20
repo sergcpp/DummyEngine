@@ -5,11 +5,11 @@
 
 #include "../Ren/Context.h"
 #include "../Ren/Framebuffer.h"
+#include "../Ren/Image.h"
+#include "../Ren/ImageAtlas.h"
 #include "../Ren/Pipeline.h"
 #include "../Ren/Program.h"
 #include "../Ren/RenderPass.h"
-#include "../Ren/Texture.h"
-#include "../Ren/TextureAtlas.h"
 #include "../Ren/VertexInput.h"
 
 #include "MVec.h"

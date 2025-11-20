@@ -16,7 +16,7 @@ __itt_string_handle *itt_sort_tex_str = __itt_string_handle_create("SortTextures
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
-void CaptureMaterialTextureChange(Ren::Context &ctx, Eng::SceneData &scene_data, const Ren::TexRef &ref) {
+void CaptureMaterialTextureChange(Ren::Context &ctx, Eng::SceneData &scene_data, const Ren::ImgRef &ref) {
     uint32_t tex_user = ref->first_user;
     while (tex_user != 0xffffffff) {
         Ren::Material &mat = scene_data.materials[tex_user];
@@ -122,7 +122,7 @@ void Eng::SceneManager::TextureLoaderProc() {
         bool read_success = true;
 
         if (req->ref->name().EndsWith(".dds") || req->ref->name().EndsWith(".DDS")) {
-            if (req->orig_format == Ren::eTexFormat::Undefined) {
+            if (req->orig_format == Ren::eFormat::Undefined) {
                 Ren::DDSHeader header = {};
 
                 size_t data_size = sizeof(Ren::DDSHeader);
@@ -133,7 +133,7 @@ void Eng::SceneManager::TextureLoaderProc() {
                 req->read_offset = sizeof(Ren::DDSHeader);
 
                 if (read_success) {
-                    Ren::TexParams temp_params;
+                    Ren::ImgParams temp_params;
                     ParseDDSHeader(header, &temp_params);
                     req->orig_format = temp_params.format;
                     req->orig_w = temp_params.w;
@@ -145,24 +145,24 @@ void Eng::SceneManager::TextureLoaderProc() {
                         tex_reader_.ReadFileBlocking(path_buf.c_str(), sizeof(Ren::DDSHeader),
                                                      sizeof(Ren::DDS_HEADER_DXT10), &dx10_header, data_size);
 
-                        req->orig_format = Ren::TexFormatFromDXGIFormat(dx10_header.dxgiFormat);
+                        req->orig_format = Ren::FormatFromDXGIFormat(dx10_header.dxgiFormat);
 
                         read_offset += sizeof(Ren::DDS_HEADER_DXT10);
-                    } else if (temp_params.format == Ren::eTexFormat::Undefined) {
+                    } else if (temp_params.format == Ren::eFormat::Undefined) {
                         // Try to use least significant bits of FourCC as format
                         const uint8_t val = (header.sPixelFormat.dwFourCC & 0xff);
                         if (val == 0x6f) {
-                            req->orig_format = Ren::eTexFormat::R16F;
+                            req->orig_format = Ren::eFormat::R16F;
                         } else if (val == 0x70) {
-                            req->orig_format = Ren::eTexFormat::RG16F;
+                            req->orig_format = Ren::eFormat::RG16F;
                         } else if (val == 0x71) {
-                            req->orig_format = Ren::eTexFormat::RGBA16F;
+                            req->orig_format = Ren::eFormat::RGBA16F;
                         } else if (val == 0x72) {
-                            req->orig_format = Ren::eTexFormat::R32F;
+                            req->orig_format = Ren::eFormat::R32F;
                         } else if (val == 0x73) {
-                            req->orig_format = Ren::eTexFormat::RG32F;
+                            req->orig_format = Ren::eFormat::RG32F;
                         } else if (val == 0x74) {
-                            req->orig_format = Ren::eTexFormat::RGBA32F;
+                            req->orig_format = Ren::eFormat::RGBA32F;
                         }
                     }
                 }
@@ -176,7 +176,7 @@ void Eng::SceneManager::TextureLoaderProc() {
         }
 
         if (read_success) {
-            const Ren::TexParams &cur_p = req->ref->params;
+            const Ren::ImgParams &cur_p = req->ref->params;
 
             const int max_load_w = std::max(cur_p.w * (1 << mip_levels_per_request_), 256);
             const int max_load_h = std::max(cur_p.h * (1 << mip_levels_per_request_), 256);
@@ -341,10 +341,10 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                 // stage_buf->fence.ClientWaitSync();
                 ren_ctx_.BegSingleTimeCommands(stage_buf->cmd_buf);
 
-                Ren::TexParams p = req->ref->params;
+                Ren::ImgParams p = req->ref->params;
                 const int new_mip_count =
-                    (p.flags & Ren::eTexFlags::Stub) ? req->mip_count_to_init : (p.mip_count + req->mip_count_to_init);
-                p.flags &= ~Ren::Bitmask(Ren::eTexFlags::Stub);
+                    (p.flags & Ren::eImgFlags::Stub) ? req->mip_count_to_init : (p.mip_count + req->mip_count_to_init);
+                p.flags &= ~Ren::Bitmask(Ren::eImgFlags::Stub);
                 req->ref->params = p;
 
                 req->ref->Realloc(w, h, new_mip_count, 1 /* samples */, req->orig_format, stage_buf->cmd_buf,
@@ -403,7 +403,7 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
 
             ren_ctx_.log()->Warning("Texture %s is being garbage collected", req.ref->name().c_str());
 
-            Ren::TexParams p = req.ref->params;
+            Ren::ImgParams p = req.ref->params;
 
             // drop to lowest lod
             const int w = std::max(p.w >> p.mip_count, 1);
@@ -587,7 +587,7 @@ void Eng::SceneManager::TexturesGCIteration(const Ren::Span<const TexEntry> visi
     }
 }
 
-void Eng::SceneManager::InvalidateTexture(const Ren::TexRef &ref) {
+void Eng::SceneManager::InvalidateTexture(const Ren::ImgRef &ref) {
     SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, ref);
 }
 
@@ -634,8 +634,8 @@ void Eng::SceneManager::ForceTextureReload() {
 
     // Reset textures to 1x1 mip and send to processing
     for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures); ++it) {
-        Ren::TexParams p = it->params;
-        p.flags |= Ren::eTexFlags::Stub;
+        Ren::ImgParams p = it->params;
+        p.flags |= Ren::eImgFlags::Stub;
 
         // drop to lowest lod
         const int w = std::max(p.w >> (p.mip_count - 1), 1);
@@ -652,7 +652,7 @@ void Eng::SceneManager::ForceTextureReload() {
         img_transitions.emplace_back(&(*it), Ren::eResState::ShaderResource);
 
         TextureRequest req;
-        req.ref = Ren::TexRef{&scene_data_.textures, it.index()};
+        req.ref = Ren::ImgRef{&scene_data_.textures, it.index()};
 
         SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req.ref);
 
@@ -671,7 +671,7 @@ void Eng::SceneManager::ForceTextureReload() {
     StartTextureLoaderThread();
 }
 
-void Eng::SceneManager::ReleaseTextures(const bool immediate) {
+void Eng::SceneManager::ReleaseImages(const bool immediate) {
     StopTextureLoaderThread();
     assert(immediate);
 
@@ -684,16 +684,16 @@ void Eng::SceneManager::ReleaseTextures(const bool immediate) {
 
     // Reset textures to 1x1
     for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures); ++it) {
-        Ren::TexParams p = it->params;
-        p.format = Ren::eTexFormat::RGBA8;
-        p.flags = Ren::eTexFlags::Stub;
+        Ren::ImgParams p = it->params;
+        p.format = Ren::eFormat::RGBA8;
+        p.flags = Ren::eImgFlags::Stub;
         p.w = p.h = 1;
         p.mip_count = 1;
 
         it->FreeImmediate();
 
         // Initialize with fallback color
-        Ren::eTexLoadStatus status;
+        Ren::eImgLoadStatus status;
         // TODO: Use actual fallback color
         uint8_t fallback_color[4] = {};
         it->Init(fallback_color, p, new_alloc.get(), &status, ren_ctx_.log());
@@ -701,7 +701,7 @@ void Eng::SceneManager::ReleaseTextures(const bool immediate) {
         img_transitions.emplace_back(&(*it), Ren::eResState::ShaderResource);
 
         TextureRequest req;
-        req.ref = Ren::TexRef{&scene_data_.textures, it.index()};
+        req.ref = Ren::ImgRef{&scene_data_.textures, it.index()};
 
         SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req.ref);
 

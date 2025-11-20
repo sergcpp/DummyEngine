@@ -5,12 +5,12 @@
 #include <atomic>
 
 #include <Ren/HashMap32.h>
+#include <Ren/ImageAtlas.h>
 #include <Ren/MMat.h>
 #include <Ren/Mesh.h>
 #include <Ren/Pipeline.h>
 #include <Ren/ProbeStorage.h>
 #include <Ren/Storage.h>
-#include <Ren/TextureAtlas.h>
 
 #include "Atmosphere.h"
 #include "components/AccStructure.h"
@@ -135,8 +135,8 @@ struct Environment {
     Ren::Vec2f curr_wind_scroll_lf, curr_wind_scroll_hf;
     Ren::Vec3f env_col;
     float env_map_rot = 0.0f;
-    Ren::TexRef env_map;
-    Ren::TexRef lm_direct, lm_indir, lm_indir_sh[4];
+    Ren::ImgRef env_map;
+    Ren::ImgRef lm_direct, lm_indir, lm_indir_sh[4];
     float sun_shadow_bias[2] = {4.0f, 8.0f};
     uint32_t generation = 0;
 
@@ -252,9 +252,9 @@ struct PersistentGpuData {
 
     std::unique_ptr<Ren::IAccStructure> rt_tlas[3];
 
-    Ren::TexRef probe_irradiance;
-    Ren::TexRef probe_distance;
-    Ren::TexRef probe_offset;
+    Ren::ImgRef probe_irradiance;
+    Ren::ImgRef probe_distance;
+    Ren::ImgRef probe_offset;
     std::vector<probe_volume_t> probe_volumes;
 
     PersistentGpuData();
@@ -274,7 +274,7 @@ struct SceneData {
     Ren::Bitmask<eSceneLoadFlags> load_flags;
 
     Ren::BufferStorage buffers;
-    Ren::TextureStorage textures;
+    Ren::ImageStorage textures;
     Ren::MaterialStorage materials;
     std::vector<uint32_t> material_changes;
     PersistentGpuData persistent_data;
@@ -288,8 +288,8 @@ struct SceneData {
     Environment env;
 
     Ren::HashMap32<Ren::String, Ren::Vec4f> decals_textures;
-    Ren::TextureAtlas decals_atlas;
-    Ren::TextureSplitter lm_splitter;
+    Ren::ImageAtlas decals_atlas;
+    Ren::ImageSplitter lm_splitter;
 
     CompStorage *comp_store[MAX_COMPONENT_TYPES] = {};
 

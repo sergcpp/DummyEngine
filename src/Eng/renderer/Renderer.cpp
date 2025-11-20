@@ -138,51 +138,51 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
     /*{ // buffer used to sample probes
         FrameBuf::ColorAttachmentDesc desc;
-        desc.format = Ren::eTexFormat::RGBA32F;
-        desc.filter = Ren::eTexFilter::NoFilter;
-        desc.wrap = Ren::eTexWrap::ClampToEdge;
+        desc.format = Ren::eFormat::RGBA32F;
+        desc.filter = Ren::eFilter::NoFilter;
+        desc.wrap = Ren::eWrap::ClampToEdge;
         probe_sample_buf_ = FrameBuf("Probe sample", ctx_, 24, 8, &desc, 1, {}, 1, ctx.log());
     }*/
 
     static const uint8_t black[] = {0, 0, 0, 0}, white[] = {255, 255, 255, 255};
 
     { // dummy 1px textures
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = p.h = 1;
-        p.format = Ren::eTexFormat::RGBA8;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        p.format = Ren::eFormat::RGBA8;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+        p.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-        Ren::eTexLoadStatus status;
-        dummy_black_ = ctx_.LoadTexture("dummy_black", black, p, ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+        Ren::eImgLoadStatus status;
+        dummy_black_ = ctx_.LoadImage("dummy_black", black, p, ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eImgLoadStatus::CreatedFromData);
 
-        dummy_white_ = ctx_.LoadTexture("dummy_white", white, p, ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+        dummy_white_ = ctx_.LoadImage("dummy_white", white, p, ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eImgLoadStatus::CreatedFromData);
     }
 
     { // random 2d halton 8x8
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = p.h = 8;
-        p.format = Ren::eTexFormat::RG32F;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
+        p.format = Ren::eFormat::RG32F;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
 
-        Ren::eTexLoadStatus status;
-        rand2d_8x8_ = ctx_.LoadTexture("rand2d_8x8", {(const uint8_t *)&PMJSamples64[0][0], sizeof(PMJSamples64)}, p,
+        Ren::eImgLoadStatus status;
+        rand2d_8x8_ = ctx_.LoadImage("rand2d_8x8", {(const uint8_t *)&PMJSamples64[0][0], sizeof(PMJSamples64)}, p,
                                        ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+        assert(status == Ren::eImgLoadStatus::CreatedFromData);
     }
 
     { // random 2d directions 4x4
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = p.h = 4;
-        p.format = Ren::eTexFormat::RG16;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
+        p.format = Ren::eFormat::RG16;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
 
-        Ren::eTexLoadStatus status;
-        rand2d_dirs_4x4_ = ctx_.LoadTexture("rand2d_dirs_4x4", {(const uint8_t *)&__rand_dirs[0], sizeof(__rand_dirs)},
+        Ren::eImgLoadStatus status;
+        rand2d_dirs_4x4_ = ctx_.LoadImage("rand2d_dirs_4x4", {(const uint8_t *)&__rand_dirs[0], sizeof(__rand_dirs)},
                                             p, ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+        assert(status == Ren::eImgLoadStatus::CreatedFromData);
     }
 
     { // cone/sphere intersection LUT
@@ -200,20 +200,20 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
                                          false, false, "cone_lut.uncompressed.png");
         //std::exit(0);*/
 
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = __cone_rt_lut_res;
         p.h = __cone_rt_lut_res;
-        p.format = Ren::eTexFormat::RGBA8;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-        p.sampling.filter = Ren::eTexFilter::Bilinear;
-        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        p.format = Ren::eFormat::RGBA8;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+        p.sampling.filter = Ren::eFilter::Bilinear;
+        p.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-        Ren::eTexLoadStatus status;
-        cone_rt_lut_ = ctx_.LoadTexture("cone_rt_lut", {&__cone_rt_lut[0], 4 * __cone_rt_lut_res * __cone_rt_lut_res},
+        Ren::eImgLoadStatus status;
+        cone_rt_lut_ = ctx_.LoadImage("cone_rt_lut", {&__cone_rt_lut[0], 4 * __cone_rt_lut_res * __cone_rt_lut_res},
                                         p, ctx_.default_mem_allocs(), &status);
 
         // cone_rt_lut_ =
-        //    ctx_.LoadTexture("cone_rt_lut", &occ_data[0], 4 * resx * resy, p,
+        //    ctx_.LoadImage("cone_rt_lut", &occ_data[0], 4 * resx * resy, p,
         //    &status);
     }
 
@@ -222,17 +222,17 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         // const std::unique_ptr<uint16_t[]> img_data_rg16 = Generate_BRDF_LUT(256,
         // c_header);
 
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = p.h = __brdf_lut_res;
-        p.format = Ren::eTexFormat::RG16;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-        p.sampling.filter = Ren::eTexFilter::Bilinear;
-        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        p.format = Ren::eFormat::RG16;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+        p.sampling.filter = Ren::eFilter::Bilinear;
+        p.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-        Ren::eTexLoadStatus status;
-        brdf_lut_ = ctx_.LoadTexture("brdf_lut", {(const uint8_t *)&__brdf_lut[0], sizeof(__brdf_lut)}, p,
+        Ren::eImgLoadStatus status;
+        brdf_lut_ = ctx_.LoadImage("brdf_lut", {(const uint8_t *)&__brdf_lut[0], sizeof(__brdf_lut)}, p,
                                      ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+        assert(status == Ren::eImgLoadStatus::CreatedFromData);
     }
 
     { // LTC LUTs
@@ -257,19 +257,19 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             _combined_data += 4 * 64;
         }
 
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = 8 * 64;
         p.h = 64;
-        p.format = Ren::eTexFormat::RGBA32F;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-        p.sampling.filter = Ren::eTexFilter::Bilinear;
-        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        p.format = Ren::eFormat::RGBA32F;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+        p.sampling.filter = Ren::eFilter::Bilinear;
+        p.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-        Ren::eTexLoadStatus status;
+        Ren::eImgLoadStatus status;
         ltc_luts_ =
-            ctx_.LoadTexture("LTC LUTs", {(const uint8_t *)combined_data.get(), 8 * 4 * 64 * 64 * sizeof(float)}, p,
+            ctx_.LoadImage("LTC LUTs", {(const uint8_t *)combined_data.get(), 8 * 4 * 64 * 64 * sizeof(float)}, p,
                              ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+        assert(status == Ren::eImgLoadStatus::CreatedFromData);
     }
 
     {
@@ -279,16 +279,16 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         SceneManagerInternal::WriteImage((const uint8_t*)&img_data[0], res, res, 4,
         false, "test1.png");*/
 
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = p.h = __noise_res;
-        p.format = Ren::eTexFormat::RGBA8_snorm;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-        p.sampling.filter = Ren::eTexFilter::Bilinear;
+        p.format = Ren::eFormat::RGBA8_snorm;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+        p.sampling.filter = Ren::eFilter::Bilinear;
 
-        Ren::eTexLoadStatus status;
-        noise_tex_ = ctx_.LoadTexture("noise", {(const uint8_t *)&__noise[0], __noise_res * __noise_res * 4}, p,
+        Ren::eImgLoadStatus status;
+        noise_tex_ = ctx_.LoadImage("noise", {(const uint8_t *)&__noise[0], __noise_res * __noise_res * 4}, p,
                                       ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+        assert(status == Ren::eImgLoadStatus::CreatedFromData);
     }
 
     /*{
@@ -315,20 +315,20 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     }*/
 
     { // STBN 1D sampler
-        Ren::TexParams p;
+        Ren::ImgParams p;
         p.w = stbn_1D_64spp::w;
         p.h = stbn_1D_64spp::h;
         p.d = stbn_1D_64spp::d;
-        p.format = Ren::eTexFormat::R8;
-        p.flags = Ren::eTexFlags::Array;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-        p.sampling.filter = Ren::eTexFilter::Nearest;
+        p.format = Ren::eFormat::R8;
+        p.flags = Ren::eImgFlags::Array;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+        p.sampling.filter = Ren::eFilter::Nearest;
 
-        Ren::eTexLoadStatus status;
+        Ren::eImgLoadStatus status;
         stbn_1D_64spp_ =
-            ctx_.LoadTexture("STBN 1D 64spp", {(const uint8_t *)&stbn_1D_64spp::stbn_samples[0], p.w * p.h * p.d}, p,
+            ctx_.LoadImage("STBN 1D 64spp", {(const uint8_t *)&stbn_1D_64spp::stbn_samples[0], p.w * p.h * p.d}, p,
                              ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+        assert(status == Ren::eImgLoadStatus::CreatedFromData);
     }
 
     { // PMJ 2D blue-noise sampler
@@ -368,7 +368,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         bn_pmj_2D_64spp_seq_buf_ =
             ctx_.LoadBuffer("BN_PMJ_2D_64SPP", Ren::eBufType::Texture,
                             8 * (SampleSizePerDimPair + ScramblingSizePerDimPair + SortingSizePerDimPair));
-        bn_pmj_2D_64spp_seq_buf_->AddBufferView(Ren::eTexFormat::R32UI);
+        bn_pmj_2D_64spp_seq_buf_->AddBufferView(Ren::eFormat::R32UI);
         Ren::Buffer bn_pmj_2D_64spp_seq_buf_stage("BN_PMJ_2D_64SPP_Stage", ctx_.api_ctx(), Ren::eBufType::Upload,
                                                   bn_pmj_2D_64spp_seq_buf_->size());
 
@@ -443,7 +443,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     { // PMJ samples
         pmj_samples_buf_ = ctx_.LoadBuffer("PMJSamples", Ren::eBufType::Texture,
                                            __pmj02_sample_count * __pmj02_dims_count * sizeof(uint32_t));
-        pmj_samples_buf_->AddBufferView(Ren::eTexFormat::R32UI);
+        pmj_samples_buf_->AddBufferView(Ren::eFormat::R32UI);
 
         Ren::Buffer pmj_samples_stage("PMJSamplesStage", ctx_.api_ctx(), Ren::eBufType::Upload,
                                       pmj_samples_buf_->size());
@@ -481,23 +481,23 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
     { // RenderPass for main drawing (compatible one)
         Ren::RenderTargetInfo color_rts[] = {
-            {Ren::eTexFormat::RGBA16F, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
+            {Ren::eFormat::RGBA16F, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
              Ren::eStoreOp::Store},
 #if USE_OCT_PACKED_NORMALS == 1
-            {Ren::eTexFormat::RGB10_A2, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
+            {Ren::eFormat::RGB10_A2, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
              Ren::eStoreOp::Store},
 #else
-            {Ren::eTexFormat::RGBA8, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
+            {Ren::eFormat::RGBA8, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
              Ren::eStoreOp::Store},
 #endif
-            {Ren::eTexFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
+            {Ren::eFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
-        // color_rts[2].flags = Ren::eTexFlags::SRGB;
+        // color_rts[2].flags = Ren::eImgFlags::SRGB;
 
         // const auto depth_format =
-        //     ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::D24_S8 : Ren::eTexFormat::D32_S8;
-        const auto depth_format = Ren::eTexFormat::D32_S8;
+        //     ctx_.capabilities.depth24_stencil8_format ? Ren::eFormat::D24_S8 : Ren::eFormat::D32_S8;
+        const auto depth_format = Ren::eFormat::D32_S8;
 
         const Ren::RenderTargetInfo depth_rt = {depth_format, 1 /* samples */,
                                                 Ren::eImageLayout::DepthStencilAttachmentOptimal, Ren::eLoadOp::Load,
@@ -529,39 +529,39 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     }
 
     { // shadow map texture
-        Ren::TexParams params;
+        Ren::ImgParams params;
         params.w = SHADOWMAP_WIDTH;
         params.h = SHADOWMAP_HEIGHT;
-        params.format = Ren::eTexFormat::D16;
-        params.usage = Ren::Bitmask(Ren::eTexUsage::RenderTarget) | Ren::eTexUsage::Sampled;
-        params.sampling.filter = Ren::eTexFilter::Bilinear;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-        params.sampling.compare = Ren::eTexCompare::GEqual;
+        params.format = Ren::eFormat::D16;
+        params.usage = Ren::Bitmask(Ren::eImgUsage::RenderTarget) | Ren::eImgUsage::Sampled;
+        params.sampling.filter = Ren::eFilter::Bilinear;
+        params.sampling.wrap = Ren::eWrap::ClampToEdge;
+        params.sampling.compare = Ren::eCompareOp::GEqual;
 
-        Ren::eTexLoadStatus status;
-        shadow_depth_tex_ = ctx_.LoadTexture("Shadow Depth Tex", params, ctx_.default_mem_allocs(), &status);
+        Ren::eImgLoadStatus status;
+        shadow_depth_tex_ = ctx_.LoadImage("Shadow Depth Tex", params, ctx_.default_mem_allocs(), &status);
     }
     { // shadow filter texture
-        Ren::TexParams params;
+        Ren::ImgParams params;
         params.w = SHADOWMAP_WIDTH;
         params.h = SHADOWMAP_HEIGHT;
-        params.format = (ctx_.capabilities.rgb565_render_target ? Ren::eTexFormat::RGB565 : Ren::eTexFormat::RGBA8);
-        params.usage = Ren::Bitmask(Ren::eTexUsage::RenderTarget) | Ren::eTexUsage::Sampled;
-        params.sampling.filter = Ren::eTexFilter::Bilinear;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        params.format = (ctx_.capabilities.rgb565_render_target ? Ren::eFormat::RGB565 : Ren::eFormat::RGBA8);
+        params.usage = Ren::Bitmask(Ren::eImgUsage::RenderTarget) | Ren::eImgUsage::Sampled;
+        params.sampling.filter = Ren::eFilter::Bilinear;
+        params.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-        Ren::eTexLoadStatus status;
-        shadow_color_tex_ = ctx_.LoadTexture("Shadow Color Tex", params, ctx_.default_mem_allocs(), &status);
+        Ren::eImgLoadStatus status;
+        shadow_color_tex_ = ctx_.LoadImage("Shadow Color Tex", params, ctx_.default_mem_allocs(), &status);
     }
 
     { // nearest sampler
         Ren::SamplingParams sampler_params;
-        sampler_params.wrap = Ren::eTexWrap::ClampToEdge;
+        sampler_params.wrap = Ren::eWrap::ClampToEdge;
 
         Ren::eSamplerLoadStatus status;
         nearest_sampler_ = ctx_.LoadSampler(sampler_params, &status);
 
-        sampler_params.filter = Ren::eTexFilter::Bilinear;
+        sampler_params.filter = Ren::eFilter::Bilinear;
         linear_sampler_ = ctx_.LoadSampler(sampler_params, &status);
     }
 
@@ -595,7 +595,7 @@ void Eng::Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &c
 }
 
 void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
-                                    const Ren::TexRef target, const bool blit_to_backbuffer) {
+                                    const Ren::ImgRef target, const bool blit_to_backbuffer) {
     using namespace RendererInternal;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_exec_dr_str);
@@ -867,7 +867,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = HWRTObjInstancesBufChunkSize;
-                desc.views.push_back(Ren::eTexFormat::RGBA32F);
+                desc.views.push_back(Ren::eFormat::RGBA32F);
 
                 rt_obj_instances_res[int(eTLASIndex::Main)] =
                     update_rt_bufs.AddTransferOutput("RT Obj Instances", desc);
@@ -919,7 +919,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = SWRTObjInstancesBufChunkSize;
-                desc.views.push_back(Ren::eTexFormat::RGBA32F);
+                desc.views.push_back(Ren::eFormat::RGBA32F);
 
                 rt_obj_instances_res[int(eTLASIndex::Main)] =
                     build_acc_structs.AddTransferOutput("RT Obj Instances", desc);
@@ -951,7 +951,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = HWRTObjInstancesBufChunkSize;
-                    desc.views.push_back(Ren::eTexFormat::RGBA32F);
+                    desc.views.push_back(Ren::eFormat::RGBA32F);
 
                     rt_obj_instances_res[int(eTLASIndex::Shadow)] =
                         update_rt_bufs.AddTransferOutput("RT SH Obj Instances", desc);
@@ -1004,7 +1004,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = SWRTObjInstancesBufChunkSize;
-                    desc.views.push_back(Ren::eTexFormat::RGBA32F);
+                    desc.views.push_back(Ren::eFormat::RGBA32F);
 
                     rt_obj_instances_res[int(eTLASIndex::Shadow)] =
                         build_acc_structs.AddTransferOutput("RT SH Obj Instances", desc);
@@ -1037,7 +1037,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = HWRTObjInstancesBufChunkSize;
-                    desc.views.push_back(Ren::eTexFormat::RGBA32F);
+                    desc.views.push_back(Ren::eFormat::RGBA32F);
 
                     rt_obj_instances_res[int(eTLASIndex::Volume)] =
                         update_rt_bufs.AddTransferOutput("RT VOL Obj Instances", desc);
@@ -1090,7 +1090,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = SWRTObjInstancesBufChunkSize;
-                    desc.views.push_back(Ren::eTexFormat::RGBA32F);
+                    desc.views.push_back(Ren::eFormat::RGBA32F);
 
                     rt_obj_instances_res[int(eTLASIndex::Volume)] =
                         build_acc_structs.AddTransferOutput("RT VOL Obj Instances", desc);
@@ -1161,51 +1161,51 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         frame_textures.depth_desc.w = view_state_.ren_res[0];
         frame_textures.depth_desc.h = view_state_.ren_res[1];
-        frame_textures.depth_desc.format = Ren::eTexFormat::D32_S8;
-        // ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::D24_S8 : Ren::eTexFormat::D32_S8;
-        frame_textures.depth_desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        frame_textures.depth_desc.format = Ren::eFormat::D32_S8;
+        // ctx_.capabilities.depth24_stencil8_format ? Ren::eFormat::D24_S8 : Ren::eFormat::D32_S8;
+        frame_textures.depth_desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
         // Main HDR color
         frame_textures.color_desc.w = view_state_.ren_res[0];
         frame_textures.color_desc.h = view_state_.ren_res[1];
-        frame_textures.color_desc.format = Ren::eTexFormat::RGBA16F;
-        frame_textures.color_desc.sampling.filter = Ren::eTexFilter::Bilinear;
-        frame_textures.color_desc.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+        frame_textures.color_desc.format = Ren::eFormat::RGBA16F;
+        frame_textures.color_desc.sampling.filter = Ren::eFilter::Bilinear;
+        frame_textures.color_desc.sampling.wrap = Ren::eWrap::ClampToBorder;
 
         if (deferred_shading) {
             // 4-component world-space normal (alpha or z is roughness)
             frame_textures.normal_desc.w = view_state_.ren_res[0];
             frame_textures.normal_desc.h = view_state_.ren_res[1];
-            frame_textures.normal_desc.format = Ren::eTexFormat::R32UI;
-            frame_textures.normal_desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            frame_textures.normal_desc.format = Ren::eFormat::R32UI;
+            frame_textures.normal_desc.sampling.wrap = Ren::eWrap::ClampToEdge;
             // packed material params
             frame_textures.specular_desc.w = view_state_.ren_res[0];
             frame_textures.specular_desc.h = view_state_.ren_res[1];
-            frame_textures.specular_desc.format = Ren::eTexFormat::R32UI;
+            frame_textures.specular_desc.format = Ren::eFormat::R32UI;
             frame_textures.specular_desc.flags = {};
-            frame_textures.specular_desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            frame_textures.specular_desc.sampling.wrap = Ren::eWrap::ClampToEdge;
         } else {
             // 4-component world-space normal (alpha or z is roughness)
             frame_textures.normal_desc.w = view_state_.ren_res[0];
             frame_textures.normal_desc.h = view_state_.ren_res[1];
 #if USE_OCT_PACKED_NORMALS == 1
-            frame_textures.normal_desc.format = Ren::eTexFormat::RGB10_A2;
+            frame_textures.normal_desc.format = Ren::eFormat::RGB10_A2;
 #else
-            frame_textures.normal_desc.format = Ren::eTexFormat::RGBA8;
+            frame_textures.normal_desc.format = Ren::eFormat::RGBA8;
 #endif
-            frame_textures.normal_desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            frame_textures.normal_desc.sampling.wrap = Ren::eWrap::ClampToEdge;
             // 4-component specular (alpha is roughness)
             frame_textures.specular_desc.w = view_state_.ren_res[0];
             frame_textures.specular_desc.h = view_state_.ren_res[1];
-            frame_textures.specular_desc.format = Ren::eTexFormat::RGBA8;
-            frame_textures.specular_desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            frame_textures.specular_desc.format = Ren::eFormat::RGBA8;
+            frame_textures.specular_desc.sampling.wrap = Ren::eWrap::ClampToEdge;
         }
 
         // 4-component albedo (alpha is unused)
         frame_textures.albedo_desc.w = view_state_.ren_res[0];
         frame_textures.albedo_desc.h = view_state_.ren_res[1];
-        frame_textures.albedo_desc.format = Ren::eTexFormat::RGBA8;
-        frame_textures.albedo_desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        frame_textures.albedo_desc.format = Ren::eFormat::RGBA8;
+        frame_textures.albedo_desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
         //
         // Depth prepass
@@ -1230,12 +1230,12 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             frame_textures.depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
 
-            { // Texture that holds 3D motion vectors
+            { // Image that holds 3D motion vectors
                 FgImgDesc desc;
                 desc.w = view_state_.ren_res[0];
                 desc.h = view_state_.ren_res[1];
-                desc.format = Ren::eTexFormat::RGBA16F;
-                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                desc.format = Ren::eFormat::RGBA16F;
+                desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
                 frame_textures.velocity = depth_fill.AddColorOutput(MAIN_VELOCITY_TEX, desc);
             }
@@ -1269,10 +1269,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                          ExDepthHierarchy::TileSize;
                 desc.h = ((view_state_.ren_res[1] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
                          ExDepthHierarchy::TileSize;
-                desc.format = Ren::eTexFormat::R32F;
+                desc.format = Ren::eFormat::R32F;
                 desc.mip_count = ExDepthHierarchy::MipCount;
-                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-                desc.sampling.filter = Ren::eTexFilter::Nearest;
+                desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+                desc.sampling.filter = Ren::eFilter::Nearest;
 
                 // Add view for each mip level
                 for (int i = 0; i < desc.mip_count; ++i) {
@@ -1312,7 +1312,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 frame_textures.sun_shadow =
                     AddLQSunShadowsPass(common_buffers, persistent_data, acc_struct_data, bindless_tex, frame_textures);
             } else {
-                frame_textures.sun_shadow = fg_builder_.MakeTextureResource(dummy_white_);
+                frame_textures.sun_shadow = fg_builder_.ImportResource(dummy_white_);
             }
 
             // GI cache
@@ -1341,7 +1341,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             if (use_ssao) {
                 AddSSAOPasses(depth_down_2x, frame_textures.depth, frame_textures.ssao);
             } else {
-                frame_textures.ssao = fg_builder_.MakeTextureResource(dummy_white_);
+                frame_textures.ssao = fg_builder_.ImportResource(dummy_white_);
             }
 
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
@@ -1619,9 +1619,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 FgImgDesc desc;
                 desc.w = view_state_.out_res[0];
                 desc.h = view_state_.out_res[1];
-                desc.format = Ren::eTexFormat::RGB8;
-                desc.sampling.filter = Ren::eTexFilter::Bilinear;
-                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                desc.format = Ren::eFormat::RGB8;
+                desc.sampling.filter = Ren::eFilter::Bilinear;
+                desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
                 ex_postprocess_args_.output_tex = postprocess.AddColorOutput(output_tex, desc);
             } else if (target) {
@@ -1716,8 +1716,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     __itt_task_end(__g_itt_domain);
 }
 
-void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, Ren::Span<const uint8_t> data) {
-    assert(format == Ren::eTexFormat::RGB10_A2);
+void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eFormat format, Ren::Span<const uint8_t> data) {
+    assert(format == Ren::eFormat::RGB10_A2);
 
     if (data.empty()) {
         // free texture;
@@ -1725,15 +1725,15 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
     }
 
     if (!tonemap_lut_) {
-        Ren::TexParams params = {};
+        Ren::ImgParams params = {};
         params.w = params.h = params.d = res;
-        params.usage = Ren::Bitmask(Ren::eTexUsage::Sampled) | Ren::eTexUsage::Transfer;
-        params.format = Ren::eTexFormat::RGB10_A2;
-        params.sampling.filter = Ren::eTexFilter::Bilinear;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        params.usage = Ren::Bitmask(Ren::eImgUsage::Sampled) | Ren::eImgUsage::Transfer;
+        params.format = Ren::eFormat::RGB10_A2;
+        params.sampling.filter = Ren::eFilter::Bilinear;
+        params.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-        Ren::eTexLoadStatus status;
-        tonemap_lut_ = ctx_.LoadTexture("Tonemap LUT", params, ctx_.default_mem_allocs(), &status);
+        Ren::eImgLoadStatus status;
+        tonemap_lut_ = ctx_.LoadImage("Tonemap LUT", params, ctx_.default_mem_allocs(), &status);
     }
 
     Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
@@ -1751,7 +1751,7 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
                                                         {tonemap_lut_.get(), Ren::eResState::CopyDst}};
         TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions1);
 
-        tonemap_lut_->SetSubImage(0, 0, 0, res, res, res, Ren::eTexFormat::RGB10_A2, temp_upload_buf, cmd_buf, 0,
+        tonemap_lut_->SetSubImage(0, 0, 0, res, res, res, Ren::eFormat::RGB10_A2, temp_upload_buf, cmd_buf, 0,
                                   data_len);
 
         const Ren::TransitionInfo res_transitions2[] = {{tonemap_lut_.get(), Ren::eResState::ShaderResource}};
@@ -1871,10 +1871,10 @@ void Eng::Renderer::InitBackendInfo() {
 
         heap_size = 0; // dummy for the case when memory heaps are not available
 
-        const auto &fg_textures = fg_builder_.textures();
+        const auto &fg_images = fg_builder_.images();
         indices.clear();
-        indices.resize(fg_textures.capacity(), -1);
-        for (auto it = fg_textures.cbegin(); it != fg_textures.cend(); ++it) {
+        indices.resize(fg_images.capacity(), -1);
+        for (auto it = fg_images.cbegin(); it != fg_images.cend(); ++it) {
             if (it->external || !it->strong_ref || it->alias_of != -1) {
                 continue;
             }
@@ -1897,7 +1897,7 @@ void Eng::Renderer::InitBackendInfo() {
 
             indices[it.index()] = int(backend_info_.resources_info.size() - 1);
         }
-        for (auto it = fg_textures.cbegin(); it != fg_textures.cend(); ++it) {
+        for (auto it = fg_images.cbegin(); it != fg_images.cend(); ++it) {
             if (it->external || !it->strong_ref || it->alias_of == -1) {
                 continue;
             }
@@ -1972,8 +1972,8 @@ void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const R
 }
 
 void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const int h, const int stride,
-                                      const Ren::eTexFormat format, const float gamma, const float min_exposure,
-                                      const float max_exposure, const Ren::TexRef &target, const bool compressed,
+                                      const Ren::eFormat format, const float gamma, const float min_exposure,
+                                      const float max_exposure, const Ren::ImgRef &target, const bool compressed,
                                       const bool blit_to_backbuffer) {
     const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
@@ -2002,7 +2002,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
     cached_settings_ = settings;
     cached_rp_index_ = 1;
 
-    assert(format == Ren::eTexFormat::RGBA32F);
+    assert(format == Ren::eFormat::RGBA32F);
 
     Ren::BufRef temp_upload_buf = ctx_.LoadBuffer("Image upload buf", Ren::eBufType::Upload, 4 * w * h * sizeof(float));
     uint8_t *stage_data = temp_upload_buf->Map();
@@ -2033,19 +2033,19 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
                 desc.w = cur_scr_w;
                 desc.h = cur_scr_h;
                 desc.format = format;
-                desc.sampling.filter = Ren::eTexFilter::Bilinear;
-                desc.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                desc.sampling.filter = Ren::eFilter::Bilinear;
+                desc.sampling.wrap = Ren::eWrap::ClampToEdge;
                 output_tex_res = update_image.AddTransferImageOutput("Temp Image", desc);
             }
 
             update_image.set_execute_cb([stage_buf_res, output_tex_res](FgContext &fg) {
                 const Ren::Buffer &stage_buf = fg.AccessROBuffer(stage_buf_res);
-                Ren::Texture &output_image = fg.AccessRWTexture(output_tex_res);
+                Ren::Image &output_image = fg.AccessRWImage(output_tex_res);
 
                 const int w = output_image.params.w;
                 const int h = output_image.params.h;
 
-                output_image.SetSubImage(0, 0, w, h, Ren::eTexFormat::RGBA32F, stage_buf, fg.cmd_buf(), 0,
+                output_image.SetSubImage(0, 0, w, h, Ren::eFormat::RGBA32F, stage_buf, fg.cmd_buf(), 0,
                                          stage_buf.size());
             });
         }
@@ -2131,9 +2131,9 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
     fg_builder_.Execute();
 }
 
-void Eng::Renderer::BlitImageTonemap(const Ren::TexRef &result, const int w, const int h, Ren::eTexFormat format,
+void Eng::Renderer::BlitImageTonemap(const Ren::ImgRef &result, const int w, const int h, Ren::eFormat format,
                                      const float gamma, const float min_exposure, const float max_exposure,
-                                     const Ren::TexRef &target, const bool compressed, const bool blit_to_backbuffer) {
+                                     const Ren::ImgRef &target, const bool compressed, const bool blit_to_backbuffer) {
     const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
 
@@ -2161,7 +2161,7 @@ void Eng::Renderer::BlitImageTonemap(const Ren::TexRef &result, const int w, con
     cached_settings_ = settings;
     cached_rp_index_ = 1;
 
-    assert(format == Ren::eTexFormat::RGBA32F);
+    assert(format == Ren::eFormat::RGBA32F);
 
     if (rebuild_renderpasses) {
         const uint64_t rp_setup_beg_us = Sys::GetTimeUs();
@@ -2169,7 +2169,7 @@ void Eng::Renderer::BlitImageTonemap(const Ren::TexRef &result, const int w, con
         fg_builder_.Reset();
         backbuffer_sources_.clear();
 
-        FgResRef output_tex_res = fg_builder_.MakeTextureResource(result);
+        FgResRef output_tex_res = fg_builder_.ImportResource(result);
         FgResRef exposure_tex = AddAutoexposurePasses(output_tex_res, Ren::Vec2f{1.0f, 1.0f});
 
         if (settings.enable_sharpen) {

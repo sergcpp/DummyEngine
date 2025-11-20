@@ -49,8 +49,8 @@ struct EnvironmentWeak {
     float wind_turbulence = 0.0f;
     Ren::Vec2f prev_wind_scroll_lf, prev_wind_scroll_hf;
     Ren::Vec2f curr_wind_scroll_lf, curr_wind_scroll_hf;
-    Ren::WeakTexRef env_map;
-    Ren::WeakTexRef lm_direct, lm_indir, lm_indir_sh[4];
+    Ren::WeakImgRef env_map;
+    Ren::WeakImgRef lm_direct, lm_indir, lm_indir_sh[4];
     float sun_shadow_bias[2] = {4.0f, 8.0f};
     uint32_t generation = 0xffffffff;
 
@@ -146,7 +146,7 @@ struct DrawList {
     std::vector<TexEntry> desired_textures;
 
     const Ren::MaterialStorage *materials = nullptr;
-    const Ren::TextureAtlas *decals_atlas = nullptr;
+    const Ren::ImageAtlas *decals_atlas = nullptr;
 
     DynArray<ShadReg> cached_shadow_regions;
 

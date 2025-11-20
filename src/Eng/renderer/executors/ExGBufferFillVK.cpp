@@ -31,8 +31,8 @@ void Eng::ExGBufferFill::DrawOpaque(FgContext &fg) {
     const Ren::Buffer &items_buf = fg.AccessROBuffer(items_buf_);
     const Ren::Buffer &decals_buf = fg.AccessROBuffer(decals_buf_);
 
-    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
-    const Ren::Texture &dummy_black = fg.AccessROTexture(dummy_black_);
+    const Ren::Image &noise_tex = fg.AccessROImage(noise_tex_);
+    const Ren::Image &dummy_black = fg.AccessROImage(dummy_black_);
 
     VkDescriptorSet descr_sets[2];
 

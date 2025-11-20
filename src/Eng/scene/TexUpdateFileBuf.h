@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Ren/Texture.h>
+#include <Ren/Image.h>
 #include <Sys/AsyncFileReader.h>
 
 #if defined(REN_VK_BACKEND)

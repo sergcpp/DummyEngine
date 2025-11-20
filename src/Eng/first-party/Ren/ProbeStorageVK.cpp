@@ -14,7 +14,7 @@ Ren::ProbeStorage::ProbeStorage() = default;
 
 Ren::ProbeStorage::~ProbeStorage() { Destroy(); }
 
-bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, const eTexFormat format,
+bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, const eFormat format,
                                const int resolution, const int capacity, ILog *log) {
     const int mip_count = CalcMipCount(resolution, resolution, 16);
 
@@ -28,7 +28,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
         img_info.extent.depth = 1;
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = uint32_t(capacity) * 6;
-        img_info.format = VKFormatFromTexFormat(format);
+        img_info.format = VKFormatFromFormat(format);
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         img_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -77,7 +77,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
-        view_info.format = VKFormatFromTexFormat(format);
+        view_info.format = VKFormatFromFormat(format);
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         view_info.subresourceRange.baseMipLevel = 0;
         view_info.subresourceRange.levelCount = mip_count;
@@ -241,7 +241,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
     return true;
 }
 
-bool Ren::ProbeStorage::SetPixelData(const int level, const int layer, const int face, const eTexFormat format,
+bool Ren::ProbeStorage::SetPixelData(const int level, const int layer, const int face, const eFormat format,
                                      const uint8_t *data, const int data_len, ILog *log) {
     if (format_ != format) {
         return false;
@@ -347,7 +347,7 @@ bool Ren::ProbeStorage::GetPixelData(const int level, const int layer, const int
 }
 
 void Ren::ProbeStorage::Destroy() {
-    if (format_ != eTexFormat::Undefined) {
+    if (format_ != eFormat::Undefined) {
         for (VkImageView view : handle_.views) {
             if (view) {
                 api_ctx_->image_views_to_destroy[api_ctx_->backend_frame].push_back(view);
@@ -358,7 +358,7 @@ void Ren::ProbeStorage::Destroy() {
         api_ctx_->allocations_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
 
         handle_ = {};
-        format_ = eTexFormat::Undefined;
+        format_ = eFormat::Undefined;
     }
 }
 

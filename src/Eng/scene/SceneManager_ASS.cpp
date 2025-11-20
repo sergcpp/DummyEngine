@@ -26,7 +26,7 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     std::vector<uint8_t> in_file_data(in_file_size);
     in_file.Read((char *)&in_file_data[0], in_file_size);
 
-    Ren::eTexFormat format;
+    Ren::eFormat format;
     int _w, _h;
     std::unique_ptr<uint8_t[]> pixels = Ren::ReadTGAFile(in_file_data, _w, _h, format);
 
@@ -34,7 +34,7 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
         return;
     }
 
-    if (format == Ren::eTexFormat::RGB8) {
+    if (format == Ren::eFormat::RGB8) {
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
@@ -44,7 +44,7 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
                 out_data[i++] = 255;
             }
         }
-    } else if (format == Ren::eTexFormat::RGBA8) {
+    } else if (format == Ren::eFormat::RGBA8) {
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {

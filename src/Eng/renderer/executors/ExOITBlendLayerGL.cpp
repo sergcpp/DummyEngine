@@ -26,19 +26,19 @@ uint32_t _draw_list_range_full_rev(Eng::FgContext &fg, const Ren::MaterialStorag
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                    Eng::backend_info_t &backend_info);
-uint32_t _draw_range_ext2(Eng::FgContext &fg, const Ren::MaterialStorage &materials, const Ren::Texture &white_tex,
+uint32_t _draw_range_ext2(Eng::FgContext &fg, const Ren::MaterialStorage &materials, const Ren::Image &white_tex,
                           Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                           uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
 } // namespace ExSharedInternal
 
-void Eng::ExOITBlendLayer::DrawTransparent(FgContext &fg, const Ren::WeakTexRef &depth_tex) {
+void Eng::ExOITBlendLayer::DrawTransparent(FgContext &fg, const Ren::WeakImgRef &depth_tex) {
     using namespace ExSharedInternal;
 
-    const Ren::Texture &noise_tex = fg.AccessROTexture(noise_tex_);
-    const Ren::Texture &dummy_white = fg.AccessROTexture(dummy_white_);
-    const Ren::Texture &shadow_map_tex = fg.AccessROTexture(shadow_map_);
-    const Ren::Texture &ltc_luts_tex = fg.AccessROTexture(ltc_luts_tex_);
-    const Ren::Texture &env_tex = fg.AccessROTexture(env_tex_);
+    const Ren::Image &noise_tex = fg.AccessROImage(noise_tex_);
+    const Ren::Image &dummy_white = fg.AccessROImage(dummy_white_);
+    const Ren::Image &shadow_map_tex = fg.AccessROImage(shadow_map_);
+    const Ren::Image &ltc_luts_tex = fg.AccessROImage(ltc_luts_tex_);
+    const Ren::Image &env_tex = fg.AccessROImage(env_tex_);
     const Ren::Buffer &instances_buf = fg.AccessROBuffer(instances_buf_);
     const Ren::Buffer &instance_indices_buf = fg.AccessROBuffer(instance_indices_buf_);
     const Ren::Buffer &unif_shared_data_buf = fg.AccessROBuffer(shared_data_buf_);
@@ -49,19 +49,19 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgContext &fg, const Ren::WeakTexRef 
     const Ren::Buffer &decals_buf = fg.AccessROBuffer(decals_buf_);
     const Ren::Buffer &oit_depth_buf = fg.AccessROBuffer(oit_depth_buf_);
 
-    const Ren::Texture &back_color_tex = fg.AccessROTexture(back_color_tex_);
-    const Ren::Texture &back_depth_tex = fg.AccessROTexture(back_depth_tex_);
+    const Ren::Image &back_color_tex = fg.AccessROImage(back_color_tex_);
+    const Ren::Image &back_depth_tex = fg.AccessROImage(back_depth_tex_);
 
-    const Ren::Texture *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
+    const Ren::Image *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (irradiance_tex_) {
-        irr_tex = &fg.AccessROTexture(irradiance_tex_);
-        dist_tex = &fg.AccessROTexture(distance_tex_);
-        off_tex = &fg.AccessROTexture(offset_tex_);
+        irr_tex = &fg.AccessROImage(irradiance_tex_);
+        dist_tex = &fg.AccessROImage(distance_tex_);
+        off_tex = &fg.AccessROImage(offset_tex_);
     }
 
-    const Ren::Texture *specular_tex = nullptr;
+    const Ren::Image *specular_tex = nullptr;
     if (oit_specular_tex_) {
-        specular_tex = &fg.AccessROTexture(oit_specular_tex_);
+        specular_tex = &fg.AccessROImage(oit_specular_tex_);
     }
 
     if ((*p_list_)->alpha_blend_start_index == -1) {

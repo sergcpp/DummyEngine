@@ -8,17 +8,11 @@ static const std::string_view g_cull_face_names[] = {
 };
 static_assert(std::size(g_cull_face_names) == int(eCullFace::_Count));
 
+#define X(_0, _1, _2) #_0,
 static const std::string_view g_compare_op_names[] = {
-    "Always",  // Always
-    "Never",   // Never
-    "Less",    // Less
-    "Equal",   // Equal
-    "Greater", // Greater
-    "LEqual",  // LEqual
-    "NEqual",  // NEqual
-    "GEqual"   // GEqual
+#include "CompareOp.inl"
 };
-static_assert(std::size(g_compare_op_names) == int(eCompareOp::_Count));
+#undef X
 
 static const std::string_view g_blend_factor_names[] = {
     "Zero",             // Zero
