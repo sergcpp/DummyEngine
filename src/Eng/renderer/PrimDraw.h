@@ -47,11 +47,6 @@ class PrimDraw {
     bool LazyInit(Ren::Context &ctx);
     void CleanUp();
 
-    struct RenderTarget {
-        Ren::Framebuffer *fb;
-        uint32_t clear_bits;
-    };
-
     void DrawPrim(Ren::CommandBuffer cmd_buf, ePrim prim, const Ren::ProgramRef &p, Ren::RenderTarget depth_rt,
                   Ren::Span<const Ren::RenderTarget> color_rts, const Ren::RastState &new_rast_state,
                   Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings, const void *uniform_data,
