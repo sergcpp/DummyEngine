@@ -193,7 +193,7 @@ class Renderer {
     // GI Cache
     Ren::PipelineRef pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[5], pi_probe_sample_;
     // GTAO
-    Ren::PipelineRef pi_gtao_main_[2], pi_gtao_filter_[2], pi_gtao_accumulate_, pi_gtao_upsample_;
+    Ren::PipelineRef pi_gtao_main_[2], pi_gtao_filter_[2], pi_gtao_accumulate_[2];
     // GI
     Ren::PipelineRef pi_gi_classify_, pi_gi_write_indirect_[3], pi_gi_trace_ss_, pi_gi_shade_[7];
     // GI Denoiser stuff

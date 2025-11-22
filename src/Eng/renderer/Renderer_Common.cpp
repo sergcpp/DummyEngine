@@ -91,8 +91,8 @@ void Eng::Renderer::InitPipelines() {
     pi_gtao_main_[1] = sh_.LoadPipeline("internal/gtao_main@HALF_RES.comp.glsl");
     pi_gtao_filter_[0] = sh_.LoadPipeline("internal/gtao_filter.comp.glsl");
     pi_gtao_filter_[1] = sh_.LoadPipeline("internal/gtao_filter@HALF_RES.comp.glsl");
-    pi_gtao_accumulate_ = sh_.LoadPipeline("internal/gtao_accumulate.comp.glsl");
-    pi_gtao_upsample_ = sh_.LoadPipeline("internal/gtao_upsample.comp.glsl");
+    pi_gtao_accumulate_[0] = sh_.LoadPipeline("internal/gtao_accumulate.comp.glsl");
+    pi_gtao_accumulate_[1] = sh_.LoadPipeline("internal/gtao_accumulate@HALF_RES.comp.glsl");
 
     // GI
     pi_gi_classify_ = sh_.LoadPipeline(subgroup_select("internal/gi_classify.comp.glsl", //

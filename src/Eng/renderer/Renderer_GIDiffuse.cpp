@@ -1882,14 +1882,14 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
 
         { // Final ao
             FgImgDesc desc;
-            desc.w = (quality == eSSAOQuality::Ultra) ? view_state_.ren_res[0] : (view_state_.ren_res[0] / 2);
-            desc.h = (quality == eSSAOQuality::Ultra) ? view_state_.ren_res[1] : (view_state_.ren_res[1] / 2);
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
             desc.format = Ren::eFormat::R8;
             desc.sampling.filter = Ren::eFilter::Bilinear;
             desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             gtao_result = data->out_ao_tex =
-                gtao_accumulation.AddStorageImageOutput("GTAO PRE FINAL", desc, Stg::ComputeShader);
+                gtao_accumulation.AddStorageImageOutput("GTAO FINAL", desc, Stg::ComputeShader);
         }
 
         data->ao_hist_tex = gtao_accumulation.AddHistoryTextureInput(gtao_result, Stg::ComputeShader);
@@ -1910,65 +1910,16 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                                              {Trg::TexSampled, GTAO::GTAO_HIST_TEX_SLOT, ao_hist_tex},
                                              {Trg::ImageRW, GTAO::OUT_IMG_SLOT, out_ao_tex}};
 
-            const Ren::Vec2u img_size{quality == eSSAOQuality::Ultra ? uint32_t(view_state_.ren_res[0])
-                                                                     : uint32_t(view_state_.ren_res[0] / 2),
-                                      quality == eSSAOQuality::Ultra ? uint32_t(view_state_.ren_res[1])
-                                                                     : uint32_t(view_state_.ren_res[1] / 2)};
-
-            const Ren::Vec3u grp_count = Ren::Vec3u{(img_size[0] + GTAO::GRP_SIZE_X - 1u) / GTAO::GRP_SIZE_X,
-                                                    (img_size[1] + GTAO::GRP_SIZE_Y - 1u) / GTAO::GRP_SIZE_Y, 1u};
-
-            GTAO::Params uniform_params;
-            uniform_params.img_size = img_size;
-            uniform_params.clip_info = view_state_.clip_info;
-
-            DispatchCompute(*pi_gtao_accumulate_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            fg.descr_alloc(), fg.log());
-        });
-    }
-    if (quality != eSSAOQuality::Ultra) {
-        auto &gtao_upsample = fg_builder_.AddNode("GTAO UPSAMPLE");
-
-        struct PassData {
-            FgResRef depth_tex, ao_tex;
-            FgResRef out_ao_tex;
-        };
-
-        auto *data = gtao_upsample.AllocNodeData<PassData>();
-        data->depth_tex = gtao_upsample.AddTextureInput(depth_tex, Stg::ComputeShader);
-        data->ao_tex = gtao_upsample.AddTextureInput(gtao_result, Stg::ComputeShader);
-
-        { // Final ao
-            FgImgDesc desc;
-            desc.w = view_state_.ren_res[0];
-            desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eFormat::R8;
-            desc.sampling.filter = Ren::eFilter::Bilinear;
-            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
-
-            gtao_result = data->out_ao_tex =
-                gtao_upsample.AddStorageImageOutput("GTAO FINAL", desc, Stg::ComputeShader);
-        }
-
-        gtao_upsample.set_execute_cb([this, data](FgContext &fg) {
-            const Ren::Image &depth_tex = fg.AccessROImage(data->depth_tex);
-            const Ren::Image &ao_tex = fg.AccessROImage(data->ao_tex);
-
-            Ren::Image &out_ao_tex = fg.AccessRWImage(data->out_ao_tex);
-
-            const Ren::Binding bindings[] = {{Trg::TexSampled, GTAO::DEPTH_TEX_SLOT, {depth_tex, 1}},
-                                             {Trg::TexSampled, GTAO::GTAO_TEX_SLOT, ao_tex},
-                                             {Trg::ImageRW, GTAO::OUT_IMG_SLOT, out_ao_tex}};
-
             const Ren::Vec3u grp_count =
                 Ren::Vec3u{(view_state_.ren_res[0] + GTAO::GRP_SIZE_X - 1u) / GTAO::GRP_SIZE_X,
                            (view_state_.ren_res[1] + GTAO::GRP_SIZE_Y - 1u) / GTAO::GRP_SIZE_Y, 1u};
 
             GTAO::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
+            uniform_params.clip_info = view_state_.clip_info;
 
-            DispatchCompute(*pi_gtao_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            fg.descr_alloc(), fg.log());
+            DispatchCompute(*pi_gtao_accumulate_[quality != eSSAOQuality::Ultra], grp_count, bindings, &uniform_params,
+                            sizeof(uniform_params), fg.descr_alloc(), fg.log());
         });
     }
     return gtao_result;

@@ -229,7 +229,7 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/gtao_upsample.comp.glsl" ]
+        "shaders" : [ "internal/gtao_accumulate@HALF_RES.comp.glsl" ]
     },
     {
         "type" : "compute",

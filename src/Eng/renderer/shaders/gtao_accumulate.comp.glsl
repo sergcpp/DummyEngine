@@ -1,9 +1,10 @@
 #version 430 core
-#extension GL_ARB_shading_language_packing : require
 
 #include "_cs_common.glsl"
 #include "taa_common.glsl"
 #include "gtao_interface.h"
+
+#pragma multi_compile _ HALF_RES
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -21,15 +22,50 @@ float GetEdgeStoppingDepthWeight(float current_depth, float history_depth) {
     return exp(-abs(current_depth - history_depth) / current_depth * 32.0);
 }
 
+vec2 FindClosest(const ivec2 dispatch_thread_id, const ivec2 group_thread_id, const vec2 texel_size) {
+    const vec2 uvs = (vec2(dispatch_thread_id) + 0.5) * texel_size;
+    const vec2 _uvs = (vec2(2 * (dispatch_thread_id / 2)) + 0.5) * texel_size;
+    const vec2 _uvs2 = (vec2(2 * (dispatch_thread_id / 2)) + 1.0) * texel_size;
+
+    const float d0 = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
+
+    const float d1 = abs(d0 - textureLodOffset(g_depth_tex, _uvs, 0.0, ivec2(+0, +0)).x);
+    const float d2 = abs(d0 - textureLodOffset(g_depth_tex, _uvs, 0.0, ivec2(+0, +2)).x);
+    const float d3 = abs(d0 - textureLodOffset(g_depth_tex, _uvs, 0.0, ivec2(+2, +0)).x);
+    const float d4 = abs(d0 - textureLodOffset(g_depth_tex, _uvs, 0.0, ivec2(+2, +2)).x);
+
+    const float dmin = min(min(d1, d2), min(d3, d4));
+    const float dmax = max(max(d1, d2), max(d3, d4));
+
+    vec2 ret = uvs + texel_size;
+    if (dmax > 0.0005) {
+        if (dmin == d1) {
+            ret = _uvs2;
+        } else if (dmin == d2) {
+            ret = _uvs2 + 2.0 * vec2(0.0, texel_size.y);
+        } else if (dmin == d3) {
+            ret = _uvs2 + 2.0 * vec2(texel_size.x, 0.0);
+        } else if (dmin == d4) {
+            ret = _uvs2 + 2.0 * vec2(texel_size.x, texel_size.y);
+        }
+    }
+    return ret;
+}
+
 void Accumulate(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     const vec2 texel_size = vec2(1.0) / vec2(screen_size);
-    const vec2 uvs = (vec2(dispatch_thread_id) + 0.5) * texel_size;
+    const vec2 uvs_hi = (vec2(dispatch_thread_id) + 0.5) * texel_size;
+#ifdef HALF_RES
+    const vec2 uvs_lo = FindClosest(dispatch_thread_id, group_thread_id, texel_size);
+#else
+    const vec2 uvs_lo = uvs_hi;
+#endif
 
-    const float depth_curr = LinearizeDepth(textureLod(g_depth_tex, uvs, 0.0).x, g_params.clip_info);
-    const vec2 vel = textureLod(g_velocity_tex, uvs, 0.0).xy * texel_size;
-    const float ao_curr = textureLod(g_gtao_tex, uvs, 0.0).x;
+    const float depth_curr = LinearizeDepth(textureLod(g_depth_tex, uvs_hi, 0.0).x, g_params.clip_info);
+    const vec2 vel = textureLod(g_velocity_tex, uvs_hi, 0.0).xy * texel_size;
+    const float ao_curr = textureLod(g_gtao_tex, uvs_lo, 0.0).x;
 
-    vec2 hist_uvs = uvs - vel;
+    const vec2 hist_uvs = uvs_hi - vel;
     float ao_hist = ao_curr, depth_hist = depth_curr;
     if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
         ao_hist = textureLod(g_gtao_hist_tex, hist_uvs, 0.0).x;
@@ -37,15 +73,15 @@ void Accumulate(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_si
     }
 
     { // neighbourhood clamp
-        const float ao_tl = textureLodOffset(g_gtao_tex, uvs, 0.0, ivec2(-1, -1)).x;
-        const float ao_tc = textureLodOffset(g_gtao_tex, uvs, 0.0, ivec2( 0, -1)).x;
-        const float ao_tr = textureLodOffset(g_gtao_tex, uvs, 0.0, ivec2( 1, -1)).x;
-        const float ao_ml = textureLodOffset(g_gtao_tex, uvs, 0.0, ivec2(-1,  0)).x;
+        const float ao_tl = textureLodOffset(g_gtao_tex, uvs_lo, 0.0, ivec2(-1, -1)).x;
+        const float ao_tc = textureLodOffset(g_gtao_tex, uvs_lo, 0.0, ivec2( 0, -1)).x;
+        const float ao_tr = textureLodOffset(g_gtao_tex, uvs_lo, 0.0, ivec2( 1, -1)).x;
+        const float ao_ml = textureLodOffset(g_gtao_tex, uvs_lo, 0.0, ivec2(-1,  0)).x;
         const float ao_mc = ao_curr;
-        const float ao_mr = textureLodOffset(g_gtao_tex, uvs, 0.0, ivec2( 1,  0)).x;
-        const float ao_bl = textureLodOffset(g_gtao_tex, uvs, 0.0, ivec2(-1,  1)).x;
-        const float ao_bc = textureLodOffset(g_gtao_tex, uvs, 0.0, ivec2( 0,  1)).x;
-        const float ao_br = textureLodOffset(g_gtao_tex, uvs, 0.0, ivec2( 1,  1)).x;
+        const float ao_mr = textureLodOffset(g_gtao_tex, uvs_lo, 0.0, ivec2( 1,  0)).x;
+        const float ao_bl = textureLodOffset(g_gtao_tex, uvs_lo, 0.0, ivec2(-1,  1)).x;
+        const float ao_bc = textureLodOffset(g_gtao_tex, uvs_lo, 0.0, ivec2( 0,  1)).x;
+        const float ao_br = textureLodOffset(g_gtao_tex, uvs_lo, 0.0, ivec2( 1,  1)).x;
 
         const float ao_min = min3(min3(ao_tl, ao_tc, ao_tr),
                                   min3(ao_ml, ao_mc, ao_mr),

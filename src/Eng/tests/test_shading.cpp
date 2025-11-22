@@ -42,7 +42,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "complex_mat2_emissive", 18.35, Full);
     run_image_test(threads, "complex_mat2_emissive", 17.35, Full_Ultra);
     run_image_test(threads, "complex_mat2_dyn",
-                   std::vector<double>{24.70, 24.65, 24.50, 24.35, 24.30, 24.15, 24.05, 24.00, 23.85, 23.65, //
+                   std::vector<double>{24.70, 24.65, 24.50, 24.35, 24.30, 24.15, 24.05, 24.00, 23.85, 23.60, //
                                        23.50, 23.45, 23.30, 23.15, 22.95, 22.95, 22.95, 23.15, 23.05, 23.15,
                                        23.15, 23.40, 23.40, 23.55, 23.50, 23.60, 23.85, 24.20, 24.50, 24.55,
                                        24.50, 24.45, 24.70},
