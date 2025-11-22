@@ -335,10 +335,18 @@ bool Ren::ApiContext::InitVkInstance(const char *enabled_layers[], const int ena
 
     { // Find required extensions
         uint32_t ext_count = 0;
-        vkEnumerateInstanceExtensionProperties(nullptr, &ext_count, nullptr);
+        VkResult res = vkEnumerateInstanceExtensionProperties(nullptr, &ext_count, nullptr);
+        if (res != VK_SUCCESS) {
+            log->Error("Failed to retrieve available extensions");
+            return false;
+        }
 
         SmallVector<VkExtensionProperties, 16> extensions_available(ext_count);
-        vkEnumerateInstanceExtensionProperties(nullptr, &ext_count, &extensions_available[0]);
+        res = vkEnumerateInstanceExtensionProperties(nullptr, &ext_count, &extensions_available[0]);
+        if (res != VK_SUCCESS) {
+            log->Error("Failed to retrieve available extensions");
+            return false;
+        }
 
         uint32_t found_required_extensions = 0;
         for (uint32_t i = 0; i < ext_count; i++) {
