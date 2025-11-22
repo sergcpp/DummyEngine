@@ -118,23 +118,23 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
 
     group_thread_id += 4; // Center threads in shared memory
 
-    f16vec4 center_radiance = LoadFromSharedMemory(group_thread_id);
+    const f16vec4 center_radiance = LoadFromSharedMemory(group_thread_id);
     f16vec4 new_signal = center_radiance;
     float16_t new_variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
 
     if (center_radiance.w > 0.0) {
-        const float16_t sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
+        const float16_t sample_count = (texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x * MAX_DIFFUSE_SAMPLES);
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
         const vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).xyz;
         const vec3 fallback_radiance = texelFetch(g_fallback_tex, dispatch_thread_id, 0).xyz;
 
-        f16vec4 old_signal = texelFetch(g_reproj_gi_tex, dispatch_thread_id, 0);
+        const f16vec4 old_signal = texelFetch(g_reproj_gi_tex, dispatch_thread_id, 0);
         moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
         // Clip history based on the current local statistics
-        f16vec3 color_std = (sqrt(local_neighborhood.variance) + length(local_neighborhood.mean.xyz - fallback_radiance)) * history_clip_weight * 1.4;
+        const f16vec3 color_std = (sqrt(local_neighborhood.variance) + length(local_neighborhood.mean.xyz - fallback_radiance)) * history_clip_weight * 1.4;
         local_neighborhood.mean.xyz = mix(local_neighborhood.mean.xyz, fallback_radiance, 0.2);
-        f16vec3 radiance_min = local_neighborhood.mean.xyz - color_std;
-        f16vec3 radiance_max = local_neighborhood.mean.xyz + color_std;
+        const f16vec3 radiance_min = local_neighborhood.mean.xyz - color_std;
+        const f16vec3 radiance_max = local_neighborhood.mean.xyz + color_std;
         f16vec4 clipped_old_signal;
         clipped_old_signal.xyz = ClipAABB(radiance_min, radiance_max, old_signal.xyz);
         clipped_old_signal.a = old_signal.a;

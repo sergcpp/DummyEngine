@@ -155,4 +155,6 @@ const vec3 g_Poisson16[16] =
     vec3(+0.3776688, -0.7620423, +0.8504953)
 };
 
+const int MAX_DIFFUSE_SAMPLES = 32;
+
 #endif // GI_COMMON_GLSL

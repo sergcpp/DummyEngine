@@ -1030,7 +1030,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakImgRef &env_map, const Ren::
             FgImgDesc desc;
             desc.w = view_state_.ren_res[0];
             desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eFormat::R16F;
+            desc.format = Ren::eFormat::R8;
             desc.sampling.filter = Ren::eFilter::Bilinear;
             desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 

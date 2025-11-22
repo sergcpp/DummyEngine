@@ -216,7 +216,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     const vec3 center_normal_vs = normalize((g_shrd_data.view_from_world * vec4(center_normal_ws, 0.0)).xyz);
     const vec3 center_point_vs = ReconstructViewPosition_YFlip(pix_uv, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
 
-    const float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
+    const float sample_count = (texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x * MAX_DIFFUSE_SAMPLES);
     const float accumulation_speed = 1.0 / max(sample_count, 1.0);
 
     const float PlaneDistSensitivity = 0.005;

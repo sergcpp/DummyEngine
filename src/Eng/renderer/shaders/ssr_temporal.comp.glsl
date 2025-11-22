@@ -153,7 +153,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
     float16_t new_variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
 
     if (center_radiance.w > 0.0 && IsGlossyReflection(roughness) && !IsMirrorReflection(roughness)) {
-        float16_t sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
+        float16_t sample_count = (texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x * MAX_SPECULAR_SAMPLES);
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
         f16vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).xyz;
 

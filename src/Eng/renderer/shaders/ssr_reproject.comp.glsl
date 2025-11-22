@@ -39,7 +39,7 @@ layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
 layout(binding = OUT_REPROJECTED_IMG_SLOT, rgba16f) uniform image2D g_out_reprojected_img;
 layout(binding = OUT_AVG_REFL_IMG_SLOT, rgba16f) uniform image2D g_out_avg_refl_img;
 layout(binding = OUT_VARIANCE_IMG_SLOT, r16f) uniform image2D g_out_variance_img;
-layout(binding = OUT_SAMPLE_COUNT_IMG_SLOT, r16f) uniform image2D g_out_sample_count_img;
+layout(binding = OUT_SAMPLE_COUNT_IMG_SLOT, r8) uniform image2D g_out_sample_count_img;
 
 shared uint g_shared_storage_0[16][16];
 shared uint g_shared_storage_1[16][16];
@@ -316,7 +316,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     }
 }
 
-void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_size, int max_samples) {
+void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_size) {
     LoadIntoSharedMemory(ivec2(dispatch_thread_id), ivec2(group_thread_id), ivec2(screen_size));
 
     groupMemoryBarrier();
@@ -344,26 +344,26 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
         if (all(greaterThan(reprojection_uv, vec2(0.0))) && all(lessThan(reprojection_uv, vec2(1.0)))) {
             const float16_t prev_variance = textureLod(g_variance_hist_tex, reprojection_uv, 0.0).x;
-            float16_t sample_count = textureLod(g_sample_count_hist_tex, reprojection_uv, 0.0).x * disocclusion_factor;
-            float16_t s_max_samples = max(8.0, max_samples * SAMPLES_FOR_ROUGHNESS(roughness));
+            float16_t sample_count = (textureLod(g_sample_count_hist_tex, reprojection_uv, 0.0).x * MAX_SPECULAR_SAMPLES) * disocclusion_factor;
+            float16_t s_max_samples = max(8.0, MAX_SPECULAR_SAMPLES * SAMPLES_FOR_ROUGHNESS(roughness));
             sample_count = min(s_max_samples, sample_count + 1);
             float16_t new_variance = ComputeTemporalVariance(refl.xyz, reprojection.xyz);
             if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
                 imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0));
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(1.0));
-                imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(1.0));
+                imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(1.0 / MAX_SPECULAR_SAMPLES));
             } else {
                 const float16_t variance_mix = mix(new_variance, prev_variance, 1.0 / sample_count);
                 imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), reprojection);
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(variance_mix));
-                imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(sample_count));
+                imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(sample_count / MAX_SPECULAR_SAMPLES));
                 // Mix in reprojection for radiance mip computation
                 refl = mix(refl, reprojection, 0.3);
             }
         } else {
             imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0));
             imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(1.0));
-            imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(1.0));
+            imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(1.0 / MAX_SPECULAR_SAMPLES));
         }
     } else {
         imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0));
@@ -425,5 +425,5 @@ void main() {
     const uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
     const uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
 
-    Reproject(remapped_dispatch_thread_id, remapped_group_thread_id, g_params.img_size, 32);
+    Reproject(remapped_dispatch_thread_id, remapped_group_thread_id, g_params.img_size);
 }

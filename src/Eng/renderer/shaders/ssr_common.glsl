@@ -6,6 +6,8 @@ const float RoughnessSigmaMax = 0.01;
 
 const float SpecularLobeTrim = 0.95;
 
+const int MAX_SPECULAR_SAMPLES = 32;
+
 bool IsSpecularSurface(sampler2D depth_tex, usampler2D specular_tex, ivec2 px_coords) {
     const float depth = texelFetch(depth_tex, px_coords, 0).x;
     if (depth > 0.0) {

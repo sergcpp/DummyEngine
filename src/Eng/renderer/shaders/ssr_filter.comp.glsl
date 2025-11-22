@@ -236,8 +236,8 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     const vec3 center_point_vs = ReconstructViewPosition_YFlip(pix_uv, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
     const vec3 view_dir_vs = -normalize(center_point_vs);
 
-    float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
-    float variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
+    const float sample_count = (texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x * MAX_SPECULAR_SAMPLES);
+    const float variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
     /* fp16 */ vec4 sum = sanitize(texelFetch(g_refl_tex, dispatch_thread_id, 0));
     /* fp16 */ vec2 total_weight = vec2(1.0);
     float hit_dist = sum.w * GetHitDistanceNormalization(center_depth_lin, center_roughness);
@@ -251,7 +251,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     float minBlurRadius = lobeRadius / PixelRadiusToWorld(g_shrd_data.taa_info.w, 0.0 /* is_ortho */, 1.0, center_depth_lin  + hit_dist * D.w);
 
     float hit_dist_factor = hit_dist / (hit_dist + center_depth_lin);
-    float hitDistFactorRelaxedByError = mix( hit_dist_factor, 1.0, variance );
+    float hitDistFactorRelaxedByError = mix(hit_dist_factor, 1.0, variance);
     float hitDistFactorAdditionallyRelaxedByRoughness = mix(1.0, hitDistFactorRelaxedByError, center_roughness);
 
     float boost = 0.0;//1.0 - GetFadeBasedOnAccumulatedFrames(sample_count);
