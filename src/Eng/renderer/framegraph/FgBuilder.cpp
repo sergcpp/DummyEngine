@@ -1518,6 +1518,8 @@ void Eng::FgBuilder::Execute() {
     // Write timestamp at the beginning of execution
     const int query_beg = ctx_.WriteTimestamp(true);
 
+    const bool DetailedTimestamps = (ctx_.validation_level() > 0);
+
     for (FgNode *cur_node : reordered_nodes_) {
         OPTICK_GPU_EVENT("Execute Node");
         OPTICK_TAG("Node Name", cur_node->name().data());
@@ -1531,13 +1533,17 @@ void Eng::FgBuilder::Execute() {
         // Start timestamp
         node_timing_t &node_interval = node_timings_[ctx_.backend_frame()].emplace_back();
         node_interval.name = cur_node->name();
-        node_interval.query_beg = ctx_.WriteTimestamp(true);
+        if (DetailedTimestamps) {
+            node_interval.query_beg = ctx_.WriteTimestamp(true);
+        }
 
         InsertResourceTransitions(*cur_node);
         cur_node->Execute(*this);
 
         // End timestamp
-        node_interval.query_end = ctx_.WriteTimestamp(false);
+        if (DetailedTimestamps) {
+            node_interval.query_end = ctx_.WriteTimestamp(false);
+        }
     }
 
     // Write timestamp at the end of execution

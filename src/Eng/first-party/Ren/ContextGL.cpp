@@ -53,6 +53,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
 
     w_ = w;
     h_ = h;
+    validation_level_ = validation_level;
     log_ = log;
 
     api_ctx_ = std::make_unique<ApiContext>();

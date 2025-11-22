@@ -263,7 +263,7 @@ class FgBuilder : public FgContext {
 
     struct node_timing_t {
         std::string_view name;
-        int query_beg, query_end;
+        int query_beg = -1, query_end = -1;
     };
 
     Ren::SmallVector<node_timing_t, 256> node_timings_[Ren::MaxFramesInFlight];

@@ -61,6 +61,7 @@ struct StageBufs {
 class Context {
   protected:
     int w_ = 0, h_ = 0;
+    int validation_level_ = 0;
     ILog *log_ = nullptr;
 
     MeshStorage meshes_;
@@ -105,6 +106,7 @@ class Context {
 
     int w() const { return w_; }
     int h() const { return h_; }
+    int validation_level() const { return validation_level_; }
 
 #if defined(REN_VK_BACKEND) || defined(REN_GL_BACKEND)
     ApiContext *api_ctx() { return api_ctx_.get(); }

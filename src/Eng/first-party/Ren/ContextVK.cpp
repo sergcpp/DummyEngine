@@ -166,6 +166,8 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
         return false;
     }
 
+    validation_level_ = validation_level;
+
     if (validation_level) { // Sebug debug report callback
         VkDebugReportCallbackCreateInfoEXT callback_create_info = {VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT};
         callback_create_info.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT |
