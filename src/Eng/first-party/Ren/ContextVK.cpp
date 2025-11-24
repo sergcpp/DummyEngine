@@ -326,6 +326,10 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
 }
 
 void Ren::Context::Resize(const int w, const int h) {
+    if (w_ == w && h_ == h) {
+        return;
+    }
+
     w_ = w;
     h_ = h;
 
@@ -339,11 +343,11 @@ void Ren::Context::Resize(const int w, const int h) {
 
     api_ctx_->vkDestroySwapchainKHR(api_ctx_->device, api_ctx_->swapchain, nullptr);
 
-    if (!api_ctx_->InitSwapChain(w, h, log_)) {
+    if (api_ctx_->present_family_index != 0xffffffff && !api_ctx_->InitSwapChain(w, h, log_)) {
         log_->Error("Swapchain initialization failed");
     }
 
-    if (!api_ctx_->InitPresentImageViews(log_)) {
+    if (api_ctx_->present_family_index != 0xffffffff && !api_ctx_->InitPresentImageViews(log_)) {
         log_->Error("Image views initialization failed");
     }
 
