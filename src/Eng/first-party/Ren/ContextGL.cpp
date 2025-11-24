@@ -258,6 +258,8 @@ void Ren::Context::WaitIdle() {
     glFinish();
 }
 
+void Ren::Context::ResetAllocators() {}
+
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif

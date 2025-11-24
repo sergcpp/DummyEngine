@@ -5,16 +5,6 @@
 #include "DescriptorPool.h"
 #include "VKCtx.h"
 
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <Windows.h>
-#endif
-
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4996)
@@ -492,6 +482,13 @@ uint64_t Ren::Context::GetTimestampIntervalDurationUs(const int query_beg, const
 
 void Ren::Context::WaitIdle() { api_ctx_->vkDeviceWaitIdle(api_ctx_->device); }
 
+void Ren::Context::ResetAllocators() {
+    default_mem_allocs_ = {};
+    default_mem_allocs_ =
+        std::make_unique<MemAllocators>("Default Allocs", api_ctx_.get(), 1 * 1024 * 1024 /* initial_block_size */,
+                                        1.5f /* growth_factor */, 128 * 1024 * 1024 /* max_pool_size */);
+}
+
 uint64_t Ren::Context::device_id() const {
     return (uint64_t(api_ctx_->device_properties.vendorID) << 32) | api_ctx_->device_properties.deviceID;
 }
@@ -521,9 +518,18 @@ bool Ren::Context::InitPipelineCache(Ren::Span<const uint8_t> data) {
         }
     }
 
+    DestroyPipelineCache();
+
     const VkResult res =
         api_ctx_->vkCreatePipelineCache(api_ctx_->device, &cache_create_info, nullptr, &api_ctx_->pipeline_cache);
     return res == VK_SUCCESS;
+}
+
+void Ren::Context::DestroyPipelineCache() {
+    if (api_ctx_->pipeline_cache) {
+        api_ctx_->vkDestroyPipelineCache(api_ctx_->device, api_ctx_->pipeline_cache, nullptr);
+        api_ctx_->pipeline_cache = {};
+    }
 }
 
 size_t Ren::Context::WritePipelineCache(Span<uint8_t> out_data) {

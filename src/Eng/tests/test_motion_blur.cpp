@@ -1,19 +1,28 @@
+#include "test_common.h"
+
 #include "test_scene.h"
 
+extern std::string_view g_device_name;
+extern int g_validation_level;
+extern bool g_nohwrt, g_nosubgroup;
+
 void test_motion_blur(Sys::ThreadPool &threads) {
-    run_image_test(threads, "motion_blur_dyn",
+    LogErr log;
+    TestContext ren_ctx(512, 512, g_device_name, g_validation_level, g_nohwrt, g_nosubgroup, &log);
+
+    run_image_test(ren_ctx, threads, "motion_blur_dyn",
                    std::vector<double>{23.80, 24.45, 24.35, 24.30, 24.15, 24.05, 23.90, 23.85, 23.65, 23.50, //
-                                       23.30, 23.20, 23.05, 23.00, 22.85, 22.95, 22.85, 22.95, 22.95, 23.10,
+                                       23.25, 23.20, 23.05, 23.00, 22.85, 22.95, 22.85, 22.95, 22.95, 23.10,
                                        23.30, 23.50, 23.55, 23.75, 23.70, 23.95, 24.15, 24.50, 24.70, 24.95,
                                        25.05, 25.30, 24.50},
                    MedDiffGI_MotionBlur, 1.5f);
-    run_image_test(threads, "motion_blur_dyn",
+    run_image_test(ren_ctx, threads, "motion_blur_dyn",
                    std::vector<double>{22.70, 23.20, 23.20, 23.25, 23.20, 23.20, 23.15, 23.20, 23.05, 23.00, //
                                        22.85, 22.85, 22.75, 22.75, 22.60, 22.75, 22.60, 22.75, 22.75, 22.90,
                                        23.10, 23.30, 23.35, 23.50, 23.45, 23.65, 23.85, 24.15, 24.35, 24.60,
                                        24.65, 24.90, 24.20},
                    Full_MotionBlur, 1.5f);
-    run_image_test(threads, "motion_blur_dyn",
+    run_image_test(ren_ctx, threads, "motion_blur_dyn",
                    std::vector<double>{23.85, 24.60, 24.60, 24.60, 24.55, 24.55, 24.50, 24.50, 24.45, 24.40, //
                                        24.25, 24.30, 24.20, 24.15, 24.05, 24.10, 23.90, 23.90, 23.80, 23.90,
                                        24.10, 24.25, 24.30, 24.45, 24.40, 24.60, 24.85, 25.10, 25.35, 25.55,

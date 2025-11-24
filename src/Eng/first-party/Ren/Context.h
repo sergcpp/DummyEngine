@@ -256,6 +256,8 @@ class Context {
 
     void WaitIdle();
 
+    void ResetAllocators();
+
 #if defined(REN_GL_BACKEND)
     struct { // NOLINT
         float max_anisotropy = 0;
@@ -297,6 +299,7 @@ class Context {
     } capabilities;
 
     bool InitPipelineCache(Span<const uint8_t> in_data);
+    void DestroyPipelineCache();
     size_t WritePipelineCache(Span<uint8_t> out_data);
 #elif defined(REN_SW_BACKEND)
     int max_uniform_vec4 = 0;
