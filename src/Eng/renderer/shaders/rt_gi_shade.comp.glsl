@@ -381,7 +381,7 @@ void main() {
     const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
 #ifdef STOCH_LIGHTS
-    if (hsum(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7) {
+    if (max_component(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7) {
         const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_stoch_lights_buf, g_params.lights_count, uint(tri_index), ray_origin_ws);
 
         const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
@@ -480,7 +480,7 @@ void main() {
 #endif // VULKAN
 
         const vec3 sun_visibility = textureLod(g_shadow_depth_tex, shadow_uvs, 0.0) * textureLod(g_shadow_color_tex, shadow_uvs.xy, 0.0).xyz;
-        if (hsum(sun_visibility) > 0.0) {
+        if (max_component(sun_visibility) > 0.0) {
             light_total += sun_visibility * EvaluateSunLight_Approx(g_shrd_data.sun_col_point_sh.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w,
                                                                     I, N, lobe_masks, roughness, clearcoat_roughness2,
                                                                     base_color, sheen_color, approx_spec_col, approx_clearcoat_col);

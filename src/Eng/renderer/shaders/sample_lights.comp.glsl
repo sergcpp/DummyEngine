@@ -193,7 +193,7 @@ void main() {
     }
     const float ls_pdf = pdf_factor * (ls_dist * ls_dist) / (0.5 * light_fwd_len * cos_theta);
 
-    if (hsum(litem.col_and_type.xyz) * g_shrd_data.cam_pos_and_exp.w / ls_pdf < 3.0 * GI_LIGHT_CUTOFF) {
+    if (max_component(litem.col_and_type.xyz) * g_shrd_data.cam_pos_and_exp.w / ls_pdf < GI_LIGHT_CUTOFF) {
         imageStore(g_out_specular_img, icoord, vec4(0.0));
         return;
     }

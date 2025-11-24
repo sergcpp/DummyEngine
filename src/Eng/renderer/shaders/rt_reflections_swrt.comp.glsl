@@ -87,7 +87,7 @@ layout(binding = ITEMS_BUF_SLOT) uniform usamplerBuffer g_items_buf;
 #endif
 
 layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_tex;
-layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2DShadow g_shadow_color_tex;
+layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
 #ifdef GI_CACHE
@@ -118,10 +118,10 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
 
 layout (local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
-float LightVisibility(const _light_item_t litem, const vec3 P) {
+vec3 LightVisibility(const _light_item_t litem, const vec3 P) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
     if (shadowreg_index == -1) {
-        return 1.0;
+        return vec3(1.0);
     }
 
     const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
@@ -137,7 +137,7 @@ float LightVisibility(const _light_item_t litem, const vec3 P) {
     pp.y = 1.0 - pp.y;
 #endif // VULKAN
 
-    return SampleShadowPCF5x5(g_shadow_depth_tex, pp.xyz);
+    return SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, pp.xyz);
 }
 
 void main() {
@@ -462,7 +462,7 @@ void main() {
             const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
 #ifdef STOCH_LIGHTS
-            if (j == 0 && hsum(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7 && first_roughness > 1e-7) {
+            if (j == 0 && max_component(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7 && first_roughness > 1e-7) {
                 const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_stoch_lights_buf, g_params.lights_count, uint(tri_index), ray_origin_ws.xyz);
 
                 const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
@@ -580,8 +580,8 @@ void main() {
                 shadow_uvs.y = 1.0 - shadow_uvs.y;
         #endif // VULKAN
 
-                const float sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, shadow_uvs);
-                if (sun_visibility > 0.0) {
+                const vec3 sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
+                if (max_component(sun_visibility) > 0.0) {
                     light_total += sun_visibility * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_masks, ltc, g_ltc_luts,
                                                                          sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 }

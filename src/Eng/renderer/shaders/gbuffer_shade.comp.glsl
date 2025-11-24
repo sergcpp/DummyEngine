@@ -121,7 +121,7 @@ vec3 LightVisibility(const _light_item_t litem, vec3 P, vec3 pos_vs, vec3 N, flo
     }
 
 #ifdef SS_SHADOW_MANY
-    if (hsum(final_color) > 0.0 && lin_depth < 30.0) {
+    if (max_component(final_color) > 0.0 && lin_depth < 30.0) {
         vec2 hit_uv;
         vec3 hit_point;
 
@@ -348,7 +348,7 @@ void main() {
 
     if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0 && g_shrd_data.sun_dir.y > 0.0) {
         const vec3 sun_color = textureLod(g_sun_shadow_tex, norm_uvs, 0.0).xyz;
-        if (hsum(sun_color) > 0.0) {
+        if (max_component(sun_color) > 0.0) {
             final_color += sun_color * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_masks, g_ltc_luts,
 -                                                           sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         }

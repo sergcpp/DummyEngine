@@ -107,6 +107,10 @@ float hsum(vec2 v) { return dot(v, vec2(1.0)); }
 float hsum(vec3 v) { return dot(v, vec3(1.0)); }
 float hsum(vec4 v) { return dot(v, vec4(1.0)); }
 
+float max_component(vec2 v) { return max(v.x, v.y); }
+float max_component(vec3 v) { return max(v.x, max(v.y, v.z)); }
+float max_component(vec4 v) { return max(v.x, max(v.y, max(v.z, v.w))); }
+
 float rand(vec2 co) {
     return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }

@@ -418,7 +418,7 @@ void main() {
             const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
 #ifdef STOCH_LIGHTS
-            if (j == 0 && hsum(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7 && first_roughness > 1e-7) {
+            if (j == 0 && max_component(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7 && first_roughness > 1e-7) {
                 const uint tri_index = (geo.indices_start / 3) + prim_id;
                 const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_stoch_lights_buf, g_params.lights_count, tri_index, ray_origin_ws.xyz);
 
@@ -537,7 +537,7 @@ void main() {
                 shadow_uvs.y = 1.0 - shadow_uvs.y;
         #endif // VULKAN
                 const vec3 sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
-                if (hsum(sun_visibility) > 0.0) {
+                if (max_component(sun_visibility) > 0.0) {
                     light_total += sun_visibility * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_masks, ltc, g_ltc_luts,
                                                                          sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 }

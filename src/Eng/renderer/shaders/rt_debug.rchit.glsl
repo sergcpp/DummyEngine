@@ -246,7 +246,7 @@ void main() {
 #endif // VULKAN
 
         const vec3 sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
-        if (hsum(sun_visibility) > 0.0) {
+        if (max_component(sun_visibility) > 0.0) {
             light_total += sun_visibility * EvaluateSunLight_Approx(g_shrd_data.sun_col_point_sh.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w,
                                                                     I, N, lobe_masks, roughness, clearcoat_roughness2,
                                                                     base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
