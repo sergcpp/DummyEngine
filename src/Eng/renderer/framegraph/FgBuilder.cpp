@@ -672,7 +672,7 @@ void Eng::FgBuilder::AllocateNeededResources_Simple() {
         buf.strong_ref = ctx_.LoadBuffer(buf.name, buf.desc.type, buf.desc.size, 16, ctx_.default_mem_allocs());
         buf.ref = buf.strong_ref;
         for (int i = 0; i < int(buf.desc.views.size()); ++i) {
-            const int view_index = buf.ref->AddBufferView(buf.desc.views[i]);
+            const int view_index = buf.ref->AddView(buf.desc.views[i]);
             assert(view_index == i);
         }
     }
@@ -714,6 +714,12 @@ void Eng::FgBuilder::AllocateNeededResources_Simple() {
         img.ref = img.strong_ref;
         assert(status == Ren::eImgLoadStatus::CreatedDefault || status == Ren::eImgLoadStatus::Found ||
                status == Ren::eImgLoadStatus::Reinitialized);
+        for (int i = 0; i < int(img.desc.views.size()); ++i) {
+            const auto &v = img.desc.views[i];
+            [[maybe_unused]] const int view_index =
+                img.ref->AddView(v.format, v.mip_level, v.mip_count, v.base_layer, v.layer_count);
+            assert(view_index == i || view_index == i + 1);
+        }
     }
     for (auto it = std::begin(images_); it != std::end(images_); ++it) {
         FgAllocImg &img = *it;

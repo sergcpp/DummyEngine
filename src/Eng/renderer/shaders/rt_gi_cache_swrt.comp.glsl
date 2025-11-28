@@ -544,7 +544,7 @@ void main() {
 
                 vec3 light_contribution = EvaluateLightSource_Approx(litem, P, I, N, lobe_masks, roughness, base_color, approx_spec_col);
                 light_contribution = max(light_contribution, vec3(0.0)); // ???
-                if (all(equal(light_contribution, vec3(0.0)))) {
+                if (max_component(light_contribution) < FLT_EPS) {
                     continue;
                 }
                 if (is_portal) {
@@ -571,7 +571,7 @@ void main() {
 
                     vec3 light_contribution = EvaluateLightSource_Approx(litem, P, I, N, lobe_masks, roughness, base_color, approx_spec_col);
                     light_contribution = max(light_contribution, vec3(0.0)); // ???
-                    if (all(equal(light_contribution, vec3(0.0)))) {
+                    if (max_component(light_contribution) < FLT_EPS) {
                         continue;
                     }
                     if (is_portal) {

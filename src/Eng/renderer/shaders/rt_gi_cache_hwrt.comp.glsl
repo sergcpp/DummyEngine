@@ -176,14 +176,14 @@ void main() {
 
             if (max_component(litem.col_and_type.xyz) * g_shrd_data.cam_pos_and_exp.w / ls_pdf >= GI_LIGHT_CUTOFF) {
                 rayQueryInitializeEXT(rq,                       // rayQuery
-                                    g_tlas,                   // topLevel
-                                    0,                        // rayFlags
-                                    (1u << RAY_TYPE_SHADOW),  // cullMask
-                                    probe_pos,                // origin
-                                    0.0,                      // tMin
-                                    L,                        // direction
-                                    ls_dist - 0.001           // tMax
-                                    );
+                                      g_tlas,                   // topLevel
+                                      0,                        // rayFlags
+                                      (1u << RAY_TYPE_SHADOW),  // cullMask
+                                      probe_pos,                // origin
+                                      0.0,                      // tMin
+                                      L,                        // direction
+                                      ls_dist - 0.001           // tMax
+                                      );
 
                 int transp_depth = 0;
                 while(rayQueryProceedEXT(rq) && transp_depth++ < 4) {
@@ -488,7 +488,7 @@ void main() {
 
                 vec3 light_contribution = EvaluateLightSource_Approx(litem, P, I, N, lobe_masks, roughness, base_color, approx_spec_col);
                 light_contribution = max(light_contribution, vec3(0.0)); // ???
-                if (all(equal(light_contribution, vec3(0.0)))) {
+                if (max_component(light_contribution) < FLT_EPS) {
                     continue;
                 }
                 if (is_portal) {
@@ -516,7 +516,7 @@ void main() {
 
                     vec3 light_contribution = EvaluateLightSource_Approx(litem, P, I, N, lobe_masks, roughness, base_color, approx_spec_col);
                     light_contribution = max(light_contribution, vec3(0.0)); // ???
-                    if (all(equal(light_contribution, vec3(0.0)))) {
+                    if (max_component(light_contribution) < FLT_EPS) {
                         continue;
                     }
                     if (is_portal) {

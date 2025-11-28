@@ -1258,7 +1258,17 @@ bool Ren::ReadbackTimestampQueries(ApiContext *api_ctx, int i) {
     return (res == VK_SUCCESS);
 }
 
-void Ren::DestroyDeferredResources(ApiContext *api_ctx, int i) {
+void Ren::DestroyDeferredResources(ApiContext *api_ctx, const int i) {
+    for (VkFramebuffer fb : api_ctx->framebuffers_to_destroy[i]) {
+        api_ctx->vkDestroyFramebuffer(api_ctx->device, fb, nullptr);
+    }
+    api_ctx->framebuffers_to_destroy[i].clear();
+
+    for (VkRenderPass rp : api_ctx->render_passes_to_destroy[i]) {
+        api_ctx->vkDestroyRenderPass(api_ctx->device, rp, nullptr);
+    }
+    api_ctx->render_passes_to_destroy[i].clear();
+
     for (VkImageView view : api_ctx->image_views_to_destroy[i]) {
         api_ctx->vkDestroyImageView(api_ctx->device, view, nullptr);
     }
@@ -1288,16 +1298,6 @@ void Ren::DestroyDeferredResources(ApiContext *api_ctx, int i) {
         api_ctx->vkFreeMemory(api_ctx->device, mem, nullptr);
     }
     api_ctx->mem_to_free[i].clear();
-
-    for (VkRenderPass rp : api_ctx->render_passes_to_destroy[i]) {
-        api_ctx->vkDestroyRenderPass(api_ctx->device, rp, nullptr);
-    }
-    api_ctx->render_passes_to_destroy[i].clear();
-
-    for (VkFramebuffer fb : api_ctx->framebuffers_to_destroy[i]) {
-        api_ctx->vkDestroyFramebuffer(api_ctx->device, fb, nullptr);
-    }
-    api_ctx->framebuffers_to_destroy[i].clear();
 
     for (VkDescriptorPool pool : api_ctx->descriptor_pools_to_destroy[i]) {
         api_ctx->vkDestroyDescriptorPool(api_ctx->device, pool, nullptr);

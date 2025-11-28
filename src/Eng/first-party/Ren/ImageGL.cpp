@@ -391,8 +391,8 @@ void Ren::Image::ApplySampling(SamplingParams sampling, ILog *log) {
     params.sampling = sampling;
 }
 
-int Ren::Image::AddImageView(const eFormat format, const int mip_level, const int mip_count, const int base_layer,
-                             const int layer_count) {
+int Ren::Image::AddView(const eFormat format, const int mip_level, const int mip_count, const int base_layer,
+                        const int layer_count) {
     GLuint tex_view;
     glGenTextures(1, &tex_view);
     glTextureView(tex_view, GL_TEXTURE_2D, handle_.id, GLInternalFormatFromFormat(format), mip_level, mip_count,

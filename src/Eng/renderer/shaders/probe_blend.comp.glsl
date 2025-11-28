@@ -126,17 +126,17 @@ void main() {
         result.xyz = pow(result.xyz, vec3(1.0 / PROBE_RADIANCE_EXP));
 
         // Stable 2-sample accumulation (approximate)
-        float lum_curr = lum(result.xyz);
-        float lum_prev = probe_irradiance_mean.w;
-        float lum_hist = lum(probe_irradiance_mean.xyz);
-        float lum_desired = 0.5 * (lum_curr + lum_prev);
+        const float lum_curr = lum(result.xyz);
+        const float lum_prev = probe_irradiance_mean.w;
+        const float lum_hist = lum(probe_irradiance_mean.xyz);
+        const float lum_desired = 0.5 * (lum_curr + lum_prev);
 
-        float history_weight = clamp((lum_desired - lum_curr) / (lum_hist - lum_curr), 0.0, 0.97);
-        //float history_weight = 0.97;
+        const float diff = lum_hist - lum_curr;
+        float history_weight = abs(diff) > FLT_EPS ? clamp((lum_desired - lum_curr) / diff, 0.0, 0.92) : 0.92;
 #elif defined(DISTANCE)
-        float history_weight = 0.97;
+        float history_weight = 0.92;
 #endif
-        if (is_scrolling_plane_probe || dot(probe_irradiance_mean.xyz, probe_irradiance_mean.xyz) == 0.0) {
+        if (is_scrolling_plane_probe || max_component(probe_irradiance_mean.xyz) == 0.0) {
             history_weight = 0.0;
         }
 

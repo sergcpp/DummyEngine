@@ -26,10 +26,10 @@ void Eng::ExDepthHierarchy::Execute(FgContext &fg) {
     { // update descriptor set
         const VkDescriptorImageInfo depth_tex_info = depth_tex.vk_desc_image_info(1);
         const VkDescriptorBufferInfo atomic_buf_info = {atomic_buf.vk_handle(), 0, VK_WHOLE_SIZE};
-        Ren::SmallVector<VkDescriptorImageInfo, 16> depth_img_infos;
+        VkDescriptorImageInfo depth_img_infos[7];
         for (int i = 0; i < 7; ++i) {
-            depth_img_infos.push_back(output_tex.vk_desc_image_info(std::min(i, output_tex.params.mip_count - 1) + 1,
-                                                                    VK_IMAGE_LAYOUT_GENERAL));
+            depth_img_infos[i] = output_tex.vk_desc_image_info(std::min(i, output_tex.params.mip_count - 1) + 1,
+                                                               VK_IMAGE_LAYOUT_GENERAL);
         }
 
         VkWriteDescriptorSet descr_writes[3];
@@ -54,8 +54,8 @@ void Eng::ExDepthHierarchy::Execute(FgContext &fg) {
         descr_writes[2].dstBinding = DepthHierarchy::DEPTH_IMG_SLOT;
         descr_writes[2].dstArrayElement = 0;
         descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        descr_writes[2].descriptorCount = uint32_t(depth_img_infos.size());
-        descr_writes[2].pImageInfo = depth_img_infos.cdata();
+        descr_writes[2].descriptorCount = 7;
+        descr_writes[2].pImageInfo = depth_img_infos;
 
         api_ctx->vkUpdateDescriptorSets(api_ctx->device, 3, descr_writes, 0, nullptr);
     }

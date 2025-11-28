@@ -11,7 +11,7 @@ struct Params {
     uint frame_index;
     int lights_count;
     uint is_hwrt;
-    uint _pad[3];
+    uint _pad[2];
 };
 
 const int RAY_HITS_STRIDE = 5;

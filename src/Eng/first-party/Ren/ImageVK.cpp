@@ -863,8 +863,8 @@ void Ren::Image::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer cm
     ApplySampling(p.sampling, log);
 }
 
-int Ren::Image::AddImageView(const eFormat format, const int mip_level, const int mip_count, const int base_layer,
-                             const int layer_count) {
+int Ren::Image::AddView(const eFormat format, const int mip_level, const int mip_count, const int base_layer,
+                        const int layer_count) {
     const ImgParams p = params;
 
     VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};

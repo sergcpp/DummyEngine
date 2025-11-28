@@ -168,7 +168,7 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
     handle_.buf = uint32_t(gl_buffer);
     handle_.generation = g_GenCounter++;
     for (auto view : views) {
-        AddBufferView(view.first);
+        AddView(view.first);
     }
 }
 
@@ -239,7 +239,7 @@ void Ren::Buffer::UpdateImmediate(const uint32_t dst_offset, const uint32_t size
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
-int Ren::Buffer::AddBufferView(const eFormat format) {
+int Ren::Buffer::AddView(const eFormat format) {
     GLuint tex_id;
     glCreateTextures(GL_TEXTURE_BUFFER, 1, &tex_id);
 #ifdef ENABLE_GPU_DEBUG

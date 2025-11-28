@@ -325,7 +325,7 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
         }
         buf.ref = buf.strong_ref;
         for (int i = 0; i < int(buf.desc.views.size()); ++i) {
-            const int view_index = buf.ref->AddBufferView(buf.desc.views[i]);
+            const int view_index = buf.ref->AddView(buf.desc.views[i]);
             assert(view_index == i);
         }
     }
@@ -349,7 +349,7 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
         for (int i = 0; i < int(img.desc.views.size()); ++i) {
             const auto &v = img.desc.views[i];
             const int view_index =
-                img.ref->AddImageView(v.format, v.mip_level, v.mip_count, v.base_layer, v.layer_count);
+                img.ref->AddView(v.format, v.mip_level, v.mip_count, v.base_layer, v.layer_count);
             assert(view_index == i + 1);
         }
     }
@@ -525,7 +525,7 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
     // Simulate execution over 2 frames, but perform clear instead of actual work
     //
     for (int j = 0; j < 2; ++j) {
-        Ren::DebugMarker exec_marker(ctx_.api_ctx(), ctx_.current_cmd_buf(), "Eng::FgBuilder::ClearResources_MemHeaps");
+        Ren::DebugMarker exec_marker(ctx_.api_ctx(), cmd_buf, "Eng::FgBuilder::ClearResources_MemHeaps");
 
         // Swap history images
         for (FgAllocImg &img : images_) {
@@ -561,6 +561,8 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
 
         for (int i = 0; i < int(reordered_nodes_.size()); ++i) {
             const FgNode *node = reordered_nodes_[i];
+
+            Ren::DebugMarker _(ctx_.api_ctx(), cmd_buf, node->name());
 
             Ren::SmallVector<Ren::TransitionInfo, 32> res_transitions;
             Ren::Bitmask<Ren::eStage> src_stages, dst_stages;

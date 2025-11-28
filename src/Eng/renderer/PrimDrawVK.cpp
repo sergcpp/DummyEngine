@@ -14,8 +14,6 @@ namespace PrimDrawInternal {
 extern const int SphereIndicesCount;
 } // namespace PrimDrawInternal
 
-Eng::PrimDraw::~PrimDraw() {}
-
 void Eng::PrimDraw::DrawPrim(Ren::CommandBuffer cmd_buf, const ePrim prim, const Ren::ProgramRef &p,
                              Ren::RenderTarget depth_rt, Ren::Span<const Ren::RenderTarget> color_rts,
                              const Ren::RastState &new_rast_state, Ren::RastState &applied_rast_state,

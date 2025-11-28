@@ -346,7 +346,7 @@ void main() {
 
             vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, lobe_masks, ltc, g_ltc_luts,
                                                               sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
-            if (all(equal(light_contribution, vec3(0.0)))) {
+            if (max_component(light_contribution) < FLT_EPS) {
                 continue;
             }
             if ((floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0) {

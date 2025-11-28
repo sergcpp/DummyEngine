@@ -30,7 +30,7 @@ void Ren::MemAllocation::Release() {
 }
 
 Ren::MemAllocator::MemAllocator(const std::string_view name, ApiContext *api_ctx, const uint32_t initial_block_size,
-                                uint32_t mem_type_index, const float growth_factor, const uint32_t max_pool_size)
+                                const uint32_t mem_type_index, const float growth_factor, const uint32_t max_pool_size)
     : name_(name), api_ctx_(api_ctx), growth_factor_(growth_factor), max_pool_size_(max_pool_size),
       mem_type_index_(mem_type_index) {
 

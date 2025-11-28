@@ -124,7 +124,7 @@ class Image : public RefCounter {
     void SetSampling(SamplingParams sampling);
     void ApplySampling(SamplingParams sampling, ILog *log) { SetSampling(sampling); }
 
-    int AddImageView(eFormat format, int mip_level, int mip_count, int base_layer, int layer_count);
+    int AddView(eFormat format, int mip_level, int mip_count, int base_layer, int layer_count);
 
     void SetSubImage(int layer, int level, int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,
                      eFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len);

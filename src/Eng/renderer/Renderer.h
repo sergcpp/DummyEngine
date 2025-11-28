@@ -39,6 +39,7 @@ class Renderer {
 
     void InitPipelines();
 
+    Ren::Context &ctx() { return ctx_; }
     PrimDraw &prim_draw() { return prim_draw_; }
 
     int accumulated_frames() const { return accumulated_frames_; }
@@ -92,10 +93,8 @@ class Renderer {
         sky_curl_tex_;
     Ren::ImgRef sky_noise3d_tex_;
 
-    // FrameBuf probe_sample_buf_;
     Ren::ImgRef shadow_depth_tex_, shadow_color_tex_;
     Ren::SamplerRef nearest_sampler_, linear_sampler_;
-    Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
     eTAAMode taa_mode_ = eTAAMode::Off;
     bool dof_enabled_ = false;
 

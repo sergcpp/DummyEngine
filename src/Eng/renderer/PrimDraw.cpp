@@ -157,6 +157,8 @@ void Eng::PrimDraw::CleanUp() {
     }
 }
 
+Eng::PrimDraw::~PrimDraw() { CleanUp(); }
+
 const Ren::Framebuffer *Eng::PrimDraw::FindOrCreateFramebuffer(const Ren::RenderPass *rp,
                                                                const Ren::RenderTarget depth_target,
                                                                const Ren::RenderTarget stencil_target,
@@ -207,7 +209,6 @@ const Ren::Framebuffer *Eng::PrimDraw::FindOrCreateFramebuffer(const Ren::Render
     Ren::Framebuffer new_framebuffer;
     if (!new_framebuffer.Setup(api_ctx, *rp, w, h, depth_target, stencil_target, color_targets, ctx_->log())) {
         ctx_->log()->Error("Failed to create framebuffer!");
-        framebuffers_.pop_back();
         return nullptr;
     }
     framebuffers_.insert(begin(framebuffers_) + start, std::move(new_framebuffer));

@@ -119,7 +119,7 @@ void main() {
                 }
 
                 vec3 light_contribution = EvaluateLightSource_Vol(litem, pos_ws, view_ray_ws, g_params.anisotropy);
-                if (all(equal(light_contribution, vec3(0.0)))) {
+                if (max_component(light_contribution) < FLT_EPS) {
                     continue;
                 }
                 if (is_portal) {
@@ -148,7 +148,7 @@ void main() {
                     }
 
                     vec3 light_contribution = EvaluateLightSource_Vol(litem, pos_ws, view_ray_ws, g_params.anisotropy);
-                    if (all(equal(light_contribution, vec3(0.0)))) {
+                    if (max_component(light_contribution) < FLT_EPS) {
                         continue;
                     }
                     if (is_portal) {

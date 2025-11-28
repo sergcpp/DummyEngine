@@ -368,7 +368,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         bn_pmj_2D_64spp_seq_buf_ =
             ctx_.LoadBuffer("BN_PMJ_2D_64SPP", Ren::eBufType::Texture,
                             8 * (SampleSizePerDimPair + ScramblingSizePerDimPair + SortingSizePerDimPair));
-        bn_pmj_2D_64spp_seq_buf_->AddBufferView(Ren::eFormat::R32UI);
+        bn_pmj_2D_64spp_seq_buf_->AddView(Ren::eFormat::R32UI);
         Ren::Buffer bn_pmj_2D_64spp_seq_buf_stage("BN_PMJ_2D_64SPP_Stage", ctx_.api_ctx(), Ren::eBufType::Upload,
                                                   bn_pmj_2D_64spp_seq_buf_->size());
 
@@ -443,7 +443,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     { // PMJ samples
         pmj_samples_buf_ = ctx_.LoadBuffer("PMJSamples", Ren::eBufType::Texture,
                                            __pmj02_sample_count * __pmj02_dims_count * sizeof(uint32_t));
-        pmj_samples_buf_->AddBufferView(Ren::eFormat::R32UI);
+        pmj_samples_buf_->AddView(Ren::eFormat::R32UI);
 
         Ren::Buffer pmj_samples_stage("PMJSamplesStage", ctx_.api_ctx(), Ren::eBufType::Upload,
                                       pmj_samples_buf_->size());
@@ -585,7 +585,11 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 }
 
 Eng::Renderer::~Renderer() {
-    prim_draw_.CleanUp();
+    auto vtx_buf1 = ctx_.default_vertex_buf1();
+    vtx_buf1->FreeSubRegion(skinned_buf1_vtx_);
+    auto vtx_buf2 = ctx_.default_vertex_buf2();
+    vtx_buf2->FreeSubRegion(skinned_buf2_vtx_);
+
     swCullCtxDestroy(&cull_ctx_);
 }
 
