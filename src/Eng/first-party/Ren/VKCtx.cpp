@@ -613,6 +613,7 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], const int enabl
     VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroup_size_control_features = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT};
     subgroup_size_control_features.subgroupSizeControl = VK_TRUE;
+    subgroup_size_control_features.computeFullSubgroups = VK_TRUE;
     if (this->subgroup_size_control_supported) {
         (*pp_next) = &subgroup_size_control_features;
         pp_next = &subgroup_size_control_features.pNext;

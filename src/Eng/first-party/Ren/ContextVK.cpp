@@ -202,6 +202,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
         api_ctx_->vkGetPhysicalDeviceFeatures2KHR(api_ctx_->physical_device, &feat2);
 
         api_ctx_->subgroup_size_control_supported &= (subgroup_size_control_features.subgroupSizeControl == VK_TRUE);
+        api_ctx_->subgroup_size_control_supported &= (subgroup_size_control_features.computeFullSubgroups == VK_TRUE);
     }
 
     if (api_ctx_->present_family_index != 0xffffffff && !api_ctx_->InitSwapChain(w, h, log)) {
