@@ -36,8 +36,7 @@ set(GLSLANG_LIBS glslang
                  SPIRV-Tools-opt
                  SPIRV-Tools-reduce
                  SPIRV-Tools
-                 SPIRV
-                 SPVRemapper)
+                 SPIRV)
 
 add_library(spirv_compiler SHARED main.cpp)
 target_compile_definitions(spirv_compiler PUBLIC -D_ITERATOR_DEBUG_LEVEL=0)
