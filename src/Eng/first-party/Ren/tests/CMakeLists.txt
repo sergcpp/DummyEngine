@@ -48,9 +48,6 @@ if(${REN_BACKEND} STREQUAL "VK")
 elseif(${REN_BACKEND} STREQUAL "GL")
     set(SOURCE_FILES ${SOURCE_FILES}
                      test_programGL.cpp)
-elseif(${REN_BACKEND} STREQUAL "SW")
-    set(SOURCE_FILES ${SOURCE_FILES}
-                     test_programSW.cpp)
 elseif(${REN_BACKEND} STREQUAL "VK")
 
 endif()

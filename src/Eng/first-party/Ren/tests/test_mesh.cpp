@@ -156,10 +156,6 @@ void test_mesh() {
                                            SmallVectorImpl<PipelineRef> &out_pipelines) {
 #if defined(REN_GL_BACKEND)
 
-#elif defined(REN_SW_BACKEND)
-            Attribute _attrs[] = {{}};
-            Uniform _unifs[] = {{}};
-            return test.LoadProgramSW(name, nullptr, nullptr, 0, _attrs, _unifs, &status);
 #endif
         };
 

@@ -6,8 +6,6 @@ if(${REN_BACKEND} STREQUAL "GL")
     project(DummyGL)
 elseif(${REN_BACKEND} STREQUAL "VK")
     project(DummyVK)
-elseif(${REN_BACKEND} STREQUAL "SW")
-    project(DummySW)
 endif()
 
 set(WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})

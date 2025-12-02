@@ -72,9 +72,6 @@ set(SOURCE_FILES    AlignedAlloc.h
 if(${REN_BACKEND} STREQUAL "GL")
     set(SOURCE_FILES    ${SOURCE_FILES}
                         RendererGL.cpp)
-elseif(${REN_BACKEND} STREQUAL "SW")
-    set(SOURCE_FILES    ${SOURCE_FILES}
-                        RendererSW.cpp)
 elseif(${REN_BACKEND} STREQUAL "VK")
     set(SOURCE_FILES    ${SOURCE_FILES}
                         RendererVK.cpp)

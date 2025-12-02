@@ -26,8 +26,6 @@ void ParseDDSHeader(const DDSHeader &hdr, ImgParams *params);
 #include "ImageGL.h"
 #elif defined(REN_VK_BACKEND)
 #include "ImageVK.h"
-#elif defined(REN_SW_BACKEND)
-#include "ImageSW.h"
 #endif
 
 namespace Ren {

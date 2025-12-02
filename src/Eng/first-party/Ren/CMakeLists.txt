@@ -160,14 +160,6 @@ if(${REN_BACKEND} STREQUAL "GL")
     else(WIN32)
         set(LIBS ${LIBS} SPIRV-Reflect)
     ENDIF(WIN32)
-elseif(${REN_BACKEND} STREQUAL "SW")
-    set(SOURCE_FILES ${SOURCE_FILES}
-                     BufferSW.cpp
-                     ContextSW.cpp
-                     ImageSW.h
-                     ImageSW.cpp
-                     ProgramSW.h
-                     ProgramSW.cpp)
 elseif(${REN_BACKEND} STREQUAL "VK")
     set(SOURCE_FILES ${SOURCE_FILES}
                      AccStructureVK.cpp
@@ -242,8 +234,6 @@ elseif(${REN_BACKEND} STREQUAL "VK")
             target_compile_definitions(Ren PUBLIC VK_USE_PLATFORM_XLIB_KHR)
         endif(APPLE)
     endif(WIN32)
-elseif(${REN_BACKEND} STREQUAL "SW")
-    target_compile_definitions(Ren PUBLIC REN_SW_BACKEND)
 endif()
 target_link_libraries(Ren SW ${LIBS})
 target_include_directories(Ren PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party)

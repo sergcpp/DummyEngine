@@ -4,7 +4,6 @@
 #include "SamplerGL.h"
 #elif defined(REN_VK_BACKEND)
 #include "SamplerVK.h"
-#elif defined(REN_SW_BACKEND)
 #endif
 
 namespace Ren {

@@ -89,8 +89,6 @@ class Context {
 
 #if defined(REN_VK_BACKEND) || defined(REN_GL_BACKEND)
     std::unique_ptr<ApiContext> api_ctx_;
-#elif defined(REN_SW_BACKEND)
-    SWcontext *sw_ctx_;
 #endif
 
     void CheckDeviceCapabilities();
@@ -111,8 +109,6 @@ class Context {
 #if defined(REN_VK_BACKEND) || defined(REN_GL_BACKEND)
     ApiContext *api_ctx() { return api_ctx_.get(); }
     uint64_t device_id() const;
-#elif defined(REN_SW_BACKEND)
-
 #endif
 
     ILog *log() const { return log_; }
@@ -172,9 +168,6 @@ class Context {
 #if defined(REN_GL_BACKEND) || defined(REN_VK_BACKEND)
     ProgramRef LoadProgram(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, ShaderRef gs_ref);
     ProgramRef LoadProgram(ShaderRef cs_source);
-#elif defined(REN_SW_BACKEND)
-    ProgramRef LoadProgramSW(void *vs_shader, void *fs_shader, int num_fvars, const Attribute *attrs,
-                             const Uniform *unifs);
 #endif
 
 #if defined(REN_VK_BACKEND)
@@ -301,8 +294,6 @@ class Context {
     bool InitPipelineCache(Span<const uint8_t> in_data);
     void DestroyPipelineCache();
     size_t WritePipelineCache(Span<uint8_t> out_data);
-#elif defined(REN_SW_BACKEND)
-    int max_uniform_vec4 = 0;
 #endif
 };
 

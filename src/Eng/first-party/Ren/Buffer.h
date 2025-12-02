@@ -43,7 +43,7 @@ struct BufHandle {
 #if defined(REN_VK_BACKEND)
     VkBuffer buf = {};
     SmallVector<std::pair<eFormat, VkBufferView>, 1> views;
-#elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
+#elif defined(REN_GL_BACKEND)
     uint32_t buf = 0;
     SmallVector<std::pair<eFormat, uint32_t>, 1> views;
 #endif
@@ -52,7 +52,7 @@ struct BufHandle {
     operator bool() const {
 #if defined(REN_VK_BACKEND)
         return buf != VkBuffer{};
-#elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
+#elif defined(REN_GL_BACKEND)
         return buf != 0;
 #endif
     }
@@ -130,7 +130,7 @@ class Buffer : public RefCounter {
     [[nodiscard]] const std::pair<eFormat, VkBufferView> &view(const int i) const { return handle_.views[i]; }
     [[nodiscard]] VkDeviceMemory mem() const { return dedicated_mem_; }
     [[nodiscard]] VkDeviceAddress vk_device_address() const;
-#elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
+#elif defined(REN_GL_BACKEND)
     [[nodiscard]] uint32_t id() const { return handle_.buf; }
     [[nodiscard]] std::pair<eFormat, uint32_t> view(const int i) const { return handle_.views[i]; }
 #endif

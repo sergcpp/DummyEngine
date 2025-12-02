@@ -43,6 +43,4 @@ enum class eShaderSource : uint8_t { GLSL, SPIRV, _Count };
 #include "ShaderGL.h"
 #elif defined(REN_VK_BACKEND)
 #include "ShaderVK.h"
-#elif defined(REN_SW_BACKEND)
-#error "TODO"
 #endif

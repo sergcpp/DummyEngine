@@ -204,9 +204,6 @@ elseif(${REN_BACKEND} STREQUAL "VK")
                             renderer/executors/ExTransparentVK.cpp
                             renderer/executors/ExUpdateAccBuffersVK.cpp
                             renderer/executors/ExVolVoxelizeVK.cpp)
-elseif(${REN_BACKEND} STREQUAL "SW")
-    set(RENDERER_SOURCES ${RENDERER_SOURCES}
-                         renderer/RendererSW.cpp)
 endif()
 
 file(GLOB RENDERER_SHADERS

@@ -185,7 +185,7 @@ void Ren::Context::ReleasePrograms() {
             }
             prog_name += sh->name();
         }
-#if defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
+#if defined(REN_GL_BACKEND)
         log_->Error("%s %i", prog_name.c_str(), int(p.id()));
 #elif defined(REN_VK_BACKEND)
         log_->Error("%s", prog_name.c_str());

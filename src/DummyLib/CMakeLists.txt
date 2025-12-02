@@ -62,8 +62,6 @@ elseif(${REN_BACKEND} STREQUAL "VK")
                         states/UITest3VK.cpp
                         #states/VideoTestVK.cpp
         )
-elseif(${REN_BACKEND} STREQUAL "SW")
-
 endif()
 
 add_custom_target(DummyLib_CreateSymLinks

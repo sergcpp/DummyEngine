@@ -20,8 +20,6 @@
 
 #if defined(REN_GL_BACKEND)
 #include <Ren/GL.h>
-#elif defined(REN_SW_BACKEND)
-#include <Ren/SW/SW.h>
 #endif
 #include <Eng/Input/InputManager.h>
 #include <Ren/GL.h>
@@ -417,8 +415,6 @@ int ModlApp::Run(const std::vector<std::string> &args) {
 
 #if defined(REN_GL_BACKEND)
         SwapBuffers(device_context_);
-#elif defined(REN_SW_BACKEND)
-
 #endif
     }
 
@@ -584,9 +580,6 @@ int ModlApp::Init(const int w, const int h) {
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
-#elif defined(REN_SW_BACKEND)
-    swEnable(SW_DEPTH_TEST);
-    swEnable(SW_FAST_PERSPECTIVE_CORRECTION);
 #endif
 
     { // create checker texture
@@ -1958,9 +1951,6 @@ void ModlApp::OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std:
     }*/
 
     out_pipelines.emplace_back(&pipelines_, new_index);
-#elif defined(REN_SW_BACKEND)
-    Ren::ProgramRef LoadSWProgram(Ren::Context &, const char *);
-    return LoadSWProgram(ctx_, name);
 #endif
 }
 

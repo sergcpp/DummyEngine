@@ -56,9 +56,6 @@ class DummyApp {
 #else
 #if defined(REN_GL_BACKEND)
     void *gl_ctx_main_ = nullptr;
-#elif defined(REN_SW_BACKEND)
-    SDL_Renderer *renderer_ = nullptr;
-    SDL_Texture *texture_ = nullptr;
 #endif
 
     SDL_Window *window_ = nullptr;

@@ -7,8 +7,6 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global"); // NOLINT
 
 #if defined(REN_GL_BACKEND)
 #include <Ren/GL.h>
-#elif defined(REN_SW_BACKEND)
-
 #endif
 
 #if !defined(__ANDROID__)
@@ -244,8 +242,6 @@ int DummyApp::Run(int argc, char *argv[]) {
             swap_interval->start_timepoint_us = swap_start;
             swap_interval->end_timepoint_us = swap_end;
         }*/
-#elif defined(REN_SW_BACKEND)
-        // TODO
 #endif
         __itt_frame_end_v3(__g_itt_domain, nullptr);
     }
