@@ -416,7 +416,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakImgRef &env_map, const Ren::
             data->noise_tex = rt_gi.AddTextureInput(noise_tex, stage);
             data->depth_tex = rt_gi.AddTextureInput(frame_textures.depth, stage);
             data->normal_tex = rt_gi.AddTextureInput(frame_textures.normal, stage);
-            data->ray_counter = rt_gi.AddStorageReadonlyInput(ray_counter, stage);
             data->ray_list = rt_gi.AddStorageReadonlyInput(ray_rt_list, stage);
             data->indir_args = rt_gi.AddIndirectBufferInput(indir_rt_disp_buf);
             data->tlas_buf = rt_gi.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Main)], stage);
@@ -430,6 +429,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakImgRef &env_map, const Ren::
             }
 
             data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
+
+            ray_counter = data->ray_counter = rt_gi.AddStorageOutput(ray_counter, stage);
 
             { // Ray hit results
                 FgBufDesc desc;
@@ -701,7 +702,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakImgRef &env_map, const Ren::
                 data->noise_tex = rt_gi.AddTextureInput(noise_tex, stage);
                 data->depth_tex = rt_gi.AddTextureInput(frame_textures.depth, stage);
                 data->normal_tex = rt_gi.AddTextureInput(frame_textures.normal, stage);
-                data->ray_counter = rt_gi.AddStorageReadonlyInput(ray_counter, stage);
                 data->ray_list = rt_gi.AddStorageReadonlyInput(secondary_ray_list, stage);
                 data->indir_args = rt_gi.AddIndirectBufferInput(indir_rt_disp_buf);
                 data->tlas_buf =
@@ -716,6 +716,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakImgRef &env_map, const Ren::
                 }
 
                 data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
+
+                ray_counter = data->ray_counter = rt_gi.AddStorageOutput(ray_counter, stage);
 
                 { // Ray hit results
                     FgBufDesc desc;

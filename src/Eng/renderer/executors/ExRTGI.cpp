@@ -54,13 +54,13 @@ void Eng::ExRTGI::Execute_SWRT(FgContext &fg) {
     const Ren::Image &noise_tex = fg.AccessROImage(args_->noise_tex);
     const Ren::Image &depth_tex = fg.AccessROImage(args_->depth_tex);
     const Ren::Image &normal_tex = fg.AccessROImage(args_->normal_tex);
-    const Ren::Buffer &ray_counter_buf = fg.AccessROBuffer(args_->ray_counter);
     const Ren::Buffer &ray_list_buf = fg.AccessROBuffer(args_->ray_list);
     const Ren::Buffer &indir_args_buf = fg.AccessROBuffer(args_->indir_args);
     const Ren::Buffer &rt_tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
     const Ren::Buffer &prim_ndx_buf = fg.AccessROBuffer(args_->swrt.prim_ndx_buf);
     const Ren::Buffer &mesh_instances_buf = fg.AccessROBuffer(args_->swrt.mesh_instances_buf);
 
+    Ren::Buffer &ray_counter_buf = fg.AccessRWBuffer(args_->ray_counter);
     Ren::Buffer &out_ray_hits_buf = fg.AccessRWBuffer(args_->out_ray_hits_buf);
 
     Ren::SmallVector<Ren::Binding, 24> bindings = {
