@@ -237,8 +237,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakImgRef &env_map, const Ren::
 
             const Ren::Binding bindings[] = {
                 {Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}},  {Trg::TexSampled, SPEC_TEX_SLOT, spec_tex},
-                {Trg::TexSampled, VARIANCE_TEX_SLOT, variance_tex}, {Trg::SBufRO, RAY_COUNTER_SLOT, ray_counter_buf},
-                {Trg::SBufRO, RAY_LIST_SLOT, ray_list_buf},         {Trg::SBufRO, TILE_LIST_SLOT, tile_list_buf},
+                {Trg::TexSampled, VARIANCE_TEX_SLOT, variance_tex}, {Trg::SBufRW, RAY_COUNTER_SLOT, ray_counter_buf},
+                {Trg::SBufRW, RAY_LIST_SLOT, ray_list_buf},         {Trg::SBufRW, TILE_LIST_SLOT, tile_list_buf},
                 {Trg::UTBuf, BN_PMJ_SEQ_BUF_SLOT, bn_pmj_seq_buf},  {Trg::ImageRW, OUT_GI_IMG_SLOT, gi_tex},
                 {Trg::ImageRW, OUT_NOISE_IMG_SLOT, noise_tex}};
 

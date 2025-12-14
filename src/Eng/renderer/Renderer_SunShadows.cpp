@@ -116,8 +116,8 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data_buf},
                                              {Trg::TexSampled, RTShadowClassify::DEPTH_TEX_SLOT, {depth_tex, 1}},
                                              {Trg::TexSampled, RTShadowClassify::NORM_TEX_SLOT, norm_tex},
-                                             {Trg::SBufRO, RTShadowClassify::TILE_COUNTER_SLOT, tile_counter_buf},
-                                             {Trg::SBufRO, RTShadowClassify::TILE_LIST_SLOT, tile_list_buf},
+                                             {Trg::SBufRW, RTShadowClassify::TILE_COUNTER_SLOT, tile_counter_buf},
+                                             {Trg::SBufRW, RTShadowClassify::TILE_LIST_SLOT, tile_list_buf},
                                              {Trg::UTBuf, RTShadowClassify::BN_PMJ_SEQ_BUF_SLOT, bn_pmj_seq},
                                              {Trg::ImageRW, RTShadowClassify::OUT_RAY_HITS_IMG_SLOT, ray_hits_tex},
                                              {Trg::ImageRW, RTShadowClassify::OUT_NOISE_IMG_SLOT, noise_tex}};

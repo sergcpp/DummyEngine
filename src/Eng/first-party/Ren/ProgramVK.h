@@ -76,6 +76,20 @@ class Program : public RefCounter {
         }
         return uniforms_[0];
     }
+    const Uniform &uniform_at(const int loc) const {
+        int left = 0, right = uniforms_.size() - 1;
+        while (left <= right) {
+            const int mid = left + (right - left) / 2;
+            if (uniforms_[mid].set == 0 && uniforms_[mid].loc == loc) {
+                return uniforms_[mid];
+            } else if (uniforms_[mid].set == 0 && uniforms_[mid].loc < loc) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        return uniforms_[0];
+    }
 
     const std::array<ShaderRef, int(eShaderType::_Count)> &shaders() const { return shaders_; }
     const ShaderRef &shader(eShaderType type) const { return shaders_[int(type)]; }

@@ -180,6 +180,18 @@ void Ren::DispatchCompute(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, 
     for (const Binding &b : bindings) {
         if (b.trg == eBindTarget::BindlessDescriptors) {
             descr_sets.push_back(b.handle.bindless->descr_set);
+        } else if (b.trg == eBindTarget::SBufRO) {
+            assert(comp_pipeline.prog()->uniform_at(b.loc).flags & eDescrFlags::ReadOnly);
+        } else if (b.trg == eBindTarget::SBufRW) {
+            assert(!(comp_pipeline.prog()->uniform_at(b.loc).flags & eDescrFlags::ReadOnly));
+        } else if (b.trg == eBindTarget::STBufRO) {
+            assert(comp_pipeline.prog()->uniform_at(b.loc).flags & eDescrFlags::ReadOnly);
+        } else if (b.trg == eBindTarget::STBufRW) {
+            assert(!(comp_pipeline.prog()->uniform_at(b.loc).flags & eDescrFlags::ReadOnly));
+        } else if (b.trg == eBindTarget::ImageRO) {
+            assert(comp_pipeline.prog()->uniform_at(b.loc).flags & eDescrFlags::ReadOnly);
+        } else if (b.trg == eBindTarget::ImageRW) {
+            assert(!(comp_pipeline.prog()->uniform_at(b.loc).flags & eDescrFlags::ReadOnly));
         }
     }
 
@@ -219,6 +231,18 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
     for (const Binding &b : bindings) {
         if (b.trg == eBindTarget::BindlessDescriptors) {
             descr_sets.push_back(b.handle.bindless->descr_set);
+        } else if (b.trg == eBindTarget::SBufRO) {
+            assert(comp_pipeline.prog()->uniform_at(b.loc).flags & eDescrFlags::ReadOnly);
+        } else if (b.trg == eBindTarget::SBufRW) {
+            assert(!(comp_pipeline.prog()->uniform_at(b.loc).flags & eDescrFlags::ReadOnly));
+        } else if (b.trg == eBindTarget::STBufRO) {
+            assert(comp_pipeline.prog()->uniform_at(b.loc).flags & eDescrFlags::ReadOnly);
+        } else if (b.trg == eBindTarget::STBufRW) {
+            assert(!(comp_pipeline.prog()->uniform_at(b.loc).flags & eDescrFlags::ReadOnly));
+        } else if (b.trg == eBindTarget::ImageRO) {
+            assert(comp_pipeline.prog()->uniform_at(b.loc).flags & eDescrFlags::ReadOnly);
+        } else if (b.trg == eBindTarget::ImageRW) {
+            assert(!(comp_pipeline.prog()->uniform_at(b.loc).flags & eDescrFlags::ReadOnly));
         }
     }
 

@@ -138,8 +138,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             const Ren::Binding bindings[] = {
                 {Trg::TexSampled, DEPTH_TEX_SLOT, {depth_tex, 1}}, {Trg::TexSampled, SPEC_TEX_SLOT, spec_tex},
                 {Trg::TexSampled, NORM_TEX_SLOT, norm_tex},        {Trg::TexSampled, VARIANCE_TEX_SLOT, variance_tex},
-                {Trg::SBufRO, RAY_COUNTER_SLOT, ray_counter_buf},  {Trg::SBufRO, RAY_LIST_SLOT, ray_list_buf},
-                {Trg::SBufRO, TILE_LIST_SLOT, tile_list_buf},      {Trg::UTBuf, BN_PMJ_SEQ_BUF_SLOT, bn_pmj_seq},
+                {Trg::SBufRW, RAY_COUNTER_SLOT, ray_counter_buf},  {Trg::SBufRW, RAY_LIST_SLOT, ray_list_buf},
+                {Trg::SBufRW, TILE_LIST_SLOT, tile_list_buf},      {Trg::UTBuf, BN_PMJ_SEQ_BUF_SLOT, bn_pmj_seq},
                 {Trg::ImageRW, OUT_REFL_IMG_SLOT, refl_tex},       {Trg::ImageRW, OUT_NOISE_IMG_SLOT, noise_tex}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
@@ -185,7 +185,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             Ren::Buffer &ray_counter_buf = fg.AccessRWBuffer(data->ray_counter);
             Ren::Buffer &indir_args = fg.AccessRWBuffer(data->indir_disp_buf);
 
-            const Ren::Binding bindings[] = {{Trg::SBufRO, RAY_COUNTER_SLOT, ray_counter_buf},
+            const Ren::Binding bindings[] = {{Trg::SBufRW, RAY_COUNTER_SLOT, ray_counter_buf},
                                              {Trg::SBufRW, INDIR_ARGS_SLOT, indir_args}};
 
             DispatchCompute(*pi_ssr_write_indirect_[0], Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0, fg.descr_alloc(),

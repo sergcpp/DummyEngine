@@ -12,8 +12,8 @@ class ILog;
 struct ApiContext;
 
 struct Range {
-    uint32_t offset;
-    uint32_t size;
+    uint16_t offset;
+    uint16_t size;
 };
 
 class Shader : public RefCounter {
@@ -26,7 +26,7 @@ class Shader : public RefCounter {
 
   public:
     SmallVector<Descr, 16> attr_bindings, unif_bindings;
-    SmallVector<Range, 4> pc_ranges;
+    SmallVector<Range, 1> pc_ranges;
 
     Shader(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> shader_code, eShaderType type, ILog *log);
 

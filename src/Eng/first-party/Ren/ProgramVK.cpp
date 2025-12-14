@@ -118,7 +118,7 @@ bool Ren::Program::InitDescrSetLayouts(ILog *log) {
                 new_binding.binding = u.loc;
                 new_binding.descriptorType = u.desc_type;
 
-                if (u.unbounded_array && u.desc_type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) {
+                if (bool(u.flags & eDescrFlags::UnboundedArray) && u.desc_type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) {
                     assert(u.count == 1);
                     new_binding.descriptorCount = api_ctx_->max_combined_image_samplers;
                 } else {
@@ -206,6 +206,13 @@ void Ren::Program::InitBindings(ILog *log) {
             attributes_.emplace_back(a);
         }
     }
+
+    std::sort(std::begin(uniforms_), std::end(uniforms_), [](const Descr &lhs, const Descr &rhs) {
+        if (lhs.set == rhs.set) {
+            return (lhs.loc < rhs.loc);
+        }
+        return (lhs.set < rhs.set);
+    });
 
 #if 0
     log->Info("PROGRAM %s", name_.c_str());

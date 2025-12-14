@@ -128,15 +128,23 @@ void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_code, const eShaderTy
         new_item.count = desc.count;
         if (desc.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE && desc.count == 1 &&
             (desc.type_description->op == SpvOpTypeRuntimeArray || desc.type_description->op == SpvOpTypeArray)) {
-            new_item.unbounded_array = true;
-        } else {
-            new_item.unbounded_array = false;
+            new_item.flags |= eDescrFlags::UnboundedArray;
+        }
+        if (desc.block.decoration_flags & SPV_REFLECT_DECORATION_NON_WRITABLE) {
+            new_item.flags |= eDescrFlags::ReadOnly;
         }
     }
 
+    std::sort(std::begin(unif_bindings), std::end(unif_bindings), [](const Descr &lhs, const Descr &rhs) {
+        if (lhs.set == rhs.set) {
+            return (lhs.loc < rhs.loc);
+        }
+        return (lhs.set < rhs.set);
+    });
+
     for (uint32_t i = 0; i < module.push_constant_block_count; ++i) {
         const auto &blck = module.push_constant_blocks[i];
-        pc_ranges.push_back({blck.offset, blck.size});
+        pc_ranges.push_back({uint16_t(blck.offset), uint16_t(blck.size)});
     }
 
     spvReflectDestroyShaderModule(&module);

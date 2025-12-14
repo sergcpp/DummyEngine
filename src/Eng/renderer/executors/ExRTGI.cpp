@@ -69,7 +69,7 @@ void Eng::ExRTGI::Execute_SWRT(FgContext &fg) {
         {Ren::eBindTarget::TexSampled, RTGI::DEPTH_TEX_SLOT, {depth_tex, 1}},
         {Ren::eBindTarget::TexSampled, RTGI::NORM_TEX_SLOT, normal_tex},
         {Ren::eBindTarget::TexSampled, RTGI::NOISE_TEX_SLOT, noise_tex},
-        {Ren::eBindTarget::SBufRO, RTGI::RAY_COUNTER_SLOT, ray_counter_buf},
+        {Ren::eBindTarget::SBufRW, RTGI::RAY_COUNTER_SLOT, ray_counter_buf},
         {Ren::eBindTarget::SBufRO, RTGI::RAY_LIST_SLOT, ray_list_buf},
         {Ren::eBindTarget::UTBuf, RTGI::BLAS_BUF_SLOT, rt_blas_buf},
         {Ren::eBindTarget::UTBuf, RTGI::TLAS_BUF_SLOT, rt_tlas_buf},

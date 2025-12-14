@@ -1,18 +1,21 @@
 #pragma once
 
+#include "Bitmask.h"
 #include "String.h"
 #if defined(REN_VK_BACKEND)
 #include "VK.h"
 #endif
 
 namespace Ren {
+enum class eDescrFlags : uint8_t { UnboundedArray, ReadOnly };
+
 struct Descr {
     String name;
     int loc = -1;
 #if defined(REN_VK_BACKEND)
     VkDescriptorType desc_type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
     int set = 0, count = 0;
-    bool unbounded_array = false;
+    Bitmask<eDescrFlags> flags;
     VkFormat format = VK_FORMAT_UNDEFINED;
 #endif
 };
