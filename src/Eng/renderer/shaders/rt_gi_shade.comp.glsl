@@ -241,7 +241,7 @@ void main() {
     const uint temp3 = g_ray_hits[read_offset + 3];
 
     const uint obj_index = (temp1 >> 16u);
-    const vec2 inter_uv = unpackHalf2x16(g_ray_hits[read_offset + 4]);
+    const vec2 inter_uv = unpackUnorm2x16(g_ray_hits[read_offset + 4]);
 
     float hit_t = uintBitsToFloat(g_ray_hits[read_offset + 2]);
     const bool backfacing = (hit_t < 0.0);
@@ -272,7 +272,7 @@ void main() {
     const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
     const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
 
-    const vec2 uv = uv0 * (1.0 - inter_uv.x - inter_uv.x) + uv1 * inter_uv.x + uv2 * inter_uv.x;
+    const vec2 uv = uv0 * (1.0 - inter_uv.x - inter_uv.y) + uv1 * inter_uv.x + uv2 * inter_uv.y;
 
     mat4x3 world_from_object;
     if (g_params.is_hwrt != 0) {
