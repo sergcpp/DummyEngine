@@ -6,8 +6,9 @@
 #include "executors/ExOITBlendLayer.h"
 #include "executors/ExOITDepthPeel.h"
 #include "executors/ExOITScheduleRays.h"
-#include "executors/ExRTSpecularInline.h"
+#include "executors/ExRTSpecular.h"
 
+#include "shaders/rt_specular_interface.h"
 #include "shaders/rt_specular_trace_ss_interface.h"
 #include "shaders/rt_specular_write_indirect_args_interface.h"
 
@@ -61,7 +62,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Acce
         { // ray counter
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
-            desc.size = 8 * sizeof(uint32_t);
+            desc.size = 16 * sizeof(uint32_t);
 
             oit_ray_counter = data->oit_ray_counter = oit_clear.AddTransferOutput("OIT Ray Counter", desc);
         }
@@ -368,12 +369,16 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Acce
             });
         }
 
+        FgBufRWHandle ray_hits;
+
         { // Trace reflection rays
             auto &rt_spec = fg_builder_.AddNode("OIT RT SPEC");
 
             const auto stage = Stg::ComputeShader;
 
-            auto *data = fg_builder_.AllocTempData<ExRTSpecularInline::Args>();
+            auto *data = fg_builder_.AllocTempData<ExRTSpecular::Args>();
+            data->layered = true;
+
             data->geo_data = rt_spec.AddStorageReadonlyInput(rt_geo_instances_res, stage);
             data->materials = rt_spec.AddStorageReadonlyInput(common_buffers.materials, stage);
             data->vtx_buf1 = rt_spec.AddStorageReadonlyInput(common_buffers.vertex_buf1, stage);
@@ -382,8 +387,6 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Acce
             data->shared_data = rt_spec.AddUniformBufferInput(common_buffers.shared_data, stage);
             data->depth = rt_spec.AddTextureInput(frame_textures.depth, stage);
             data->normal = rt_spec.AddTextureInput(frame_textures.normal, stage);
-            data->env = rt_spec.AddTextureInput(frame_textures.envmap, stage);
-            data->ray_counter = rt_spec.AddStorageReadonlyInput(oit_ray_counter, stage);
             if (ray_rt_list) {
                 data->ray_list = rt_spec.AddStorageReadonlyInput(ray_rt_list, stage);
             } else {
@@ -391,12 +394,6 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Acce
             }
             data->indir_args = rt_spec.AddIndirectBufferInput(indir_rt_disp);
             data->tlas_buf = rt_spec.AddStorageReadonlyInput(acc_structs.rt_tlas_buf[int(eTLASIndex::Main)], stage);
-            data->lights = rt_spec.AddStorageReadonlyInput(common_buffers.lights, stage);
-            data->shadow_depth = rt_spec.AddTextureInput(frame_textures.shadow_depth, stage);
-            data->shadow_color = rt_spec.AddTextureInput(frame_textures.shadow_color, stage);
-            data->ltc_luts = rt_spec.AddTextureInput(frame_textures.ltc_luts, stage);
-            data->cells = rt_spec.AddStorageReadonlyInput(common_buffers.rt_cells, stage);
-            data->items = rt_spec.AddStorageReadonlyInput(common_buffers.rt_items, stage);
 
             if (!ctx_.capabilities.hwrt) {
                 data->swrt.root_node = acc_structs.swrt.rt_root_node;
@@ -407,22 +404,199 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Acce
 
             data->tlas = acc_structs.rt_tlases[int(eTLASIndex::Main)];
 
-            if (settings.gi_quality != eGIQuality::Off) {
-                data->irradiance = rt_spec.AddTextureInput(frame_textures.gi_cache_irradiance, stage);
-                data->distance = rt_spec.AddTextureInput(frame_textures.gi_cache_distance, stage);
-                data->offset = rt_spec.AddTextureInput(frame_textures.gi_cache_offset, stage);
-            }
-
             data->oit_depth = rt_spec.AddStorageReadonlyInput(oit_depth, stage);
 
-            for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
-                oit_specular[i] = data->out_refl[i] = rt_spec.AddStorageImageOutput(oit_specular[i], stage);
+            oit_ray_counter = data->inout_ray_counter = rt_spec.AddStorageOutput(oit_ray_counter, stage);
+
+            { // Ray hit results
+                FgBufDesc desc;
+                desc.type = Ren::eBufType::Storage;
+                desc.size = OIT_REFLECTION_LAYERS * RTSpecular::RAY_HITS_STRIDE * ((view_state_.ren_res[0] + 1) / 2) *
+                            ((view_state_.ren_res[1] + 1) / 2) * sizeof(uint32_t);
+
+                ray_hits = data->out_ray_hits =
+                    rt_spec.AddStorageOutput("OIT RT Hits Buf", desc, Ren::eStage::ComputeShader);
             }
 
-            data->layered = true;
-            data->two_bounces = false;
+            rt_spec.make_executor<ExRTSpecular>(&view_state_, &bindless, data);
+        }
 
-            rt_spec.make_executor<ExRTSpecularInline>(&view_state_, &bindless, data);
+        { // Prepare arguments for shading dispatch
+            auto &rt_shade_args = fg_builder_.AddNode("OIT RT SHADE ARGS");
+
+            struct PassData {
+                FgBufRWHandle ray_counter;
+                FgBufRWHandle indir_disp;
+            };
+
+            auto *data = fg_builder_.AllocTempData<PassData>();
+            oit_ray_counter = data->ray_counter = rt_shade_args.AddStorageOutput(oit_ray_counter, Stg::ComputeShader);
+
+            { // Indirect arguments
+                FgBufDesc desc = {};
+                desc.type = Ren::eBufType::Indirect;
+                desc.size = 2 * sizeof(Ren::DispatchIndirectCommand);
+
+                indir_rt_disp = data->indir_disp =
+                    rt_shade_args.AddStorageOutput("OIT RT Shade Args", desc, Stg::ComputeShader);
+            }
+
+            rt_shade_args.set_execute_cb([this, data](const FgContext &fg) {
+                using namespace RTSpecularWriteIndirectArgs;
+
+                const Ren::BufferHandle ray_counter = fg.AccessRWBuffer(data->ray_counter);
+                const Ren::BufferHandle indir_disp = fg.AccessRWBuffer(data->indir_disp);
+
+                const Ren::Binding bindings[] = {{Trg::SBufRW, RAY_COUNTER_SLOT, ray_counter},
+                                                 {Trg::SBufRW, INDIR_ARGS_SLOT, indir_disp}};
+
+                DispatchCompute(fg.cmd_buf(), pi_specular_write_indirect_[2], fg.storages(), Ren::Vec3u{1u, 1u, 1u},
+                                bindings, nullptr, 0, fg.descr_alloc(), fg.log());
+            });
+        }
+
+        { // Shade ray hits
+            auto &spec_shade = fg_builder_.AddNode("OIT RT SHADE");
+
+            struct PassData {
+                FgBufROHandle oit_depth;
+                FgBufROHandle shared_data;
+                FgImgROHandle depth, normal;
+                FgImgROHandle env;
+                FgBufROHandle mesh_instances;
+                FgBufROHandle geo_data;
+                FgBufROHandle materials;
+                FgBufROHandle vtx_data0_buf, vtx_data1_buf;
+                FgBufROHandle ndx_buf;
+                FgBufROHandle lights;
+                FgImgROHandle shadow_depth, shadow_color;
+                FgImgROHandle ltc_luts;
+                FgBufROHandle cells;
+                FgBufROHandle items;
+
+                FgImgROHandle irradiance;
+                FgImgROHandle distance;
+                FgImgROHandle offset;
+
+                FgBufROHandle in_ray_list, in_ray_hits, indir_args;
+                FgBufRWHandle inout_ray_counter;
+                FgImgRWHandle out_specular[OIT_REFLECTION_LAYERS];
+            };
+
+            auto *data = fg_builder_.AllocTempData<PassData>();
+            data->oit_depth = spec_shade.AddStorageReadonlyInput(oit_depth, Stg::ComputeShader);
+            data->shared_data = spec_shade.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+            data->depth = spec_shade.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+            data->normal = spec_shade.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+            data->env = spec_shade.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
+            data->mesh_instances = spec_shade.AddStorageReadonlyInput(rt_obj_instances_res, Stg::ComputeShader);
+            data->geo_data = spec_shade.AddStorageReadonlyInput(rt_geo_instances_res, Stg::ComputeShader);
+            data->materials = spec_shade.AddStorageReadonlyInput(common_buffers.materials, Stg::ComputeShader);
+            data->vtx_data0_buf = spec_shade.AddStorageReadonlyInput(common_buffers.vertex_buf1, Stg::ComputeShader);
+            data->vtx_data1_buf = spec_shade.AddStorageReadonlyInput(common_buffers.vertex_buf2, Stg::ComputeShader);
+            data->ndx_buf = spec_shade.AddStorageReadonlyInput(common_buffers.indices_buf, Stg::ComputeShader);
+            data->lights = spec_shade.AddStorageReadonlyInput(common_buffers.lights, Stg::ComputeShader);
+            data->shadow_depth = spec_shade.AddTextureInput(frame_textures.shadow_depth, Stg::ComputeShader);
+            data->shadow_color = spec_shade.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
+            data->ltc_luts = spec_shade.AddTextureInput(frame_textures.ltc_luts, Stg::ComputeShader);
+            data->cells = spec_shade.AddStorageReadonlyInput(common_buffers.rt_cells, Stg::ComputeShader);
+            data->items = spec_shade.AddStorageReadonlyInput(common_buffers.rt_items, Stg::ComputeShader);
+
+            data->irradiance = spec_shade.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::ComputeShader);
+            data->distance = spec_shade.AddTextureInput(frame_textures.gi_cache_distance, Stg::ComputeShader);
+            data->offset = spec_shade.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
+
+            if (ray_rt_list) {
+                data->in_ray_list = spec_shade.AddStorageReadonlyInput(ray_rt_list, Stg::ComputeShader);
+            } else {
+                data->in_ray_list = spec_shade.AddStorageReadonlyInput(oit_ray_list, Stg::ComputeShader);
+            }
+            data->in_ray_hits = spec_shade.AddStorageReadonlyInput(ray_hits, Stg::ComputeShader);
+            data->indir_args = spec_shade.AddIndirectBufferInput(indir_rt_disp);
+            oit_ray_counter = data->inout_ray_counter =
+                spec_shade.AddStorageOutput(oit_ray_counter, Stg::ComputeShader);
+
+            for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
+                oit_specular[i] = data->out_specular[i] =
+                    spec_shade.AddStorageImageOutput(oit_specular[i], Stg::ComputeShader);
+            }
+
+            spec_shade.set_execute_cb([this, &bindless, data](const FgContext &fg) {
+                using namespace RTSpecular;
+
+                const Ren::BufferROHandle oit_depth = fg.AccessROBuffer(data->oit_depth);
+                const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
+                const Ren::ImageROHandle depth = fg.AccessROImage(data->depth);
+                const Ren::ImageROHandle normal = fg.AccessROImage(data->normal);
+                const Ren::ImageROHandle env = fg.AccessROImage(data->env);
+                const Ren::BufferROHandle mesh_instances = fg.AccessROBuffer(data->mesh_instances);
+                const Ren::BufferROHandle geo_data = fg.AccessROBuffer(data->geo_data);
+                const Ren::BufferROHandle materials = fg.AccessROBuffer(data->materials);
+                const Ren::BufferROHandle vtx_data0_buf = fg.AccessROBuffer(data->vtx_data0_buf);
+                const Ren::BufferROHandle vtx_data1_buf = fg.AccessROBuffer(data->vtx_data1_buf);
+                const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(data->ndx_buf);
+                const Ren::BufferROHandle lights = fg.AccessROBuffer(data->lights);
+                const Ren::ImageROHandle shadow_depth = fg.AccessROImage(data->shadow_depth);
+                const Ren::ImageROHandle shadow_color = fg.AccessROImage(data->shadow_color);
+                const Ren::ImageROHandle ltc_luts = fg.AccessROImage(data->ltc_luts);
+                const Ren::BufferROHandle cells = fg.AccessROBuffer(data->cells);
+                const Ren::BufferROHandle items = fg.AccessROBuffer(data->items);
+
+                const Ren::ImageROHandle irr = fg.AccessROImage(data->irradiance);
+                const Ren::ImageROHandle dist = fg.AccessROImage(data->distance);
+                const Ren::ImageROHandle off = fg.AccessROImage(data->offset);
+
+                const Ren::BufferROHandle in_ray_list = fg.AccessROBuffer(data->in_ray_list);
+                const Ren::BufferROHandle in_ray_hits = fg.AccessROBuffer(data->in_ray_hits);
+                const Ren::BufferROHandle indir_args = fg.AccessROBuffer(data->indir_args);
+                const Ren::BufferHandle inout_ray_counter = fg.AccessRWBuffer(data->inout_ray_counter);
+
+                Ren::SmallVector<Ren::Binding, 16> bindings = {
+                    {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
+                    {Trg::BindlessDescriptors, BIND_BINDLESS_TEX, bindless.rt_inline_textures},
+                    {Trg::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},
+                    {Trg::TexSampled, NORM_TEX_SLOT, normal},
+                    {Trg::UTBuf, OIT_DEPTH_BUF_SLOT, oit_depth},
+                    {Trg::TexSampled, ENV_TEX_SLOT, env},
+                    {Trg::UTBuf, MESH_INSTANCES_BUF_SLOT, mesh_instances},
+                    {Trg::SBufRO, GEO_DATA_BUF_SLOT, geo_data},
+                    {Trg::SBufRO, MATERIAL_BUF_SLOT, materials},
+                    {Trg::UTBuf, VTX_BUF1_SLOT, vtx_data0_buf},
+                    {Trg::UTBuf, VTX_BUF2_SLOT, vtx_data1_buf},
+                    {Trg::UTBuf, NDX_BUF_SLOT, ndx_buf},
+                    {Trg::SBufRO, LIGHTS_BUF_SLOT, lights},
+                    {Trg::TexSampled, SHADOW_DEPTH_TEX_SLOT, shadow_depth},
+                    {Trg::TexSampled, SHADOW_COLOR_TEX_SLOT, shadow_color},
+                    {Trg::TexSampled, LTC_LUTS_TEX_SLOT, ltc_luts},
+                    {Trg::UTBuf, CELLS_BUF_SLOT, cells},
+                    {Trg::UTBuf, ITEMS_BUF_SLOT, items},
+                    {Trg::SBufRO, RAY_LIST_SLOT, in_ray_list},
+                    {Trg::SBufRO, RAY_HITS_BUF_SLOT, in_ray_hits},
+                    {Trg::SBufRW, RAY_COUNTER_SLOT, inout_ray_counter}};
+
+                for (int i = 0; i < OIT_REFLECTION_LAYERS && data->out_specular[i]; ++i) {
+                    const Ren::ImageRWHandle out_refl = fg.AccessRWImage(data->out_specular[i]);
+                    bindings.emplace_back(Ren::eBindTarget::ImageRW, RTSpecular::OUT_REFL_IMG_SLOT, i, 1, out_refl);
+                }
+
+                RTSpecular::Params uniform_params;
+                uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
+                uniform_params.pixel_spread_angle = 2.0f * view_state_.pixel_spread_angle;
+                uniform_params.is_hwrt = ctx_.capabilities.hwrt ? 1 : 0;
+
+                // Shade misses
+                DispatchComputeIndirect(fg.cmd_buf(), pi_specular_shade_[7], fg.storages(), indir_args, 0, bindings,
+                                        &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
+
+                bindings.emplace_back(Trg::TexSampled, IRRADIANCE_TEX_SLOT, irr);
+                bindings.emplace_back(Trg::TexSampled, DISTANCE_TEX_SLOT, dist);
+                bindings.emplace_back(Trg::TexSampled, OFFSET_TEX_SLOT, off);
+
+                // Shade hits
+                DispatchComputeIndirect(fg.cmd_buf(), pi_specular_shade_[8], fg.storages(), indir_args,
+                                        sizeof(Ren::DispatchIndirectCommand), bindings, &uniform_params,
+                                        sizeof(uniform_params), fg.descr_alloc(), fg.log());
+            });
         }
     }
 

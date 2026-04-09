@@ -35,20 +35,21 @@ void Eng::ExRTSpecular::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
                                             "internal/rt_specular_swrt@SECOND;NO_SUBGROUP.comp.glsl")),
                 32);
         } else {
-            /*if (args_->layered) {
+            if (args_->layered) {
                 pi_rt_specular_ = sh.FindOrCreatePipeline(
                     hwrt_select(subgroup_select("internal/rt_specular_hwrt@LAYERED.comp.glsl",
                                                 "internal/rt_specular_hwrt@LAYERED;NO_SUBGROUP.comp.glsl"),
                                 subgroup_select("internal/rt_specular_swrt@LAYERED.comp.glsl",
-                                                "internal/rt_specular_swrt@LAYERED;NO_SUBGROUP.comp.glsl")));
-            } else {*/
-            pi_rt_specular_ = sh.FindOrCreatePipeline(
-                hwrt_select(subgroup_select("internal/rt_specular_hwrt@FIRST.comp.glsl",
-                                            "internal/rt_specular_hwrt@FIRST;NO_SUBGROUP.comp.glsl"),
-                            subgroup_select("internal/rt_specular_swrt@FIRST.comp.glsl",
-                                            "internal/rt_specular_swrt@FIRST;NO_SUBGROUP.comp.glsl")),
-                32);
-            //}
+                                                "internal/rt_specular_swrt@LAYERED;NO_SUBGROUP.comp.glsl")),
+                    32);
+            } else {
+                pi_rt_specular_ = sh.FindOrCreatePipeline(
+                    hwrt_select(subgroup_select("internal/rt_specular_hwrt@FIRST.comp.glsl",
+                                                "internal/rt_specular_hwrt@FIRST;NO_SUBGROUP.comp.glsl"),
+                                subgroup_select("internal/rt_specular_swrt@FIRST.comp.glsl",
+                                                "internal/rt_specular_swrt@FIRST;NO_SUBGROUP.comp.glsl")),
+                    32);
+            }
         }
         initialized_ = true;
     }
@@ -75,8 +76,8 @@ void Eng::ExRTSpecular::Execute_SWRT(const FgContext &fg) {
 
     Ren::BufferROHandle oit_depth = {};
     Ren::ImageROHandle noise = {};
-    if (args_->oit_depth_buf) {
-        oit_depth = fg.AccessROBuffer(args_->oit_depth_buf);
+    if (args_->oit_depth) {
+        oit_depth = fg.AccessROBuffer(args_->oit_depth);
     } else {
         noise = fg.AccessROImage(args_->noise);
     }
@@ -104,10 +105,6 @@ void Eng::ExRTSpecular::Execute_SWRT(const FgContext &fg) {
     if (oit_depth) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTSpecular::OIT_DEPTH_BUF_SLOT, oit_depth);
     }
-    for (int i = 0; i < OIT_REFLECTION_LAYERS && args_->out_refl[i]; ++i) {
-        const Ren::ImageRWHandle out_refl = fg.AccessRWImage(args_->out_refl[i]);
-        // bindings.emplace_back(Ren::eBindTarget::ImageRW, RTSpecular::OUT_REFL_IMG_SLOT, i, 1, out_refl);
-    }
 
     RTSpecular::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};
@@ -116,7 +113,6 @@ void Eng::ExRTSpecular::Execute_SWRT(const FgContext &fg) {
         // Expected to be half resolution
         uniform_params.pixel_spread_angle *= 2.0f;
     }
-    uniform_params.lights_count = view_state_->stochastic_lights_count;
 
     DispatchComputeIndirect(fg.cmd_buf(), pi_rt_specular_, fg.storages(), indir_args,
                             sizeof(VkTraceRaysIndirectCommandKHR), bindings, &uniform_params, sizeof(uniform_params),

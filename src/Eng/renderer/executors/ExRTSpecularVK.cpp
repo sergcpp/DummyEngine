@@ -25,8 +25,8 @@ void Eng::ExRTSpecular::Execute_HWRT(const FgContext &fg) {
 
     Ren::BufferROHandle oit_depth = {};
     Ren::ImageROHandle noise = {};
-    if (args_->oit_depth_buf) {
-        oit_depth = fg.AccessROBuffer(args_->oit_depth_buf);
+    if (args_->oit_depth) {
+        oit_depth = fg.AccessROBuffer(args_->oit_depth);
     } else {
         noise = fg.AccessROImage(args_->noise);
     }
@@ -55,10 +55,6 @@ void Eng::ExRTSpecular::Execute_HWRT(const FgContext &fg) {
     if (oit_depth) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTSpecular::OIT_DEPTH_BUF_SLOT, oit_depth);
     }
-    for (int i = 0; i < OIT_REFLECTION_LAYERS && args_->out_refl[i]; ++i) {
-        const Ren::ImageRWHandle out_refl = fg.AccessRWImage(args_->out_refl[i]);
-        // bindings.emplace_back(Ren::eBindTarget::ImageRW, RTSpecular::OUT_REFL_IMG_SLOT, i, 1, out_refl);
-    }
 
     const Ren::PipelineMain &pi = storages.pipelines[pi_rt_specular_].first;
     const Ren::ProgramMain &pr = storages.programs[pi.prog].first;
@@ -73,7 +69,10 @@ void Eng::ExRTSpecular::Execute_HWRT(const FgContext &fg) {
     RTSpecular::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
-    uniform_params.lights_count = view_state_->stochastic_lights_count;
+    if (oit_depth) {
+        // Expected to be half resolution
+        uniform_params.pixel_spread_angle *= 2.0f;
+    }
 
     api.vkCmdPushConstants(cmd_buf, pi.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params), &uniform_params);
 

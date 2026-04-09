@@ -16,7 +16,6 @@
 #include "shaders/tile_clear_interface.h"
 
 #include "executors/ExRTSpecular.h"
-#include "executors/ExRTSpecularInline.h"
 
 #include "Renderer_Names.h"
 

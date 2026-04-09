@@ -18,7 +18,7 @@
 
 #include "rt_specular_interface.h"
 
-#pragma multi_compile FIRST SECOND
+#pragma multi_compile FIRST SECOND LAYERED
 #pragma multi_compile _ NO_SUBGROUP
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -75,7 +75,6 @@ void main() {
     if (ray_index >= g_ray_counter[7]) return;
 
 #ifndef LAYERED
-
 #if defined(FIRST)
     const uint packed_coords = g_ray_list[ray_index];
 #elif defined(SECOND)
@@ -110,6 +109,7 @@ void main() {
     ray_origin_ws /= ray_origin_ws.w;
 
     ray_origin_ws.xyz += (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition + view_z * NormalBiasViewAddition) * normal_ws;
+    const float t_min = 0.0;
 #else // LAYERED
     const uint packed_coords = g_ray_list[2 * ray_index + 0];
     const uint packed_dir = g_ray_list[2 * ray_index + 1];
@@ -124,7 +124,6 @@ void main() {
     int frag_index = int(layer_index) * g_shrd_data.ires_and_ifres.x * g_shrd_data.ires_and_ifres.y;
     frag_index += int(ray_coords.y) * g_shrd_data.ires_and_ifres.x + int(ray_coords.x);
     const float depth = uintBitsToFloat(texelFetch(g_oit_depth_buf, frag_index).x);
-    const float first_roughness = 0.0;
 
     const ivec2 icoord = ivec2(ray_coords);
     const vec2 norm_uvs = (vec2(ray_coords) + 0.5) * g_shrd_data.ren_res.zw;
@@ -136,10 +135,10 @@ void main() {
     vec4 ray_origin_ws = g_shrd_data.world_from_view * vec4(ray_origin_vs, 1.0);
     ray_origin_ws /= ray_origin_ws.w;
 
-    vec4 u = vec4(0.0);
+    const float t_min = 0.001;
 #endif // LAYERED
 
-#if defined(FIRST)
+#if defined(FIRST) || defined(LAYERED)
     vec3 throughput = vec3(1.0);
 #elif defined(SECOND)
     const float first_hit_t = uintBitsToFloat(g_ray_list[ray_index * RAY_LIST_STRIDE + 1]);
@@ -155,7 +154,6 @@ void main() {
     vec3 throughput = UnpackRGB565(packed_roughness_throughput & 0xffffu);
 #endif
 
-    const float t_min = 0.0;
     const float t_max = 100.0;
 
     hit_data_t inter;
@@ -262,12 +260,16 @@ void main() {
 #endif
 
     if (!is_hit) {
+    #if !defined(LAYERED)
         const uint out_offset = g_params.img_size.x * g_params.img_size.y * RAY_HITS_STRIDE - (out_index + 1) * RAY_MISS_STRIDE;
+    #else
+        const uint out_offset = OIT_REFLECTION_LAYERS * ((g_params.img_size.x + 1) / 2) * ((g_params.img_size.y + 1) / 2) * RAY_HITS_STRIDE - (out_index + 1) * RAY_MISS_STRIDE;
+    #endif
 
         // Append at the end of buffer
     #if defined(FIRST)
         g_ray_hits[out_offset + 0] = packed_coords;
-    #elif defined(SECOND)
+    #elif defined(SECOND) || defined(LAYERED)
         g_ray_hits[out_offset + 0] = ray_index;
     #endif
         g_ray_hits[out_offset + 1] = PackRGB565(throughput);
@@ -289,7 +291,7 @@ void main() {
 
     #if defined(FIRST)
         g_ray_hits[out_index * RAY_HITS_STRIDE + 0] = packed_coords;
-    #elif defined(SECOND)
+    #elif defined(SECOND) || defined(LAYERED)
         g_ray_hits[out_index * RAY_HITS_STRIDE + 0] = ray_index;
     #endif
         g_ray_hits[out_index * RAY_HITS_STRIDE + 1] = (uint(inter.obj_index) << 16u) | packed_throughput;

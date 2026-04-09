@@ -27,7 +27,7 @@ class ExRTSpecular final : public FgExecutor {
         FgBufROHandle indir_args;
         FgBufROHandle tlas_buf;
 
-        FgBufROHandle oit_depth_buf;
+        FgBufROHandle oit_depth;
 
         Ren::AccStructROHandle tlas;
 
@@ -43,8 +43,6 @@ class ExRTSpecular final : public FgExecutor {
 
         FgBufRWHandle inout_ray_counter;
         FgBufRWHandle out_ray_hits;
-
-        FgImgRWHandle out_refl[OIT_REFLECTION_LAYERS];
     };
 
     explicit ExRTSpecular(const view_state_t *view_state, const BindlessTextureData *bindless_tex, const Args *args)

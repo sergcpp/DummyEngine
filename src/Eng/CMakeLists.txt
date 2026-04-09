@@ -134,8 +134,6 @@ set(EXECUTORS_SOURCES   renderer/executors/ExBuildAccStructures.h
                         renderer/executors/ExRTDiffuse.cpp
                         renderer/executors/ExRTGICache.h
                         renderer/executors/ExRTGICache.cpp
-                        renderer/executors/ExRTSpecularInline.h
-                        renderer/executors/ExRTSpecularInline.cpp
                         renderer/executors/ExRTSpecular.h
                         renderer/executors/ExRTSpecular.cpp
                         renderer/executors/ExRTShadows.h
@@ -197,7 +195,6 @@ elseif(${REN_BACKEND} STREQUAL "VK")
                             renderer/executors/ExOpaqueVK.cpp
                             renderer/executors/ExRTDiffuse_VK.cpp
                             renderer/executors/ExRTGICacheVK.cpp
-                            renderer/executors/ExRTSpecularInlineVK.cpp
                             renderer/executors/ExRTSpecularVK.cpp
                             renderer/executors/ExRTShadows_VK.cpp
                             renderer/executors/ExSampleLightsVK.cpp

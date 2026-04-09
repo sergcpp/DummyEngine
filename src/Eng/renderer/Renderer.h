@@ -185,7 +185,7 @@ class Renderer {
     Ren::PipelineHandle pi_gbuf_shade_[2];
     // Specular GI
     Ren::PipelineHandle pi_specular_classify_, pi_specular_write_indirect_[3], pi_specular_trace_ss_[2][2],
-        pi_specular_shade_[7];
+        pi_specular_shade_[9];
     // Specular GI Denoiser stuff
     Ren::PipelineHandle pi_specular_reproject_, pi_specular_temporal_[2], pi_specular_filter_[4],
         pi_specular_stabilization_;

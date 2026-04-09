@@ -25,6 +25,7 @@
 #include "rt_specular_interface.h"
 
 #pragma multi_compile MISS MISS_SECOND HIT HIT_FIRST HIT_SECOND
+#pragma multi_compile _ LAYERED
 #pragma multi_compile _ GI_CACHE
 #pragma multi_compile _ STOCH_LIGHTS
 #pragma multi_compile _ NO_SUBGROUP
@@ -38,6 +39,14 @@
 #endif
 
 #if defined(HIT_SECOND) && defined(STOCH_LIGHTS)
+    #pragma dont_compile
+#endif
+
+#if defined(LAYERED) && defined(STOCH_LIGHTS)
+    #pragma dont_compile
+#endif
+
+#if defined(LAYERED) && (defined(MISS_SECOND) || defined(HIT_FIRST) || defined(HIT_SECOND))
     #pragma dont_compile
 #endif
 
@@ -65,7 +74,11 @@ layout(std430, binding = RAY_HITS_BUF_SLOT) readonly buffer RayHitsList {
     uint g_ray_hits[];
 };
 
-layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
+#ifdef LAYERED
+    layout(binding = OIT_DEPTH_BUF_SLOT) uniform usamplerBuffer g_oit_depth_buf;
+#else
+    layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
+#endif
 
 layout(binding = MESH_INSTANCES_BUF_SLOT) uniform samplerBuffer g_mesh_instances;
 
@@ -92,7 +105,7 @@ layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
 layout(binding = ITEMS_BUF_SLOT) uniform usamplerBuffer g_items_buf;
 
-#if defined(MISS_SECOND) || defined(HIT_SECOND)
+#if defined(MISS_SECOND) || defined(HIT_SECOND) || defined(LAYERED)
 layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
     uint g_ray_list[];
 };
@@ -109,7 +122,11 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
     layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
 #endif
 
-layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform restrict image2D g_out_color_img;
+#ifdef LAYERED
+    layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_out_color_img[OIT_REFLECTION_LAYERS];
+#else
+    layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform restrict image2D g_out_color_img;
+#endif
 
 #ifdef HIT_FIRST
 layout(std430, binding = OUT_RAY_LIST_BUF_SLOT) writeonly buffer OutRayList {
@@ -143,27 +160,28 @@ layout (local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
     uint hit_index = gl_WorkGroupID.x * GRP_SIZE_X + gl_LocalInvocationIndex;
-#if defined(MISS)
-    if (hit_index >= g_inout_ray_counter[9]) return;
-    const uint read_offset = g_params.img_size.x * g_params.img_size.y * RAY_HITS_STRIDE - (hit_index + 1) * RAY_MISS_STRIDE;
-    hit_index = g_params.img_size.x * g_params.img_size.y * RAY_HITS_STRIDE - RAY_MISS_STRIDE;
-    const uint packed_coords = g_ray_hits[read_offset + 0];
-#elif defined(MISS_SECOND)
-    if (hit_index >= g_inout_ray_counter[9]) return;
-    const uint read_offset = g_params.img_size.x * g_params.img_size.y * RAY_HITS_STRIDE - (hit_index + 1) * RAY_MISS_STRIDE;
-    hit_index = g_params.img_size.x * g_params.img_size.y * RAY_HITS_STRIDE - RAY_MISS_STRIDE;
-    const uint ray_index = g_ray_hits[read_offset + 0];
-    const uint packed_coords = g_ray_list[ray_index * RAY_LIST_STRIDE + 0];
-#elif defined(HIT) || defined(HIT_FIRST)
-    if (hit_index >= g_inout_ray_counter[11]) return;
-    const uint read_offset = hit_index * RAY_HITS_STRIDE;
-    const uint packed_coords = g_ray_hits[read_offset + 0];
-#else // HIT_SECOND
-    if (hit_index >= g_inout_ray_counter[11]) return;
-    const uint read_offset = hit_index * RAY_HITS_STRIDE;
-    const uint ray_index = g_ray_hits[read_offset + 0];
-    const uint packed_coords = g_ray_list[ray_index * RAY_LIST_STRIDE + 0];
-#endif
+#ifndef LAYERED
+    #if defined(MISS)
+        if (hit_index >= g_inout_ray_counter[9]) return;
+        const uint read_offset = g_params.img_size.x * g_params.img_size.y * RAY_HITS_STRIDE - (hit_index + 1) * RAY_MISS_STRIDE;
+        hit_index = g_params.img_size.x * g_params.img_size.y * RAY_HITS_STRIDE - RAY_MISS_STRIDE;
+        const uint packed_coords = g_ray_hits[read_offset + 0];
+    #elif defined(MISS_SECOND)
+        if (hit_index >= g_inout_ray_counter[9]) return;
+        const uint read_offset = g_params.img_size.x * g_params.img_size.y * RAY_HITS_STRIDE - (hit_index + 1) * RAY_MISS_STRIDE;
+        hit_index = g_params.img_size.x * g_params.img_size.y * RAY_HITS_STRIDE - RAY_MISS_STRIDE;
+        const uint ray_index = g_ray_hits[read_offset + 0];
+        const uint packed_coords = g_ray_list[ray_index * RAY_LIST_STRIDE + 0];
+    #elif defined(HIT) || defined(HIT_FIRST)
+        if (hit_index >= g_inout_ray_counter[11]) return;
+        const uint read_offset = hit_index * RAY_HITS_STRIDE;
+        const uint packed_coords = g_ray_hits[read_offset + 0];
+    #else // HIT_SECOND
+        if (hit_index >= g_inout_ray_counter[11]) return;
+        const uint read_offset = hit_index * RAY_HITS_STRIDE;
+        const uint ray_index = g_ray_hits[read_offset + 0];
+        const uint packed_coords = g_ray_list[ray_index * RAY_LIST_STRIDE + 0];
+    #endif
 
     uvec2 ray_coords;
     bool copy_horizontal, copy_vertical, copy_diagonal;
@@ -193,6 +211,43 @@ void main() {
     ray_origin_ws /= ray_origin_ws.w;
 
     ray_origin_ws.xyz += (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition + view_z * NormalBiasViewAddition) * normal_ws;
+#else // LAYERED
+    #if defined(MISS)
+        if (hit_index >= g_inout_ray_counter[9]) return;
+        const uint read_offset = OIT_REFLECTION_LAYERS * ((g_params.img_size.x + 1) / 2) * ((g_params.img_size.y + 1) / 2) * RAY_HITS_STRIDE - (hit_index + 1) * RAY_MISS_STRIDE;
+        hit_index = g_params.img_size.x * g_params.img_size.y * RAY_HITS_STRIDE - RAY_MISS_STRIDE;
+        const uint ray_index = g_ray_hits[read_offset + 0];
+    #elif defined(HIT)
+        if (hit_index >= g_inout_ray_counter[11]) return;
+        const uint read_offset = hit_index * RAY_HITS_STRIDE;
+        const uint ray_index = g_ray_hits[read_offset + 0];
+    #endif
+
+    const uint packed_coords = g_ray_list[2 * ray_index + 0];
+    const uint packed_dir = g_ray_list[2 * ray_index + 1];
+
+    uvec2 ray_coords;
+    uint layer_index;
+    UnpackRayCoords(packed_coords, ray_coords, layer_index);
+
+    const vec2 oct_dir = vec2(packed_dir & 0xffffu, (packed_dir >> 16) & 0xffffu) / 65535.0;
+    vec3 refl_ray_ws = UnpackUnitVector(oct_dir);
+
+    int frag_index = int(layer_index) * g_shrd_data.ires_and_ifres.x * g_shrd_data.ires_and_ifres.y;
+    frag_index += int(ray_coords.y) * g_shrd_data.ires_and_ifres.x + int(ray_coords.x);
+    const float depth = uintBitsToFloat(texelFetch(g_oit_depth_buf, frag_index).x);
+    const float first_roughness = 0.0;
+
+    const ivec2 icoord = ivec2(ray_coords);
+    const vec2 norm_uvs = (vec2(ray_coords) + 0.5) * g_shrd_data.ren_res.zw;
+    const vec3 ray_origin_ss = vec3(norm_uvs, depth);
+    const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy - 1.0, ray_origin_ss.z, 1.0);
+    const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
+    const float view_z = -ray_origin_vs.z;
+
+    vec4 ray_origin_ws = g_shrd_data.world_from_view * vec4(ray_origin_vs, 1.0);
+    ray_origin_ws /= ray_origin_ws.w;
+#endif
 
 #if defined(MISS_SECOND) || defined(HIT_SECOND)
     const float first_hit_t = uintBitsToFloat(g_ray_list[ray_index * RAY_LIST_STRIDE + 1]);
@@ -575,6 +630,7 @@ void main() {
 
     final_color = compress_hdr(final_color, g_shrd_data.cam_pos_and_exp.w);
 
+#ifndef LAYERED
     const vec4 old_color = imageLoad(g_out_color_img, icoord);
 #if defined(MISS_SECOND) || defined(HIT_SECOND)
     const float norm_first_ray_len = old_color.w;
@@ -631,4 +687,12 @@ void main() {
             imageStore(g_out_color_img, copy_coords, vec4(prev_color + final_color, norm_first_ray_len));
         }
     }
+#else // LAYERED
+    [[dont_flatten]] if (layer_index == 0) {
+        imageStore(g_out_color_img[0], icoord / 2, vec4(final_color, 1.0));
+    } else {
+        imageStore(g_out_color_img[1], icoord / 2, vec4(final_color, 1.0));
+    }
+#endif
+
 }
