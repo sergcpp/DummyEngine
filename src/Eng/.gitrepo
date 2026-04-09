@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = deferred_specular
-	commit = 7d577cb1e67139ddf2cab3d86ba14071610f6fed
+	branch = deferred_oit
+	commit = dc09f2678e25e1950a472e1300e4863c4a28877a
 	method = merge
-	cmdver = 0.4.6
-	parent = ed08b3d349c2225ca8874162434ee4f51a49b16d
+	cmdver = 0.4.9
+	parent = 196f64ea4a2010deb01c6b48ae4d85df34a5bcf1
