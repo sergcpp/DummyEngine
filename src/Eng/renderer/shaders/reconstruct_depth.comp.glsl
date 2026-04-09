@@ -34,8 +34,8 @@ void main() {
     // Reconstruct previous depth
     //
     const vec2 reproj_uvs = norm_uvs - closest_vel * g_params.texel_size;
-    const float uvx = fract(float(g_params.img_size.x) * reproj_uvs.x + 0.5);
-    const float uvy = fract(float(g_params.img_size.y) * reproj_uvs.y + 0.5);
+    const float uvx = fract(float(g_params.img_size.x) * reproj_uvs.x - 0.5);
+    const float uvy = fract(float(g_params.img_size.y) * reproj_uvs.y - 0.5);
 
     vec4 w = vec4(1.0);
     // Bilinear weights
