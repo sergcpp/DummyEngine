@@ -962,8 +962,8 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
     });
 }
 
-Eng::FgImgRWHandle Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
-                                               const bool static_accumulation) {
+std::tuple<Eng::FgImgROHandle, Eng::FgImgROHandle, Eng::FgImgRWHandle>
+Eng::Renderer::AddDisocclusionPasses(const FgImgROHandle depth, const FgImgROHandle velocity) {
     using Stg = Ren::eStage;
 
     FgImgRWHandle reconstructed_depth;
@@ -993,7 +993,6 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffe
             fg.ren_ctx().CmdClearImage(reconstructed_depth, {}, fg.cmd_buf());
         });
     }
-
     FgImgRWHandle dilated_depth, dilated_velocity;
     { // Reconstruct previous depth
         auto &reconstruct = fg_builder_.AddNode("RECONSTRUCT DEPTH");
@@ -1008,8 +1007,8 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffe
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
-        data->depth = reconstruct.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
-        data->velocity = reconstruct.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
+        data->depth = reconstruct.AddTextureInput(depth, Stg::ComputeShader);
+        data->velocity = reconstruct.AddTextureInput(velocity, Stg::ComputeShader);
 
         reconstructed_depth = data->out_reconstructed_depth =
             reconstruct.AddStorageImageOutput(reconstructed_depth, Stg::ComputeShader);
@@ -1081,7 +1080,7 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffe
         data->dilated_depth = prep_disocclusion.AddTextureInput(dilated_depth, Stg::ComputeShader);
         data->dilated_velocity = prep_disocclusion.AddTextureInput(dilated_velocity, Stg::ComputeShader);
         data->reconstructed_depth = prep_disocclusion.AddTextureInput(reconstructed_depth, Stg::ComputeShader);
-        data->velocity = prep_disocclusion.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
+        data->velocity = prep_disocclusion.AddTextureInput(velocity, Stg::ComputeShader);
 
         { // Image that holds disocclusion
             FgImgDesc desc;
@@ -1125,6 +1124,13 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffe
                             sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
         });
     }
+
+    return {dilated_depth, dilated_velocity, disocclusion_mask};
+}
+
+Eng::FgImgRWHandle Eng::Renderer::AddTSRPass(const FrameTextures &frame_textures, const eTAAMode taa_mode) {
+    using Stg = Ren::eStage;
+
     FgImgRWHandle resolved_color;
     { // Main TSR pass
         auto &taa = fg_builder_.AddNode("TSR");
@@ -1142,9 +1148,9 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffe
 
         auto *data = fg_builder_.AllocTempData<PassData>();
         data->color = taa.AddTextureInput(frame_textures.color, Stg::FragmentShader);
-        data->dilated_depth = taa.AddTextureInput(dilated_depth, Stg::FragmentShader);
-        data->dilated_velocity = taa.AddTextureInput(dilated_velocity, Stg::FragmentShader);
-        data->disocclusion_mask = taa.AddTextureInput(disocclusion_mask, Stg::FragmentShader);
+        data->dilated_depth = taa.AddTextureInput(frame_textures.dilated_depth, Stg::FragmentShader);
+        data->dilated_velocity = taa.AddTextureInput(frame_textures.dilated_velocity, Stg::FragmentShader);
+        data->disocclusion_mask = taa.AddTextureInput(frame_textures.disocclusion_mask, Stg::FragmentShader);
 
         { // Image that holds resolved color
             FgImgDesc desc;
@@ -1159,6 +1165,7 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffe
         }
         data->history = taa.AddHistoryTextureInput(data->output_history, Stg::FragmentShader);
 
+        const bool static_accumulation = (taa_mode == eTAAMode::Static);
         taa.set_execute_cb([this, data, static_accumulation](const FgContext &fg) {
             const Ren::ImageROHandle color = fg.AccessROImage(data->color);
             const Ren::ImageROHandle history = fg.AccessROImage(data->history);
@@ -1207,7 +1214,6 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffe
                                 fg.framebuffers());
         });
     }
-    frame_textures.disocclusion_mask = disocclusion_mask;
     return resolved_color;
 }
 

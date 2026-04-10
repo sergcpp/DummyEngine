@@ -265,7 +265,6 @@ class Renderer {
         FgImgRWHandle depth, opaque_depth;
         FgImgDesc velocity_desc;
         FgImgRWHandle velocity;
-        FgImgRWHandle disocclusion_mask;
 
         FgImgROHandle exposure;
         FgImgROHandle sun_shadow;
@@ -273,6 +272,10 @@ class Renderer {
 
         FgImgRWHandle ssao;
         FgImgROHandle gi_diffuse;
+
+        FgImgROHandle dilated_depth;
+        FgImgROHandle dilated_velocity;
+        FgImgRWHandle disocclusion_mask;
 
         // External
         FgImgRWHandle envmap;
@@ -312,8 +315,9 @@ class Renderer {
 
     void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgImgRWHandle depth,
                                    FgImgRWHandle &inout_velocity);
-    FgImgRWHandle AddTSRPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
-                               bool static_accumulation);
+    std::tuple<FgImgROHandle, FgImgROHandle, FgImgRWHandle> AddDisocclusionPasses(FgImgROHandle depth,
+                                                                                  FgImgROHandle velocity);
+    FgImgRWHandle AddTSRPass(const FrameTextures &frame_textures, eTAAMode taa_mode);
     FgImgRWHandle AddSharpenPass(FgImgROHandle input, FgImgROHandle exposure, bool compressed);
     FgImgRWHandle AddMotionBlurPasses(FgImgROHandle input, FrameTextures &frame_textures);
     FgImgRWHandle AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgImgROHandle depth);

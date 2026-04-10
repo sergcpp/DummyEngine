@@ -480,8 +480,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
              Ren::eStoreOp::Store},
 #endif
             {Ren::eFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
-             Ren::eStoreOp::Store}
-        };
+             Ren::eStoreOp::Store}};
 
         // color_rts[2].flags = Ren::eImgFlags::SRGB;
 
@@ -1365,6 +1364,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             AddFillStaticVelocityPass(common_buffers, frame_textures.depth, frame_textures.velocity);
         }
 
+        std::tie(frame_textures.dilated_depth, frame_textures.dilated_velocity, frame_textures.disocclusion_mask) =
+            AddDisocclusionPasses(frame_textures.depth, frame_textures.velocity);
+
         if (deferred_shading) {
             // Skydome drawing
             AddSkydomePass(common_buffers, frame_textures);
@@ -1539,8 +1541,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         const bool use_taa = list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe;
         if (use_taa) {
-            resolved_color =
-                AddTSRPasses(common_buffers, frame_textures, list.render_settings.taa_mode == eTAAMode::Static);
+            resolved_color = AddTSRPass(frame_textures, list.render_settings.taa_mode);
         } else {
             resolved_color = frame_textures.color;
         }
