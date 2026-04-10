@@ -75,7 +75,7 @@ vec4 FetchColor(sampler2D s, ivec2 icoord) {
 
 vec4 SampleColor(sampler2D s, vec2 uvs) {
 #if defined(CATMULL_ROM)
-    vec4 ret = SampleTextureCatmullRom(s, uvs, g_params.texel_size.zw);
+    vec4 ret = SampleCatmulRom4x4_5Tap(s, uvs, vec4(g_params.transform.zw, g_params.texel_size.zw));
 #else
     vec4 ret = textureLod(s, uvs, 0.0);
 #endif

@@ -70,11 +70,11 @@ vec3 FindClosestFragment_3x3(sampler2D dtex, const vec2 uv, const vec2 texel_siz
 }
 
 // Taken from http://vec3.ca/bicubic-filtering-in-fewer-taps/
-vec4 SampleTextureCatmullRom(sampler2D tex, vec2 uv, vec2 texel_size) {
-    const vec2 samplePos = uv / texel_size;
-    const vec2 texPos1 = floor(samplePos - 0.5) + 0.5;
+vec4 SampleCatmulRom4x4_9Tap(const sampler2D tex, const vec2 uv, const vec4 tex_size_inv_size) {
+    const vec2 sample_pos = uv * tex_size_inv_size.xy;
+    const vec2 tex_pos1 = floor(sample_pos - 0.5) + 0.5;
 
-    const vec2 f = samplePos - texPos1;
+    const vec2 f = sample_pos - tex_pos1;
 
     vec2 w0 = f * (-0.5 + f * (1.0 - 0.5 * f));
     vec2 w1 = 1.0 + f * f * (-2.5 + 1.5 * f);
@@ -84,29 +84,58 @@ vec4 SampleTextureCatmullRom(sampler2D tex, vec2 uv, vec2 texel_size) {
     vec2 w12 = w1 + w2;
     vec2 offset12 = w2 / (w1 + w2);
 
-    vec2 texPos0 = texPos1 - 1.0;
-    vec2 texPos3 = texPos1 + 2.0;
-    vec2 texPos12 = texPos1 + offset12;
+    vec2 tex_pos0 = tex_pos1 - 1.0;
+    vec2 tex_pos3 = tex_pos1 + 2.0;
+    vec2 tex_pos12 = tex_pos1 + offset12;
 
-    texPos0 *= texel_size;
-    texPos3 *= texel_size;
-    texPos12 *= texel_size;
+    tex_pos0 *= tex_size_inv_size.zw;
+    tex_pos3 *= tex_size_inv_size.zw;
+    tex_pos12 *= tex_size_inv_size.zw;
 
     vec4 result = vec4(0.0);
 
-    result += textureLod(tex, vec2(texPos0.x, texPos0.y), 0.0) * w0.x * w0.y;
-    result += textureLod(tex, vec2(texPos12.x, texPos0.y), 0.0) * w12.x * w0.y;
-    result += textureLod(tex, vec2(texPos3.x, texPos0.y), 0.0) * w3.x * w0.y;
+    result += textureLod(tex, vec2(tex_pos0.x,  tex_pos0.y), 0.0) * w0.x * w0.y;
+    result += textureLod(tex, vec2(tex_pos12.x, tex_pos0.y), 0.0) * w12.x * w0.y;
+    result += textureLod(tex, vec2(tex_pos3.x,  tex_pos0.y), 0.0) * w3.x * w0.y;
 
-    result += textureLod(tex, vec2(texPos0.x, texPos12.y), 0.0) * w0.x * w12.y;
-    result += textureLod(tex, vec2(texPos12.x, texPos12.y), 0.0) * w12.x * w12.y;
-    result += textureLod(tex, vec2(texPos3.x, texPos12.y), 0.0) * w3.x * w12.y;
+    result += textureLod(tex, vec2(tex_pos0.x,  tex_pos12.y), 0.0) * w0.x * w12.y;
+    result += textureLod(tex, vec2(tex_pos12.x, tex_pos12.y), 0.0) * w12.x * w12.y;
+    result += textureLod(tex, vec2(tex_pos3.x,  tex_pos12.y), 0.0) * w3.x * w12.y;
 
-    result += textureLod(tex, vec2(texPos0.x, texPos3.y), 0.0) * w0.x * w3.y;
-    result += textureLod(tex, vec2(texPos12.x, texPos3.y), 0.0) * w12.x * w3.y;
-    result += textureLod(tex, vec2(texPos3.x, texPos3.y), 0.0) * w3.x * w3.y;
+    result += textureLod(tex, vec2(tex_pos0.x,  tex_pos3.y), 0.0) * w0.x * w3.y;
+    result += textureLod(tex, vec2(tex_pos12.x, tex_pos3.y), 0.0) * w12.x * w3.y;
+    result += textureLod(tex, vec2(tex_pos3.x,  tex_pos3.y), 0.0) * w3.x * w3.y;
 
     return result;
+}
+
+// Modified version from: https://gist.github.com/TheRealMJP/c83b8c0f46b63f3a88a5986f4fa982b1
+// Corners are skipped (as Jimenez does in SMAA), alpha is taken from center sample only
+vec4 SampleCatmulRom4x4_5Tap(const sampler2D tex, const vec2 uv, const vec4 tex_size_inv_size) {
+    const vec2 pos = uv * tex_size_inv_size.xy;
+    const vec2 center_pos = floor(pos - 0.5) + 0.5;
+    const vec2 f = pos - center_pos;
+
+    const vec2 w0 = f * (-0.5 + f * (1.0 - 0.5 * f));
+    const vec2 w1 = 1.0 + f * f * (1.5 * f - 2.5);
+    const vec2 w2 = f * (0.5 + f * (2.0 - 1.5 * f));
+    const vec2 w3 = f * f * (0.5 * f - 0.5);
+
+    const vec2 w12 = w1 + w2;
+    const vec2 tc12 = (center_pos + w2 / w12) * tex_size_inv_size.zw;
+    const vec2 tc0 = (center_pos - 1.0) * tex_size_inv_size.zw;
+    const vec2 tc3 = (center_pos + 2.0) * tex_size_inv_size.zw;
+
+    // We use alpha channel from center sample only as an optimization
+    const vec4 center_value = textureLod(tex, vec2(tc12.x, tc12.y), 0.0);
+
+    const vec4 result = vec4(textureLod(tex, vec2(tc12.x, tc0.y ), 0.0).xyz, 1.0) * (w12.x * w0.y ) +
+                        vec4(textureLod(tex, vec2(tc0.x,  tc12.y), 0.0).xyz, 1.0) * (w0.x  * w12.y) +
+                        vec4(center_value.xyz, 1.0) * (w12.x * w12.y) +
+                        vec4(textureLod(tex, vec2(tc3.x,  tc12.y), 0.0).xyz, 1.0) * (w3.x  * w12.y) +
+                        vec4(textureLod(tex, vec2(tc12.x, tc3.y ), 0.0).xyz, 1.0) * (w12.x * w3.y );
+
+    return vec4(result.xyz * rcp(result.w), center_value.w);
 }
 
 #endif // TAA_COMMON_GLSL
