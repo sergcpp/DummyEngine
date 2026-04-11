@@ -125,8 +125,8 @@ void Eng::ExOITBlendLayer::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, co
             rast_state.blend.enabled = true;
             rast_state.blend.src_color = unsigned(Ren::eBlendFactor::SrcAlpha);
             rast_state.blend.dst_color = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
-            rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::Zero);
-            rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::One);
+            rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::One);
+            rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::Zero);
 
             pi_simple_[2] = sh.FindOrCreatePipeline(rast_state, oit_blend_simple_prog, vi_simple, rp_oit_blend, 0);
 
@@ -147,8 +147,8 @@ void Eng::ExOITBlendLayer::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, co
             rast_state.blend.enabled = true;
             rast_state.blend.src_color = unsigned(Ren::eBlendFactor::SrcAlpha);
             rast_state.blend.dst_color = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
-            rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::Zero);
-            rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::One);
+            rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::One);
+            rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::Zero);
 
             pi_vegetation_[1] =
                 sh.FindOrCreatePipeline(rast_state, oit_blend_vegetation_prog, vi_vegetation, rp_oit_blend, 0);

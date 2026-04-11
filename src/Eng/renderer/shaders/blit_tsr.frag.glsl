@@ -128,8 +128,8 @@ void main() {
 #if defined(STATIC_ACCUMULATION)
     vec4 col_curr = textureLod(g_color_curr_nearest, norm_uvs, 0.0);
     col_curr.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(col_curr.xyz));
-    if (col_curr.w >= 1.0) {
-        col_curr.w -= 1.0;
+    if (col_curr.w >= 2.0) {
+        col_curr.w -= 2.0;
     }
 
     const vec4 col_hist = FetchColor(g_color_hist, uvs_px);
@@ -152,8 +152,8 @@ void main() {
 
     vec4 col_curr = textureLod(g_color_curr_nearest, base_uv, 0.0);
     col_curr.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(col_curr.xyz));
-    if (col_curr.w >= 1.0) {
-        col_curr.w -= 1.0;
+    if (col_curr.w >= 2.0) {
+        col_curr.w -= 2.0;
     }
 
     const vec2 disocclusion = textureLod(g_disocclusion_mask, base_uv, 0.0).xy;
