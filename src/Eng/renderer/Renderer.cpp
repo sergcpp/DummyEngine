@@ -1202,12 +1202,15 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             const FgBufROHandle materials =
                 shadow_depth.AddStorageReadonlyInput(common_buffers.materials, Ren::eStage::VertexShader);
             const FgImgROHandle noise = shadow_depth.AddTextureInput(frame_textures.noise, Ren::eStage::VertexShader);
+            const FgImgROHandle dummy_white =
+                shadow_depth.AddTextureInput(frame_textures.dummy_white, Ren::eStage::FragmentShader);
 
             frame_textures.shadow_depth = shadow_depth.AddDepthOutput(frame_textures.shadow_depth);
 
-            shadow_depth.make_executor<ExShadowDepth>(
-                SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials,
-                &bindless_tex, instances, instance_indices, shared_data_res, noise, frame_textures.shadow_depth);
+            shadow_depth.make_executor<ExShadowDepth>(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, vtx_buf1_res,
+                                                      vtx_buf2_res, ndx_buf_res, materials, &bindless_tex, instances,
+                                                      instance_indices, shared_data_res, noise, dummy_white,
+                                                      frame_textures.shadow_depth);
         }
         { // Shadow color
             auto &shadow_color = fg_builder_.AddNode("SHADOW COLOR");
@@ -1225,14 +1228,16 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             const FgBufROHandle materials_buf =
                 shadow_color.AddStorageReadonlyInput(common_buffers.materials, Ren::eStage::VertexShader);
             const FgImgROHandle noise = shadow_color.AddTextureInput(frame_textures.noise, Ren::eStage::VertexShader);
+            const FgImgROHandle dummy_white =
+                shadow_color.AddTextureInput(frame_textures.dummy_white, Ren::eStage::FragmentShader);
 
             frame_textures.shadow_depth = shadow_color.AddDepthOutput(frame_textures.shadow_depth);
             frame_textures.shadow_color = shadow_color.AddColorOutput(frame_textures.shadow_color);
 
-            shadow_color.make_executor<ExShadowColor>(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, vtx_buf1_res,
-                                                      vtx_buf2_res, ndx_buf_res, materials_buf, &bindless_tex,
-                                                      instances_res, instance_indices_res, shared_data_res, noise,
-                                                      frame_textures.shadow_depth, frame_textures.shadow_color);
+            shadow_color.make_executor<ExShadowColor>(
+                SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials_buf,
+                &bindless_tex, instances_res, instance_indices_res, shared_data_res, noise, dummy_white,
+                frame_textures.shadow_depth, frame_textures.shadow_color);
         }
 
         frame_textures.depth_desc.w = view_state_.ren_res[0];
@@ -1302,6 +1307,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             const FgBufROHandle materials =
                 depth_fill.AddStorageReadonlyInput(common_buffers.materials, Ren::eStage::VertexShader);
             const FgImgROHandle noise = depth_fill.AddTextureInput(frame_textures.noise, Ren::eStage::VertexShader);
+            const FgImgROHandle dummy_white =
+                depth_fill.AddTextureInput(frame_textures.dummy_white, Ren::eStage::FragmentShader);
 
             frame_textures.depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
 
@@ -1317,8 +1324,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             depth_fill.make_executor<ExDepthFill>(&p_list_, &view_state_, deferred_shading /* clear_depth */, vtx_buf1,
                                                   vtx_buf2, ndx_buf, materials, &bindless_tex, instances,
-                                                  instance_indices, shared_data_res, noise, frame_textures.depth,
-                                                  frame_textures.velocity);
+                                                  instance_indices, shared_data_res, noise, dummy_white,
+                                                  frame_textures.depth, frame_textures.velocity);
         }
 
         //

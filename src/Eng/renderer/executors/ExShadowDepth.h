@@ -30,6 +30,7 @@ class ExShadowDepth final : public FgExecutor {
     FgBufROHandle shared_data_;
     FgBufROHandle materials_;
     FgImgROHandle noise_;
+    FgImgROHandle dummy_white_;
 
     // outputs
     FgImgRWHandle shadow_depth_;
@@ -42,7 +43,7 @@ class ExShadowDepth final : public FgExecutor {
                   const FgBufROHandle vtx_buf2, const FgBufROHandle ndx_buf, const FgBufROHandle materials,
                   const BindlessTextureData *bindless_tex, const FgBufROHandle instances,
                   const FgBufROHandle instance_indices, const FgBufROHandle shared_data, const FgImgROHandle noise,
-                  const FgImgRWHandle shadow_depth)
+                  const FgImgROHandle dummy_white, const FgImgRWHandle shadow_depth)
         : w_(w), h_(h) {
         p_list_ = p_list;
         bindless_tex_ = bindless_tex;
@@ -55,7 +56,9 @@ class ExShadowDepth final : public FgExecutor {
         instance_indices_ = instance_indices;
         shared_data_ = shared_data;
         materials_ = materials;
+
         noise_ = noise;
+        dummy_white_ = dummy_white;
 
         shadow_depth_ = shadow_depth;
     }

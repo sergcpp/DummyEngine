@@ -13,9 +13,9 @@ namespace ExSharedInternal {
 uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices,
                      Ren::Span<const Eng::basic_draw_batch_t> zfill_batches, uint32_t i, uint64_t mask,
                      int *draws_count);
-uint32_t _draw_range_ext(const Eng::FgContext &fg, Ren::Span<const uint32_t> batch_indices,
-                         Ren::Span<const Eng::basic_draw_batch_t> batches, uint32_t i, uint64_t mask,
-                         uint32_t &cur_mat_id, int *draws_count);
+uint32_t _draw_range_ext(const Eng::FgContext &fg, const Ren::ImageMain &white_tex,
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
+                         uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
 void _bind_texture4_and_sampler4(Ren::Context &ctx, const Ren::MaterialMain &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerHandle> &temp_samplers);
 } // namespace ExSharedInternal
@@ -72,6 +72,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(const FgContext &fg, const Ren::ImageRWH
     const Ren::BufferROHandle materials = fg.AccessROBuffer(materials_);
 
     const Ren::ImageROHandle noise = fg.AccessROImage(noise_);
+    const Ren::ImageROHandle dummy_white = fg.AccessROImage(dummy_white_);
 
     const Ren::StoragesRef &storages = fg.storages();
 
@@ -92,6 +93,8 @@ void Eng::ExShadowDepth::DrawShadowMaps(const FgContext &fg, const Ren::ImageRWH
 
     const Ren::ImageMain &noise_main = storages.images[noise].first;
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_main.img);
+
+    const Ren::ImageMain &dummy_white_main = storages.images[dummy_white].first;
 
     const Ren::PipelineMain *pi_solid_main[3] = {&storages.pipelines[pi_solid_[0]].first,
                                                  &storages.pipelines[pi_solid_[1]].first,
@@ -226,8 +229,8 @@ void Eng::ExShadowDepth::DrawShadowMaps(const FgContext &fg, const Ren::ImageRWH
                 uint32_t cur_mat_id = 0xffffffff;
 
                 uint32_t j = batch_points[i];
-                j = _draw_range_ext(fg, batch_indices, (*p_list_)->shadow_batches, j, BitFlags[pi], cur_mat_id,
-                                    &draw_calls_count);
+                j = _draw_range_ext(fg, dummy_white_main, batch_indices, (*p_list_)->shadow_batches, j, BitFlags[pi],
+                                    cur_mat_id, &draw_calls_count);
                 batch_points[i] = j;
             }
 

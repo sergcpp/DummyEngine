@@ -15,8 +15,7 @@ class Image9Patch : public Image {
     Image9Patch(Ren::Context &ctx, std::string_view tex_name, const Vec2f &offset_px, float frame_scale,
                 const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
 
-    [[nodiscard]] const Ren::ImageRegionHandle tex() const { return tex_; }
-    [[nodiscard]] Ren::ImageRegionHandle tex() { return tex_; }
+    [[nodiscard]] Ren::ImageRegionHandle tex() const { return tex_; }
 
     void set_frame_scale(float scale) { frame_scale_ = scale; }
 

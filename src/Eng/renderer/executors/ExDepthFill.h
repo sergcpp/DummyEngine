@@ -31,6 +31,7 @@ class ExDepthFill final : public FgExecutor {
     FgBufROHandle shared_data_;
     FgBufROHandle materials_;
     FgImgROHandle noise_;
+    FgImgROHandle dummy_white_;
 
     FgImgRWHandle depth_;
     FgImgRWHandle velocity_;
@@ -52,7 +53,7 @@ class ExDepthFill final : public FgExecutor {
                 const FgBufROHandle vtx_buf2, const FgBufROHandle ndx_buf, const FgBufROHandle materials,
                 const BindlessTextureData *bindless_tex, const FgBufROHandle instances,
                 const FgBufROHandle instance_indices, const FgBufROHandle shared_data, const FgImgROHandle noise,
-                const FgImgRWHandle depth, const FgImgRWHandle velocity) {
+                const FgImgROHandle dummy_white, const FgImgRWHandle depth, const FgImgRWHandle velocity) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
         clear_depth_ = clear_depth;
@@ -68,6 +69,7 @@ class ExDepthFill final : public FgExecutor {
         materials_ = materials;
 
         noise_ = noise;
+        dummy_white_ = dummy_white;
 
         depth_ = depth;
         velocity_ = velocity;

@@ -168,9 +168,7 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const 
 
             rast_state.stencil.enabled = true;
             rast_state.stencil.pass = unsigned(Ren::eStencilOp::Replace);
-
-            // mark dynamic objects
-            rast_state.stencil.reference = 1;
+            rast_state.stencil.reference = STENCIL_DYNAMIC_BIT;
 
             pi_moving_solid_[2] =
                 sh.FindOrCreatePipeline(rast_state, fillz_solid_mov_prog, vi_solid, rp_depth_velocity_[0], 0);
@@ -198,9 +196,7 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const 
 
             rast_state.stencil.enabled = true;
             rast_state.stencil.pass = unsigned(Ren::eStencilOp::Replace);
-
-            // mark dynamic objects
-            rast_state.stencil.reference = 1;
+            rast_state.stencil.reference = STENCIL_DYNAMIC_BIT;
 
             pi_vege_static_solid_[1] =
                 sh.FindOrCreatePipeline(rast_state, fillz_vege_solid_vel_prog, vi_vege_solid, rp_depth_velocity_[0], 0);
@@ -223,7 +219,7 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const 
             rast_state.stencil.pass = unsigned(Ren::eStencilOp::Replace);
 
             // mark dynamic objects
-            rast_state.stencil.reference = 1;
+            rast_state.stencil.reference = STENCIL_DYNAMIC_BIT;
 
             pi_vege_moving_solid_[1] = sh.FindOrCreatePipeline(rast_state, fillz_vege_solid_vel_mov_prog, vi_vege_solid,
                                                                rp_depth_velocity_[0], 0);
@@ -244,9 +240,7 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const 
 
             rast_state.stencil.enabled = true;
             rast_state.stencil.pass = unsigned(Ren::eStencilOp::Replace);
-
-            // mark dynamic objects
-            rast_state.stencil.reference = 1;
+            rast_state.stencil.reference = STENCIL_DYNAMIC_BIT;
 
             pi_skin_static_solid_[1] =
                 sh.FindOrCreatePipeline(rast_state, fillz_skin_solid_vel_prog, vi_skin_solid, rp_depth_velocity_[0], 0);
@@ -267,9 +261,7 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const 
 
             rast_state.stencil.enabled = true;
             rast_state.stencil.pass = unsigned(Ren::eStencilOp::Replace);
-
-            // mark dynamic objects
-            rast_state.stencil.reference = 1;
+            rast_state.stencil.reference = STENCIL_DYNAMIC_BIT;
 
             pi_skin_moving_solid_[1] = sh.FindOrCreatePipeline(rast_state, fillz_skin_solid_vel_mov_prog, vi_skin_solid,
                                                                rp_depth_velocity_[0], 0);

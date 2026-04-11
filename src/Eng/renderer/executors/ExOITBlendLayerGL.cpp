@@ -70,13 +70,19 @@ void Eng::ExOITBlendLayer::DrawTransparent(const FgContext &fg, const Ren::Image
         rast_state.depth.test_enabled = true;
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
 
+        rast_state.stencil.enabled = true;
+        rast_state.stencil.pass = uint8_t(Ren::eStencilOp::Replace);
+        rast_state.stencil.compare_mask = rast_state.stencil.write_mask = STENCIL_TRANSPARENT_BIT;
+        rast_state.stencil.reference = STENCIL_TRANSPARENT_BIT;
+
         const Ren::Binding bindings[] = {{Ren::eBindTarget::UTBuf, BlitOITDepth::OIT_DEPTH_BUF_SLOT, oit_depth}};
 
         BlitOITDepth::Params uniform_params = {};
         uniform_params.img_size = view_state_->ren_res;
         uniform_params.layer_index = depth_layer_index_;
 
-        const Ren::RenderTarget depth_target = {depth_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
+        const Ren::RenderTarget depth_target = {depth_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
+                                                Ren::eStoreOp::Store};
 
         prim_draw_.DrawPrim(fg.cmd_buf(), PrimDraw::ePrim::Quad, prog_oit_blit_depth_, depth_target, {}, rast_state,
                             fg.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0, fg.framebuffers());

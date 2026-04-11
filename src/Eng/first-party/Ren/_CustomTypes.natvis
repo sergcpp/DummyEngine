@@ -61,7 +61,8 @@
         <Loop>
           <Break Condition="i == capacity_" />
           <If Condition="(ctrl_[i / 64] &amp; (1ull &lt;&lt; (i % 64))) != 0">
-            <Item Name="[{i}]">data_main_[i], data_cold_[i],na</Item>
+            <Item Name="[{i}][main]">data_main_[i],na</Item>
+            <Item Name="[{i}][cold]">data_cold_[i],na</Item>
           </If>
           <Exec>i += 1</Exec>
         </Loop>

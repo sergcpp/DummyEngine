@@ -62,6 +62,10 @@ void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const R
             rast_state.blend.enabled = true;
             rast_state.blend.src_color = rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::One);
             rast_state.blend.dst_color = rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::One);
+            rast_state.stencil.enabled = true;
+            rast_state.stencil.pass = uint8_t(Ren::eStencilOp::Replace);
+            rast_state.stencil.compare_mask = rast_state.stencil.write_mask = STENCIL_EMISSIVE_BIT;
+            rast_state.stencil.reference = STENCIL_EMISSIVE_BIT;
 
             pi_simple_[2] = sh.FindOrCreatePipeline(rast_state, emissive_simple_prog, vi_simple, rp_main_draw, 0);
 
@@ -80,6 +84,10 @@ void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const R
             rast_state.blend.enabled = true;
             rast_state.blend.src_color = rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::One);
             rast_state.blend.dst_color = rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::One);
+            rast_state.stencil.enabled = true;
+            rast_state.stencil.pass = uint8_t(Ren::eStencilOp::Replace);
+            rast_state.stencil.compare_mask = rast_state.stencil.write_mask = STENCIL_EMISSIVE_BIT;
+            rast_state.stencil.reference = STENCIL_EMISSIVE_BIT;
 
             pi_vegetation_[1] =
                 sh.FindOrCreatePipeline(rast_state, emissive_vegetation_prog, vi_vegetation, rp_main_draw, 0);

@@ -30,6 +30,7 @@ class ExShadowColor final : public FgExecutor {
     FgBufROHandle shared_data_;
     FgBufROHandle materials_;
     FgImgROHandle noise_;
+    FgImgROHandle dummy_white_;
 
     // outputs
     FgImgRWHandle shadow_depth_;
@@ -44,7 +45,7 @@ class ExShadowColor final : public FgExecutor {
                   const FgBufROHandle vtx_buf2, const FgBufROHandle ndx_buf, const FgBufROHandle materials,
                   const BindlessTextureData *bindless_tex, const FgBufROHandle instances,
                   const FgBufROHandle instance_indices, const FgBufROHandle shared_data, const FgImgROHandle noise,
-                  const FgImgRWHandle shadow_depth, const FgImgRWHandle shadow_color)
+                  const FgImgROHandle dummy_white, const FgImgRWHandle shadow_depth, const FgImgRWHandle shadow_color)
         : w_(w), h_(h) {
         p_list_ = p_list;
         bindless_tex_ = bindless_tex;
@@ -58,6 +59,7 @@ class ExShadowColor final : public FgExecutor {
         shared_data_ = shared_data;
         materials_ = materials;
         noise_ = noise;
+        dummy_white_ = dummy_white;
 
         shadow_depth_ = shadow_depth;
         shadow_color_ = shadow_color;

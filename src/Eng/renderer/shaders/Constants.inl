@@ -85,6 +85,11 @@ const int LIGHT_SPECULAR_BIT = (1 << 5);
 const int LIGHT_VOLUME_BIT = (1 << 6);
 const int LIGHT_DOUBLESIDED_BIT = (1 << 7);
 
+// Stencil
+const int STENCIL_DYNAMIC_BIT = (1 << 0);
+const int STENCIL_EMISSIVE_BIT = (1 << 1);
+const int STENCIL_TRANSPARENT_BIT = (1 << 2);
+
 // Shadow resolution
 const int SHADOWMAP_RES_PC = 8192;
 const int SHADOWMAP_RES_ANDROID = 4096;
