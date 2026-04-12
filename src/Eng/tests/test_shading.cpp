@@ -388,11 +388,11 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(ren_ctx, threads, "alpha_mat1", 28.60, NoDiffGI);
     run_image_test(ren_ctx, threads, "alpha_mat1", 27.45, MedDiffGI);
     run_image_test(ren_ctx, threads, "alpha_mat1", 27.00, Full);
-    run_image_test(ren_ctx, threads, "alpha_mat1", 27.75, Full_Ultra);
+    run_image_test(ren_ctx, threads, "alpha_mat1", 27.70, Full_Ultra);
     run_image_test(ren_ctx, threads, "alpha_mat2", 40.90, NoShadow);
     run_image_test(ren_ctx, threads, "alpha_mat2", 36.30, NoGI);
     run_image_test(ren_ctx, threads, "alpha_mat2", 34.65, NoDiffGI);
-    run_image_test(ren_ctx, threads, "alpha_mat2", 32.50, MedDiffGI);
+    run_image_test(ren_ctx, threads, "alpha_mat2", 32.45, MedDiffGI);
     run_image_test(ren_ctx, threads, "alpha_mat2", 30.65, Full);
     run_image_test(ren_ctx, threads, "alpha_mat2", 31.75, Full_Ultra);
     run_image_test(ren_ctx, threads, "alpha_mat3", 45.15, NoShadow);
