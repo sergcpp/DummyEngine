@@ -99,8 +99,8 @@ struct moments_t {
 
 moments_t EstimateLocalNeighbourhoodInGroup(ivec2 group_thread_id) {
     moments_t ret;
-    ret.mean = vec3(0.0);
-    ret.variance = vec3(0.0);
+    ret.mean = f16vec3(0.0);
+    ret.variance = f16vec3(0.0);
 
     float16_t accumulated_weight = 0;
     for (int j = -LOCAL_NEIGHBORHOOD_RADIUS; j <= LOCAL_NEIGHBORHOOD_RADIUS; ++j) {
@@ -131,7 +131,7 @@ float16_t GetDisocclusionFactor(const f16vec3 normal, const f16vec3 history_norm
     return factor;
 }
 
-void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size,
+void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size,
                       out float16_t disocclusion_factor, out vec2 reprojection_uv,
                       out f16vec4 reprojection) {
     //moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
@@ -147,7 +147,6 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     f16vec3 surf_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x).xyz;
     float history_linear_depth;
 
-
     // Surface reflection
     f16vec3 history_normal = surf_normal;
     float surf_history_depth = textureLod(g_depth_hist_tex, surf_repr_uv, 0.0).x;
@@ -161,7 +160,8 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     disocclusion_factor = float(surf_history.w > 0.0);
     disocclusion_factor *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
 
-    { // Try to find better sample in the vicinity
+    // Try to find better sample in the vicinity
+    if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
         vec2 closest_uv = reprojection_uv;
         vec2 dudv = 1.0 / vec2(screen_size);
 
@@ -174,13 +174,13 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
                 float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
                 float16_t weight = float(textureLod(g_gi_hist_tex, uv, 0.0).w > 0.0);
                 weight *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
-                if (weight > disocclusion_factor + 0.001) {
+                if (weight > disocclusion_factor) {
                     disocclusion_factor = weight;
                     closest_uv = uv;
-                    reprojection_uv = closest_uv;
                 }
             }
         }
+        reprojection_uv = closest_uv;
         reprojection = textureLod(g_gi_hist_tex, reprojection_uv, 0.0);
     }
 
@@ -211,13 +211,12 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
         w.z = float(reprojection01.w > 0.0) * GetDisocclusionFactor(normal, normal01, linear_depth, depth01) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
         w.w = float(reprojection11.w > 0.0) * GetDisocclusionFactor(normal, normal11, linear_depth, depth11) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
         // And then mix in bilinear weights
-        w.x = w.x * (1.0 - uvx) * (1.0 - uvy);
-        w.y = w.y * (uvx) * (1.0 - uvy);
-        w.z = w.z * (1.0 - uvx) * (uvy);
-        w.w = w.w * (uvx) * (uvy);
-        const float16_t ws = max(w.x + w.y + w.z + w.w, 1.0e-3);
+        w.x *= (1.0 - uvx) * (1.0 - uvy);
+        w.y *= (uvx) * (1.0 - uvy);
+        w.z *= (1.0 - uvx) * (uvy);
+        w.w *= (uvx) * (uvy);
         // normalize
-        w /= ws;
+        w /= max(w.x + w.y + w.z + w.w, 1.0e-3);
 
         f16vec3 history_normal;
         float history_linear_depth;
@@ -247,7 +246,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
         float16_t disocclusion_factor;
         vec2 reprojection_uv;
         f16vec4 reprojection;
-        PickReprojection(ivec2(dispatch_thread_id), ivec2(group_thread_id), screen_size,
+        PickReprojection(ivec2(dispatch_thread_id), ivec2(group_thread_id), ivec2(screen_size),
                          disocclusion_factor, reprojection_uv, reprojection);
         reprojection.xyz *= g_params.hist_weight;
 

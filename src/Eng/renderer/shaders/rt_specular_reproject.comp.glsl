@@ -103,8 +103,8 @@ struct moments_t {
 
 moments_t EstimateLocalNeighbourhoodInGroup(const ivec2 group_thread_id) {
     moments_t ret;
-    ret.mean = vec4(0.0);
-    ret.variance = vec4(0.0);
+    ret.mean = f16vec4(0.0);
+    ret.variance = f16vec4(0.0);
 
     float16_t accumulated_weight = 0;
     for (int j = -LOCAL_NEIGHBORHOOD_RADIUS; j <= LOCAL_NEIGHBORHOOD_RADIUS; ++j) {
@@ -260,10 +260,10 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
                     if (weight > disocclusion_factor) {
                         disocclusion_factor = weight;
                         closest_uv = uv;
-                        reprojection_uv = closest_uv;
                     }
                 }
             }
+            reprojection_uv = closest_uv;
             reprojection = textureLod(g_refl_hist_tex, reprojection_uv, 0.0);
         }
 
@@ -297,13 +297,12 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             w.z = (reprojection01.w > 0.0 && GetDisocclusionFactor(normal, normal01, linear_depth, depth01) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
             w.w = (reprojection11.w > 0.0 && GetDisocclusionFactor(normal, normal11, linear_depth, depth11) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
             // And then mix in bilinear weights
-            w.x = w.x * (1.0 - uvx) * (1.0 - uvy);
-            w.y = w.y * (uvx) * (1.0 - uvy);
-            w.z = w.z * (1.0 - uvx) * (uvy);
-            w.w = w.w * (uvx) * (uvy);
-            const float16_t ws = max(w.x + w.y + w.z + w.w, 1.0e-3);
+            w.x *= (1.0 - uvx) * (1.0 - uvy);
+            w.y *= (uvx) * (1.0 - uvy);
+            w.z *= (1.0 - uvx) * (uvy);
+            w.w *= (uvx) * (uvy);
             // normalize
-            w /= ws;
+            w /= max(w.x + w.y + w.z + w.w, 1.0e-3);
 
             f16vec3 history_normal;
             float history_linear_depth;

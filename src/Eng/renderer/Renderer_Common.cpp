@@ -32,61 +32,56 @@ extern const int TaaSampleCountStatic;
 } // namespace RendererInternal
 
 void Eng::Renderer::InitPipelines() {
-    auto subgroup_select = [this](std::string_view subgroup_shader, std::string_view nosubgroup_shader) {
-        return ctx_.capabilities.subgroup ? subgroup_shader : nosubgroup_shader;
+    auto append_flag = [](std::string &&name, std::string_view flag) -> std::string {
+        const size_t n2 = name.find_first_of('.');
+        assert(n2 != std::string::npos);
+        name.insert(n2, (name.find_first_of('@') != std::string::npos) ? ";" : "@");
+        name.insert(n2 + 1, flag);
+        return name;
     };
 
-    pi_gbuf_shade_[0] =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/gbuffer_shade@SS_SHADOW_ONE.comp.glsl",
-                                                 "internal/gbuffer_shade@SS_SHADOW_ONE;NO_SUBGROUP.comp.glsl"));
-    pi_gbuf_shade_[1] = sh_.FindOrCreatePipeline(
-        subgroup_select("internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW_MANY.comp.glsl",
-                        "internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW_MANY;NO_SUBGROUP.comp.glsl"));
+    auto subgroup_select = [this, &append_flag](std::string &&shader) {
+        if (ctx_.capabilities.subgroup) {
+            return shader;
+        }
+        return append_flag(std::move(shader), "NO_SUBGROUP");
+    };
+
+    pi_gbuf_shade_[0] = sh_.FindOrCreatePipeline(subgroup_select("internal/gbuffer_shade@SS_SHADOW_ONE.comp.glsl"));
+    pi_gbuf_shade_[1] =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW_MANY.comp.glsl"));
 
     // Specular GI
-    pi_specular_classify_ =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_classify.comp.glsl", //
-                                                 "internal/rt_specular_classify@NO_SUBGROUP.comp.glsl"));
+    pi_specular_classify_ = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_classify.comp.glsl"));
     pi_specular_write_indirect_[0] =
         sh_.FindOrCreatePipeline("internal/rt_specular_write_indirect_args@MAIN.comp.glsl");
     pi_specular_write_indirect_[1] =
         sh_.FindOrCreatePipeline("internal/rt_specular_write_indirect_args@RT_DISPATCH.comp.glsl");
     pi_specular_write_indirect_[2] =
         sh_.FindOrCreatePipeline("internal/rt_specular_write_indirect_args@SHADE.comp.glsl");
-    pi_specular_trace_ss_[0][0] =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_trace_ss.comp.glsl", //
-                                                 "internal/rt_specular_trace_ss@NO_SUBGROUP.comp.glsl"));
+    pi_specular_trace_ss_[0][0] = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_trace_ss.comp.glsl"));
     pi_specular_trace_ss_[0][1] =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_trace_ss@GI_CACHE.comp.glsl",
-                                                 "internal/rt_specular_trace_ss@GI_CACHE;NO_SUBGROUP.comp.glsl"));
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_trace_ss@GI_CACHE.comp.glsl"));
     pi_specular_trace_ss_[1][0] =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_trace_ss@LAYERED.comp.glsl",
-                                                 "internal/rt_specular_trace_ss@LAYERED;NO_SUBGROUP.comp.glsl"));
-    pi_specular_trace_ss_[1][1] = sh_.FindOrCreatePipeline(
-        subgroup_select("internal/rt_specular_trace_ss@LAYERED;GI_CACHE.comp.glsl",
-                        "internal/rt_specular_trace_ss@LAYERED;GI_CACHE;NO_SUBGROUP.comp.glsl"));
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_trace_ss@LAYERED.comp.glsl"));
+    pi_specular_trace_ss_[1][1] =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_trace_ss@LAYERED;GI_CACHE.comp.glsl"));
     pi_specular_shade_[0] = sh_.FindOrCreatePipeline("internal/rt_specular_shade@MISS.comp.glsl");
     pi_specular_shade_[1] = sh_.FindOrCreatePipeline("internal/rt_specular_shade@MISS_SECOND.comp.glsl");
     pi_specular_shade_[2] =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_shade@HIT;GI_CACHE.comp.glsl",
-                                                 "internal/rt_specular_shade@HIT;GI_CACHE;NO_SUBGROUP.comp.glsl"));
-    pi_specular_shade_[3] = sh_.FindOrCreatePipeline(
-        subgroup_select("internal/rt_specular_shade@HIT;GI_CACHE;STOCH_LIGHTS.comp.glsl",
-                        "internal/rt_specular_shade@HIT;GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl"));
-    pi_specular_shade_[4] = sh_.FindOrCreatePipeline(
-        subgroup_select("internal/rt_specular_shade@HIT_FIRST;GI_CACHE.comp.glsl",
-                        "internal/rt_specular_shade@HIT_FIRST;GI_CACHE;NO_SUBGROUP.comp.glsl"));
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_shade@HIT;GI_CACHE.comp.glsl"));
+    pi_specular_shade_[3] =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_shade@HIT;GI_CACHE;STOCH_LIGHTS.comp.glsl"));
+    pi_specular_shade_[4] =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_shade@HIT_FIRST;GI_CACHE.comp.glsl"));
     pi_specular_shade_[5] = sh_.FindOrCreatePipeline(
-        subgroup_select("internal/rt_specular_shade@HIT_FIRST;GI_CACHE;STOCH_LIGHTS.comp.glsl",
-                        "internal/rt_specular_shade@HIT_FIRST;GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl"));
-    pi_specular_shade_[6] = sh_.FindOrCreatePipeline(
-        subgroup_select("internal/rt_specular_shade@HIT_SECOND;GI_CACHE.comp.glsl",
-                        "internal/rt_specular_shade@HIT_SECOND;GI_CACHE;NO_SUBGROUP.comp.glsl"));
+        subgroup_select("internal/rt_specular_shade@HIT_FIRST;GI_CACHE;STOCH_LIGHTS.comp.glsl"));
+    pi_specular_shade_[6] =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_shade@HIT_SECOND;GI_CACHE.comp.glsl"));
     // OIT
     pi_specular_shade_[7] = sh_.FindOrCreatePipeline("internal/rt_specular_shade@MISS;LAYERED.comp.glsl");
-    pi_specular_shade_[8] = sh_.FindOrCreatePipeline(
-        subgroup_select("internal/rt_specular_shade@HIT;LAYERED;GI_CACHE.comp.glsl",
-                        "internal/rt_specular_shade@HIT;LAYERED;GI_CACHE;NO_SUBGROUP.comp.glsl"));
+    pi_specular_shade_[8] =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_specular_shade@HIT;LAYERED;GI_CACHE.comp.glsl"));
 
     // Specular GI denoising
     pi_specular_reproject_ = sh_.FindOrCreatePipeline("internal/rt_specular_reproject.comp.glsl");
@@ -128,33 +123,24 @@ void Eng::Renderer::InitPipelines() {
     pi_gtao_accumulate_[1] = sh_.FindOrCreatePipeline("internal/gtao_accumulate@HALF_RES.comp.glsl");
 
     // GI
-    pi_diffuse_classify_ =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_diffuse_classify.comp.glsl", //
-                                                 "internal/rt_diffuse_classify@NO_SUBGROUP.comp.glsl"));
+    pi_diffuse_classify_ = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_diffuse_classify.comp.glsl"));
     pi_diffuse_write_indirect_[0] = sh_.FindOrCreatePipeline("internal/rt_diffuse_write_indirect_args@MAIN.comp.glsl");
     pi_diffuse_write_indirect_[1] =
         sh_.FindOrCreatePipeline("internal/rt_diffuse_write_indirect_args@RT_DISPATCH.comp.glsl");
     pi_diffuse_write_indirect_[2] = sh_.FindOrCreatePipeline("internal/rt_diffuse_write_indirect_args@SHADE.comp.glsl");
-    pi_diffuse_trace_ss_ =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_diffuse_trace_ss.comp.glsl", //
-                                                 "internal/rt_diffuse_trace_ss@NO_SUBGROUP.comp.glsl"));
+    pi_diffuse_trace_ss_ = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_diffuse_trace_ss.comp.glsl"));
     pi_diffuse_shade_[0] = sh_.FindOrCreatePipeline("internal/rt_diffuse_shade@MISS.comp.glsl");
     pi_diffuse_shade_[1] = sh_.FindOrCreatePipeline("internal/rt_diffuse_shade@MISS_SECOND.comp.glsl");
     pi_diffuse_shade_[2] =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_diffuse_shade@HIT;GI_CACHE.comp.glsl",
-                                                 "internal/rt_diffuse_shade@HIT;GI_CACHE;NO_SUBGROUP.comp.glsl"));
-    pi_diffuse_shade_[3] = sh_.FindOrCreatePipeline(
-        subgroup_select("internal/rt_diffuse_shade@HIT;GI_CACHE;STOCH_LIGHTS.comp.glsl",
-                        "internal/rt_diffuse_shade@HIT;GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl"));
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_diffuse_shade@HIT;GI_CACHE.comp.glsl"));
+    pi_diffuse_shade_[3] =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_diffuse_shade@HIT;GI_CACHE;STOCH_LIGHTS.comp.glsl"));
     pi_diffuse_shade_[4] =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_diffuse_shade@HIT_FIRST;GI_CACHE.comp.glsl",
-                                                 "internal/rt_diffuse_shade@HIT_FIRST;GI_CACHE;NO_SUBGROUP.comp.glsl"));
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_diffuse_shade@HIT_FIRST;GI_CACHE.comp.glsl"));
     pi_diffuse_shade_[5] = sh_.FindOrCreatePipeline(
-        subgroup_select("internal/rt_diffuse_shade@HIT_FIRST;GI_CACHE;STOCH_LIGHTS.comp.glsl",
-                        "internal/rt_diffuse_shade@HIT_FIRST;GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl"));
-    pi_diffuse_shade_[6] = sh_.FindOrCreatePipeline(
-        subgroup_select("internal/rt_diffuse_shade@HIT_SECOND;GI_CACHE.comp.glsl",
-                        "internal/rt_diffuse_shade@HIT_SECOND;GI_CACHE;NO_SUBGROUP.comp.glsl"));
+        subgroup_select("internal/rt_diffuse_shade@HIT_FIRST;GI_CACHE;STOCH_LIGHTS.comp.glsl"));
+    pi_diffuse_shade_[6] =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_diffuse_shade@HIT_SECOND;GI_CACHE.comp.glsl"));
     pi_diffuse_reproject_ = sh_.FindOrCreatePipeline("internal/rt_diffuse_reproject.comp.glsl");
     pi_diffuse_temporal_[0] = sh_.FindOrCreatePipeline("internal/rt_diffuse_temporal.comp.glsl");
     pi_diffuse_temporal_[1] = sh_.FindOrCreatePipeline("internal/rt_diffuse_temporal@RELAXED.comp.glsl");
@@ -168,17 +154,11 @@ void Eng::Renderer::InitPipelines() {
     pi_sun_shadows_[0] = sh_.FindOrCreatePipeline("internal/sun_shadows@SS_SHADOW.comp.glsl");
     pi_sun_shadows_[1] = sh_.FindOrCreatePipeline("internal/sun_shadows@RT_SHADOW.comp.glsl");
     pi_sun_brightness_ = sh_.FindOrCreatePipeline("internal/sun_brightness.comp.glsl");
-    pi_shadow_classify_ = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_shadow_classify.comp.glsl", //
-                                                                   "internal/rt_shadow_classify@NO_SUBGROUP.comp.glsl"),
-                                                   32);
+    pi_shadow_classify_ = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_shadow_classify.comp.glsl"), 32);
     pi_shadow_prepare_mask_ =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_shadow_prepare_mask.comp.glsl",
-                                                 "internal/rt_shadow_prepare_mask@NO_SUBGROUP.comp.glsl"),
-                                 32);
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_shadow_prepare_mask.comp.glsl"), 32);
     pi_shadow_classify_tiles_ =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_shadow_classify_tiles.comp.glsl",
-                                                 "internal/rt_shadow_classify_tiles@NO_SUBGROUP.comp.glsl"),
-                                 32);
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_shadow_classify_tiles.comp.glsl"), 32);
     pi_shadow_filter_[0] = sh_.FindOrCreatePipeline("internal/rt_shadow_filter@PASS_0.comp.glsl");
     pi_shadow_filter_[1] = sh_.FindOrCreatePipeline("internal/rt_shadow_filter@PASS_1.comp.glsl");
     pi_shadow_filter_[2] = sh_.FindOrCreatePipeline("internal/rt_shadow_filter.comp.glsl");
@@ -198,17 +178,11 @@ void Eng::Renderer::InitPipelines() {
 
     // Volumetrics
     pi_sky_upsample_ = sh_.FindOrCreatePipeline("internal/skydome_upsample.comp.glsl");
-    pi_vol_scatter_[0][0] = sh_.FindOrCreatePipeline(subgroup_select("internal/vol_scatter.comp.glsl", //
-                                                                     "internal/vol_scatter@NO_SUBGROUP.comp.glsl"));
-    pi_vol_scatter_[0][1] =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/vol_scatter@GI_CACHE.comp.glsl", //
-                                                 "internal/vol_scatter@GI_CACHE;NO_SUBGROUP.comp.glsl"));
-    pi_vol_scatter_[1][0] =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/vol_scatter@ALL_CASCADES.comp.glsl", //
-                                                 "internal/vol_scatter@ALL_CASCADES;NO_SUBGROUP.comp.glsl"));
+    pi_vol_scatter_[0][0] = sh_.FindOrCreatePipeline(subgroup_select("internal/vol_scatter.comp.glsl"));
+    pi_vol_scatter_[0][1] = sh_.FindOrCreatePipeline(subgroup_select("internal/vol_scatter@GI_CACHE.comp.glsl"));
+    pi_vol_scatter_[1][0] = sh_.FindOrCreatePipeline(subgroup_select("internal/vol_scatter@ALL_CASCADES.comp.glsl"));
     pi_vol_scatter_[1][1] =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/vol_scatter@ALL_CASCADES;GI_CACHE.comp.glsl", //
-                                                 "internal/vol_scatter@ALL_CASCADES;GI_CACHE;NO_SUBGROUP.comp.glsl"));
+        sh_.FindOrCreatePipeline(subgroup_select("internal/vol_scatter@ALL_CASCADES;GI_CACHE.comp.glsl"));
     pi_vol_ray_march_ = sh_.FindOrCreatePipeline("internal/vol_ray_march.comp.glsl");
 
     // TSR
