@@ -40,7 +40,7 @@ class ViewerBase;
 struct AppParams;
 
 class DummyApp {
-    bool fullscreen_ = false, minimized_ = false, quit_ = false;
+    bool fullscreen_ = false, novsync_ = false, minimized_ = false, quit_ = false;
 
 #if !defined(__ANDROID__)
 #if defined(_WIN32)
@@ -74,11 +74,13 @@ class DummyApp {
     DummyApp();
     ~DummyApp();
 
+    bool novsync() const { return novsync_; }
+
     int Init(int w, int h, const AppParams &app_params);
     void Destroy();
 
     void Frame();
-    void Resize(int w, int h);
+    void Resize(int w, int h, bool novsync);
 
     void AddEvent(Eng::eInputEvent type, uint32_t key_code, float x, float y, float dx, float dy);
 

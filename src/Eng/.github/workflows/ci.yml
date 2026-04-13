@@ -342,7 +342,7 @@ jobs:
         with:
           bin-dir: "linux-x86_64-gl"
           out-dir: "linux-x86_64-gl-nv-output"
-          test-args: "-j2 -d NV --nocpu"
+          test-args: "-j2 -d NV --no-cpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()

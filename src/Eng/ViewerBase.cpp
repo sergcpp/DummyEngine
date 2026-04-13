@@ -22,7 +22,7 @@
 #include "utils/Random.h"
 #include "utils/ShaderLoader.h"
 
-Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level, const bool nohwrt,
+Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level, const bool novsync, const bool nohwrt,
                             const bool nosubgroup, ILog *log, std::string_view device_name)
     : log_(log), width(w), height(h) {
     terminated = false;
@@ -30,7 +30,7 @@ Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level
     // Sys::InitWorker();
 
     ren_ctx_ = std::make_unique<Ren::Context>();
-    if (!ren_ctx_->Init(w, h, log_, validation_level, nohwrt, nosubgroup, device_name)) {
+    if (!ren_ctx_->Init(w, h, log_, validation_level, novsync, nohwrt, nosubgroup, device_name)) {
         throw std::runtime_error("Initialization failed!");
     }
     InitOptickGPUProfiler();
@@ -73,11 +73,11 @@ Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level
 
 Eng::ViewerBase::~ViewerBase() = default;
 
-void Eng::ViewerBase::Resize(const int w, const int h) {
+void Eng::ViewerBase::Resize(const int w, const int h, const bool novsync) {
     width = w;
     height = h;
 
-    ren_ctx_->Resize(width, height);
+    ren_ctx_->Resize(width, height, novsync);
 
     ui_root_->set_zone(Gui::Vec2i{width, height});
     ui_root_->Resize();

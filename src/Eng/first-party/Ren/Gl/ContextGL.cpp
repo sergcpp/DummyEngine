@@ -47,8 +47,8 @@ Ren::Context::~Context() {
     ReleaseAll();
 }
 
-bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const bool nohwrt,
-                        const bool nosubgroup, std::string_view) {
+bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const bool novsync,
+                        const bool nohwrt, const bool nosubgroup, std::string_view) {
     std::call_once(gl_initialize_once, [&]() { gl_initialized = InitGLExtentions(log); });
     if (!gl_initialized) {
         return false;
@@ -56,6 +56,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
 
     w_ = w;
     h_ = h;
+    novsync_ = novsync;
     validation_level_ = validation_level;
     log_ = log;
 
@@ -217,9 +218,10 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     return true;
 }
 
-void Ren::Context::Resize(const int w, const int h) {
+void Ren::Context::Resize(const int w, const int h, const bool novsync) {
     w_ = w;
     h_ = h;
+    novsync_ = novsync;
     glViewport(0, 0, w_, h_);
 }
 

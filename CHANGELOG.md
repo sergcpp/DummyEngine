@@ -34,11 +34,11 @@
 - AI043_06 scene
 - "--exposure" cmdline parameter
 - "--preset" cmdline parameter
-- "--sun_dir" cmdline parameter
+- "--sun-dir" cmdline parameter
 - "--tex-budget" cmdline parameter
 - "--no-postprocess" cmdline switch
 - "--freeze-sky" cmdline switch
-- "--nosubgroup" cmdline switch
+- "--no-subgroup" cmdline switch
 - Sun angle controls
 - Assets packing CI job
 - Image comparison CI job

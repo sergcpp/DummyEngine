@@ -130,8 +130,8 @@ Ren::Context::~Context() {
     }
 }
 
-bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_level, const bool nohwrt,
-                        const bool nosubgroup, std::string_view preferred_device) {
+bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_level, const bool novsync,
+                        const bool nohwrt, const bool nosubgroup, std::string_view preferred_device) {
     api_ = std::make_unique<ApiContext>();
     if (!api_->Load(log)) {
         return false;
@@ -139,6 +139,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
 
     w_ = w;
     h_ = h;
+    novsync_ = novsync; // stored for swapchain reinitialization
     log_ = log;
 
     std::lock_guard<std::mutex> _(g_device_mtx);
@@ -202,7 +203,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
         api_->subgroup_size_control_supported &= (subgroup_size_control_features.computeFullSubgroups == VK_TRUE);
     }
 
-    if (api_->present_family_index != 0xffffffff && !api_->InitSwapChain(w, h, log)) {
+    if (api_->present_family_index != 0xffffffff && !api_->InitSwapChain(w, h, novsync, log)) {
         return false;
     }
 
@@ -318,13 +319,14 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
     return true;
 }
 
-void Ren::Context::Resize(const int w, const int h) {
-    if (w_ == w && h_ == h) {
+void Ren::Context::Resize(const int w, const int h, const bool novsync) {
+    if (w_ == w && h_ == h && novsync_ == novsync) {
         return;
     }
 
     w_ = w;
     h_ = h;
+    novsync_ = novsync;
 
     api_->vkDeviceWaitIdle(api_->device);
 
@@ -340,7 +342,7 @@ void Ren::Context::Resize(const int w, const int h) {
 
     api_->vkDestroySwapchainKHR(api_->device, api_->swapchain, nullptr);
 
-    if (api_->present_family_index != 0xffffffff && !api_->InitSwapChain(w, h, log_)) {
+    if (api_->present_family_index != 0xffffffff && !api_->InitSwapChain(w, h, novsync, log_)) {
         log_->Error("Swapchain initialization failed");
     }
 

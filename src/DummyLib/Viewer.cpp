@@ -39,8 +39,8 @@ extern bool ignore_optick_errors;
 #include "widgets/FontStorage.h"
 
 Viewer::Viewer(const int w, const int h, const AppParams &_app_params, ILog *log)
-    : ViewerBase(w, h, _app_params.validation_level, _app_params.nohwrt, _app_params.nosubgroup, log,
-                 _app_params.device_name),
+    : ViewerBase(w, h, _app_params.validation_level, _app_params.novsync, _app_params.nohwrt, _app_params.nosubgroup,
+                 log, _app_params.device_name),
       log_(log), app_params(_app_params) {
     Sys::JsObject main_config;
 

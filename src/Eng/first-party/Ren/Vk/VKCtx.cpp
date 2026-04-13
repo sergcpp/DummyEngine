@@ -917,7 +917,7 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
     return true;
 }
 
-bool Ren::ApiContext::InitSwapChain(int w, int h, ILog *log) {
+bool Ren::ApiContext::InitSwapChain(const int w, const int h, const bool novsync, ILog *log) {
     { // choose surface format
         uint32_t format_count = 0;
         vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
@@ -949,15 +949,19 @@ bool Ren::ApiContext::InitSwapChain(int w, int h, ILog *log) {
         SmallVector<VkPresentModeKHR, 8> present_modes(present_mode_count);
         vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, &present_modes[0]);
 
-        // fifo mode is guaranteed to be supported
-        present_mode = VK_PRESENT_MODE_FIFO_KHR;
-        for (uint32_t i = 0; i < present_mode_count; i++) {
-            if (present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
-                present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
-                break;
-            } else if (present_modes[i] == VK_PRESENT_MODE_FIFO_RELAXED_KHR) {
-                // gives less latency than fifo mode, use it
-                present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+        if (novsync) {
+            present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+        } else {
+            // fifo mode is guaranteed to be supported
+            present_mode = VK_PRESENT_MODE_FIFO_KHR;
+            for (uint32_t i = 0; i < present_mode_count; i++) {
+                if (present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
+                    present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+                    break;
+                } else if (present_modes[i] == VK_PRESENT_MODE_FIFO_RELAXED_KHR) {
+                    // gives less latency than fifo mode, use it
+                    present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+                }
             }
         }
     }

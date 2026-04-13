@@ -83,7 +83,7 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
     require_return(g_device_name.empty() ||
                    Ren::MatchDeviceNames(api.device_properties.deviceName, g_device_name.data()));
 #endif
-    ren_ctx.Resize(ref_w, ref_h);
+    ren_ctx.Resize(ref_w, ref_h, true /* novsync */);
 
     const bool skip_test = img_test != eImgTest::NoShadow && img_test != eImgTest::NoGI && !ren_ctx.capabilities.hwrt &&
                            !ren_ctx.capabilities.swrt;

@@ -136,7 +136,7 @@ jobs:
           bin-name: "DummyAppVK"
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-nv-img-output"
-          test-args: "-d NV --noshow"
+          test-args: "-d NV --no-show --no-vsync"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -160,7 +160,7 @@ jobs:
           bin-name: "DummyAppVK"
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-amd-img-output"
-          test-args: "-d AMD --noshow"
+          test-args: "-d AMD --no-show --no-vsync"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -229,7 +229,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-nv-output"
-          test-args: "-d NV --nocpu"
+          test-args: "-d NV --no-cpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -252,7 +252,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-amd-output"
-          test-args: "-d AMD --nocpu"
+          test-args: "-d AMD --no-cpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -275,7 +275,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-arc-output"
-          test-args: "-d Arc --nocpu"
+          test-args: "-d Arc --no-cpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -298,7 +298,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-uhd-output"
-          test-args: "-d UHD --nocpu"
+          test-args: "-d UHD --no-cpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -321,7 +321,7 @@ jobs:
         with:
           bin-dir: "linux-x86_64-vk"
           out-dir: "linux-x86_64-vk-nv-output"
-          test-args: "-d NV --nocpu"
+          test-args: "-d NV --no-cpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -344,7 +344,7 @@ jobs:
         with:
           bin-dir: "linux-x86_64-gl"
           out-dir: "linux-x86_64-gl-nv-output"
-          test-args: "-j2 -d NV --nocpu"
+          test-args: "-j2 -d NV --no-cpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()

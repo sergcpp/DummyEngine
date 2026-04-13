@@ -136,7 +136,7 @@ LRESULT CALLBACK WindowProc(const HWND hwnd, const UINT uMsg, const WPARAM wPara
     }
     case WM_SIZE: {
         const int w = LOWORD(lParam), h = HIWORD(lParam);
-        g_app->Resize(w, h);
+        g_app->Resize(w, h, g_app->novsync());
         g_app->AddEvent(Eng::eInputEvent::Resize, 0, float(w), float(h), 0, 0);
         break;
     }
@@ -174,12 +174,12 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
     rect.right = w;
     rect.bottom = h;
 
-    BOOL ret = ::AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW | WS_VISIBLE, false);
+    const BOOL ret = ::AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW | WS_VISIBLE, false);
     if (!ret) {
         return -1;
     }
 
-    int win_pos[] = {CW_USEDEFAULT, CW_USEDEFAULT};
+    const int win_pos[] = {CW_USEDEFAULT, CW_USEDEFAULT};
 
     DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
     if (!app_params.ref_name.empty()) {
@@ -228,6 +228,7 @@ int DummyApp::Run(int argc, char *argv[]) {
     fullscreen_ = false;
     AppParams app_params;
     ParseArgs(argc, argv, w, h, app_params);
+    novsync_ = app_params.novsync;
 
     if (Init(w, h, app_params) < 0) {
         return -1;

@@ -126,6 +126,7 @@ int DummyApp::Run(int argc, char *argv[]) {
     fullscreen_ = false;
     AppParams app_params;
     ParseArgs(argc, argv, w, h, app_params);
+    novsync_ = app_params.novsync;
 
     if (Init(w, h, app_params) < 0) {
         return -1;
@@ -225,7 +226,7 @@ void DummyApp::PollEvents() {
             if (xev.xconfigure.width != last_window_size[0] ||
                 xev.xconfigure.height != last_window_size[1]) {
 
-                Resize(xev.xconfigure.width, xev.xconfigure.height);
+                Resize(xev.xconfigure.width, xev.xconfigure.height, novsync_);
 
                 evt.type = Eng::eInputEvent::Resize;
                 evt.point[0] = float(xev.xconfigure.width);

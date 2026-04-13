@@ -45,6 +45,7 @@ struct AppParams {
     std::string device_name;
     std::string ref_name;
     std::vector<double> psnr{0.0};
+    bool novsync = false;
     bool nohwrt = false;
     bool nosubgroup = false;
     bool pt = false;

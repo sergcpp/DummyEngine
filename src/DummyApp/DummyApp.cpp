@@ -13,10 +13,10 @@ const char *DummyApp::Version() const { return "v0.2.1-unknown-commit"; }
 void DummyApp::ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_params) {
     for (int i = 1; i < argc; i++) {
         const char *arg = argv[i];
-        if (strcmp(arg, "--prepare_assets") == 0) {
+        if (strcmp(arg, "--prepare-assets") == 0) {
             Viewer::PrepareAssets(argv[i + 1]);
             i++;
-        } else if (strcmp(arg, "--norun") == 0) {
+        } else if (strcmp(arg, "--no-run") == 0) {
             std::exit(0);
         } else if ((strcmp(arg, "--width") == 0 || strcmp(arg, "-w") == 0) && (i + 1 < argc)) {
             w = std::atoi(argv[++i]);
@@ -26,13 +26,15 @@ void DummyApp::ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_
             fullscreen_ = true;
         } else if (strcmp(arg, "--device") == 0 || strcmp(arg, "-d") == 0) {
             out_params.device_name = argv[++i];
-        } else if (strcmp(arg, "--validation_level") == 0 || strcmp(arg, "-vl") == 0) {
+        } else if (strcmp(arg, "--validation-level") == 0 || strcmp(arg, "-vl") == 0) {
             out_params.validation_level = std::atoi(argv[++i]);
-        } else if (strcmp(arg, "--nohwrt") == 0) {
+        } else if (strcmp(arg, "--no-vsync") == 0) {
+            out_params.novsync = true;
+        } else if (strcmp(arg, "--no-hwrt") == 0) {
             out_params.nohwrt = true;
-        } else if (strcmp(arg, "--nosubgroup") == 0) {
+        } else if (strcmp(arg, "--no-subgroup") == 0) {
             out_params.nosubgroup = true;
-        } else if (strcmp(argv[i], "--noshow") == 0) {
+        } else if (strcmp(argv[i], "--no-show") == 0) {
             out_params.noshow = true;
         } else if ((strcmp(argv[i], "--scene") == 0 || strcmp(argv[i], "-s") == 0) && (++i != argc)) {
             out_params.scene_name = argv[i];
@@ -45,27 +47,27 @@ void DummyApp::ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_
             }
         } else if (strcmp(argv[i], "--pt") == 0) {
             out_params.pt = true;
-        } else if (strcmp(argv[i], "--pt_nodenoise") == 0) {
+        } else if (strcmp(argv[i], "--pt-no-denoise") == 0) {
             out_params.pt_denoise = false;
-        } else if (strcmp(arg, "--pt_max_samples") == 0 && (i + 1 < argc)) {
+        } else if (strcmp(arg, "--pt-max-samples") == 0 && (i + 1 < argc)) {
             out_params.pt_max_samples = std::atoi(argv[++i]);
-        } else if (strcmp(arg, "--pt_max_diff_depth") == 0 && (i + 1 < argc)) {
+        } else if (strcmp(arg, "--pt-max-diff-depth") == 0 && (i + 1 < argc)) {
             out_params.pt_max_diff_depth = std::atoi(argv[++i]);
-        } else if (strcmp(arg, "--pt_max_spec_depth") == 0 && (i + 1 < argc)) {
+        } else if (strcmp(arg, "--pt-max-spec-depth") == 0 && (i + 1 < argc)) {
             out_params.pt_max_spec_depth = std::atoi(argv[++i]);
-        } else if (strcmp(arg, "--pt_max_refr_depth") == 0 && (i + 1 < argc)) {
+        } else if (strcmp(arg, "--pt-max-refr-depth") == 0 && (i + 1 < argc)) {
             out_params.pt_max_refr_depth = std::atoi(argv[++i]);
-        } else if (strcmp(arg, "--pt_max_transp_depth") == 0 && (i + 1 < argc)) {
+        } else if (strcmp(arg, "--pt-max-transp-depth") == 0 && (i + 1 < argc)) {
             out_params.pt_max_transp_depth = std::atoi(argv[++i]);
-        } else if (strcmp(arg, "--pt_max_total_depth") == 0 && (i + 1 < argc)) {
+        } else if (strcmp(arg, "--pt-max-total-depth") == 0 && (i + 1 < argc)) {
             out_params.pt_max_total_depth = std::atoi(argv[++i]);
-        } else if (strcmp(arg, "--pt_clamp_direct") == 0 && (i + 1 < argc)) {
+        } else if (strcmp(arg, "--pt-clamp-direct") == 0 && (i + 1 < argc)) {
             out_params.pt_clamp_direct = strtof(argv[++i], nullptr);
-        } else if (strcmp(arg, "--pt_clamp_indirect") == 0 && (i + 1 < argc)) {
+        } else if (strcmp(arg, "--pt-clamp-indirect") == 0 && (i + 1 < argc)) {
             out_params.pt_clamp_indirect = strtof(argv[++i], nullptr);
         } else if (strcmp(argv[i], "--exposure") == 0 && (++i != argc)) {
             out_params.exposure = strtof(argv[i], nullptr);
-        } else if (strcmp(argv[i], "--cam_path") == 0 && (++i != argc)) {
+        } else if (strcmp(argv[i], "--cam-path") == 0 && (++i != argc)) {
             out_params.cam_path = std::stoi(argv[i]);
         } else if (strcmp(argv[i], "--preset") == 0 && (++i != argc)) {
             if (strcmp(argv[i], "medium") == 0) {
@@ -75,9 +77,9 @@ void DummyApp::ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_
             } else if (strcmp(argv[i], "ultra") == 0) {
                 out_params.gfx_preset = eGfxPreset::Ultra;
             }
-        } else if (strcmp(argv[i], "--res_scale") == 0 && (++i != argc)) {
+        } else if (strcmp(argv[i], "--res-scale") == 0 && (++i != argc)) {
             out_params.res_scale = strtof(argv[i], nullptr);
-        } else if (strcmp(argv[i], "--sun_dir") == 0 && (++i != argc)) {
+        } else if (strcmp(argv[i], "--sun-dir") == 0 && (++i != argc)) {
             out_params.sun_dir[0] = strtof(argv[i++], nullptr);
             out_params.sun_dir[1] = strtof(argv[i++], nullptr);
             out_params.sun_dir[2] = strtof(argv[i], nullptr);
@@ -99,10 +101,10 @@ void DummyApp::Frame() {
     }
 }
 
-void DummyApp::Resize(const int w, const int h) {
+void DummyApp::Resize(const int w, const int h, const bool novsync) {
     minimized_ = (w == 0 || h == 0);
     if (viewer_ && !minimized_) {
-        viewer_->Resize(w, h);
+        viewer_->Resize(w, h, novsync);
     }
 }
 

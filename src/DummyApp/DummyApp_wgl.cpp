@@ -171,7 +171,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
     case WM_SIZE: {
         const int w = LOWORD(lParam), h = HIWORD(lParam);
-        g_app->Resize(w, h);
+        g_app->Resize(w, h, g_app->novsync());
         g_app->AddEvent(Eng::eInputEvent::Resize, 0, float(w), float(h), 0, 0);
         break;
     }

@@ -284,7 +284,7 @@ class TestContext : public Ren::Context {
         glViewport(0, 0, 256, 256);
 #endif
 #endif
-        if (!Ren::Context::Init(w, h, log_, validation_level, nohwrt, nosubgroup, device_name)) {
+        if (!Ren::Context::Init(w, h, log_, validation_level, true, nohwrt, nosubgroup, device_name)) {
             throw std::runtime_error("Initialization failed!");
         }
     }

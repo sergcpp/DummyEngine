@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     bool full = false, nohwrt = false, nosubgroup = false;
 
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--prepare_assets") == 0) {
+        if (strcmp(argv[i], "--prepare-assets") == 0) {
             // Already done
             return 0;
         } else if ((strcmp(argv[i], "--device") == 0 || strcmp(argv[i], "-d") == 0) && (++i != argc)) {
@@ -70,11 +70,11 @@ int main(int argc, char *argv[]) {
             threads_count = atoi(argv[++i]);
         } else if (strncmp(argv[i], "-j", 2) == 0) {
             // threads_count = atoi(&argv[i][2]);
-        } else if (strcmp(argv[i], "--validation_level") == 0 || strcmp(argv[i], "-vl") == 0) {
+        } else if (strcmp(argv[i], "--validation-level") == 0 || strcmp(argv[i], "-vl") == 0) {
             validation_level = atoi(argv[++i]);
-        } else if (strcmp(argv[i], "--nohwrt") == 0) {
+        } else if (strcmp(argv[i], "--no-hwrt") == 0) {
             nohwrt = true;
-        } else if (strcmp(argv[i], "--nosubgroup") == 0) {
+        } else if (strcmp(argv[i], "--no-subgroup") == 0) {
             nosubgroup = true;
         } else if (strcmp(argv[i], "--full") == 0) {
             full = true;

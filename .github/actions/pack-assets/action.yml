@@ -22,7 +22,7 @@ runs:
         cp $WORK_DIR/${{ inputs.bin-dir }}/* ./
         chmod +x ./${{ inputs.bin-name }}
         rm -rf ./assets_pc || true
-        ./${{ inputs.bin-name }} --prepare_assets pc --norun
+        ./${{ inputs.bin-name }} --prepare-assets pc --no-run
         # coffee_maker
         mkdir $WORK_DIR/coffee_maker-win-x86_64-vk
         mkdir -p $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/fonts

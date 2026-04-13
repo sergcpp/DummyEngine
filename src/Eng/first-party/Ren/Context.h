@@ -62,6 +62,7 @@ struct StageBufs {
 class Context {
   protected:
     int w_ = 0, h_ = 0;
+    bool novsync_ = false;
     int validation_level_ = 0;
     ILog *log_ = nullptr;
 
@@ -105,7 +106,7 @@ class Context {
 
     Context(const Context &rhs) = delete;
 
-    bool Init(int w, int h, ILog *log, int validation_level, bool nohwrt, bool nosubgroup,
+    bool Init(int w, int h, ILog *log, int validation_level, bool novsync, bool nohwrt, bool nosubgroup,
               std::string_view preferred_device);
 
     int w() const { return w_; }
@@ -145,7 +146,7 @@ class Context {
 
     ImageAtlasArray &image_atlas() { return image_atlas_; }
 
-    void Resize(int w, int h);
+    void Resize(int w, int h, bool novsync);
 
     // Mesh
     MeshHandle CreateMesh(Ren::String name, std::istream &data, const material_load_callback &on_mat_load,

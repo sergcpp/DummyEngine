@@ -60,7 +60,7 @@ class ViewerBase {
     void InitOptickGPUProfiler();
 
   public:
-    ViewerBase(int w, int h, int validation_level, bool nohwrt, bool nosubgroup, ILog *log,
+    ViewerBase(int w, int h, int validation_level, bool novsync, bool nohwrt, bool nosubgroup, ILog *log,
                std::string_view device_name);
     virtual ~ViewerBase();
 
@@ -79,7 +79,7 @@ class ViewerBase {
     Gui::Renderer *ui_renderer() { return ui_renderer_.get(); }
     Gui::RootElement *ui_root() { return ui_root_.get(); }
 
-    virtual void Resize(int w, int h);
+    virtual void Resize(int w, int h, bool novsync);
 
     virtual void Start();
     virtual void Frame();
