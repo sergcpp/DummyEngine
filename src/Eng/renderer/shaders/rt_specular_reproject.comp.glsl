@@ -271,14 +271,14 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
         if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
             // If we've got a discarded history, try to construct a better sample out of 2x2 interpolation neighborhood
             // Helps quite a bit on the edges in movement
-            const float uvx = fract(float(screen_size.x) * reprojection_uv.x + 0.5);
-            const float uvy = fract(float(screen_size.y) * reprojection_uv.y + 0.5);
+            const float uvx = fract(float(screen_size.x) * reprojection_uv.x - 0.5);
+            const float uvy = fract(float(screen_size.y) * reprojection_uv.y - 0.5);
             const ivec2 base_pos = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
 
-            const ivec2 sample_pos00 = clamp(base_pos + ivec2(0, 0), ivec2(0), screen_size - ivec2(1));
-            const ivec2 sample_pos10 = clamp(base_pos + ivec2(1, 0), ivec2(0), screen_size - ivec2(1));
-            const ivec2 sample_pos01 = clamp(base_pos + ivec2(0, 1), ivec2(0), screen_size - ivec2(1));
-            const ivec2 sample_pos11 = clamp(base_pos + ivec2(1, 1), ivec2(0), screen_size - ivec2(1));
+            const ivec2 sample_pos00 = clamp(base_pos + ivec2(0, 0), ivec2(0), screen_size - 1);
+            const ivec2 sample_pos10 = clamp(base_pos + ivec2(1, 0), ivec2(0), screen_size - 1);
+            const ivec2 sample_pos01 = clamp(base_pos + ivec2(0, 1), ivec2(0), screen_size - 1);
+            const ivec2 sample_pos11 = clamp(base_pos + ivec2(1, 1), ivec2(0), screen_size - 1);
 
             const f16vec4 reprojection00 = texelFetch(g_refl_hist_tex, sample_pos00, 0);
             const f16vec4 reprojection10 = texelFetch(g_refl_hist_tex, sample_pos10, 0);

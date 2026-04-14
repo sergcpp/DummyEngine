@@ -22,34 +22,50 @@ bool IsDiffuseSurface(float depth_fetch, usampler2D specular_tex, vec2 uv) {
     return false;
 }
 
-/*float GetEdgeStoppingNormalWeight(vec3 normal_p, vec3 normal_q, float sigma) {
-    return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), sigma);
-}*/
-
-vec2 GetGeometryWeightParams(float planeDistSensitivity, vec3 Xv, vec3 Nv, float nonLinearAccumSpeed) {
-    float relaxation = mix( 1.0, 0.25, nonLinearAccumSpeed );
-    float a = relaxation / planeDistSensitivity;
-    float b = -dot( Nv, Xv ) * a;
-
-    return vec2( a, b );
+float GetSpecLobeTanHalfAngle(const float roughness, const float percent_of_volume) {
+    return roughness * roughness * percent_of_volume / (1.0 - percent_of_volume + 0.001);
 }
 
-/* fp16 */ float GetEdgeStoppingPlanarDistanceWeight(vec2 geometry_weight_params, vec3 center_normal_vs, vec3 neighbor_point_vs) {
-    float d = dot(center_normal_vs, neighbor_point_vs);
+float GetNormalWeightParam(const float non_linear_accum_speed, const float lobe_angle_fraction, const float roughness) {
+    const float percent_of_volume = 0.75 * mix(saturate(lobe_angle_fraction), 1.0, non_linear_accum_speed);
+    const float tan_half_angle = GetSpecLobeTanHalfAngle(roughness, percent_of_volume);
+    const float angle = max(atan(tan_half_angle), 0.001);
+    return 1.0 / angle;
+}
+
+vec2 GetGeometryWeightParams(const float plane_dist_sensitivity, const vec3 point_vs, const vec3 normal_vs, const float non_linear_accum_speed) {
+    const float relaxation = mix(1.0, 0.25, non_linear_accum_speed);
+    const float a = relaxation / plane_dist_sensitivity;
+    const float b = -dot(normal_vs, point_vs) * a;
+
+    return vec2(a, b);
+}
+
+// Acos(x) (approximate)
+// http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiJhY29zKHgpIiwiY29sb3IiOiIjMDAwMDAwIn0seyJ0eXBlIjowLCJlcSI6InNxcnQoMS14KSpzcXJ0KDIpIiwiY29sb3IiOiIjRjIwQzBDIn0seyJ0eXBlIjoxMDAwLCJ3aW5kb3ciOlsiMCIsIjEiLCIwIiwiMiJdLCJzaXplIjpbMTE1MCw5MDBdfV0-
+#define _AcosApprox(x) (SQRT_2 * sqrt(saturate(1.0 - (x))))
+
+float GetEdgeStoppingNormalWeight(const float px, const float py, const vec3 n1, const vec3 n2) {
+    const float angle = _AcosApprox(dot(n1, n2));
+    return smoothstep(1.0, 0.0, abs(angle * px + py));
+}
+
+/* fp16 */ float GetEdgeStoppingPlanarDistanceWeight(const vec2 geometry_weight_params, const vec3 center_normal_vs, const vec3 neighbor_point_vs) {
+    const float d = dot(center_normal_vs, neighbor_point_vs);
     return SmoothStep01(1.0 - abs(d * geometry_weight_params.x + geometry_weight_params.y));
 }
 
-uint PackRay(uvec2 ray_coord, bool copy_horizontal, bool copy_vertical, bool copy_diagonal) {
-    uint ray_x_15bit = ray_coord.x & 32767u; // 0b111111111111111
-    uint ray_y_14bit = ray_coord.y & 16383u; // 0b11111111111111
-    uint copy_horizontal_1bit = copy_horizontal ? 1u : 0u;
-    uint copy_vertical_1bit = copy_vertical ? 1u : 0u;
-    uint copy_diagonal_1bit = copy_diagonal ? 1u : 0u;
+uint PackRay(const uvec2 ray_coord, const bool copy_horizontal, const bool copy_vertical, const bool copy_diagonal) {
+    const uint ray_x_15bit = ray_coord.x & 32767u; // 0b111111111111111
+    const uint ray_y_14bit = ray_coord.y & 16383u; // 0b11111111111111
+    const uint copy_horizontal_1bit = copy_horizontal ? 1u : 0u;
+    const uint copy_vertical_1bit = copy_vertical ? 1u : 0u;
+    const uint copy_diagonal_1bit = copy_diagonal ? 1u : 0u;
 
     return (copy_diagonal_1bit << 31u) | (copy_vertical_1bit << 30u) | (copy_horizontal_1bit << 29u) | (ray_y_14bit << 15u) | (ray_x_15bit << 0u);
 }
 
-void UnpackRayCoords(uint packed_ray, out uvec2 ray_coord, out bool copy_horizontal, out bool copy_vertical, out bool copy_diagonal) {
+void UnpackRayCoords(const uint packed_ray, out uvec2 ray_coord, out bool copy_horizontal, out bool copy_vertical, out bool copy_diagonal) {
     ray_coord.x = (packed_ray >> 0u) & 32767u; // 0b111111111111111
     ray_coord.y = (packed_ray >> 15u) & 16383u; // 0b11111111111111
     copy_horizontal = ((packed_ray >> 29u) & 1u) != 0u; // 0b1
@@ -85,8 +101,8 @@ mat3 CreateTBN(vec3 N) {
     return transpose(TBN);
 }
 
-vec3 SampleDiffuseVector(sampler2D noise_tex, vec3 normal, ivec2 dispatch_thread_id, int bounce) {
-    const vec4 fetch = texelFetch(noise_tex, ivec2(dispatch_thread_id) % 128, 0);
+vec3 SampleDiffuseVector(const sampler2D noise_tex, const vec3 normal, const ivec2 dispatch_thread_id, const int bounce) {
+    const vec4 fetch = texelFetch(noise_tex, dispatch_thread_id % 128, 0);
 
     const vec2 u = (bounce == 0) ? fetch.xy : fetch.zw;
     const vec3 direction_tbn = SampleCosineHemisphere(u.x, u.y);

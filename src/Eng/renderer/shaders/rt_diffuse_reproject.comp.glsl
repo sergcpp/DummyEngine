@@ -131,34 +131,49 @@ float16_t GetDisocclusionFactor(const f16vec3 normal, const f16vec3 history_norm
     return factor;
 }
 
+float16_t GetDisocclusionFactorNew(const float normal_weight_param, const vec2 geometry_weight_params,
+                                   const f16vec3 center_normal_ws, const f16vec3 history_normal_ws, const f16vec3 center_normal_vs, const f16vec3 history_point_vs) {
+    float16_t factor = 1.0;
+    factor *= GetEdgeStoppingNormalWeight(normal_weight_param, 0.0, center_normal_ws, history_normal_ws);
+    factor *= GetEdgeStoppingPlanarDistanceWeight(geometry_weight_params, center_normal_vs, history_point_vs);
+    return factor;
+}
+
 void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size,
-                      out float16_t disocclusion_factor, out vec2 reprojection_uv,
-                      out f16vec4 reprojection) {
+                      out float16_t disocclusion_factor, out vec2 reprojection_uv, out f16vec4 reprojection) {
     //moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
 
-    const vec2 uv = (vec2(dispatch_thread_id) + vec2(0.5)) / vec2(screen_size);
-    f16vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
+    const vec2 center_uv = (vec2(dispatch_thread_id) + vec2(0.5)) / vec2(screen_size);
+    const f16vec3 center_normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0).x).xyz;
+    const f16vec3 center_normal_vs = normalize((g_shrd_data.view_from_world * vec4(center_normal_ws, 0.0)).xyz);
 
-    vec3 motion_vector = texelFetch(g_velocity_tex, ivec2(dispatch_thread_id), 0).xyz;
+    vec3 motion_vector = texelFetch(g_velocity_tex, dispatch_thread_id, 0).xyz;
     motion_vector.xy *= g_shrd_data.ren_res.zw;
-    const vec2 surf_repr_uv = uv - motion_vector.xy;
+    const vec2 surf_repr_uv = center_uv - motion_vector.xy;
 
     f16vec4 surf_history = textureLod(g_gi_hist_tex, surf_repr_uv, 0.0);
-    f16vec3 surf_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x).xyz;
+    f16vec3 surf_normal_ws = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x).xyz;
     float history_linear_depth;
 
     // Surface reflection
-    f16vec3 history_normal = surf_normal;
+    f16vec3 history_normal_ws = surf_normal_ws;
     float surf_history_depth = textureLod(g_depth_hist_tex, surf_repr_uv, 0.0).x;
     history_linear_depth = LinearizeDepth(surf_history_depth, g_shrd_data.clip_info);
+    const vec3 history_point_vs = ReconstructViewPosition_YFlip(surf_repr_uv, g_shrd_data.frustum_info, -history_linear_depth, 0.0 /* is_ortho */);
     reprojection_uv = surf_repr_uv;
     reprojection = surf_history;
 
-    float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
-    float linear_depth = LinearizeDepth(depth, g_shrd_data.clip_info) - motion_vector.z;
+    const float center_depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
+    const float center_depth_lin = LinearizeDepth(center_depth, g_shrd_data.clip_info) - motion_vector.z;
+    const vec3 center_point_vs = ReconstructViewPosition_YFlip(center_uv, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
+
+    const float PlaneDistSensitivity = 0.075;
+    const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, 1.0 /* accumulation_speed */);
+    const float normal_weight_param = GetNormalWeightParam(1.0 /* accumulation_speed */, 0.15, 1.0);
+
     // Determine disocclusion factor based on history
     disocclusion_factor = float(surf_history.w > 0.0);
-    disocclusion_factor *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
+    disocclusion_factor *= GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, history_normal_ws, center_normal_vs, history_point_vs);
 
     // Try to find better sample in the vicinity
     if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
@@ -169,11 +184,13 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
         for (int y = -SearchRadius; y <= SearchRadius; ++y) {
             for (int x = -SearchRadius; x <= SearchRadius; ++x) {
                 const vec2 uv = reprojection_uv + vec2(x, y) * dudv;
-                f16vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
+                f16vec3 history_normal_ws = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
                 float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
                 float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
+                const vec3 history_point_vs = ReconstructViewPosition_YFlip(uv, g_shrd_data.frustum_info, -history_linear_depth, 0.0 /* is_ortho */);
+
                 float16_t weight = float(textureLod(g_gi_hist_tex, uv, 0.0).w > 0.0);
-                weight *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
+                weight *= GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, history_normal_ws, center_normal_vs, history_point_vs);
                 if (weight > disocclusion_factor) {
                     disocclusion_factor = weight;
                     closest_uv = uv;
@@ -185,14 +202,14 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
     }
 
     { // Perform manual bilinear interpolation
-        const float uvx = fract(float(screen_size.x) * reprojection_uv.x + 0.5);
-        const float uvy = fract(float(screen_size.y) * reprojection_uv.y + 0.5);
-        const ivec2 base_pos = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
+        const float uvx = fract(float(screen_size.x) * reprojection_uv.x - 0.5);
+        const float uvy = fract(float(screen_size.y) * reprojection_uv.y - 0.5);
+        const ivec2 base_pos = ivec2(floor(vec2(screen_size) * reprojection_uv - 0.5));
 
-        const ivec2 sample_pos00 = clamp(base_pos + ivec2(0, 0), ivec2(0), screen_size - ivec2(1));
-        const ivec2 sample_pos10 = clamp(base_pos + ivec2(1, 0), ivec2(0), screen_size - ivec2(1));
-        const ivec2 sample_pos01 = clamp(base_pos + ivec2(0, 1), ivec2(0), screen_size - ivec2(1));
-        const ivec2 sample_pos11 = clamp(base_pos + ivec2(1, 1), ivec2(0), screen_size - ivec2(1));
+        const ivec2 sample_pos00 = clamp(base_pos + ivec2(0, 0), ivec2(0), screen_size - 1);
+        const ivec2 sample_pos10 = clamp(base_pos + ivec2(1, 0), ivec2(0), screen_size - 1);
+        const ivec2 sample_pos01 = clamp(base_pos + ivec2(0, 1), ivec2(0), screen_size - 1);
+        const ivec2 sample_pos11 = clamp(base_pos + ivec2(1, 1), ivec2(0), screen_size - 1);
 
         const f16vec4 reprojection00 = texelFetch(g_gi_hist_tex, sample_pos00, 0);
         const f16vec4 reprojection10 = texelFetch(g_gi_hist_tex, sample_pos10, 0);
@@ -209,12 +226,17 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
         const float depth01 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos01, 0).x, g_shrd_data.clip_info);
         const float depth11 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos11, 0).x, g_shrd_data.clip_info);
 
+        const vec3 point_vs00 = ReconstructViewPosition_YFlip(reprojection_uv, g_shrd_data.frustum_info, -depth00, 0.0 /* is_ortho */);
+        const vec3 point_vs10 = ReconstructViewPosition_YFlip(reprojection_uv, g_shrd_data.frustum_info, -depth10, 0.0 /* is_ortho */);
+        const vec3 point_vs01 = ReconstructViewPosition_YFlip(reprojection_uv, g_shrd_data.frustum_info, -depth01, 0.0 /* is_ortho */);
+        const vec3 point_vs11 = ReconstructViewPosition_YFlip(reprojection_uv, g_shrd_data.frustum_info, -depth11, 0.0 /* is_ortho */);
+
         f16vec4 w;
         // Occlusion weights
-        w.x = float(reprojection00.w > 0.0) * GetDisocclusionFactor(normal, normal00, linear_depth, depth00) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-        w.y = float(reprojection10.w > 0.0) * GetDisocclusionFactor(normal, normal10, linear_depth, depth10) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-        w.z = float(reprojection01.w > 0.0) * GetDisocclusionFactor(normal, normal01, linear_depth, depth01) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-        w.w = float(reprojection11.w > 0.0) * GetDisocclusionFactor(normal, normal11, linear_depth, depth11) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.x = float(reprojection00.w > 0.0) * GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, normal00, center_normal_vs, point_vs00) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.y = float(reprojection10.w > 0.0) * GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, normal10, center_normal_vs, point_vs10) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.z = float(reprojection01.w > 0.0) * GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, normal01, center_normal_vs, point_vs01) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.w = float(reprojection11.w > 0.0) * GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, normal11, center_normal_vs, point_vs11) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
         // Bilinear weights
         w.x *= (1.0 - uvx) * (1.0 - uvy);
         w.y *= (uvx) * (1.0 - uvy);
@@ -223,12 +245,14 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
         // normalize
         w /= max(w.x + w.y + w.z + w.w, 1.0e-3);
 
-        f16vec3 history_normal;
+        f16vec3 history_normal_ws;
         float history_linear_depth;
         reprojection = reprojection00 * w.x + reprojection10 * w.y + reprojection01 * w.z + reprojection11 * w.w;
         history_linear_depth = depth00 * w.x + depth10 * w.y + depth01 * w.z + depth11 * w.w;
-        history_normal = normal00 * w.x + normal10 * w.y + normal01 * w.z + normal11 * w.w;
-        disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
+        history_normal_ws = normal00 * w.x + normal10 * w.y + normal01 * w.z + normal11 * w.w;
+
+        const vec3 point_vs = ReconstructViewPosition_YFlip(reprojection_uv, g_shrd_data.frustum_info, -history_linear_depth, 0.0 /* is_ortho */);
+        disocclusion_factor = GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, history_normal_ws, center_normal_vs, point_vs);
     }
 
     disocclusion_factor = disocclusion_factor < DISOCCLUSION_THRESHOLD ? 0.0 : disocclusion_factor;
@@ -242,8 +266,6 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
     group_thread_id += 4; // center threads in shared memory
 
-    float16_t variance = 1.0;
-    float16_t sample_count = 0.0;
     const vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
     f16vec4 gi = texelFetch(g_gi_tex, ivec2(dispatch_thread_id), 0);
 
@@ -257,8 +279,8 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
         if (all(greaterThan(reprojection_uv, vec2(0.0))) && all(lessThan(reprojection_uv, vec2(1.0)))) {
             float16_t prev_variance = textureLod(g_variance_hist_tex, reprojection_uv, 0.0).x;
-            sample_count = (textureLod(g_sample_count_hist_tex, reprojection_uv, 0.0).x * MAX_DIFFUSE_SAMPLES) * disocclusion_factor;
-            sample_count = min(sample_count + 1, MAX_DIFFUSE_SAMPLES);
+            float sample_count = textureLod(g_sample_count_hist_tex, reprojection_uv, 0.0).x * MAX_DIFFUSE_SAMPLES;
+            sample_count = min(disocclusion_factor * sample_count + 1, MAX_DIFFUSE_SAMPLES);
             float16_t new_variance = ComputeTemporalVariance(gi.xyz, reprojection.xyz);
             if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
                 imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0));

@@ -49,18 +49,12 @@ layout(binding = OUT_DENOISED_IMG_SLOT, rgba16f) uniform image2D g_out_denoised_
 #define RADIANCE_WEIGHT_BIAS 0.0
 #define RADIANCE_WEIGHT_VARIANCE_K 0.1
 
-#define PREFILTER_NORMAL_SIGMA 512.0
-
 float16_t GetRadianceWeight(const f16vec3 center_radiance, const f16vec3 neighbor_radiance, const float16_t variance) {
 #ifndef RELAXED
     return max(exp(-(RADIANCE_WEIGHT_BIAS + variance * RADIANCE_WEIGHT_VARIANCE_K) * length(center_radiance - neighbor_radiance)), 1.0e-2);
 #else
     return 1.0;
 #endif
-}
-
-float16_t GetEdgeStoppingNormalWeight(/* fp16 */ vec3 normal_p, /* fp16 */ vec3 normal_q) {
-    return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), PREFILTER_NORMAL_SIGMA);
 }
 
 // http://marc-b-reynolds.github.io/quaternions/2016/07/06/Orthonormal.html
@@ -127,49 +121,6 @@ const vec3 g_Special8[8] = vec3[8](
     vec3( -0.25 * SQRT_2      , -0.25 * SQRT_2      , 0.5 )
 );
 
-// Acos(x) (approximate)
-// http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiJhY29zKHgpIiwiY29sb3IiOiIjMDAwMDAwIn0seyJ0eXBlIjowLCJlcSI6InNxcnQoMS14KSpzcXJ0KDIpIiwiY29sb3IiOiIjRjIwQzBDIn0seyJ0eXBlIjoxMDAwLCJ3aW5kb3ciOlsiMCIsIjEiLCIwIiwiMiJdLCJzaXplIjpbMTE1MCw5MDBdfV0-
-#define _AcosApprox(x) (SQRT_2 * sqrt(saturate(1.0 - (x))))
-
-vec2 GetCombinedWeight(
-    float baseWeight,
-    vec2 geometry_weight_params, vec3 Nv, vec3 Xvs,
-    float normalWeightParams, vec3 N, vec4 Ns,
-    vec2 hitDistanceWeightParams, float hit_dist, vec2 minwh,
-    vec2 roughnessWeightParams) {
-    vec4 a = vec4(geometry_weight_params.x, normalWeightParams, hitDistanceWeightParams.x, roughnessWeightParams.x);
-    vec4 b = vec4(geometry_weight_params.y, -0.001, hitDistanceWeightParams.y, roughnessWeightParams.y);
-
-    vec4 t;
-    t.x = dot(Nv, Xvs);
-    t.y = _AcosApprox(saturate(dot(N, Ns.xyz)));
-    t.z = hit_dist;
-    t.w = Ns.w;
-
-    t = SmoothStep01(1.0 - abs(t * a + b));
-
-    baseWeight *= t.x;// * t.y * t.w;
-
-    return vec2(baseWeight);// * mix(minwh, vec2(1.0), t.z);
-}
-
-/*float GetNormalWeightParams(float non_linear_accum_speed, float curvature, float view_z, float roughness, float strictness) {
-    // Estimate how many samples from a potentially bumpy normal map fit in the pixel
-    float pixel_radius = PixelRadiusToWorld( gUnproject, gIsOrtho, gScreenSize.y, view_z ); // TODO: for the entire screen to unlock compression in the next line (no fancy solid angle math)
-    float pixelRadiusNorm = pixel_radius / ( 1.0 + pixel_radius );
-    float pixelAreaNorm = pixelRadiusNorm * pixelRadiusNorm;
-
-    float s = mix(0.01, 0.15, pixelAreaNorm);
-    s = mix(s, 1.0, non_linear_accum_speed) * strictness;
-    s = mix(s, 1.0, curvature * curvature);
-
-    float params = STL::ImportanceSampling::GetSpecularLobeHalfAngle( roughness, lerp( 0.75, 0.95, curvature ) );
-    params *= saturate( s );
-    params = 1.0 / max( params, NRD_ENCODING_ERRORS.x );
-
-    return params;
-}*/
-
 float GetBlurRadius(float radius, float hit_dist, float view_z, float non_linear_accum_speed, float radius_bias, float radius_scale, float roughness) {
     // Modify by hit distance
     float hit_dist_factor = hit_dist / (hit_dist + view_z);
@@ -221,6 +172,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 
     const float PlaneDistSensitivity = 0.005;
     const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, accumulation_speed);
+    const float normal_weight_param = GetNormalWeightParam(accumulation_speed, 0.15, 1.0);
 
     const float RadiusBias = 1.0;
 #ifdef POST_FILTER
@@ -261,16 +213,14 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         const float depth_fetch = textureLod(g_depth_tex, uv, 0.0).x;
         const float neighbor_depth = LinearizeDepth(depth_fetch, g_shrd_data.clip_info);
         const vec3 neighbor_normal_ws = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0).x).xyz;
-
         const vec3 neighbor_point_vs = ReconstructViewPosition_YFlip(uv, g_shrd_data.frustum_info, -neighbor_depth, 0.0 /* is_ortho */);
 
         const vec4 fetch = sanitize(textureLod(g_gi_tex, uv, 0.0));
 
-        /* fp16 */ float weight = float(fetch.w > 0.0); //float(IsDiffuseSurface(depth_fetch, g_spec_tex, uv));
+        /* fp16 */ float weight = float(fetch.w > 0.0);
         weight *= IsInScreen(uv);
         weight *= GetGaussianWeight(offset.z);
-        weight *= GetEdgeStoppingNormalWeight(center_normal_ws, neighbor_normal_ws);
-        //weight *= GetEdgeStoppingDepthWeight(center_depth_lin, neighbor_depth);
+        weight *= GetEdgeStoppingNormalWeight(normal_weight_param, 0.0, center_normal_ws, neighbor_normal_ws);
         weight *= GetEdgeStoppingPlanarDistanceWeight(geometry_weight_params, center_normal_vs, neighbor_point_vs);
 
 #ifdef PRE_FILTER

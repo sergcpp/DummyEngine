@@ -29,9 +29,16 @@ bool IsSpecularSurface(float depth_fetch, usampler2D specular_tex, vec2 uv) {
     return false;
 }
 
-/*float GetEdgeStoppingNormalWeight(vec3 normal_p, vec3 normal_q, float sigma) {
-    return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), sigma);
-}*/
+float GetSpecLobeTanHalfAngle(const float roughness, const float percent_of_volume) {
+    return roughness * roughness * percent_of_volume / (1.0 - percent_of_volume + 0.001);
+}
+
+float GetNormalWeightParam(const float non_linear_accum_speed, const float lobe_angle_fraction, const float roughness) {
+    const float percent_of_volume = 0.75 * mix(saturate(lobe_angle_fraction), 1.0, non_linear_accum_speed);
+    const float tan_half_angle = GetSpecLobeTanHalfAngle(roughness, percent_of_volume);
+    const float angle = max(atan(tan_half_angle), 0.001);
+    return 1.0 / angle;
+}
 
 vec2 GetGeometryWeightParams(float planeDistSensitivity, vec3 Xv, vec3 Nv, float nonLinearAccumSpeed) {
     float relaxation = mix( 1.0, 0.25, nonLinearAccumSpeed );
@@ -39,6 +46,15 @@ vec2 GetGeometryWeightParams(float planeDistSensitivity, vec3 Xv, vec3 Nv, float
     float b = -dot( Nv, Xv ) * a;
 
     return vec2( a, b );
+}
+
+// Acos(x) (approximate)
+// http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiJhY29zKHgpIiwiY29sb3IiOiIjMDAwMDAwIn0seyJ0eXBlIjowLCJlcSI6InNxcnQoMS14KSpzcXJ0KDIpIiwiY29sb3IiOiIjRjIwQzBDIn0seyJ0eXBlIjoxMDAwLCJ3aW5kb3ciOlsiMCIsIjEiLCIwIiwiMiJdLCJzaXplIjpbMTE1MCw5MDBdfV0-
+#define _AcosApprox(x) (SQRT_2 * sqrt(saturate(1.0 - (x))))
+
+float GetEdgeStoppingNormalWeight(const float px, const float py, const vec3 n1, const vec3 n2) {
+    const float angle = _AcosApprox(dot(n1, n2));
+    return smoothstep(1.0, 0.0, abs(angle * px + py));
 }
 
 /* fp16 */ float GetEdgeStoppingPlanarDistanceWeight(vec2 geometry_weight_params, vec3 center_normal_vs, vec3 neighbor_point_vs) {
