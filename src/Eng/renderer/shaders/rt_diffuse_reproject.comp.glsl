@@ -163,7 +163,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
     // Try to find better sample in the vicinity
     if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
         vec2 closest_uv = reprojection_uv;
-        vec2 dudv = 1.0 / vec2(screen_size);
+        const vec2 dudv = 1.0 / vec2(screen_size);
 
         const int SearchRadius = 1;
         for (int y = -SearchRadius; y <= SearchRadius; ++y) {
@@ -185,32 +185,37 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
     }
 
     { // Perform manual bilinear interpolation
-        float uvx = fract(float(screen_size.x) * reprojection_uv.x + 0.5);
-        float uvy = fract(float(screen_size.y) * reprojection_uv.y + 0.5);
-        ivec2 reproject_texel_coords = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
+        const float uvx = fract(float(screen_size.x) * reprojection_uv.x + 0.5);
+        const float uvy = fract(float(screen_size.y) * reprojection_uv.y + 0.5);
+        const ivec2 base_pos = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
 
-        f16vec4 reprojection00 = texelFetch(g_gi_hist_tex, reproject_texel_coords + ivec2(0, 0), 0);
-        f16vec4 reprojection10 = texelFetch(g_gi_hist_tex, reproject_texel_coords + ivec2(1, 0), 0);
-        f16vec4 reprojection01 = texelFetch(g_gi_hist_tex, reproject_texel_coords + ivec2(0, 1), 0);
-        f16vec4 reprojection11 = texelFetch(g_gi_hist_tex, reproject_texel_coords + ivec2(1, 1), 0);
+        const ivec2 sample_pos00 = clamp(base_pos + ivec2(0, 0), ivec2(0), screen_size - ivec2(1));
+        const ivec2 sample_pos10 = clamp(base_pos + ivec2(1, 0), ivec2(0), screen_size - ivec2(1));
+        const ivec2 sample_pos01 = clamp(base_pos + ivec2(0, 1), ivec2(0), screen_size - ivec2(1));
+        const ivec2 sample_pos11 = clamp(base_pos + ivec2(1, 1), ivec2(0), screen_size - ivec2(1));
 
-        f16vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x).xyz;
-        f16vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x).xyz;
-        f16vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x).xyz;
-        f16vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x).xyz;
+        const f16vec4 reprojection00 = texelFetch(g_gi_hist_tex, sample_pos00, 0);
+        const f16vec4 reprojection10 = texelFetch(g_gi_hist_tex, sample_pos10, 0);
+        const f16vec4 reprojection01 = texelFetch(g_gi_hist_tex, sample_pos01, 0);
+        const f16vec4 reprojection11 = texelFetch(g_gi_hist_tex, sample_pos11, 0);
 
-        float depth00 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x, g_shrd_data.clip_info);
-        float depth10 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x, g_shrd_data.clip_info);
-        float depth01 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x, g_shrd_data.clip_info);
-        float depth11 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x, g_shrd_data.clip_info);
+        const f16vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, sample_pos00, 0).x).xyz;
+        const f16vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, sample_pos10, 0).x).xyz;
+        const f16vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, sample_pos01, 0).x).xyz;
+        const f16vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, sample_pos11, 0).x).xyz;
+
+        const float depth00 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos00, 0).x, g_shrd_data.clip_info);
+        const float depth10 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos10, 0).x, g_shrd_data.clip_info);
+        const float depth01 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos01, 0).x, g_shrd_data.clip_info);
+        const float depth11 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos11, 0).x, g_shrd_data.clip_info);
 
         f16vec4 w;
-        // Initialize with occlusion weights
+        // Occlusion weights
         w.x = float(reprojection00.w > 0.0) * GetDisocclusionFactor(normal, normal00, linear_depth, depth00) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
         w.y = float(reprojection10.w > 0.0) * GetDisocclusionFactor(normal, normal10, linear_depth, depth10) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
         w.z = float(reprojection01.w > 0.0) * GetDisocclusionFactor(normal, normal01, linear_depth, depth01) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
         w.w = float(reprojection11.w > 0.0) * GetDisocclusionFactor(normal, normal11, linear_depth, depth11) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-        // And then mix in bilinear weights
+        // Bilinear weights
         w.x *= (1.0 - uvx) * (1.0 - uvy);
         w.y *= (uvx) * (1.0 - uvy);
         w.z *= (1.0 - uvx) * (uvy);
