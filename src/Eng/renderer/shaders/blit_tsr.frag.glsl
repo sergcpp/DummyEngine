@@ -309,7 +309,7 @@ void main() {
         lock_status = (lock_status != 0.0 ? 2.0 : 1.0);
     } else {
         // decay lock with time
-        lock_status = saturate(lock_status - (1.0 / 12.0));
+        lock_status = saturate(lock_status - (1.0 / 16.0));
     }
 
     if (any(lessThan(hist_uvs, 0.5 * g_params.texel_size.zw)) || any(greaterThan(hist_uvs, vec2(1.0) - 0.5 * g_params.texel_size.zw))) {
@@ -335,7 +335,7 @@ void main() {
 
     const vec3 clamped_hist = ClipAABB(col_min, col_max, col_hist.xyz);
 
-    const float history_contribution = saturate(4.0 * lock_status);
+    const float history_contribution = saturate(8.0 * lock_status);
     col_hist.xyz = mix(clamped_hist, col_hist.xyz, history_contribution);
 
     const float HistoryWeightMin = 0.88;
