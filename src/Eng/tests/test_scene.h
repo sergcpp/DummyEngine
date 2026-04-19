@@ -11,9 +11,7 @@ class ThreadPool;
 }
 
 enum eImgTest {
-    NoShadow,
     NoGI,
-    NoGI_RTShadow,
     NoDiffGI,
     NoDiffGI_RTShadow,
     MedDiffGI,

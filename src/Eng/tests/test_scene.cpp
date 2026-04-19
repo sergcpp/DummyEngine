@@ -46,12 +46,8 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
     auto start_time = high_resolution_clock::now();
 
     const char *test_postfix = "";
-    if (img_test == eImgTest::NoShadow) {
-        test_postfix = "_noshadow";
-    } else if (img_test == eImgTest::NoGI) {
+    if (img_test == eImgTest::NoGI) {
         test_postfix = "_nogi";
-    } else if (img_test == eImgTest::NoGI_RTShadow) {
-        test_postfix = "_nogirt";
     } else if (img_test == eImgTest::NoDiffGI) {
         test_postfix = "_nodiffgi";
     } else if (img_test == eImgTest::NoDiffGI_RTShadow) {
@@ -85,8 +81,7 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
 #endif
     ren_ctx.Resize(ref_w, ref_h, true /* novsync */);
 
-    const bool skip_test = img_test != eImgTest::NoShadow && img_test != eImgTest::NoGI && !ren_ctx.capabilities.hwrt &&
-                           !ren_ctx.capabilities.swrt;
+    const bool skip_test = img_test != eImgTest::NoGI && !ren_ctx.capabilities.hwrt && !ren_ctx.capabilities.swrt;
     if (skip_test) {
         const std::string combined_test_name = std::string(test_name) + test_postfix;
         printf("Test %-36s ...skipped\n", combined_test_name.c_str());
@@ -115,18 +110,8 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
         renderer->settings.pixel_filter = ePixelFilter::Box;
         renderer->settings.gi_cache_update_mode = eGICacheUpdateMode::Full;
 
-        if (img_test == eImgTest::NoShadow) {
+        if (img_test == eImgTest::NoGI) {
             renderer->settings.reflections_quality = eReflectionsQuality::Off;
-            renderer->settings.shadows_quality = eShadowsQuality::Off;
-            renderer->settings.gi_quality = eGIQuality::Off;
-            renderer->settings.sky_quality = eSkyQuality::Medium;
-        } else if (img_test == eImgTest::NoGI) {
-            renderer->settings.reflections_quality = eReflectionsQuality::Off;
-            renderer->settings.gi_quality = eGIQuality::Off;
-            renderer->settings.sky_quality = eSkyQuality::Medium;
-        } else if (img_test == eImgTest::NoGI_RTShadow) {
-            renderer->settings.reflections_quality = eReflectionsQuality::Off;
-            renderer->settings.shadows_quality = eShadowsQuality::Raytraced;
             renderer->settings.gi_quality = eGIQuality::Off;
             renderer->settings.sky_quality = eSkyQuality::Medium;
         } else if (img_test == eImgTest::NoDiffGI) {
