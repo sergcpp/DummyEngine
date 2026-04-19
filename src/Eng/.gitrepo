@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = fixes_12_04
-	commit = 979462f4932926baf21dce8398e33ba7ca0525ef
+	branch = edge_stopping
+	commit = eb9e731b5a6274a7f5135799798d9b0125f1ac1e
 	method = merge
-	cmdver = 0.4.9
-	parent = 9b3e5f418254fbdca61d31198d4b9d23fa16c268
+	cmdver = 0.4.6
+	parent = f62b04e52ecf4b942071a62e1c6488f52aaaca17
