@@ -123,16 +123,8 @@ moments_t EstimateLocalNeighbourhoodInGroup(ivec2 group_thread_id) {
     return ret;
 }
 
-float16_t GetDisocclusionFactor(const f16vec3 normal, const f16vec3 history_normal, const float linear_depth, const float history_linear_depth) {
-    float16_t factor = 1.0;
-    //factor *= exp(-abs(1.0 - saturate(dot(normal, history_normal))) / DISOCCLUSION_NORMAL_WEIGHT);
-    factor *= mix(step(0.95, saturate(dot(normal, history_normal))), 1.0, saturate(0.1 * linear_depth));
-    factor *= exp(-abs(history_linear_depth - linear_depth) / linear_depth * DISOCCLUSION_DEPTH_WEIGHT);
-    return factor;
-}
-
-float16_t GetDisocclusionFactorNew(const float normal_weight_param, const vec2 geometry_weight_params,
-                                   const f16vec3 center_normal_ws, const f16vec3 history_normal_ws, const f16vec3 center_normal_vs, const f16vec3 history_point_vs) {
+float16_t GetDisocclusionFactor(const float normal_weight_param, const vec2 geometry_weight_params,
+                                const f16vec3 center_normal_ws, const f16vec3 history_normal_ws, const f16vec3 center_normal_vs, const f16vec3 history_point_vs) {
     float16_t factor = 1.0;
     factor *= GetEdgeStoppingNormalWeight(normal_weight_param, 0.0, center_normal_ws, history_normal_ws);
     factor *= GetEdgeStoppingPlanarDistanceWeight(geometry_weight_params, center_normal_vs, history_point_vs);
@@ -165,15 +157,15 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
 
     const float center_depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
     const float center_depth_lin = LinearizeDepth(center_depth, g_shrd_data.clip_info) - motion_vector.z;
-    const vec3 center_point_vs = ReconstructViewPosition_YFlip(center_uv, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
+    const vec3 center_point_vs = ReconstructViewPosition_YFlip(center_uv - motion_vector.xy, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
 
-    const float PlaneDistSensitivity = 0.075;
+    const float PlaneDistSensitivity = 0.05;
     const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, 1.0 /* accumulation_speed */);
     const float normal_weight_param = GetNormalWeightParam(1.0 /* accumulation_speed */, 0.15, 1.0);
 
     // Determine disocclusion factor based on history
     disocclusion_factor = float(surf_history.w > 0.0);
-    disocclusion_factor *= GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, history_normal_ws, center_normal_vs, history_point_vs);
+    disocclusion_factor *= GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, history_normal_ws, center_normal_vs, history_point_vs);
 
     // Try to find better sample in the vicinity
     if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
@@ -190,7 +182,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
                 const vec3 history_point_vs = ReconstructViewPosition_YFlip(uv, g_shrd_data.frustum_info, -history_linear_depth, 0.0 /* is_ortho */);
 
                 float16_t weight = float(textureLod(g_gi_hist_tex, uv, 0.0).w > 0.0);
-                weight *= GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, history_normal_ws, center_normal_vs, history_point_vs);
+                weight *= GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, history_normal_ws, center_normal_vs, history_point_vs);
                 if (weight > disocclusion_factor) {
                     disocclusion_factor = weight;
                     closest_uv = uv;
@@ -233,10 +225,10 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
 
         f16vec4 w;
         // Occlusion weights
-        w.x = float(reprojection00.w > 0.0) * GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, normal00, center_normal_vs, point_vs00) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-        w.y = float(reprojection10.w > 0.0) * GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, normal10, center_normal_vs, point_vs10) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-        w.z = float(reprojection01.w > 0.0) * GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, normal01, center_normal_vs, point_vs01) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-        w.w = float(reprojection11.w > 0.0) * GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, normal11, center_normal_vs, point_vs11) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.x = float(reprojection00.w > 0.0) * GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, normal00, center_normal_vs, point_vs00) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.y = float(reprojection10.w > 0.0) * GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, normal10, center_normal_vs, point_vs10) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.z = float(reprojection01.w > 0.0) * GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, normal01, center_normal_vs, point_vs01) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.w = float(reprojection11.w > 0.0) * GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, normal11, center_normal_vs, point_vs11) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
         // Bilinear weights
         w.x *= (1.0 - uvx) * (1.0 - uvy);
         w.y *= (uvx) * (1.0 - uvy);
@@ -252,7 +244,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
         history_normal_ws = normal00 * w.x + normal10 * w.y + normal01 * w.z + normal11 * w.w;
 
         const vec3 point_vs = ReconstructViewPosition_YFlip(reprojection_uv, g_shrd_data.frustum_info, -history_linear_depth, 0.0 /* is_ortho */);
-        disocclusion_factor = GetDisocclusionFactorNew(normal_weight_param, geometry_weight_params, center_normal_ws, history_normal_ws, center_normal_vs, point_vs);
+        disocclusion_factor = GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, history_normal_ws, center_normal_vs, point_vs);
     }
 
     disocclusion_factor = disocclusion_factor < DISOCCLUSION_THRESHOLD ? 0.0 : disocclusion_factor;
