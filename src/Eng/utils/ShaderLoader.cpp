@@ -442,7 +442,11 @@ Ren::PipelineHandle Eng::ShaderLoader::FindOrCreatePipeline(const Ren::ProgramRO
         const bool is_rt_pipeline = bool(ctx_.storages().programs[prog].first.shaders[int(Ren::eShaderType::RayGen)]);
         if (is_rt_pipeline) {
             // Has to be initialized under lock due to buffer allocation
-            return ctx_.CreatePipeline(prog, subgroup_size);
+            const Ren::PipelineHandle ret = ctx_.CreatePipeline(prog, subgroup_size);
+            if (ret) {
+                pipelines_.insert(it, ret);
+            }
+            return ret;
         }
     }
 

@@ -92,6 +92,8 @@ bool Pipeline_Init(const ApiContext &api, const SparseDualStorage<ShaderMain, Sh
 bool Pipeline_Init(const ApiContext &api, const StoragesRef &storages, PipelineMain &pipeline_main,
                    PipelineCold &pipeline_cold, const RastState &rast_state, ProgramROHandle prog,
                    VertexInputROHandle vtx_input, RenderPassROHandle render_pass, uint32_t subpass_index, ILog *log);
-void Pipeline_Destroy(const ApiContext &api, PipelineMain &pipeline_main, PipelineCold &pipeline_cold);
-void Pipeline_DestroyImmediately(const ApiContext &api, PipelineMain &pipeline_main, PipelineCold &pipeline_cold);
+void Pipeline_Destroy(const ApiContext &api, SparseDualStorage<BufferMain, BufferCold> &buffers,
+                      PipelineMain &pipeline_main, PipelineCold &pipeline_cold);
+void Pipeline_DestroyImmediately(const ApiContext &api, SparseDualStorage<BufferMain, BufferCold> &buffers,
+                                 PipelineMain &pipeline_main, PipelineCold &pipeline_cold);
 } // namespace Ren

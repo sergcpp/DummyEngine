@@ -549,23 +549,35 @@ bool Ren::Pipeline_Init(const ApiContext &api, const StoragesRef &storages, Pipe
     return true;
 }
 
-void Ren::Pipeline_Destroy(const ApiContext &api, PipelineMain &pipeline_main, PipelineCold &pipeline_cold) {
+void Ren::Pipeline_Destroy(const ApiContext &api, SparseDualStorage<BufferMain, BufferCold> &buffers,
+                           PipelineMain &pipeline_main, PipelineCold &pipeline_cold) {
     if (pipeline_main.layout != VK_NULL_HANDLE) {
         api.pipeline_layouts_to_destroy[api.backend_frame].emplace_back(pipeline_main.layout);
     }
     if (pipeline_main.pipeline != VK_NULL_HANDLE) {
         api.pipelines_to_destroy[api.backend_frame].emplace_back(pipeline_main.pipeline);
     }
+    if (pipeline_cold.rt_sbt_buf) {
+        const auto &[buf_main, buf_cold] = buffers[pipeline_cold.rt_sbt_buf];
+        Buffer_Destroy(api, buf_main, buf_cold);
+        buffers.Erase(pipeline_cold.rt_sbt_buf);
+    }
     pipeline_main = {};
     pipeline_cold = {};
 }
 
-void Ren::Pipeline_DestroyImmediately(const ApiContext &api, PipelineMain &pipeline_main, PipelineCold &pipeline_cold) {
+void Ren::Pipeline_DestroyImmediately(const ApiContext &api, SparseDualStorage<BufferMain, BufferCold> &buffers,
+                                      PipelineMain &pipeline_main, PipelineCold &pipeline_cold) {
     if (pipeline_main.layout != VK_NULL_HANDLE) {
         api.vkDestroyPipelineLayout(api.device, pipeline_main.layout, nullptr);
     }
     if (pipeline_main.pipeline != VK_NULL_HANDLE) {
         api.vkDestroyPipeline(api.device, pipeline_main.pipeline, nullptr);
+    }
+    if (pipeline_cold.rt_sbt_buf) {
+        const auto &[buf_main, buf_cold] = buffers[pipeline_cold.rt_sbt_buf];
+        Buffer_DestroyImmediately(api, buf_main, buf_cold);
+        buffers.Erase(pipeline_cold.rt_sbt_buf);
     }
     pipeline_main = {};
     pipeline_cold = {};

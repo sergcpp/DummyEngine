@@ -333,9 +333,9 @@ void Ren::Context::ReleasePipeline(const PipelineHandle handle, const bool immed
     }
     const auto &[pi_main, pi_cold] = pipelines_[handle];
     if (immediately) {
-        Pipeline_DestroyImmediately(*api_, pi_main, pi_cold);
+        Pipeline_DestroyImmediately(*api_, buffers_, pi_main, pi_cold);
     } else {
-        Pipeline_Destroy(*api_, pi_main, pi_cold);
+        Pipeline_Destroy(*api_, buffers_, pi_main, pi_cold);
     }
     pipelines_.Erase(handle);
 }
@@ -346,7 +346,7 @@ void Ren::Context::ReleasePipelines() {
     }
     log_->Error("--------REMAINING PIPELINES--------");
     for (const auto &pi : pipelines_) {
-        Pipeline_Destroy(*api_, pi.first, pi.second);
+        Pipeline_Destroy(*api_, buffers_, pi.first, pi.second);
     }
     pipelines_.Clear();
     log_->Error("-----------------------------------");

@@ -23,11 +23,13 @@ bool Ren::Pipeline_Init(const ApiContext &api, const StoragesRef &storages, Pipe
     return true;
 }
 
-void Ren::Pipeline_Destroy(const ApiContext &api, PipelineMain &pipeline_main, PipelineCold &pipeline_cold) {
+void Ren::Pipeline_Destroy(const ApiContext &api, SparseDualStorage<BufferMain, BufferCold> &buffers,
+                           PipelineMain &pipeline_main, PipelineCold &pipeline_cold) {
     pipeline_main = {};
     pipeline_cold = {};
 }
 
-void Ren::Pipeline_DestroyImmediately(const ApiContext &api, PipelineMain &pipeline_main, PipelineCold &pipeline_cold) {
-    Pipeline_Destroy(api, pipeline_main, pipeline_cold);
+void Ren::Pipeline_DestroyImmediately(const ApiContext &api, SparseDualStorage<BufferMain, BufferCold> &buffers,
+                                      PipelineMain &pipeline_main, PipelineCold &pipeline_cold) {
+    Pipeline_Destroy(api, buffers, pipeline_main, pipeline_cold);
 }
