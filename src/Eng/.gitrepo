@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = master
-	commit = 05453bee9207e4c15082b9f626d9f5150b78901f
+	branch = edge_stopping2
+	commit = 20cfcd3060b93c18e323e15c9c875de266b2c5eb
 	method = merge
 	cmdver = 0.4.6
-	parent = c641c204427d0fac0e76027d88f11b8bdc16e973
+	parent = bd2f67b0feb7a8e37795d61a7316921c063a30e4
