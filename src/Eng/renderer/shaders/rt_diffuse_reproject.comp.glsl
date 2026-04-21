@@ -133,8 +133,6 @@ float16_t GetDisocclusionFactor(const float normal_weight_param, const vec2 geom
 
 void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size,
                       out float16_t disocclusion_factor, out vec2 reprojection_uv, out f16vec4 reprojection) {
-    //moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
-
     const vec2 center_uv = (vec2(dispatch_thread_id) + vec2(0.5)) / vec2(screen_size);
     const f16vec3 center_normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0).x).xyz;
     const f16vec3 center_normal_vs = normalize((g_shrd_data.view_from_world * vec4(center_normal_ws, 0.0)).xyz);
@@ -143,8 +141,8 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
     motion_vector.xy *= g_shrd_data.ren_res.zw;
     const vec2 surf_repr_uv = center_uv - motion_vector.xy;
 
-    f16vec4 surf_history = textureLod(g_gi_hist_tex, surf_repr_uv, 0.0);
-    f16vec3 surf_normal_ws = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x).xyz;
+    const f16vec4 surf_history = textureLod(g_gi_hist_tex, surf_repr_uv, 0.0);
+    const f16vec3 surf_normal_ws = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x).xyz;
     float history_linear_depth;
 
     // Surface reflection
@@ -176,9 +174,9 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
         for (int y = -SearchRadius; y <= SearchRadius; ++y) {
             for (int x = -SearchRadius; x <= SearchRadius; ++x) {
                 const vec2 uv = reprojection_uv + vec2(x, y) * dudv;
-                f16vec3 history_normal_ws = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
-                float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
-                float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
+                const f16vec3 history_normal_ws = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
+                const float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
+                const float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
                 const vec3 history_point_vs = ReconstructViewPosition_YFlip(uv, g_shrd_data.frustum_info, -history_linear_depth, 0.0 /* is_ortho */);
 
                 float16_t weight = float(textureLod(g_gi_hist_tex, uv, 0.0).w > 0.0);
@@ -237,8 +235,6 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
         // normalize
         w /= max(w.x + w.y + w.z + w.w, 1.0e-3);
 
-        f16vec3 history_normal_ws;
-        float history_linear_depth;
         reprojection = reprojection00 * w.x + reprojection10 * w.y + reprojection01 * w.z + reprojection11 * w.w;
         history_linear_depth = depth00 * w.x + depth10 * w.y + depth01 * w.z + depth11 * w.w;
         history_normal_ws = normal00 * w.x + normal10 * w.y + normal01 * w.z + normal11 * w.w;

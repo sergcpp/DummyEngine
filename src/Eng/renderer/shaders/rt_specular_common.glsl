@@ -40,12 +40,12 @@ float GetNormalWeightParam(const float non_linear_accum_speed, const float lobe_
     return 1.0 / angle;
 }
 
-vec2 GetGeometryWeightParams(float planeDistSensitivity, vec3 Xv, vec3 Nv, float nonLinearAccumSpeed) {
-    float relaxation = mix( 1.0, 0.25, nonLinearAccumSpeed );
-    float a = relaxation / planeDistSensitivity;
-    float b = -dot( Nv, Xv ) * a;
+vec2 GetGeometryWeightParams(const float plane_dist_sensitivity, const vec3 point_vs, const vec3 normal_vs, const float non_linear_accum_speed) {
+    const float relaxation = mix(1.0, 0.25, non_linear_accum_speed);
+    const float a = relaxation / plane_dist_sensitivity;
+    const float b = -dot(normal_vs, point_vs) * a;
 
-    return vec2( a, b );
+    return vec2(a, b);
 }
 
 // Acos(x) (approximate)

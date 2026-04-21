@@ -171,10 +171,11 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
     return prev_hit_position;
 }
 
-float16_t GetDisocclusionFactor(const f16vec3 normal, const f16vec3 history_normal, float linear_depth, float history_linear_depth) {
-    const float16_t factor = 1.0
-                           * exp(-abs(1.0 - max(0.0, dot(normal, history_normal))) * DISOCCLUSION_NORMAL_WEIGHT)
-                           * exp(-abs(history_linear_depth - linear_depth) / linear_depth * DISOCCLUSION_DEPTH_WEIGHT);
+float16_t GetDisocclusionFactor(const float normal_weight_param, const vec2 geometry_weight_params,
+                                const f16vec3 center_normal_ws, const f16vec3 history_normal_ws, const f16vec3 center_normal_vs, const f16vec3 history_point_vs) {
+    float16_t factor = 1.0;
+    factor *= GetEdgeStoppingNormalWeight(normal_weight_param, 0.0, center_normal_ws, history_normal_ws);
+    factor *= GetEdgeStoppingPlanarDistanceWeight(geometry_weight_params, center_normal_vs, history_point_vs);
     return factor;
 }
 
@@ -182,142 +183,150 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
                       float16_t roughness, float16_t ray_len,
                       out float16_t disocclusion_factor, out vec2 reprojection_uv,
                       out f16vec4 reprojection) {
-    moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
+    const moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
 
-    vec2 uv = (vec2(dispatch_thread_id) + vec2(0.5)) / vec2(screen_size);
-    f16vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
-    f16vec3 history_normal;
+    const vec2 center_uv = (vec2(dispatch_thread_id) + 0.5) / vec2(screen_size);
+    const f16vec3 center_normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0).x).xyz;
+    const f16vec3 center_normal_vs = normalize((g_shrd_data.view_from_world * vec4(center_normal_ws, 0.0)).xyz);
+
+    f16vec3 history_normal_ws;
     float history_linear_depth;
 
-    {
-        vec3 motion_vector = texelFetch(g_velocity_tex, ivec2(dispatch_thread_id), 0).xyz;
-        motion_vector.xy *= g_shrd_data.ren_res.zw;
-        const vec2 surf_repr_uv = uv - motion_vector.xy;
-        const vec2 hit_repr_uv = GetHitPositionReprojection(ivec2(dispatch_thread_id), uv, ray_len);
+    vec3 motion_vector = texelFetch(g_velocity_tex, dispatch_thread_id, 0).xyz;
+    motion_vector.xy *= g_shrd_data.ren_res.zw;
+    const vec2 surf_repr_uv = center_uv - motion_vector.xy;
+    const vec2 hit_repr_uv = GetHitPositionReprojection(dispatch_thread_id, center_uv, ray_len);
 
-        const f16vec4 surf_history = textureLod(g_refl_hist_tex, surf_repr_uv, 0.0);
-        const f16vec4 hit_history = textureLod(g_refl_hist_tex, hit_repr_uv, 0.0);
+    const f16vec4 surf_history = textureLod(g_refl_hist_tex, surf_repr_uv, 0.0);
+    const f16vec4 hit_history = textureLod(g_refl_hist_tex, hit_repr_uv, 0.0);
 
-        const f16vec4 surf_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x);
-        const f16vec4 hit_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, hit_repr_uv, 0.0).x);
+    const f16vec4 surf_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x);
+    const f16vec4 hit_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, hit_repr_uv, 0.0).x);
 
-        const f16vec3 surf_normal = surf_fetch.xyz, hit_normal = hit_fetch.xyz;
-        const float16_t surf_roughness = surf_fetch.w, hit_roughness = hit_fetch.w;
+    const f16vec3 surf_normal = surf_fetch.xyz, hit_normal = hit_fetch.xyz;
+    const float16_t surf_roughness = surf_fetch.w, hit_roughness = hit_fetch.w;
 
-        const float hit_normal_similarity = dot(hit_normal, normal);
-        const float surf_normal_similarity = dot(surf_normal, normal);
+    const float hit_normal_similarity = dot(hit_normal, center_normal_ws);
+    const float surf_normal_similarity = dot(surf_normal, center_normal_ws);
 
-        // Choose reprojection uv based on similarity to the local neighborhood
-        if (hit_normal_similarity > REPROJECTION_NORMAL_SIMILARITY_THRESHOLD &&
-            hit_normal_similarity + 1.0e-3 > surf_normal_similarity &&
-            abs(hit_roughness - roughness) < abs(surf_roughness - roughness) + 1.0e-3) {
-            // Mirror reflection
-            history_normal = hit_normal;
-            float hit_history_depth = textureLod(g_depth_hist_tex, hit_repr_uv, 0.0).x;
-            history_linear_depth = LinearizeDepth(hit_history_depth, g_shrd_data.clip_info);
-            reprojection_uv = hit_repr_uv;
-            reprojection = hit_history;
+    // Choose reprojection uv based on similarity to the local neighborhood
+    if (hit_normal_similarity > REPROJECTION_NORMAL_SIMILARITY_THRESHOLD &&
+        hit_normal_similarity + 1.0e-3 > surf_normal_similarity &&
+        abs(hit_roughness - roughness) < abs(surf_roughness - roughness) + 1.0e-3) {
+        // Mirror reflection
+        history_normal_ws = hit_normal;
+        float hit_history_depth = textureLod(g_depth_hist_tex, hit_repr_uv, 0.0).x;
+        history_linear_depth = LinearizeDepth(hit_history_depth, g_shrd_data.clip_info);
+        reprojection_uv = hit_repr_uv;
+        reprojection = hit_history;
+    } else {
+        // Reject surface reprojection based on simple distance
+        if (length2(surf_history.xyz - local_neighborhood.mean.xyz) <
+            REPROJECT_SURFACE_DISCARD_VARIANCE_WEIGHT * length(local_neighborhood.variance)) {
+            // Surface reflection
+            history_normal_ws = surf_normal;
+            float surf_history_depth = textureLod(g_depth_hist_tex, surf_repr_uv, 0.0).x;
+            history_linear_depth = LinearizeDepth(surf_history_depth, g_shrd_data.clip_info);
+            reprojection_uv = surf_repr_uv;
+            reprojection = surf_history;
         } else {
-            // Reject surface reprojection based on simple distance
-            if (length2(surf_history.xyz - local_neighborhood.mean.xyz) <
-                REPROJECT_SURFACE_DISCARD_VARIANCE_WEIGHT * length(local_neighborhood.variance)) {
-                // Surface reflection
-                history_normal = surf_normal;
-                float surf_history_depth = textureLod(g_depth_hist_tex, surf_repr_uv, 0.0).x;
-                history_linear_depth = LinearizeDepth(surf_history_depth, g_shrd_data.clip_info);
-                reprojection_uv = surf_repr_uv;
-                reprojection = surf_history;
-            } else {
-                disocclusion_factor = 0.0;
-                return;
-            }
-        }
-
-        const float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
-        const float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info) - motion_vector.z;
-        // Determine disocclusion factor based on history
-        disocclusion_factor = float(reprojection.w > 0.0);
-        disocclusion_factor *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
-
-        if (disocclusion_factor > DISOCCLUSION_THRESHOLD) {
+            disocclusion_factor = 0.0;
             return;
         }
+    }
 
-        // Try to find the closest sample in the vicinity if we are not convinced of a disocclusion
-        if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
-            vec2 closest_uv = reprojection_uv;
-            const vec2 dudv = 1.0 / vec2(screen_size);
+    const float center_depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
+    const float center_depth_lin  = LinearizeDepth(center_depth, g_shrd_data.clip_info) - motion_vector.z;
+    const vec3 center_point_vs = ReconstructViewPosition_YFlip(center_uv - motion_vector.xy, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
 
-            const int SearchRadius = 1;
-            for (int y = -SearchRadius; y <= SearchRadius; ++y) {
-                for (int x = -SearchRadius; x <= SearchRadius; ++x) {
-                    vec2 uv = reprojection_uv + vec2(x, y) * dudv;
-                    f16vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
-                    float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
-                    float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
-                    float16_t weight = float(textureLod(g_refl_hist_tex, uv, 0.0).w > 0.0);
-                    weight *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
-                    if (weight > disocclusion_factor) {
-                        disocclusion_factor = weight;
-                        closest_uv = uv;
-                    }
+    const float PlaneDistSensitivity = 0.05;
+    const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, 1.0 /* accumulation_speed */);
+    const float normal_weight_param = GetNormalWeightParam(1.0 /* accumulation_speed */, 0.15, saturate(0.5 + roughness));
+
+    const vec3 history_point_vs = ReconstructViewPosition_YFlip(reprojection_uv, g_shrd_data.frustum_info, -history_linear_depth, 0.0 /* is_ortho */);
+
+    // Determine disocclusion factor based on history
+    disocclusion_factor = float(reprojection.w > 0.0);
+    disocclusion_factor *= GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, history_normal_ws, center_normal_vs, history_point_vs);
+
+    // Try to find better sample in the vicinity
+    if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
+        vec2 closest_uv = reprojection_uv;
+        const vec2 dudv = 1.0 / vec2(screen_size);
+
+        const int SearchRadius = 1;
+        for (int y = -SearchRadius; y <= SearchRadius; ++y) {
+            for (int x = -SearchRadius; x <= SearchRadius; ++x) {
+                vec2 uv = reprojection_uv + vec2(x, y) * dudv;
+                const f16vec3 history_normal_ws = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
+                const float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
+                const float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
+                const vec3 history_point_vs = ReconstructViewPosition_YFlip(uv, g_shrd_data.frustum_info, -history_linear_depth, 0.0 /* is_ortho */);
+
+                float16_t weight = float(textureLod(g_refl_hist_tex, uv, 0.0).w > 0.0);
+                weight *= GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, history_normal_ws, center_normal_vs, history_point_vs);
+                if (weight > disocclusion_factor) {
+                    disocclusion_factor = weight;
+                    closest_uv = uv;
                 }
             }
-            reprojection_uv = closest_uv;
-            reprojection = textureLod(g_refl_hist_tex, reprojection_uv, 0.0);
         }
-
-        // Try to get rid of potential leaks at bilinear interpolation level
-        if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
-            // If we've got a discarded history, try to construct a better sample out of 2x2 interpolation neighborhood
-            // Helps quite a bit on the edges in movement
-            const float uvx = fract(float(screen_size.x) * reprojection_uv.x - 0.5);
-            const float uvy = fract(float(screen_size.y) * reprojection_uv.y - 0.5);
-            const ivec2 base_pos = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
-
-            const ivec2 sample_pos00 = clamp(base_pos + ivec2(0, 0), ivec2(0), screen_size - 1);
-            const ivec2 sample_pos10 = clamp(base_pos + ivec2(1, 0), ivec2(0), screen_size - 1);
-            const ivec2 sample_pos01 = clamp(base_pos + ivec2(0, 1), ivec2(0), screen_size - 1);
-            const ivec2 sample_pos11 = clamp(base_pos + ivec2(1, 1), ivec2(0), screen_size - 1);
-
-            const f16vec4 reprojection00 = texelFetch(g_refl_hist_tex, sample_pos00, 0);
-            const f16vec4 reprojection10 = texelFetch(g_refl_hist_tex, sample_pos10, 0);
-            const f16vec4 reprojection01 = texelFetch(g_refl_hist_tex, sample_pos01, 0);
-            const f16vec4 reprojection11 = texelFetch(g_refl_hist_tex, sample_pos11, 0);
-
-            const f16vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, sample_pos00, 0).x).xyz;
-            const f16vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, sample_pos10, 0).x).xyz;
-            const f16vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, sample_pos01, 0).x).xyz;
-            const f16vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, sample_pos11, 0).x).xyz;
-
-            const float depth00 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos00, 0).x, g_shrd_data.clip_info);
-            const float depth10 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos10, 0).x, g_shrd_data.clip_info);
-            const float depth01 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos01, 0).x, g_shrd_data.clip_info);
-            const float depth11 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos11, 0).x, g_shrd_data.clip_info);
-
-            f16vec4 w;
-            // Initialize with occlusion weights
-            w.x = (reprojection00.w > 0.0 && GetDisocclusionFactor(normal, normal00, linear_depth, depth00) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
-            w.y = (reprojection10.w > 0.0 && GetDisocclusionFactor(normal, normal10, linear_depth, depth10) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
-            w.z = (reprojection01.w > 0.0 && GetDisocclusionFactor(normal, normal01, linear_depth, depth01) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
-            w.w = (reprojection11.w > 0.0 && GetDisocclusionFactor(normal, normal11, linear_depth, depth11) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
-            // And then mix in bilinear weights
-            w.x *= (1.0 - uvx) * (1.0 - uvy);
-            w.y *= (uvx) * (1.0 - uvy);
-            w.z *= (1.0 - uvx) * (uvy);
-            w.w *= (uvx) * (uvy);
-            // normalize
-            w /= max(w.x + w.y + w.z + w.w, 1.0e-3);
-
-            f16vec3 history_normal;
-            float history_linear_depth;
-            reprojection = reprojection00 * w.x + reprojection10 * w.y + reprojection01 * w.z + reprojection11 * w.w;
-            history_linear_depth = depth00 * w.x + depth10 * w.y + depth01 * w.z + depth11 * w.w;
-            history_normal = normal00 * w.x + normal10 * w.y + normal01 * w.z + normal11 * w.w;
-            disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
-        }
-        disocclusion_factor = disocclusion_factor < DISOCCLUSION_THRESHOLD ? 0.0 : disocclusion_factor;
+        reprojection_uv = closest_uv;
+        reprojection = textureLod(g_refl_hist_tex, reprojection_uv, 0.0);
     }
+
+    { // Perform manual bilinear interpolation
+        const float uvx = fract(float(screen_size.x) * reprojection_uv.x - 0.5);
+        const float uvy = fract(float(screen_size.y) * reprojection_uv.y - 0.5);
+        const ivec2 base_pos = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
+
+        const ivec2 sample_pos00 = clamp(base_pos + ivec2(0, 0), ivec2(0), screen_size - 1);
+        const ivec2 sample_pos10 = clamp(base_pos + ivec2(1, 0), ivec2(0), screen_size - 1);
+        const ivec2 sample_pos01 = clamp(base_pos + ivec2(0, 1), ivec2(0), screen_size - 1);
+        const ivec2 sample_pos11 = clamp(base_pos + ivec2(1, 1), ivec2(0), screen_size - 1);
+
+        const f16vec4 reprojection00 = texelFetch(g_refl_hist_tex, sample_pos00, 0);
+        const f16vec4 reprojection10 = texelFetch(g_refl_hist_tex, sample_pos10, 0);
+        const f16vec4 reprojection01 = texelFetch(g_refl_hist_tex, sample_pos01, 0);
+        const f16vec4 reprojection11 = texelFetch(g_refl_hist_tex, sample_pos11, 0);
+
+        const f16vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, sample_pos00, 0).x).xyz;
+        const f16vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, sample_pos10, 0).x).xyz;
+        const f16vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, sample_pos01, 0).x).xyz;
+        const f16vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, sample_pos11, 0).x).xyz;
+
+        const float depth00 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos00, 0).x, g_shrd_data.clip_info);
+        const float depth10 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos10, 0).x, g_shrd_data.clip_info);
+        const float depth01 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos01, 0).x, g_shrd_data.clip_info);
+        const float depth11 = LinearizeDepth(texelFetch(g_depth_hist_tex, sample_pos11, 0).x, g_shrd_data.clip_info);
+
+        const vec3 point_vs00 = ReconstructViewPosition_YFlip(reprojection_uv, g_shrd_data.frustum_info, -depth00, 0.0 /* is_ortho */);
+        const vec3 point_vs10 = ReconstructViewPosition_YFlip(reprojection_uv, g_shrd_data.frustum_info, -depth10, 0.0 /* is_ortho */);
+        const vec3 point_vs01 = ReconstructViewPosition_YFlip(reprojection_uv, g_shrd_data.frustum_info, -depth01, 0.0 /* is_ortho */);
+        const vec3 point_vs11 = ReconstructViewPosition_YFlip(reprojection_uv, g_shrd_data.frustum_info, -depth11, 0.0 /* is_ortho */);
+
+        f16vec4 w;
+        // Initialize with occlusion weights
+        w.x = (reprojection00.w > 0.0 && GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, normal00, center_normal_vs, point_vs00) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
+        w.y = (reprojection10.w > 0.0 && GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, normal10, center_normal_vs, point_vs10) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
+        w.z = (reprojection01.w > 0.0 && GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, normal01, center_normal_vs, point_vs01) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
+        w.w = (reprojection11.w > 0.0 && GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, normal11, center_normal_vs, point_vs11) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
+        // Bilinear weights
+        w.x *= (1.0 - uvx) * (1.0 - uvy);
+        w.y *= (uvx) * (1.0 - uvy);
+        w.z *= (1.0 - uvx) * (uvy);
+        w.w *= (uvx) * (uvy);
+        // normalize
+        w /= max(w.x + w.y + w.z + w.w, 1.0e-3);
+
+        reprojection = reprojection00 * w.x + reprojection10 * w.y + reprojection01 * w.z + reprojection11 * w.w;
+        history_linear_depth = depth00 * w.x + depth10 * w.y + depth01 * w.z + depth11 * w.w;
+        history_normal_ws = normal00 * w.x + normal10 * w.y + normal01 * w.z + normal11 * w.w;
+
+        const vec3 point_vs = ReconstructViewPosition_YFlip(reprojection_uv, g_shrd_data.frustum_info, -history_linear_depth, 0.0 /* is_ortho */);
+        disocclusion_factor = GetDisocclusionFactor(normal_weight_param, geometry_weight_params, center_normal_ws, history_normal_ws, center_normal_vs, point_vs);
+    }
+    disocclusion_factor = disocclusion_factor < DISOCCLUSION_THRESHOLD ? 0.0 : disocclusion_factor;
 }
 
 void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_size) {
