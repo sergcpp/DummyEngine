@@ -33,6 +33,12 @@ float GetSpecLobeTanHalfAngle(const float roughness, const float percent_of_volu
     return roughness * roughness * percent_of_volume / (1.0 - percent_of_volume + 0.001);
 }
 
+vec2 GetRoughnessWeightParams(const float roughness, const float fraction, const float sensitivity) {
+    const float a = 1.0 / mix(sensitivity, 1.0, saturate(roughness * fraction));
+    const float b = roughness * a;
+    return vec2(a, -b);
+}
+
 float GetNormalWeightParam(const float non_linear_accum_speed, const float lobe_angle_fraction, const float roughness) {
     const float percent_of_volume = 0.75 * mix(saturate(lobe_angle_fraction), 1.0, non_linear_accum_speed);
     const float tan_half_angle = GetSpecLobeTanHalfAngle(roughness, percent_of_volume);
@@ -44,13 +50,16 @@ vec2 GetGeometryWeightParams(const float plane_dist_sensitivity, const vec3 poin
     const float relaxation = mix(1.0, 0.25, non_linear_accum_speed);
     const float a = relaxation / plane_dist_sensitivity;
     const float b = -dot(normal_vs, point_vs) * a;
-
     return vec2(a, b);
 }
 
 // Acos(x) (approximate)
 // http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiJhY29zKHgpIiwiY29sb3IiOiIjMDAwMDAwIn0seyJ0eXBlIjowLCJlcSI6InNxcnQoMS14KSpzcXJ0KDIpIiwiY29sb3IiOiIjRjIwQzBDIn0seyJ0eXBlIjoxMDAwLCJ3aW5kb3ciOlsiMCIsIjEiLCIwIiwiMiJdLCJzaXplIjpbMTE1MCw5MDBdfV0-
 #define _AcosApprox(x) (SQRT_2 * sqrt(saturate(1.0 - (x))))
+
+float GetEdgeStoppingRoughnessWeight(const float px, const float py, const float x) {
+    return smoothstep(1.0, 0.0, abs(x * px + py));
+}
 
 float GetEdgeStoppingNormalWeight(const float px, const float py, const vec3 n1, const vec3 n2) {
     const float angle = _AcosApprox(dot(n1, n2));

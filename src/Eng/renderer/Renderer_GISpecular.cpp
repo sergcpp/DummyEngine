@@ -898,7 +898,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
     FgImgRWHandle sample_count, variance_temp;
 
     { // Denoiser reprojection
-        auto &ssr_reproject = fg_builder_.AddNode("SPEC REPROJECT");
+        auto &spec_reproject = fg_builder_.AddNode("SPEC REPROJECT");
 
         struct PassData {
             FgBufROHandle shared_data;
@@ -914,18 +914,18 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
-        data->shared_data = ssr_reproject.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
-        data->depth = ssr_reproject.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
-        data->norm = ssr_reproject.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
-        data->velocity = ssr_reproject.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
-        data->depth_hist = ssr_reproject.AddHistoryTextureInput(OPAQUE_DEPTH_TEX, Stg::ComputeShader);
-        data->norm_hist = ssr_reproject.AddHistoryTextureInput(frame_textures.normal, Stg::ComputeShader);
-        data->refl_hist = ssr_reproject.AddHistoryTextureInput("GI Specular Filtered", Stg::ComputeShader);
-        data->variance_hist = ssr_reproject.AddHistoryTextureInput(SPECULAR_VARIANCE_TEX, Stg::ComputeShader);
-        data->refl = ssr_reproject.AddTextureInput(refl, Stg::ComputeShader);
+        data->shared_data = spec_reproject.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+        data->depth = spec_reproject.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->norm = spec_reproject.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->velocity = spec_reproject.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
+        data->depth_hist = spec_reproject.AddHistoryTextureInput(OPAQUE_DEPTH_TEX, Stg::ComputeShader);
+        data->norm_hist = spec_reproject.AddHistoryTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->refl_hist = spec_reproject.AddHistoryTextureInput("GI Specular Filtered", Stg::ComputeShader);
+        data->variance_hist = spec_reproject.AddHistoryTextureInput(SPECULAR_VARIANCE_TEX, Stg::ComputeShader);
+        data->refl = spec_reproject.AddTextureInput(refl, Stg::ComputeShader);
 
-        data->tile_list = ssr_reproject.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
-        data->indir_args = ssr_reproject.AddIndirectBufferInput(indir_disp);
+        data->tile_list = spec_reproject.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
+        data->indir_args = spec_reproject.AddIndirectBufferInput(indir_disp);
         data->indir_args_offset1 = 3 * sizeof(uint32_t);
         data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
@@ -938,7 +938,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             reproj_refl = data->out_reprojected =
-                ssr_reproject.AddStorageImageOutput("Spec Reprojected", desc, Stg::ComputeShader);
+                spec_reproject.AddStorageImageOutput("Spec Reprojected", desc, Stg::ComputeShader);
         }
         { // 8x8 average reflections texture
             FgImgDesc desc;
@@ -949,7 +949,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             avg_refl = data->out_avg_refl =
-                ssr_reproject.AddStorageImageOutput("Average Refl", desc, Stg::ComputeShader);
+                spec_reproject.AddStorageImageOutput("Average Refl", desc, Stg::ComputeShader);
         }
         { // Variance
             FgImgDesc desc;
@@ -960,7 +960,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             variance_temp = data->out_variance =
-                ssr_reproject.AddStorageImageOutput("Variance Temp", desc, Stg::ComputeShader);
+                spec_reproject.AddStorageImageOutput("Variance Temp", desc, Stg::ComputeShader);
         }
         { // Sample count
             FgImgDesc desc;
@@ -971,12 +971,12 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
             sample_count = data->out_sample_count =
-                ssr_reproject.AddStorageImageOutput("Sample Count", desc, Stg::ComputeShader);
+                spec_reproject.AddStorageImageOutput("Sample Count", desc, Stg::ComputeShader);
         }
 
-        data->sample_count_hist = ssr_reproject.AddHistoryTextureInput(data->out_sample_count, Stg::ComputeShader);
+        data->sample_count_hist = spec_reproject.AddHistoryTextureInput(data->out_sample_count, Stg::ComputeShader);
 
-        ssr_reproject.set_execute_cb([this, data, tile_count](const FgContext &fg) {
+        spec_reproject.set_execute_cb([this, data, tile_count](const FgContext &fg) {
             const Ren::BufferROHandle shared_data = fg.AccessROBuffer(data->shared_data);
             const Ren::ImageROHandle depth = fg.AccessROImage(data->depth);
             const Ren::ImageROHandle norm = fg.AccessROImage(data->norm);
@@ -1135,7 +1135,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         });
     }
 
-    FgImgRWHandle gi_specular, ssr_variance;
+    FgImgRWHandle gi_specular, spec_variance;
 
     { // Denoiser accumulation
         auto &spec_temporal = fg_builder_.AddNode("SPEC TEMPORAL");
@@ -1184,7 +1184,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             desc.sampling.filter = Ren::eFilter::Bilinear;
             desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-            ssr_variance = data->out_variance =
+            spec_variance = data->out_variance =
                 spec_temporal.AddStorageImageOutput(SPECULAR_VARIANCE_TEX, desc, Stg::ComputeShader);
         }
 
@@ -1264,7 +1264,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             data->norm = spec_filter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
             data->refl = spec_filter.AddTextureInput(gi_specular, Stg::ComputeShader);
             data->sample_count = spec_filter.AddTextureInput(sample_count, Stg::ComputeShader);
-            data->variance = spec_filter.AddTextureInput(ssr_variance, Stg::ComputeShader);
+            data->variance = spec_filter.AddTextureInput(spec_variance, Stg::ComputeShader);
             data->tile_list = spec_filter.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
             data->indir_args = spec_filter.AddIndirectBufferInput(indir_disp);
             data->indir_args_offset1 = 3 * sizeof(uint32_t);
@@ -1354,7 +1354,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             data->norm = spec_post_filter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
             data->refl = spec_post_filter.AddTextureInput(gi_specular2, Stg::ComputeShader);
             data->sample_count = spec_post_filter.AddTextureInput(sample_count, Stg::ComputeShader);
-            data->variance = spec_post_filter.AddTextureInput(ssr_variance, Stg::ComputeShader);
+            data->variance = spec_post_filter.AddTextureInput(spec_variance, Stg::ComputeShader);
             data->tile_list = spec_post_filter.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
             data->indir_args = spec_post_filter.AddIndirectBufferInput(indir_disp);
             data->indir_args_offset1 = 3 * sizeof(uint32_t);

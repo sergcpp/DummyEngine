@@ -214,6 +214,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     const float PlaneDistSensitivity = 0.005;
     const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, specNonLinearAccumSpeed);
     const float normal_weight_param = GetNormalWeightParam(specNonLinearAccumSpeed, 0.15, center_roughness);
+    const vec2 roughness_weight_params = GetRoughnessWeightParams(center_roughness, 0.15, 0.01);
 
 #ifdef POST_FILTER
     const float RadiusScale = 2.0;
@@ -259,7 +260,9 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 
         const float depth_fetch = textureLod(g_depth_tex, uv, 0.0).x;
         const float neighbor_depth = LinearizeDepth(depth_fetch, g_shrd_data.clip_info);
-        const vec3 neighbor_normal_ws = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0).x).xyz;
+        const vec4 normal_fetch = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0).x);
+        const vec3 neighbor_normal_ws = normal_fetch.xyz;
+        const float neighbor_roughness = normal_fetch.w;
         const vec3 neighbor_point_vs = ReconstructViewPosition_YFlip(uv, g_shrd_data.frustum_info, -neighbor_depth, 0.0 /* is_ortho */);
 
         const vec4 fetch = sanitize(textureLod(g_refl_tex, uv, 0.0));
@@ -267,6 +270,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         /* fp16 */ float weight = float(fetch.w > 0.0);
         weight *= IsInScreen(uv);
         weight *= GetGaussianWeight(offset.z);
+        weight *= GetEdgeStoppingRoughnessWeight(roughness_weight_params.x, roughness_weight_params.y, neighbor_roughness);
         weight *= GetEdgeStoppingNormalWeight(normal_weight_param, 0.0, center_normal_ws, neighbor_normal_ws);
         weight *= GetEdgeStoppingPlanarDistanceWeight(geometry_weight_params, center_normal_vs, neighbor_point_vs);
 
