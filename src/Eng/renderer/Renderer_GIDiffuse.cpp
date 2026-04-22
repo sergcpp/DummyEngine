@@ -1075,6 +1075,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                 Params uniform_params;
                 uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                 uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
+                uniform_params.unjitter = Ren::Vec2f{view_state_.jitter[0] - 0.5f, view_state_.jitter[1] - 0.5f};
 
                 DispatchComputeIndirect(fg.cmd_buf(), pi_diffuse_reproject_, fg.storages(), indir_args,
                                         data->indir_args_offset1, bindings, &uniform_params, sizeof(uniform_params),

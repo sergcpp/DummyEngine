@@ -235,9 +235,13 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
         }
     }
 
+    vec2 unjitter = g_params.unjitter / vec2(screen_size);
+#if defined(VULKAN)
+    unjitter.y = -unjitter.y;
+#endif
     const float center_depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
     const float center_depth_lin  = LinearizeDepth(center_depth, g_shrd_data.clip_info) - motion_vector.z;
-    const vec3 center_point_vs = ReconstructViewPosition_YFlip(center_uv - motion_vector.xy, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
+    const vec3 center_point_vs = ReconstructViewPosition_YFlip(center_uv - motion_vector.xy + unjitter, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
 
     const float PlaneDistSensitivity = 0.05;
     const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, 1.0 /* accumulation_speed */);
@@ -354,6 +358,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
         f16vec4 reprojection;
         PickReprojection(ivec2(dispatch_thread_id), ivec2(group_thread_id), ivec2(screen_size), roughness, refl.w,
                          disocclusion_factor, reprojection_uv, reprojection);
+        reprojection.xyz *= g_params.hist_weight;
 
         if (all(greaterThan(reprojection_uv, vec2(0.0))) && all(lessThan(reprojection_uv, vec2(1.0)))) {
             const float16_t prev_variance = textureLod(g_variance_hist_tex, reprojection_uv, 0.0).x;

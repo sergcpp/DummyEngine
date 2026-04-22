@@ -153,9 +153,13 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
     reprojection_uv = surf_repr_uv;
     reprojection = surf_history;
 
+    vec2 unjitter = g_params.unjitter / vec2(screen_size);
+#if defined(VULKAN)
+    unjitter.y = -unjitter.y;
+#endif
     const float center_depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
     const float center_depth_lin = LinearizeDepth(center_depth, g_shrd_data.clip_info) - motion_vector.z;
-    const vec3 center_point_vs = ReconstructViewPosition_YFlip(center_uv - motion_vector.xy, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
+    const vec3 center_point_vs = ReconstructViewPosition_YFlip(center_uv - motion_vector.xy + unjitter, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
 
     const float PlaneDistSensitivity = 0.05;
     const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, 1.0 /* accumulation_speed */);

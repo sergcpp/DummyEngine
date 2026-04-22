@@ -7,7 +7,10 @@ INTERFACE_START(RTSpecularReproject)
 
 struct Params {
     uvec2 img_size;
-    vec2 thresholds;
+    float hist_weight;
+    float _unused0;
+    vec2 unjitter;
+    vec2 _unused1;
 };
 
 const int GRP_SIZE_X = 8;

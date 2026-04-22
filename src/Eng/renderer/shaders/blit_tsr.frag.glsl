@@ -30,10 +30,6 @@ layout(binding = DILATED_DEPTH_TEX_SLOT) uniform sampler2D g_dilated_depth;
 layout(binding = DILATED_VELOCITY_TEX_SLOT) uniform sampler2D g_dilated_velocity;
 layout(binding = DISOCCLUSION_MASK_TEX_SLOT) uniform sampler2D g_disocclusion_mask;
 
-layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    shared_data_t g_shrd_data;
-};
-
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
