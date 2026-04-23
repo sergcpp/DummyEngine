@@ -633,8 +633,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     if (view_state_.prev_world_origin != list.world_origin) {
         const Ren::Vec3f origin_diff = Ren::Vec3f(list.world_origin - view_state_.prev_world_origin);
 
-        view_state_.prev_view_from_world = Ren::Translate(view_state_.prev_view_from_world, origin_diff);
-        view_state_.prev_clip_from_world = Ren::Translate(view_state_.prev_clip_from_world, origin_diff);
+        view_state_.prev_view_from_world = Translate(view_state_.prev_view_from_world, origin_diff);
+        view_state_.prev_clip_from_world = Translate(view_state_.prev_clip_from_world, origin_diff);
 
         for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
             const probe_volume_t &volume = persistent_data.probe_volumes[i];
@@ -644,6 +644,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             const Ren::Vec3d new_orig = view_state_.prev_world_origin - list.world_origin + Ren::Vec3d(volume.origin);
             volume.origin = Ren::Vec3f(new_orig);
+
+            const Ren::Vec3d new_prev_orig = view_state_.prev_world_origin - list.world_origin + Ren::Vec3d(volume.prev_origin);
+            volume.prev_origin = Ren::Vec3f(new_prev_orig);
 
             const Ren::Vec3i test = Ren::Vec3i{Floor((volume.pivot - volume.origin) / volume.spacing)};
             assert(test == volume.scroll);
@@ -658,6 +661,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             volume.pivot = list.draw_cam.world_position();
             volume.scroll_diff = new_scroll - volume.scroll;
+            volume.prev_scroll = volume.scroll;
             volume.scroll = new_scroll;
             ++volume.updates_count;
         } else {
@@ -668,14 +672,15 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     if (list.volume_to_update == PROBE_VOLUMES_COUNT - 1) {
         // force the last volume to cover the whole scene
         const probe_volume_t &last_volume = persistent_data.probe_volumes[PROBE_VOLUMES_COUNT - 1];
-        last_volume.spacing =
+        const Ren::Vec3f new_spacing =
             (list.bbox_max - list.bbox_min) / Ren::Vec3f{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z};
-        const float scalar_spacing =
-            std::max(std::max(last_volume.spacing[0], last_volume.spacing[1]), last_volume.spacing[2]);
+        const float scalar_spacing = std::max(std::max(new_spacing[0], new_spacing[1]), new_spacing[2]);
+        last_volume.prev_spacing = last_volume.spacing;
         last_volume.spacing = Ren::Vec3f{scalar_spacing};
         const Ren::Vec3i new_scroll =
             Ren::Vec3i{(0.5f * (list.bbox_max + list.bbox_min) - last_volume.origin) / last_volume.spacing};
         last_volume.scroll_diff = new_scroll - last_volume.scroll;
+        last_volume.prev_scroll = last_volume.scroll;
         last_volume.scroll = new_scroll;
         last_volume.pivot = 0.5f * (list.bbox_max + list.bbox_min);
     }
@@ -685,11 +690,14 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         const probe_volume_t &volume = persistent_data.probe_volumes[i],
                              &last_volume = persistent_data.probe_volumes[PROBE_VOLUMES_COUNT - 1];
         if (probe_volume_spacing > last_volume.spacing[0]) {
+            volume.prev_spacing = volume.spacing;
             volume.spacing = last_volume.spacing[0];
+            volume.prev_scroll = volume.scroll;
             volume.scroll = Ren::Vec3i{(0.5f * (list.bbox_max + list.bbox_min) - volume.origin) / volume.spacing};
             volume.scroll_diff = Ren::Vec3i(0);
             volume.pivot = 0.5f * (list.bbox_max + list.bbox_min);
         } else {
+            volume.prev_spacing = volume.spacing;
             volume.spacing = probe_volume_spacing;
         }
         probe_volume_spacing *= 3.0f;
@@ -750,9 +758,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
     view_state_.prev_pre_exposure = std::min(std::max(view_state_.prev_pre_exposure, min_exposure_), max_exposure_);
 
-    bool has_global_volume = Ren::Length2(list.env.fog.scatter_color) != 0.0f;
+    bool has_global_volume = Length2(list.env.fog.scatter_color) != 0.0f;
     has_global_volume |= list.env.fog.absorption != 1.0f;
-    has_global_volume |= Ren::Length2(list.env.fog.emission_color) != 0.0f;
+    has_global_volume |= Length2(list.env.fog.emission_color) != 0.0f;
     has_global_volume &= (list.env.fog.density != 0.0f);
 
     view_state_.skip_volumetrics = !has_global_volume && list.rt_obj_instances[int(eTLASIndex::Volume)].count == 0;

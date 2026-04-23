@@ -384,8 +384,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             }
             const float cos_theta = 1.0f / sqrtf(1.0f + tan_angle * tan_angle);
             shrd_data.sun_col[3] = shrd_data.sun_col_point[3] = cos_theta;
-            shrd_data.env_col = Ren::Vec4f{p_list_->env.env_col[0], p_list_->env.env_col[1], p_list_->env.env_col[2],
-                                           p_list_->env.env_map_rot};
+            shrd_data.env_col = Ren::Vec4f{p_list_->env.env_col, p_list_->env.env_map_rot};
             if (p_list_->env.env_map_name == "physical_sky") {
                 // Ignore rotation
                 shrd_data.env_col[3] = 0.0f;
@@ -460,7 +459,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             }
 
             const Ren::Vec3f &cam_pos = p_list_->draw_cam.world_position();
-            shrd_data.cam_pos_and_exp = Ren::Vec4f{cam_pos[0], cam_pos[1], cam_pos[2], view_state_.pre_exposure};
+            shrd_data.cam_pos_and_exp = Ren::Vec4f{cam_pos, view_state_.pre_exposure};
             shrd_data.wind_scroll =
                 Ren::Vec4f{p_list_->env.curr_wind_scroll_lf[0], p_list_->env.curr_wind_scroll_lf[1],
                            p_list_->env.curr_wind_scroll_hf[0], p_list_->env.curr_wind_scroll_hf[1]};
@@ -478,15 +477,14 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             shrd_data.ambient_hack = Ren::Vec4f{0.0f, 0.0f, 0.0f, env_mip_count};
 
             for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
-                shrd_data.probe_volumes[i].origin =
-                    Ren::Vec4f{persistent_data.probe_volumes[i].origin[0], persistent_data.probe_volumes[i].origin[1],
-                               persistent_data.probe_volumes[i].origin[2], 0.0f};
-                shrd_data.probe_volumes[i].spacing =
-                    Ren::Vec4f{persistent_data.probe_volumes[i].spacing[0], persistent_data.probe_volumes[i].spacing[1],
-                               persistent_data.probe_volumes[i].spacing[2], 0.0f};
-                shrd_data.probe_volumes[i].scroll =
-                    Ren::Vec4i{persistent_data.probe_volumes[i].scroll[0], persistent_data.probe_volumes[i].scroll[1],
-                               persistent_data.probe_volumes[i].scroll[2], 0.0f};
+                shrd_data.probe_volumes[i].origin = Ren::Vec4f{persistent_data.probe_volumes[i].origin, 0.0f};
+                shrd_data.probe_volumes[i].spacing = Ren::Vec4f{persistent_data.probe_volumes[i].spacing, 0.0f};
+                shrd_data.probe_volumes[i].scroll = Ren::Vec4i{persistent_data.probe_volumes[i].scroll, 0};
+
+                shrd_data.prev_probe_volumes[i].origin = Ren::Vec4f{persistent_data.probe_volumes[i].prev_origin, 0.0f};
+                shrd_data.prev_probe_volumes[i].spacing =
+                    Ren::Vec4f{persistent_data.probe_volumes[i].prev_spacing, 0.0f};
+                shrd_data.prev_probe_volumes[i].scroll = Ren::Vec4i{persistent_data.probe_volumes[i].prev_scroll, 0};
             }
 
             memcpy(&shrd_data.probes[0], p_list_->probes.data(), sizeof(probe_item_t) * p_list_->probes.size());

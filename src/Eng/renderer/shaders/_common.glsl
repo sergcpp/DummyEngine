@@ -433,6 +433,7 @@ struct shared_data_t {
     vec4 ambient_hack;
     vec4 frustum_planes[6];
     probe_volume_t probe_volumes[PROBE_VOLUMES_COUNT];
+    probe_volume_t prev_probe_volumes[PROBE_VOLUMES_COUNT];
     uvec4 portals[MAX_PORTALS_TOTAL / 4];
     probe_item_t probes[MAX_PROBES_TOTAL];
     ellipse_item_t ellipsoids[MAX_ELLIPSES_TOTAL];

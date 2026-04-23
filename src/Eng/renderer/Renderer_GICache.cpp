@@ -118,11 +118,10 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
             ProbeBlend::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;
             uniform_params.oct_index = (persistent_data.probe_volumes[volume_to_update].updates_count - 1) % 8;
-            uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
-            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
-            uniform_params.grid_scroll_diff =
-                Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
-            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
+            uniform_params.grid_origin = Ren::Vec4f{grid_origin, 0.0f};
+            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll, 0};
+            uniform_params.grid_scroll_diff = Ren::Vec4i{grid_scroll_diff, 0};
+            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing, 0.0f};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
             uniform_params.pre_exposure = view_state_.pre_exposure;
 
@@ -178,11 +177,10 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
             ProbeBlend::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;
             uniform_params.oct_index = (persistent_data.probe_volumes[volume_to_update].updates_count - 1) % 8;
-            uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
-            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
-            uniform_params.grid_scroll_diff =
-                Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
-            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
+            uniform_params.grid_origin = Ren::Vec4f{grid_origin, 0.0f};
+            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll, 0};
+            uniform_params.grid_scroll_diff = Ren::Vec4i{grid_scroll_diff, 0};
+            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing, 0.0f};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
             DispatchCompute(fg.cmd_buf(), pi_probe_blend_[2][partial], fg.storages(),
@@ -227,11 +225,10 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
             ProbeRelocate::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;
             uniform_params.oct_index = (persistent_data.probe_volumes[volume_to_update].updates_count - 1) % 8;
-            uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
-            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
-            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
-            uniform_params.grid_scroll_diff =
-                Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
+            uniform_params.grid_origin = Ren::Vec4f{grid_origin, 0.0f};
+            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing, 0.0f};
+            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll, 0};
+            uniform_params.grid_scroll_diff = Ren::Vec4i{grid_scroll_diff, 0};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
             const int pi_index =
@@ -281,12 +278,10 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
             ProbeClassify::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;
             uniform_params.oct_index = (persistent_data.probe_volumes[volume_to_update].updates_count - 1) % 8;
-            uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
-            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
-            uniform_params.grid_scroll_diff =
-                Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
-            uniform_params.grid_spacing =
-                Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], Length(grid_spacing)};
+            uniform_params.grid_origin = Ren::Vec4f{grid_origin, 0.0f};
+            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll, 0};
+            uniform_params.grid_scroll_diff = Ren::Vec4i{grid_scroll_diff, 0};
+            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing, Length(grid_spacing)};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
             uniform_params.vol_bbox_min = Ren::Vec4f{p_list_->env.fog.bbox_min};
             uniform_params.vol_bbox_max = Ren::Vec4f{p_list_->env.fog.bbox_max};

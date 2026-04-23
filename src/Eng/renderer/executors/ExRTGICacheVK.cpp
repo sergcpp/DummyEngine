@@ -80,18 +80,10 @@ void Eng::ExRTGICache::Execute_HWRT(const FgContext &fg) {
     uniform_params.stoch_lights_count = view_state_->stochastic_lights_count_cache;
     uniform_params.pass_hash = view_state_->probe_ray_hash;
     uniform_params.oct_index = (args_->probe_volumes[view_state_->volume_to_update].updates_count - 1) % 8;
-    uniform_params.grid_origin = Ren::Vec4f(args_->probe_volumes[view_state_->volume_to_update].origin[0],
-                                            args_->probe_volumes[view_state_->volume_to_update].origin[1],
-                                            args_->probe_volumes[view_state_->volume_to_update].origin[2], 0.0f);
-    uniform_params.grid_scroll = Ren::Vec4i(args_->probe_volumes[view_state_->volume_to_update].scroll[0],
-                                            args_->probe_volumes[view_state_->volume_to_update].scroll[1],
-                                            args_->probe_volumes[view_state_->volume_to_update].scroll[2], 0.0f);
-    uniform_params.grid_scroll_diff = Ren::Vec4i(args_->probe_volumes[view_state_->volume_to_update].scroll_diff[0],
-                                                 args_->probe_volumes[view_state_->volume_to_update].scroll_diff[1],
-                                                 args_->probe_volumes[view_state_->volume_to_update].scroll_diff[2], 0);
-    uniform_params.grid_spacing = Ren::Vec4f(args_->probe_volumes[view_state_->volume_to_update].spacing[0],
-                                             args_->probe_volumes[view_state_->volume_to_update].spacing[1],
-                                             args_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
+    uniform_params.grid_origin = Ren::Vec4f{args_->probe_volumes[view_state_->volume_to_update].origin, 0.0f};
+    uniform_params.grid_scroll = Ren::Vec4i{args_->probe_volumes[view_state_->volume_to_update].scroll, 0};
+    uniform_params.grid_scroll_diff = Ren::Vec4i{args_->probe_volumes[view_state_->volume_to_update].scroll_diff, 0};
+    uniform_params.grid_spacing = Ren::Vec4f{args_->probe_volumes[view_state_->volume_to_update].spacing, 0.0f};
     uniform_params.quat_rot = view_state_->probe_ray_rotator;
 
     api.vkCmdPushConstants(cmd_buf, pi.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params), &uniform_params);

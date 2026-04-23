@@ -554,23 +554,24 @@ void main() {
         final_total += light_total;
 
         for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
-            const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+            // NOTE: We use previous state of probes here
+            const float weight = get_volume_blend_weight(P, g_shrd_data.prev_probe_volumes[i].scroll.xyz, g_shrd_data.prev_probe_volumes[i].origin.xyz, g_shrd_data.prev_probe_volumes[i].spacing.xyz);
             if (weight > 0.0) {
                 if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0) {
                     // diffuse-only
-                    vec3 irradiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.probe_volumes[i].spacing.xyz), N,
-                                                                g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
+                    vec3 irradiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.prev_probe_volumes[i].spacing.xyz), N,
+                                                                g_shrd_data.prev_probe_volumes[i].scroll.xyz, g_shrd_data.prev_probe_volumes[i].origin.xyz, g_shrd_data.prev_probe_volumes[i].spacing.xyz, false);
                     irradiance *= base_color * ltc.diff_t2.x;
-                    irradiance *= clamp(hit_t / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)), 0.0, 1.0);
+                    irradiance *= clamp(hit_t / (0.5 * length(g_shrd_data.prev_probe_volumes[i].spacing.xyz)), 0.0, 1.0);
                     final_diffuse_only += lobe_masks.diffuse_mul * (1.0 / M_PI) * irradiance;
                     final_total += GI_CACHE_MULTIBOUNCE_FACTOR * lobe_masks.diffuse_mul * (1.0 / M_PI) * irradiance;
                 }
                 if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
                     const vec3 refl_dir = reflect(probe_ray_dir, N);
-                    vec3 avg_radiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.probe_volumes[i].spacing.xyz), refl_dir,
-                                                                  g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
+                    vec3 avg_radiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.prev_probe_volumes[i].spacing.xyz), refl_dir,
+                                                                  g_shrd_data.prev_probe_volumes[i].scroll.xyz, g_shrd_data.prev_probe_volumes[i].origin.xyz, g_shrd_data.prev_probe_volumes[i].spacing.xyz, false);
                     avg_radiance *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
-                    avg_radiance *= saturate(hit_t / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)));
+                    avg_radiance *= saturate(hit_t / (0.5 * length(g_shrd_data.prev_probe_volumes[i].spacing.xyz)));
                     final_total += GI_CACHE_MULTIBOUNCE_FACTOR * (1.0 / M_PI) * avg_radiance;
                 }
                 break;

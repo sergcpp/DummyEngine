@@ -191,8 +191,10 @@ class CompStorage {
 
 namespace Eng {
 struct probe_volume_t {
-    mutable Ren::Vec3f origin, spacing;
-    mutable Ren::Vec3i scroll, scroll_diff;
+    mutable Ren::Vec3f origin, prev_origin;
+    mutable Ren::Vec3f spacing, prev_spacing;
+    mutable Ren::Vec3i scroll, prev_scroll;
+    mutable Ren::Vec3i scroll_diff;
     mutable Ren::Vec3f pivot;
     mutable int updates_count = 0;
     mutable bool reset_relocation = true;

@@ -1327,7 +1327,7 @@ void BaseState::UpdateFrame(const int list_index) {
             auto *probe_tr = (Eng::Transform *)scene_manager_->scene_data().comp_store[Eng::CompTransform]->Get(
                 probe_obj->components[Eng::CompTransform]);
 
-            auto pos = Ren::Vec4f{probe->offset[0], probe->offset[1], probe->offset[2], 1};
+            auto pos = Ren::Vec4f{probe->offset, 1.0f};
             pos = probe_tr->world_from_object * pos;
             pos /= pos[3];
 
@@ -1781,12 +1781,12 @@ void BaseState::InitScene_PT() {
             const Eng::LightSource &ls = lights_src[obj.components[Eng::CompLightSource]];
             if (ls.power > 0) {
                 if (ls.type == Eng::eLightType::Sphere) {
-                    auto pos = Ren::Vec4f{ls.offset[0], ls.offset[1], ls.offset[2], 1};
+                    auto pos = Ren::Vec4f{ls.offset, 1.0f};
                     pos = tr.world_from_object * pos;
                     pos /= pos[3];
 
                     if (ls.spot_angle < Ren::Pi<float>()) {
-                        auto dir = Ren::Vec4f{ls.dir[0], ls.dir[1], ls.dir[2], 0};
+                        auto dir = Ren::Vec4f{ls.dir, 0.0f};
                         dir = tr.world_from_object * dir;
 
                         Ray::spot_light_desc_t spot_light_desc;

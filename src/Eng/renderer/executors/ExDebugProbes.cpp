@@ -40,11 +40,10 @@ void Eng::ExDebugProbes::Execute(const FgContext &fg) {
 
     ProbeDebug::Params uniform_params = {};
     uniform_params.volume_index = args_->volume_to_debug;
-    uniform_params.grid_origin = Ren::Vec4f(volume.origin[0], volume.origin[1], volume.origin[2], 0.0f);
-    uniform_params.grid_scroll = Ren::Vec4i(volume.scroll[0], volume.scroll[1], volume.scroll[2], 0);
-    uniform_params.grid_scroll_diff =
-        Ren::Vec4i(volume.scroll_diff[0], volume.scroll_diff[1], volume.scroll_diff[2], 0);
-    uniform_params.grid_spacing = Ren::Vec4f(volume.spacing[0], volume.spacing[1], volume.spacing[2], 0.0f);
+    uniform_params.grid_origin = Ren::Vec4f{volume.origin, 0.0f};
+    uniform_params.grid_scroll = Ren::Vec4i{volume.scroll, 0};
+    uniform_params.grid_scroll_diff = Ren::Vec4i{volume.scroll_diff, 0};
+    uniform_params.grid_spacing = Ren::Vec4f{volume.spacing, 0.0f};
 
     const Ren::RenderTarget render_targets[] = {{output, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
     const Ren::RenderTarget depth_target = {depth, Ren::eLoadOp::Load, Ren::eStoreOp::Store};

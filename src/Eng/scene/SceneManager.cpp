@@ -112,7 +112,7 @@ void __init_wind_params(const Eng::VegState &vs, const Eng::Environment &env, co
     instance.bend_scale = f32_to_u8(vs.bend_scale);
     instance.stretch = f32_to_u8(vs.stretch);
 
-    const auto wind_vec_ws = Ren::Vec4f{env.wind_vec[0], env.wind_vec[1], env.wind_vec[2], 0.0f};
+    const auto wind_vec_ws = Ren::Vec4f{env.wind_vec, 0.0f};
     const Ren::Vec4f wind_vec_ls = object_from_world * wind_vec_ws;
 
     instance.wind_dir_ls[0] = Ren::f32_to_f16(wind_vec_ls[0]);
@@ -841,8 +841,8 @@ void Eng::SceneManager::AllocGICache() {
     float probe_volume_spacing = 0.5f;
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         probe_volume_t &volume = scene_data_.persistent_data->probe_volumes.emplace_back();
-        volume.origin = Ren::Vec3f{0.0f};
-        volume.spacing = Ren::Vec3f{probe_volume_spacing};
+        volume.origin = volume.prev_origin = Ren::Vec3f{0.0f};
+        volume.spacing = volume.prev_spacing = Ren::Vec3f{probe_volume_spacing};
         probe_volume_spacing *= 3.0f;
     }
 
@@ -1417,8 +1417,7 @@ void Eng::SceneManager::PostloadLightSource(const Sys::JsObjectP &js_comp_obj, v
     auto *ls = (LightSource *)comp;
 
     // Compute bounding box of light source
-    [[maybe_unused]] const auto pos = Ren::Vec4f{ls->offset[0], ls->offset[1], ls->offset[2], 1.0f},
-                                dir = Ren::Vec4f{ls->dir[0], ls->dir[1], ls->dir[2], 0.0f};
+    [[maybe_unused]] const auto pos = Ren::Vec4f{ls->offset, 1.0f}, dir = Ren::Vec4f{ls->dir, 0.0f};
 
     Ren::Vec3f bbox_min, bbox_max;
 
