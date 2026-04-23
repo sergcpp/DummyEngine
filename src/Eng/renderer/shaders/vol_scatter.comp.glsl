@@ -122,15 +122,14 @@ void main() {
                 }
 
                 vec3 light_contribution = EvaluateLightSource_Vol(litem, pos_ws, view_ray_ws, g_params.anisotropy);
-                if (max_component(light_contribution) < FLT_EPS) {
-                    continue;
+                [[dont_flatten]] if (max_component(light_contribution) > FLT_EPS) {
+                    if (is_portal) {
+                        // Sample environment to create slight color variation
+                        const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - pos_ws), g_shrd_data.env_col.w);
+                        light_contribution *= textureLod(g_envmap_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
+                    }
+                    light_total += light_contribution * LightVisibility(litem, pos_ws);
                 }
-                if (is_portal) {
-                    // Sample environment to create slight color variation
-                    const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - pos_ws), g_shrd_data.env_col.w);
-                    light_contribution *= textureLod(g_envmap_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
-                }
-                light_total += light_contribution * LightVisibility(litem, pos_ws);
             }
         } else
     #endif // !defined(NO_SUBGROUP)
@@ -151,15 +150,14 @@ void main() {
                     }
 
                     vec3 light_contribution = EvaluateLightSource_Vol(litem, pos_ws, view_ray_ws, g_params.anisotropy);
-                    if (max_component(light_contribution) < FLT_EPS) {
-                        continue;
+                    [[dont_flatten]] if (max_component(light_contribution) > FLT_EPS) {
+                        if (is_portal) {
+                            // Sample environment to create slight color variation
+                            const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - pos_ws), g_shrd_data.env_col.w);
+                            light_contribution *= textureLod(g_envmap_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
+                        }
+                        light_total += light_contribution * LightVisibility(litem, pos_ws);
                     }
-                    if (is_portal) {
-                        // Sample environment to create slight color variation
-                        const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - pos_ws), g_shrd_data.env_col.w);
-                        light_contribution *= textureLod(g_envmap_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
-                    }
-                    light_total += light_contribution * LightVisibility(litem, pos_ws);
                 }
             }
         }

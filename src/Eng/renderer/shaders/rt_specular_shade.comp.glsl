@@ -521,15 +521,14 @@ void main() {
             if (!is_specular) _lobe_masks.bits &= ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
             vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_masks, ltc, g_ltc_luts,
                                                               sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
-            if (max_component(light_contribution) < FLT_EPS) {
-                continue;
+            [[dont_flatten]] if (max_component(light_contribution) > FLT_EPS) {
+                if (is_portal) {
+                    // Sample environment to create slight color variation
+                    const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
+                    light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
+                }
+                light_total += light_contribution * LightVisibility(litem, P);
             }
-            if (is_portal) {
-                // Sample environment to create slight color variation
-                const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
-                light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
-            }
-            light_total += light_contribution * LightVisibility(litem, P);
         }
     } else
 #endif // !defined(NO_SUBGROUP)
@@ -555,15 +554,14 @@ void main() {
                 if (!is_specular) _lobe_masks.bits &= ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
                 vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_masks, ltc, g_ltc_luts,
                                                                   sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
-                if (max_component(light_contribution) < FLT_EPS) {
-                    continue;
+                [[dont_flatten]] if (max_component(light_contribution) > FLT_EPS) {
+                    if (is_portal) {
+                        // Sample environment to create slight color variation
+                        const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
+                        light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
+                    }
+                    light_total += light_contribution * LightVisibility(litem, P);
                 }
-                if (is_portal) {
-                    // Sample environment to create slight color variation
-                    const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
-                    light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
-                }
-                light_total += light_contribution * LightVisibility(litem, P);
             }
         }
     }
