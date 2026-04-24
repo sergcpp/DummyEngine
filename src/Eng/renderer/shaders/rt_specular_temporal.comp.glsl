@@ -168,7 +168,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         float16_t accumulation_speed = 1.0 / max(sample_count, 1.0);
         float16_t weight = (1.0 - accumulation_speed);
         // Blend with average for small sample count
-        new_signal.xyz = mix(new_signal.xyz, avg_radiance, 1.0 / max(sample_count + 1.0, 1.0));
+        new_signal.xyz = mix(new_signal.xyz, avg_radiance, 1.0 / (sample_count + 1.0));
         { // Clip outliers
 #ifdef RELAXED
             const f16vec3 radiance_min = avg_radiance - color_std * 0.75;
