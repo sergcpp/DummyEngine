@@ -39,8 +39,8 @@ void test_volumetrics(Sys::ThreadPool &threads) {
     run_image_test(ren_ctx, threads, "vol_global_emission", 26.40, Full_Ultra);
 
     // meshes
-    run_image_test(ren_ctx, threads, "vol_local", 26.10, Full);
-    run_image_test(ren_ctx, threads, "vol_local", 26.45, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_local", 26.80, Full);
+    run_image_test(ren_ctx, threads, "vol_local", 27.25, Full_Ultra);
     run_image_test(ren_ctx, threads, "vol_local_absorption", 25.95, Full);
     run_image_test(ren_ctx, threads, "vol_local_absorption", 26.50, Full_Ultra);
     run_image_test(ren_ctx, threads, "vol_local_emission", 25.00, Full);

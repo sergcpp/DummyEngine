@@ -846,7 +846,7 @@ void Eng::SceneManager::AllocGICache() {
         probe_volume_spacing *= 3.0f;
     }
 
-    { // ~47.8mb
+    { // ~54.0mb
         Ren::ImgParams p;
         p.w = PROBE_VOLUME_RES_X * PROBE_IRRADIANCE_RES;
         p.h = PROBE_VOLUME_RES_Z * PROBE_IRRADIANCE_RES;
@@ -859,7 +859,7 @@ void Eng::SceneManager::AllocGICache() {
         scene_data_.persistent_data->probe_irradiance = ren_ctx_.CreateImage(
             Ren::String{"Probe Volume Irradiance"}, {}, p, scene_data_.persistent_data->mem_allocs.get());
     }
-    { // ~84.9mb
+    { // ~54.0mb
         Ren::ImgParams p;
         p.w = PROBE_VOLUME_RES_X * PROBE_DISTANCE_RES;
         p.h = PROBE_VOLUME_RES_Z * PROBE_DISTANCE_RES;
