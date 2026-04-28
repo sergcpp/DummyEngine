@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <climits>
 
 #include <condition_variable>
 #include <functional>
@@ -53,12 +54,13 @@ struct Task {
 };
 
 struct TaskList {
-    SmallVector<Task, 16> tasks;
-    SmallVector<short, 16> tasks_order, tasks_pos;
+    SmallVector<Task, 12> tasks;
+    SmallVector<short, 12> tasks_order, tasks_pos;
 
     template <class F, class... Args> short AddTask(F &&f, Args &&...args) {
         //using return_type = typename std::invoke_result_t<F, Args...>;
 
+        assert(tasks.size() < SHRT_MAX);
         const auto ret = short(tasks.size());
         Task &t = tasks.emplace_back();
         t.func = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
@@ -139,7 +141,7 @@ class ThreadPool {
 
   private:
     std::vector<std::thread> workers_;
-    std::deque<SmallVector<Task, 16>> task_lists_;
+    std::deque<SmallVector<Task, 12>> task_lists_;
     std::atomic_int active_tasks_ = {};
 
     // synchronization
@@ -175,12 +177,12 @@ inline ThreadPool::ThreadPool(const int threads_count, const eThreadPriority pri
                     // Find task we can execute
                     for (int l = 0; l < int(task_lists_.size()) && !task; ++l) {
                         auto &list = task_lists_[l];
-                        for (int i = int(list.size()) - 1; i >= 0; --i) {
-                            if (list[i].func && list[i].dependencies == 0) {
+                        for (int j = int(list.size()) - 1; j >= 0; --j) {
+                            if (list[j].func && list[j].dependencies == 0) {
                                 cur_tasks = list.data();
-                                task = std::move(list[i].func);
-                                list[i].func = nullptr;
-                                dependents = std::move(list[i].dependents);
+                                task = std::move(list[j].func);
+                                list[j].func = nullptr;
+                                dependents = std::move(list[j].dependents);
                                 --active_tasks_;
                                 while (!list.empty() && !list.back().func) {
                                     list.pop_back();
@@ -200,8 +202,8 @@ inline ThreadPool::ThreadPool(const int threads_count, const eThreadPriority pri
                 if (task) {
                     task();
 
-                    for (const int i : dependents) {
-                        if (cur_tasks && cur_tasks[i].dependencies.fetch_sub(1) == 1) {
+                    for (const int dep : dependents) {
+                        if (cur_tasks && cur_tasks[dep].dependencies.fetch_sub(1) == 1) {
                             ++active_tasks_;
                             condition_.notify_one();
                         }
@@ -270,6 +272,7 @@ std::future<typename std::invoke_result_t<F, Args...>> ThreadPool::Enqueue(F &&f
 }
 
 inline std::future<void> ThreadPool::Enqueue(const TaskList &task_list) {
+    assert(!task_list.HasCycles());
     auto final_task = std::make_shared<std::packaged_task<void()>>([]() {});
 
     std::future<void> res = final_task->get_future();
@@ -304,6 +307,7 @@ inline std::future<void> ThreadPool::Enqueue(const TaskList &task_list) {
 }
 
 inline std::future<void> ThreadPool::Enqueue(TaskList &&task_list) {
+    assert(!task_list.HasCycles());
     auto final_task = std::make_shared<std::packaged_task<void()>>([]() {});
 
     std::future<void> res = final_task->get_future();
@@ -349,7 +353,7 @@ template <class UnaryFunction> inline void ThreadPool::ParallelFor(const int fro
         return;
     }
 
-    Enqueue(loop_tasks).wait();
+    Enqueue(std::move(loop_tasks)).wait();
 }
 
 // the destructor joins all threads
