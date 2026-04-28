@@ -124,5 +124,261 @@ void test_sparse_storage() {
         require(new_storage.empty());
     }
 
+    { // Handle validity: default handle is false, emplaced handle is true
+        Handle<int, RWTag> null_handle;
+        require(!null_handle);
+
+        SparseStorage<int> s;
+        const auto h = s.Emplace(0);
+        require(bool(h));
+    }
+
+    { // SparseStorage: Push
+        struct Val {
+            int v;
+        };
+        SparseStorage<Val> s;
+        Val v1{10}, v2{20};
+        const auto h1 = s.Push(v1);
+        const auto h2 = s.Push(v2);
+        require(s.size() == 2);
+        require(s[h1].v == 10);
+        require(s[h2].v == 20);
+    }
+
+    { // SparseStorage: iterator traversal with holes
+        struct Val {
+            int v;
+            Val(int _v) : v(_v) {}
+        };
+        SparseStorage<Val> s;
+        const auto h0 = s.Emplace(10);
+        const auto h1 = s.Emplace(20);
+        const auto h2 = s.Emplace(30);
+        const auto h3 = s.Emplace(40);
+
+        s.Erase(h1);
+        s.Erase(h3);
+        require(s.size() == 2);
+
+        int sum = 0, count = 0;
+        for (const Val &v : s) {
+            sum += v.v;
+            ++count;
+        }
+        require(count == 2);
+        require(sum == 40); // 10 + 30
+
+        require(s.begin().handle() == h0);
+    }
+
+    { // SparseStorage: Erase(iterator) — erase-while-iterating pattern
+        struct Val {
+            int v;
+            Val(int _v) : v(_v) {}
+        };
+        SparseStorage<Val> s;
+        s.Emplace(1);
+        s.Emplace(2);
+        s.Emplace(3);
+        s.Emplace(4);
+        s.Emplace(5);
+
+        for (auto it = s.begin(); it != s.end();) {
+            if (it->v % 2 != 0) {
+                it = s.Erase(it);
+            } else {
+                ++it;
+            }
+        }
+        require(s.size() == 2);
+
+        int sum = 0;
+        for (const Val &v : s) {
+            sum += v.v;
+        }
+        require(sum == 6); // 2 + 4
+    }
+
+    { // SparseStorage: TryGet — valid and stale handle
+        struct Val {
+            int v;
+            Val(int _v) : v(_v) {}
+        };
+        SparseStorage<Val> s;
+        const auto h = s.Emplace(42);
+
+        Val *p = s.TryGet(h);
+        require(p != nullptr && p->v == 42);
+
+        s.Erase(h);
+        const auto h2 = s.Emplace(99); // reuses same slot
+        require(h2.index == h.index && h2.generation == h.generation + 1);
+
+        // h has stale generation — slot is occupied by h2
+        require(s.TryGet(h) == nullptr);
+        require(s.TryGet(h2) != nullptr && s.TryGet(h2)->v == 99);
+    }
+
+    { // SparseStorage: copy and move with non-trivial type
+        int alive = 0;
+        struct Tracked {
+            int *alive_ptr;
+            int val;
+            Tracked(int *a, int v) : alive_ptr(a), val(v) { ++*a; }
+            Tracked(const Tracked &o) : alive_ptr(o.alive_ptr), val(o.val) { ++*alive_ptr; }
+            Tracked(Tracked &&o) noexcept : alive_ptr(o.alive_ptr), val(o.val) { ++*alive_ptr; }
+            ~Tracked() { --*alive_ptr; }
+        };
+
+        {
+            SparseStorage<Tracked> s;
+            const auto h0 = s.Emplace(&alive, 10);
+            const auto h1 = s.Emplace(&alive, 20);
+            s.Erase(h0);
+            require(alive == 1);
+
+            SparseStorage<Tracked> copy(s);
+            require(alive == 2);
+            require((copy[Handle<Tracked, RWTag>{h1.index, h1.generation}].val == 20));
+
+            // Modifications to the original must not affect the copy
+            s[h1].val = 99;
+            require((copy[Handle<Tracked, RWTag>{h1.index, h1.generation}].val == 20));
+
+            // Move: no new objects created or destroyed
+            SparseStorage<Tracked> moved(std::move(copy));
+            require(alive == 2);
+            require(copy.empty());
+            require((moved[Handle<Tracked, RWTag>{h1.index, h1.generation}].val == 20));
+        }
+        require(alive == 0);
+    }
+
+    { // SparseStorage: NextOccupied OOB regression — capacity exactly 64
+        SparseStorage<int> s;
+        Handle<int, RWTag> handles[64];
+        for (int i = 0; i < 64; ++i) {
+            handles[i] = s.Emplace(i);
+        }
+        require(s.capacity() == 64);
+
+        int count = 0;
+        for (int v : s) {
+            (void)v;
+            ++count;
+        }
+        require(count == 64);
+
+        // Explicitly advance past last slot — was the OOB-read case
+        auto it = s.iter_at(63);
+        ++it;
+        require(it == s.end());
+    }
+
+    { // SparseDualStorage: Push
+        struct Main {
+            int v;
+        };
+        struct Cold {
+            float w;
+        };
+        SparseDualStorage<Main, Cold> s;
+        const auto h = s.Push(Main{10}, Cold{3.0f});
+        require(s.size() == 1);
+        const auto [m, c] = s[h];
+        require(m.v == 10 && c.w == 3.0f);
+    }
+
+    { // SparseDualStorage: iterator traversal with holes
+        struct Main {
+            int v;
+        };
+        struct Cold {
+            int w;
+        };
+        SparseDualStorage<Main, Cold> s;
+
+        auto h0 = s.Emplace();
+        s[h0].first.v = 1;
+        auto h1 = s.Emplace();
+        s[h1].first.v = 2;
+        auto h2 = s.Emplace();
+        s[h2].first.v = 3;
+        s.Erase(h1);
+
+        int sum = 0, count = 0;
+        for (auto it = s.begin(); it != s.end(); ++it) {
+            sum += (*it).first.v;
+            ++count;
+        }
+        require(count == 2);
+        require(sum == 4); // 1 + 3
+    }
+
+    { // SparseDualStorage: TryGet — valid and stale handle
+        struct Main {
+            int v;
+        };
+        struct Cold {
+            int w;
+        };
+        SparseDualStorage<Main, Cold> s;
+
+        auto h = s.Emplace();
+        s[h].first.v = 42;
+        s[h].second.w = 7;
+
+        auto [mp, cp] = s.TryGet(h);
+        require(mp != nullptr && mp->v == 42);
+        require(cp != nullptr && cp->w == 7);
+
+        s.Erase(h);
+        const auto h2 = s.Emplace(); // reuses same slot
+        require(h2.index == h.index && h2.generation == h.generation + 1);
+
+        auto [stale_m, stale_c] = s.TryGet(h);
+        require(stale_m == nullptr && stale_c == nullptr);
+    }
+
+    { // SparseDualStorage: copy and move with non-trivial type
+        int alive_m = 0, alive_c = 0;
+        struct Main {
+            int *alive_ptr;
+            int val;
+            Main(int *a, int v) : alive_ptr(a), val(v) { ++*a; }
+            Main(const Main &o) : alive_ptr(o.alive_ptr), val(o.val) { ++*alive_ptr; }
+            Main(Main &&o) noexcept : alive_ptr(o.alive_ptr), val(o.val) { ++*alive_ptr; }
+            ~Main() { --*alive_ptr; }
+        };
+        struct Cold {
+            int *alive_ptr;
+            int val;
+            Cold(int *a, int v) : alive_ptr(a), val(v) { ++*a; }
+            Cold(const Cold &o) : alive_ptr(o.alive_ptr), val(o.val) { ++*alive_ptr; }
+            Cold(Cold &&o) noexcept : alive_ptr(o.alive_ptr), val(o.val) { ++*alive_ptr; }
+            ~Cold() { --*alive_ptr; }
+        };
+
+        {
+            SparseDualStorage<Main, Cold> s;
+            const auto h = s.Push(Main(&alive_m, 10), Cold(&alive_c, 20));
+            require(alive_m == 1 && alive_c == 1);
+
+            SparseDualStorage<Main, Cold> copy(s);
+            require(alive_m == 2 && alive_c == 2);
+            {
+                auto [m, c] = copy[Handle<Main, RWTag>{h.index, h.generation}];
+                require(m.val == 10 && c.val == 20);
+            }
+
+            // Move: no new objects created or destroyed
+            SparseDualStorage<Main, Cold> moved(std::move(copy));
+            require(alive_m == 2 && alive_c == 2);
+            require(copy.empty());
+        }
+        require(alive_m == 0 && alive_c == 0);
+    }
+
     printf("OK\n");
 }

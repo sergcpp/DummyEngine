@@ -93,13 +93,16 @@ class SparseStorage : Allocator {
     SparseStorage(const SparseStorage &rhs)
         : ctrl_(nullptr), generation_(nullptr), data_(nullptr), capacity_(0), size_(0), first_free_(0) {
         Reserve(rhs.capacity_);
+        if (!ctrl_ || !rhs.ctrl_) {
+            return;
+        }
 
         memcpy(ctrl_, rhs.ctrl_, ctrl_size(rhs.capacity_));
         memcpy(generation_, rhs.generation_, generation_size(rhs.capacity_));
 
         for (uint32_t i = 0; i < rhs.capacity_; ++i) {
             if (ctrl_[i / 64] & (1ull << (i % 64))) {
-                data_[i] = rhs.data_[i];
+                new (&data_[i]) T(rhs.data_[i]);
             } else {
                 // copy next free index
                 memcpy(data_ + i, rhs.data_ + i, sizeof(uint32_t));
@@ -145,7 +148,7 @@ class SparseStorage : Allocator {
 
         for (uint32_t i = 0; i < rhs.capacity_; ++i) {
             if (ctrl_[i / 64] & (1ull << (i % 64))) {
-                data_[i] = rhs.data_[i];
+                new (&data_[i]) T(rhs.data_[i]);
             } else {
                 // copy next free index
                 memcpy(data_ + i, rhs.data_ + i, sizeof(uint32_t));
@@ -284,7 +287,7 @@ class SparseStorage : Allocator {
         assert((ctrl_[index / 64] & (1ull << (index % 64))) == 0);
         memcpy(&first_free_, data_ + index, sizeof(uint32_t));
 
-        data_[index] = el;
+        new (&data_[index]) T(el);
         ctrl_[index / 64] |= (1ull << (index % 64));
 
         ++size_;
@@ -335,7 +338,7 @@ class SparseStorage : Allocator {
         return nullptr;
     }
 
-    const T &TryGet(const Handle<T, ROTag> handle) const {
+    const T *TryGet(const Handle<T, ROTag> handle) const {
         assert((ctrl_[handle.index / 64] & (1ull << (handle.index % 64))) && "Invalid handle!");
         if (generation_[handle.index] == handle.generation) {
             return &data_[handle.index];
@@ -353,7 +356,7 @@ class SparseStorage : Allocator {
         return data_[index];
     }
 
-    bool IsOccupied(const uint32_t index) { return (ctrl_[index / 64] & (1ull << (index % 64))) != 0; }
+    bool IsOccupied(const uint32_t index) const { return (ctrl_[index / 64] & (1ull << (index % 64))) != 0; }
 
     uint32_t GetGeneration(const uint32_t index) const {
         assert((ctrl_[index / 64] & (1ull << (index % 64))) && "Invalid index!");
@@ -480,15 +483,18 @@ class SparseStorage : Allocator {
     const_iterator citer_at(const uint32_t i) const { return const_iterator(this, i); }
 
     iterator Erase(iterator it) {
-        const uint32_t next_index = NextOccupied(it.index());
-        EraseUnsafe(it.index());
+        const uint32_t next_index = NextOccupied(it.index_);
+        EraseUnsafe(it.index_);
         return iterator(this, next_index);
     }
 
   private:
     uint32_t NextOccupied(uint32_t index) const {
         assert((ctrl_[index / 64] & (1ull << (index % 64))) && "Invalid index!");
-        ++index;
+
+        if (++index >= capacity_) {
+            return capacity_;
+        }
 
         const uint32_t start_word = index / 64;
         const uint32_t word_count = (capacity_ + 63) / 64;
@@ -566,14 +572,17 @@ class SparseDualStorage : Allocator {
         : ctrl_(nullptr), generation_(nullptr), data_main_(nullptr), data_cold_(nullptr), capacity_(0), size_(0),
           first_free_(0) {
         Reserve(rhs.capacity_);
+        if (!ctrl_ || !rhs.ctrl_) {
+            return;
+        }
 
         memcpy(ctrl_, rhs.ctrl_, ctrl_size(rhs.capacity_));
         memcpy(generation_, rhs.generation_, generation_size(rhs.capacity_));
 
         for (uint32_t i = 0; i < rhs.capacity_; ++i) {
             if (ctrl_[i / 64] & (1ull << (i % 64))) {
-                data_main_[i] = rhs.data_main_[i];
-                data_cold_[i] = rhs.data_cold_[i];
+                new (&data_main_[i]) T(rhs.data_main_[i]);
+                new (&data_cold_[i]) U(rhs.data_cold_[i]);
             } else {
                 // copy next free index
                 memcpy(data_main_ + i, rhs.data_main_ + i, sizeof(uint32_t));
@@ -621,8 +630,8 @@ class SparseDualStorage : Allocator {
 
         for (uint32_t i = 0; i < rhs.capacity_; ++i) {
             if (ctrl_[i / 64] & (1ull << (i % 64))) {
-                data_main_[i] = rhs.data_main_[i];
-                data_cold_[i] = rhs.data_cold_[i];
+                new (&data_main_[i]) T(rhs.data_main_[i]);
+                new (&data_cold_[i]) U(rhs.data_cold_[i]);
             } else {
                 // copy next free index
                 memcpy(data_main_ + i, rhs.data_main_ + i, sizeof(uint32_t));
@@ -775,8 +784,8 @@ class SparseDualStorage : Allocator {
         assert((ctrl_[index / 64] & (1ull << (index % 64))) == 0);
         memcpy(&first_free_, data_main_ + index, sizeof(uint32_t));
 
-        data_main_[index] = main;
-        data_cold_[index] = cold;
+        new (&data_main_[index]) T(main);
+        new (&data_cold_[index]) U(cold);
         ctrl_[index / 64] |= (1ull << (index % 64));
 
         ++size_;
@@ -847,7 +856,7 @@ class SparseDualStorage : Allocator {
         return {data_main_[index], data_cold_[index]};
     }
 
-    bool IsOccupied(const uint32_t index) { return (ctrl_[index / 64] & (1ull << (index % 64))) != 0; }
+    bool IsOccupied(const uint32_t index) const { return (ctrl_[index / 64] & (1ull << (index % 64))) != 0; }
 
     uint8_t GetGeneration(const uint32_t index) const {
         assert((ctrl_[index / 64] & (1ull << (index % 64))) && "Invalid index!");
@@ -984,15 +993,18 @@ class SparseDualStorage : Allocator {
     const_iterator citer_at(uint32_t i) const { return const_iterator(this, i); }
 
     iterator Erase(iterator it) {
-        const uint32_t next_index = NextOccupied(it.index());
-        EraseUnsafe(it.index());
+        const uint32_t next_index = NextOccupied(it.index_);
+        EraseUnsafe(it.index_);
         return iterator(this, next_index);
     }
 
   private:
     uint32_t NextOccupied(uint32_t index) const {
         assert((ctrl_[index / 64] & (1ull << (index % 64))) && "Invalid index!");
-        ++index;
+
+        if (++index >= capacity_) {
+            return capacity_;
+        }
 
         const uint32_t start_word = index / 64;
         const uint32_t word_count = (capacity_ + 63) / 64;
