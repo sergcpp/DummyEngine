@@ -1,9 +1,9 @@
 #include "test_common.h"
 
-#include "../utils/String.h"
+#include "../String.h"
 
 void test_string() {
-    using namespace Ren;
+    using namespace Snd;
 
     printf("Test string             | ");
 
