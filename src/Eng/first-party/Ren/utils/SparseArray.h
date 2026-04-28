@@ -61,7 +61,7 @@ template <typename T, typename Allocator = aligned_allocator<uint64_t, alignof(T
 
             for (uint32_t i = 0; i < rhs.capacity_; ++i) {
                 if (ctrl_[i / 64] & (1ull << (i % 64))) {
-                    data_[i] = rhs.data_[i];
+                    new (&data_[i]) T(rhs.data_[i]);
                 } else {
                     // copy next free index
                     memcpy(data_ + i, rhs.data_ + i, sizeof(uint32_t));
@@ -88,7 +88,9 @@ template <typename T, typename Allocator = aligned_allocator<uint64_t, alignof(T
         if (this == &rhs) {
             return *this;
         }
-        Allocator::operator=(static_cast<Allocator &>(rhs));
+        if constexpr (std::allocator_traits<Allocator>::propagate_on_container_copy_assignment::value) {
+            Allocator::operator=(static_cast<const Allocator &>(rhs));
+        }
 
         Clear();
         this->deallocate(ctrl_, mem_size(capacity_));
@@ -105,7 +107,7 @@ template <typename T, typename Allocator = aligned_allocator<uint64_t, alignof(T
 
         for (uint32_t i = 0; i < rhs.capacity_; ++i) {
             if (ctrl_[i / 64] & (1ull << (i % 64))) {
-                data_[i] = rhs.data_[i];
+                new (&data_[i]) T(rhs.data_[i]);
             } else {
                 // copy next free index
                 memcpy(data_ + i, rhs.data_ + i, sizeof(uint32_t));
@@ -121,6 +123,9 @@ template <typename T, typename Allocator = aligned_allocator<uint64_t, alignof(T
     SparseArray &operator=(SparseArray &&rhs) noexcept {
         if (this == &rhs) {
             return *this;
+        }
+        if constexpr (std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value) {
+            Allocator::operator=(static_cast<Allocator &&>(rhs));
         }
 
         Clear();
@@ -225,7 +230,7 @@ template <typename T, typename Allocator = aligned_allocator<uint64_t, alignof(T
         return index;
     }
 
-    uint32_t Push(const T &el) {
+    uint32_t Push(const T &_el) {
         if (size_ + 1 > capacity_) {
             Reserve(capacity_ ? (capacity_ * 2) : 64);
         }
@@ -233,7 +238,8 @@ template <typename T, typename Allocator = aligned_allocator<uint64_t, alignof(T
         assert((ctrl_[index / 64] & (1ull << (index % 64))) == 0);
         memcpy(&first_free_, data_ + index, sizeof(uint32_t));
 
-        data_[index] = el;
+        T *el = data_ + index;
+        new (el) T(_el);
         ctrl_[index / 64] |= (1ull << (index % 64));
 
         ++size_;
@@ -337,8 +343,8 @@ template <typename T, typename Allocator = aligned_allocator<uint64_t, alignof(T
         using iterator_category = std::forward_iterator_tag;
         using value_type = T;
         using difference_type = std::ptrdiff_t;
-        using pointer = T *;
-        using reference = T &;
+        using pointer = const T *;
+        using reference = const T &;
 
         const T &operator*() const { return container_->at(index_); }
         const T *operator->() const { return &container_->at(index_); }
@@ -408,27 +414,42 @@ template <typename T, typename Allocator = aligned_allocator<uint64_t, alignof(T
     }
 
     uint32_t FindOccupiedInRange(uint32_t start, uint32_t end) const {
-        const uint32_t start_word = start / 64;
-        const uint32_t end_word = (end + 63) / 64;
+        if (start >= end) {
+            return end;
+        }
 
+        const uint32_t start_word = start / 64;
+        const uint32_t last_word = (end - 1) / 64; // word containing last valid index
         const uint64_t start_mask = ~0ull << (start % 64);
         const uint64_t end_mask = (end % 64) ? ((1ull << (end % 64)) - 1) : ~0ull;
 
-        uint64_t mask = ctrl_[start_word] & start_mask;
-        if (mask) {
-            return 64 * start_word + CountTrailingZeroes(mask);
+        if (start_word == last_word) {
+            const uint64_t mask = ctrl_[start_word] & start_mask & end_mask;
+            if (mask) {
+                return 64 * start_word + CountTrailingZeroes(mask);
+            }
+            return end;
         }
 
-        for (uint32_t i = start_word + 1; i < end_word; ++i) {
+        {
+            const uint64_t mask = ctrl_[start_word] & start_mask;
+            if (mask) {
+                return 64 * start_word + CountTrailingZeroes(mask);
+            }
+        }
+
+        for (uint32_t i = start_word + 1; i < last_word; ++i) {
             const uint64_t mask = ctrl_[i];
             if (mask) {
                 return 64 * i + CountTrailingZeroes(mask);
             }
         }
 
-        mask = ctrl_[end_word] & end_mask;
-        if (mask) {
-            return 64 * end_word + CountTrailingZeroes(mask);
+        {
+            const uint64_t mask = ctrl_[last_word] & end_mask;
+            if (mask) {
+                return 64 * last_word + CountTrailingZeroes(mask);
+            }
         }
 
         return end;
@@ -437,7 +458,9 @@ template <typename T, typename Allocator = aligned_allocator<uint64_t, alignof(T
   private:
     uint32_t NextOccupied(uint32_t index) const {
         assert((ctrl_[index / 64] & (1ull << (index % 64))) && "Invalid index!");
-        ++index;
+        if (++index >= capacity_) {
+            return capacity_;
+        }
 
         const uint32_t start_word = index / 64;
         const uint32_t word_count = (capacity_ + 63) / 64;

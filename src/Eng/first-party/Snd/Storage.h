@@ -17,7 +17,7 @@ template <typename T> class Storage : public SparseArray<T> {
     Storage(const Storage &rhs) = delete;
 
     template <class... Args> StrongRef<T> Add(Args &&...args) {
-        const uint32_t index = SparseArray<T>::emplace(args...);
+        const uint32_t index = SparseArray<T>::Emplace(args...);
 
         bool res = items_by_name_.Insert(SparseArray<T>::at(index).name(), index);
         assert(res);
@@ -31,7 +31,7 @@ template <typename T> class Storage : public SparseArray<T> {
         const bool res = items_by_name_.Erase(name);
         assert(res);
 
-        SparseArray<T>::erase(i);
+        SparseArray<T>::Erase(i);
     }
 
     StrongRef<T> FindByName(std::string_view name) {
@@ -246,4 +246,4 @@ template <class T> class WeakRef {
         return storage_ == rhs.storage_ && index_ == rhs.index_;
     }
 };
-} // namespace Ren
+} // namespace Snd

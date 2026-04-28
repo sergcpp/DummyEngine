@@ -18,4 +18,4 @@ Snd::BufferRef Snd::Context::LoadBuffer(std::string_view name, Span<const uint8_
     return ref;
 }
 
-void Snd::Context::ReleaseAll() { buffers_.clear(); }
+void Snd::Context::ReleaseAll() { buffers_.Clear(); }

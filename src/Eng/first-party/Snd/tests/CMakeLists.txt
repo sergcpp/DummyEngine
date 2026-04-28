@@ -5,7 +5,8 @@ set(SOURCE_FILES main.cpp
                  test_common.h
                  test_hashmap.cpp
                  test_hashset.cpp
-                 test_span.cpp)
+                 test_span.cpp
+                 test_sparse_array.cpp)
 
 add_executable(test_Snd ${SOURCE_FILES})
 target_link_libraries(test_Snd Snd)

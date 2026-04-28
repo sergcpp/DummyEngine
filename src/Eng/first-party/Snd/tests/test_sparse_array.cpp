@@ -4,7 +4,7 @@
 #include <random>
 #include <vector>
 
-#include "../utils/SparseArray.h"
+#include "../SparseArray.h"
 
 namespace {
 std::vector<int> GenTestData(int size) {
@@ -27,7 +27,7 @@ struct Tracker {
 } // namespace
 
 void test_sparse_array() {
-    using namespace Ren;
+    using namespace Snd;
 
     printf("Test sparse_array       | ");
 

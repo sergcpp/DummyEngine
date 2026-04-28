@@ -146,4 +146,4 @@ template <typename T, size_t Alignment> class aligned_allocator {
     // the STL headers, but that warning is useless.
     aligned_allocator &operator=(const aligned_allocator &) = delete;
 };
-} // namespace Ray
+} // namespace Snd
