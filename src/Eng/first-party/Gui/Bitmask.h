@@ -9,8 +9,9 @@ template <class enum_type, typename = typename std::enable_if<std::is_enum<enum_
     using underlying_type = typename std::underlying_type<enum_type>::type;
 
     static constexpr underlying_type to_mask(const enum_type e) {
-        assert(1ull << static_cast<underlying_type>(e) <= std::numeric_limits<underlying_type>::max());
-        return 1 << static_cast<underlying_type>(e);
+        assert(static_cast<underlying_type>(e) >= 0 &&
+               static_cast<underlying_type>(e) < std::numeric_limits<underlying_type>::digits);
+        return static_cast<underlying_type>(1) << static_cast<underlying_type>(e);
     }
 
   public:
@@ -25,10 +26,22 @@ template <class enum_type, typename = typename std::enable_if<std::is_enum<enum_
     Bitmask &operator=(Bitmask &&rhs) noexcept = default;
 
     Bitmask operator|(const Bitmask rhs) const { return Bitmask(mask_ | rhs.mask_); }
-    Bitmask operator|=(const Bitmask rhs) { return (*this) = Bitmask(mask_ | rhs.mask_); }
+    Bitmask &operator|=(const Bitmask rhs) {
+        mask_ |= rhs.mask_;
+        return *this;
+    }
 
     Bitmask operator&(const Bitmask rhs) const { return Bitmask(mask_ & rhs.mask_); }
-    Bitmask operator&=(const Bitmask rhs) { return (*this) = Bitmask(mask_ & rhs.mask_); }
+    Bitmask &operator&=(const Bitmask rhs) {
+        mask_ &= rhs.mask_;
+        return *this;
+    }
+
+    Bitmask operator^(const Bitmask rhs) const { return Bitmask(mask_ ^ rhs.mask_); }
+    Bitmask &operator^=(const Bitmask rhs) {
+        mask_ ^= rhs.mask_;
+        return *this;
+    }
 
     Bitmask operator~() const { return Bitmask(~mask_); }
 
