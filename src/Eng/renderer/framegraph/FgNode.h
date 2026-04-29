@@ -56,7 +56,7 @@ class FgNode {
     FgResource *FindUsageOf(eFgResType type, uint16_t index);
 
     // Non-owning version
-    void set_executor(FgExecutor *exec) { p_executor_ = exec; }
+    void set_executor(FgExecutor *exec) { executor_.reset(); p_executor_ = exec; }
 
     FgBufROHandle AddTransferInput(FgBufROHandle handle);
     FgBufRWHandle AddTransferOutput(std::string_view name, const FgBufDesc &desc);

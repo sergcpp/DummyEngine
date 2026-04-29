@@ -42,8 +42,7 @@ class HashMap32 : HashFunc, KeyEqual, Allocator {
     }
 
     explicit HashMap32(std::initializer_list<std::pair<K, V>> l, const HashFunc &hash_func = HashFunc(),
-                       const KeyEqual &key_equal = KeyEqual(),
-                       const Allocator &alloc = Allocator()) noexcept
+                       const KeyEqual &key_equal = KeyEqual(), const Allocator &alloc = Allocator()) noexcept
         : HashFunc(hash_func), KeyEqual(key_equal), Allocator(alloc), ctrl_(nullptr), nodes_(nullptr), capacity_(0),
           size_(0) {
         ReserveRealloc(uint32_t(l.size()));
@@ -60,7 +59,9 @@ class HashMap32 : HashFunc, KeyEqual, Allocator {
         if (this == &rhs) {
             return (*this);
         }
-        Allocator::operator=(static_cast<Allocator &&>(rhs));
+        if constexpr (std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value) {
+            Allocator::operator=(static_cast<Allocator &&>(rhs));
+        }
         HashFunc::operator=(static_cast<HashFunc &&>(rhs));
         KeyEqual::operator=(static_cast<KeyEqual &&>(rhs));
         ctrl_ = std::exchange(rhs.ctrl_, nullptr);
@@ -188,7 +189,7 @@ class HashMap32 : HashFunc, KeyEqual, Allocator {
     }
 
     Node *GetOrNull(const uint32_t index) {
-        if (index < capacity_ && (ctrl_[index / 8] & (1u << (index % 8)))) {
+        if (index < capacity_ && (ctrl_[index] & OccupiedBit)) {
             return &nodes_[index];
         } else {
             return nullptr;
@@ -196,7 +197,7 @@ class HashMap32 : HashFunc, KeyEqual, Allocator {
     }
 
     const Node *GetOrNull(const uint32_t index) const {
-        if (index < capacity_ && (ctrl_[index / 8] & (1u << (index % 8)))) {
+        if (index < capacity_ && (ctrl_[index] & OccupiedBit)) {
             return &nodes_[index];
         } else {
             return nullptr;
@@ -397,8 +398,6 @@ class HashMap32 : HashFunc, KeyEqual, Allocator {
         nodes_[i].hash = hash;
         new (&nodes_[i].key) K(key);
         new (&nodes_[i].val) V(val);
-
-        return &nodes_[i].val;
     }
 
     void InsertInternal(uint32_t hash, K &&key, V &&val) {
@@ -426,4 +425,4 @@ class HashMap32 : HashFunc, KeyEqual, Allocator {
         return capacity_;
     }
 };
-} // namespace glslx
+} // namespace Snd

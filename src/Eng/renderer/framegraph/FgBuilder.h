@@ -265,8 +265,8 @@ class FgBuilder : public FgContext {
     const Ren::HashMap32<Ren::String, uint16_t> &name_to_image() const { return name_to_image_; }
 
     template <typename T, class... Args> T *AllocTempData(Args &&...args) {
-        char *mem = alloc_.allocate(sizeof(T) + alignof(T));
-        auto *new_data = reinterpret_cast<T *>(mem + alignof(T) - (uintptr_t(mem) % alignof(T)));
+        char *mem = alloc_.allocate(sizeof(T) + alignof(T) - 1);
+        auto *new_data = reinterpret_cast<T *>(mem + (alignof(T) - uintptr_t(mem) % alignof(T)) % alignof(T));
         alloc_.construct(new_data, std::forward<Args>(args)...);
         nodes_data_.push_back(std::unique_ptr<T, void (*)(void *)>(new_data, node_data_deleter<T>));
         return new_data;

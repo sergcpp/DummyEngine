@@ -127,8 +127,8 @@ Eng::FgBuilder::FgBuilder(Eng::ShaderLoader &sh, PrimDraw &prim_draw)
 }
 
 Eng::FgNode &Eng::FgBuilder::AddNode(const std::string_view name, const eFgQueueType queue) {
-    char *mem = alloc_.allocate(sizeof(FgNode) + alignof(FgNode));
-    auto *new_rp = reinterpret_cast<FgNode *>(mem + alignof(FgNode) - (uintptr_t(mem) % alignof(FgNode)));
+    char *mem = alloc_.allocate(sizeof(FgNode) + alignof(FgNode) - 1);
+    auto *new_rp = reinterpret_cast<FgNode *>(mem + (alignof(FgNode) - uintptr_t(mem) % alignof(FgNode)) % alignof(FgNode));
     alloc_.construct(new_rp, name, int(nodes_.size()), queue, *this);
     nodes_.emplace_back(new_rp);
     return *nodes_.back();
@@ -748,19 +748,10 @@ void Eng::FgBuilder::FindPreviousReadInNodes(const FgResource &res, Ren::SmallVe
         const FgNode *node = nodes_[i.node_index];
         assert(node->input_[i.slot_index].type == res.type &&
                node->input_[i.slot_index].opaque_handle.index == res.opaque_handle.index);
-        if (res.type == eFgResType::Buffer) {
-            if (node->input_[i.slot_index].opaque_handle == res.opaque_handle) {
-                const auto it = std::lower_bound(std::begin(out_nodes), std::end(out_nodes), i.node_index);
-                if (it == std::end(out_nodes) || i.node_index < (*it)) {
-                    out_nodes.insert(it, i.node_index);
-                }
-            }
-        } else {
-            if (node->input_[i.slot_index].opaque_handle == res.opaque_handle) {
-                const auto it = std::lower_bound(std::begin(out_nodes), std::end(out_nodes), i.node_index);
-                if (it == std::end(out_nodes) || i.node_index < (*it)) {
-                    out_nodes.insert(it, i.node_index);
-                }
+        if (node->input_[i.slot_index].opaque_handle == res.opaque_handle) {
+            const auto it = std::lower_bound(std::begin(out_nodes), std::end(out_nodes), i.node_index);
+            if (it == std::end(out_nodes) || i.node_index < (*it)) {
+                out_nodes.insert(it, i.node_index);
             }
         }
     }
@@ -1683,6 +1674,7 @@ void Eng::FgBuilder::ClearImage_AsStorage(const Ren::ImageHandle img, Ren::Comma
     const Ren::PipelineHandle pi = (p.flags & Ren::eImgFlags::Array) ? pi_clear_image_[1][int(p.format)]
                                                                      : (p.d != 0 ? pi_clear_image_[2][int(p.format)]
                                                                                  : pi_clear_image_[0][int(p.format)]);
+    assert(pi && "No clear pipeline registered for this image format");
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::ImageRW, ClearImage::OUT_IMG_SLOT, img}};
 

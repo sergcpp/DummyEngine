@@ -293,7 +293,7 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
 
         for (const int res_index : resources_by_memory_type[i]) {
             resource_t &res = all_resources[res_index];
-            res.mem_heap = int8_t(memory_heaps_.size()) - 1;
+            res.mem_heap = uint8_t(memory_heaps_.size() - 1);
             if (res.type == eFgResType::Buffer) {
                 result = api.vkBindBufferMemory(api.device, std::get<Ren::BufferMain>(res.main).buf, heap.mem,
                                                 res.mem_offset);
