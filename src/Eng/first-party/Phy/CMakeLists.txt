@@ -31,17 +31,17 @@ set(SOURCE_FILES    AlignedAlloc.h
                     BVHSplit.h
                     BVHSplit.cpp
                     Core.h
-                    MMat.h
-                    MQuat.h
-                    MVec.h
+                    Mat.h
                     Phy.h
                     Phy.cpp
+                    Quat.h
                     Shape.h
                     Shape.cpp
                     SmallVector.h
                     Span.h
                     Utils.h
-                    Utils.cpp)
+                    Utils.cpp
+                    Vec.h)
 
 list(APPEND PHY_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})

@@ -231,7 +231,7 @@ template <typename T, int N> force_inline Vec<T, N> Floor(const Vec<T, N> &v) {
 template <typename T, int N> force_inline Vec<T, N> AbsFloor(const Vec<T, N> &v) {
     Vec<T, N> ret;
     for (int i = 0; i < N; ++i) {
-        if (ret[i] > 0) {
+        if (v[i] > 0) {
             ret[i] = std::floor(v[i]);
         } else {
             ret[i] = std::ceil(v[i]);
@@ -292,6 +292,6 @@ using Vec4f = Vec<float, 4>;
 using Vec2d = Vec<double, 2>;
 using Vec3d = Vec<double, 3>;
 using Vec4d = Vec<double, 4>;
-} // namespace Ren
+} // namespace Phy
 
 #undef force_inline

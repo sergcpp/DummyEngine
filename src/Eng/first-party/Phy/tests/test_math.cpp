@@ -1,10 +1,10 @@
 #include "test_common.h"
 
-#include "../math/Mat.h"
-#include "../math/Quat.h"
+#include "../Mat.h"
+#include "../Quat.h"
 
 void test_math() {
-    using namespace Ren;
+    using namespace Phy;
 
     printf("Test math               | ");
 

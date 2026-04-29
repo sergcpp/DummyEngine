@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "MMat.h"
+#include "Mat.h"
 #include "Span.h"
 
 namespace Phy {

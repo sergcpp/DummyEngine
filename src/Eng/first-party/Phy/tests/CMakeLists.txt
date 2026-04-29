@@ -2,11 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 project(test_Phy)
 
 add_executable(test_Phy main.cpp
-                        test_mat.cpp
+                        test_math.cpp
                         test_small_vector.cpp
                         test_span.cpp
-                        test_svol.cpp
-                        test_vec.cpp)
+                        test_svol.cpp)
 
 target_link_libraries(test_Phy Phy)
 

@@ -193,15 +193,15 @@ template <typename T, int M, int N> Vec<T, M> operator*(const Mat<T, M, N> &lhs,
     return res;
 }
 
-template <typename T, int M, int N, int P> Mat<T, M, P> operator*(const Mat<T, M, N> &lhs, const Mat<T, N, P> &rhs) {
-    auto res = Mat<T, M, P>{Uninitialize};
-    for (int m = 0; m < M; ++m) {
-        for (int p = 0; p < P; ++p) {
+template <typename T, int M, int N, int P> Mat<T, P, N> operator*(const Mat<T, M, N> &lhs, const Mat<T, P, M> &rhs) {
+    auto res = Mat<T, P, N>{Uninitialize};
+    for (int p = 0; p < P; ++p) {
+        for (int n = 0; n < N; ++n) {
             T sum = T(0);
-            for (int n = 0; n < N; ++n) {
-                sum += rhs[m][n] * lhs[n][p];
+            for (int m = 0; m < M; ++m) {
+                sum += lhs[m][n] * rhs[p][m];
             }
-            res[m][p] = sum;
+            res[p][n] = sum;
         }
     }
     return res;

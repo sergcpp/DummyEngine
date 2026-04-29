@@ -1,7 +1,7 @@
 #pragma once
 
-#include "MMat.h"
-#include "MQuat.h"
+#include "Mat.h"
+#include "Quat.h"
 
 namespace Phy {
 #ifdef PHY_DOUBLE_PRECISION

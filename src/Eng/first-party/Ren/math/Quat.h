@@ -184,7 +184,7 @@ template <typename T> force_inline T Pitch(const QuatT<T> &q) {
 }
 
 template <typename T> force_inline T Yaw(const QuatT<T> &q) {
-    return std::asin(clamp(T(-2) * (q.x * q.z - q.w * q.y), T(-1), T(1)));
+    return std::asin(Clamp(T(-2) * (q.x * q.z - q.w * q.y), T(-1), T(1)));
 }
 
 template <typename T> force_inline Vec<T, 3> EulerAngles(const QuatT<T> &q) {
