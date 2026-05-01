@@ -10,7 +10,7 @@ void test_volumetrics(Sys::ThreadPool &threads) {
     LogErr log;
     TestContext ren_ctx(512, 512, g_device_name, g_validation_level, g_nohwrt, g_nosubgroup, &log);
 
-    // standart lights
+    // standard lights
     run_image_test(ren_ctx, threads, "vol_global0", 24.95, Full);
     run_image_test(ren_ctx, threads, "vol_global0", 24.80, Full_Ultra);
     run_image_test(ren_ctx, threads, "vol_global1", 25.20, Full);

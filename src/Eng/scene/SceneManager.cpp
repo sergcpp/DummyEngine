@@ -707,13 +707,13 @@ void Eng::SceneManager::ClearScene() {
 
     ren_ctx_.ReleaseImage(scene_data_.env.env_map);
 
-    scene_data_.env = {};
-    scene_data_.persistent_data->Release();
-
     for (const auto &mesh : scene_data_.name_to_mesh) {
         ren_ctx_.ReleaseMesh(mesh.val);
     }
     scene_data_.name_to_mesh.clear();
+
+    scene_data_.env = {};
+    scene_data_.persistent_data->Release();
 
     for (const auto &mat : scene_data_.name_to_material) {
         ren_ctx_.ReleaseMaterial(mat.val);

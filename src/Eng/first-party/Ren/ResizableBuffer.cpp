@@ -71,8 +71,8 @@ Ren::SubAllocation Ren::ResizableBuffer::AllocSubRegion(uint32_t req_size, uint3
     SubAllocation alloc =
         Buffer_AllocSubRegion(api_, buf_main, buf_cold, req_size, req_alignment, tag, log, init_buf, cmd_buf, init_off);
     while (!alloc) {
-        const uint32_t new_size =
-            req_alignment * ((uint32_t(buf_cold.size * 1.25f) + req_alignment - 1) / req_alignment);
+        const uint64_t grown = uint64_t(buf_cold.size) * 5 / 4 + req_size;
+        const uint32_t new_size = uint32_t(((grown + req_alignment - 1) / req_alignment) * req_alignment);
         if (!Buffer_Resize(api_, buf_main, buf_cold, new_size, log)) {
             return {};
         }

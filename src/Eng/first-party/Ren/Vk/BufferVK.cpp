@@ -243,6 +243,25 @@ bool Ren::Buffer_Resize(const ApiContext &api, BufferMain &buf_main, BufferCold 
         if (keep_content) {
             VkCommandBuffer cmd_buf = api.BegSingleTimeCommands();
 
+            if (buf_main.resource_state != eResState::Undefined && buf_main.resource_state != eResState::CopySrc) {
+                VkBufferMemoryBarrier barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+                barrier.srcAccessMask = VKAccessFlagsForState(buf_main.resource_state);
+                barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.buffer = buf_main.buf;
+                barrier.offset = 0;
+                barrier.size = VK_WHOLE_SIZE;
+
+                const VkPipelineStageFlags src_stages =
+                    VKPipelineStagesForState(buf_main.resource_state) & api.supported_stages_mask;
+                const VkPipelineStageFlags dst_stages =
+                    VKPipelineStagesForState(eResState::CopySrc) & api.supported_stages_mask;
+
+                api.vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                         dst_stages, 0, 0, nullptr, 1, &barrier, 0, nullptr);
+            }
+
             VkBufferCopy region_to_copy = {};
             region_to_copy.size = VkDeviceSize{old_size};
 
@@ -448,7 +467,7 @@ void Ren::Buffer_Fill(const ApiContext &api, BufferMain &buf_main, const uint32_
         new_barrier.size = VkDeviceSize{size};
 
         src_stages |= VKPipelineStagesForState(buf_main.resource_state);
-        dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
+        dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
 
     src_stages &= api.supported_stages_mask;
@@ -481,7 +500,7 @@ void Ren::Buffer_UpdateInPlace(const ApiContext &api, BufferMain &buf_main, uint
         new_barrier.size = VkDeviceSize{size};
 
         src_stages |= VKPipelineStagesForState(buf_main.resource_state);
-        dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
+        dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
 
     src_stages &= api.supported_stages_mask;

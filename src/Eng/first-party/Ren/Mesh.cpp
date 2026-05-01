@@ -775,6 +775,23 @@ bool Ren::Mesh_InitBufferData(const ApiContext &api, MeshMain &mesh_main, MeshCo
     return true;
 }
 
+void Ren::Mesh_Destroy(SparseDualStorage<BufferMain, BufferCold> &buffers, MeshMain &mesh_main, MeshCold &mesh_cold) {
+    auto free_range = [&](BufferRange &range) {
+        if (range.buf && range.sub) {
+            Buffer_FreeSubRegion(buffers[range.buf].second, range.sub);
+            range = {};
+        }
+    };
+    free_range(mesh_main.attribs_buf1);
+    free_range(mesh_main.attribs_buf2);
+    free_range(mesh_main.indices_buf);
+    free_range(mesh_main.sk_attribs_buf);
+    free_range(mesh_main.sk_deltas_buf);
+
+    mesh_main = {};
+    mesh_cold = {};
+}
+
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif

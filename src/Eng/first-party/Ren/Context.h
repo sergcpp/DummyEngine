@@ -30,6 +30,7 @@ struct StageBufRef {
     SyncFence &fence;
     CommandBuffer cmd_buf;
     bool &is_in_use;
+    bool cmd_started = false;
 
     StageBufRef(Context &_ctx, BufferHandle _buf, SyncFence &_fence, CommandBuffer cmd_buf, bool &_is_in_use);
     ~StageBufRef();
@@ -50,11 +51,17 @@ struct StageBufs {
 
   public:
     StageBufRef GetNextBuffer() {
-        int ret;
-        do {
-            ret = cur;
+        for (int i = 0; i < StageBufferCount; ++i) {
+            const int ret = cur;
             cur = (cur + 1) % StageBufferCount;
-        } while (is_in_use[ret]);
+            if (!is_in_use[ret]) {
+                return StageBufRef{*ctx, bufs[ret], fences[ret], cmd_bufs[ret], is_in_use[ret]};
+            }
+        }
+        assert(false && "All stage buffers are in use");
+        // fallback: wait on the current slot
+        const int ret = cur;
+        cur = (cur + 1) % StageBufferCount;
         return StageBufRef{*ctx, bufs[ret], fences[ret], cmd_bufs[ret], is_in_use[ret]};
     }
 };

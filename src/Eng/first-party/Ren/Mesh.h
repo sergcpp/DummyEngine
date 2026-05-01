@@ -89,4 +89,6 @@ bool Mesh_InitSkeletal(const ApiContext &api, MeshMain &mesh_main, MeshCold &mes
 
 bool Mesh_InitBufferData(const ApiContext &api, MeshMain &mesh_main, MeshCold &mesh_cold, ResizableBuffer &vertex_buf1,
                          ResizableBuffer &vertex_buf2, ResizableBuffer &index_buf, ILog *log);
+
+void Mesh_Destroy(SparseDualStorage<BufferMain, BufferCold> &buffers, MeshMain &mesh_main, MeshCold &mesh_cold);
 } // namespace Ren

@@ -35,7 +35,14 @@ Ren::MeshHandle Ren::Context::CreateMesh(Ren::String name, std::istream &data,
                       *default_skin_vertex_buf_, *default_delta_vertex_buf_);
 }
 
-void Ren::Context::ReleaseMesh(const MeshHandle handle) { meshes_.Erase(handle); }
+void Ren::Context::ReleaseMesh(const MeshHandle handle) {
+    if (!handle) {
+        return;
+    }
+    const auto &[mesh_main, mesh_cold] = meshes_[handle];
+    Mesh_Destroy(buffers_, mesh_main, mesh_cold);
+    meshes_.Erase(handle);
+}
 
 void Ren::Context::ReleaseMeshes() {
     if (meshes_.empty()) {
@@ -44,7 +51,9 @@ void Ren::Context::ReleaseMeshes() {
     log_->Error("----------REMAINING MESHES---------");
     for (const auto &m : meshes_) {
         log_->Error("%s", m.second.name.c_str());
+        Mesh_Destroy(buffers_, m.first, m.second);
     }
+    meshes_.Clear();
     log_->Error("-----------------------------------");
 }
 
@@ -836,12 +845,16 @@ Ren::StageBufRef::StageBufRef(Context &_ctx, const BufferHandle _buf, SyncFence 
     : ctx(_ctx), buf(_buf), fence(_fence), cmd_buf(_cmd_buf), is_in_use(_is_in_use) {
     is_in_use = true;
     const eWaitResult res = fence.ClientWaitSync();
-    assert(res == eWaitResult::Success);
+    if (res != eWaitResult::Success) {
+        _ctx.log()->Error("StageBufRef: fence wait failed (%i), staging buffer may be in use", int(res));
+        return;
+    }
     ctx.BegSingleTimeCommands(cmd_buf);
+    cmd_started = true;
 }
 
 Ren::StageBufRef::~StageBufRef() {
-    if (buf) {
+    if (buf && cmd_started) {
         fence = ctx.EndSingleTimeCommands(cmd_buf);
         is_in_use = false;
     }

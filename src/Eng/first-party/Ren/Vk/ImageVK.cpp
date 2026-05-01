@@ -556,7 +556,10 @@ void Ren::Image_CmdClear(const ApiContext &api, ImageMain &img_main, ImageCold &
         api.vkCmdClearColorImage(cmd_buf, img_main.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_val, 1,
                                  &clear_range);
     } else {
-        clear_range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+        clear_range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        if (IsDepthStencilFormat(img_cold.params.format)) {
+            clear_range.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
 
         VkClearDepthStencilValue clear_val = {};
         clear_val.depth = col.float32[0];
