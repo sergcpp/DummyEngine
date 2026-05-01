@@ -7,16 +7,16 @@
 #include "../framegraph/FgBuilder.h"
 
 void Eng::ExGBufferFill::Execute(const FgContext &fg) {
-    const Ren::ImageRWHandle albedo = fg.AccessRWImage(out_albedo_);
-    const Ren::ImageRWHandle normal = fg.AccessRWImage(out_normal_);
-    const Ren::ImageRWHandle spec = fg.AccessRWImage(out_spec_);
-    const Ren::ImageRWHandle depth = fg.AccessRWImage(out_depth_);
+    const Ren::ImageRWHandle albedo = fg.AccessRWImage(args_->out_albedo);
+    const Ren::ImageRWHandle normal = fg.AccessRWImage(args_->out_normal);
+    const Ren::ImageRWHandle spec = fg.AccessRWImage(args_->out_spec);
+    const Ren::ImageRWHandle depth = fg.AccessRWImage(args_->out_depth);
 
-    LazyInit(fg.ren_ctx(), fg.sh(), albedo, normal, spec, depth);
+    LazyInit(fg, albedo, normal, spec, depth);
     DrawOpaque(fg, albedo, normal, spec, depth);
 }
 
-void Eng::ExGBufferFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, const Ren::ImageRWHandle albedo,
+void Eng::ExGBufferFill::LazyInit(const FgContext &fg, const Ren::ImageRWHandle albedo,
                                   const Ren::ImageRWHandle normal, const Ren::ImageRWHandle spec,
                                   const Ren::ImageRWHandle depth) {
     const Ren::RenderTarget color_targets[] = {{albedo, Ren::eLoadOp::Clear, Ren::eStoreOp::Store},
@@ -25,7 +25,9 @@ void Eng::ExGBufferFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, const Ren
     const Ren::RenderTarget depth_target = {depth, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::Store};
 
-    if (!initialized) {
+    if (!initialized_) {
+        auto &ctx = fg.ren_ctx();
+        auto &sh = fg.sh();
 #if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
 #else
@@ -93,6 +95,6 @@ void Eng::ExGBufferFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, const Ren
                 sh.FindOrCreatePipeline(rast_state, gbuf_vegetation_prog, vi_vegetation, rp_main_draw, 0);
         }
 
-        initialized = true;
+        initialized_ = true;
     }
 }

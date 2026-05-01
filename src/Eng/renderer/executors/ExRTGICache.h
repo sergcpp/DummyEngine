@@ -43,7 +43,6 @@ class ExRTGICache final : public FgExecutor {
 
         FgImgRWHandle out_ray_data;
 
-        const view_state_t *view_state = nullptr;
         bool partial_update = false;
         Ren::Span<const probe_volume_t> probe_volumes;
     };
@@ -65,7 +64,7 @@ class ExRTGICache final : public FgExecutor {
 
     const Args *args_ = nullptr;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    void LazyInit(const FgContext &fg);
 
     void Execute_HWRT(const FgContext &fg);
     void Execute_SWRT(const FgContext &fg);

@@ -62,7 +62,7 @@ class ExRTSpecular final : public FgExecutor {
 
     const Args *args_ = nullptr;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    void LazyInit(const FgContext &fg);
 
     void Execute_HWRT(const FgContext &fg);
     void Execute_SWRT(const FgContext &fg);

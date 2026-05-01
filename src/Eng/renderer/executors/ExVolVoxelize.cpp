@@ -10,7 +10,7 @@
 #include "../shaders/vol_interface.h"
 
 void Eng::ExVolVoxelize::Execute(const FgContext &fg) {
-    LazyInit(fg.ren_ctx(), fg.sh());
+    LazyInit(fg);
     if (fg.ren_ctx().capabilities.hwrt) {
         Execute_HWRT(fg);
     } else {
@@ -18,7 +18,9 @@ void Eng::ExVolVoxelize::Execute(const FgContext &fg) {
     }
 }
 
-void Eng::ExVolVoxelize::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+void Eng::ExVolVoxelize::LazyInit(const FgContext &fg) {
+    auto &ctx = fg.ren_ctx();
+    auto &sh = fg.sh();
     if (!initialized_) {
         if (ctx.capabilities.hwrt) {
             pi_vol_voxelize_ = sh.FindOrCreatePipeline("internal/vol_voxelize@HWRT.comp.glsl");

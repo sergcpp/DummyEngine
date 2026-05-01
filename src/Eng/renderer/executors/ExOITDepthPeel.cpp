@@ -34,14 +34,16 @@ Eng::ExOITDepthPeel::ExOITDepthPeel(const DrawList **p_list, const view_state_t 
 void Eng::ExOITDepthPeel::Execute(const FgContext &fg) {
     const Ren::ImageRWHandle depth = fg.AccessRWImage(depth_);
 
-    LazyInit(fg.ren_ctx(), fg.sh(), depth);
+    LazyInit(fg, depth);
     DrawTransparent(fg, depth);
 }
 
-void Eng::ExOITDepthPeel::LazyInit(Ren::Context &ctx, ShaderLoader &sh, const Ren::ImageRWHandle depth) {
+void Eng::ExOITDepthPeel::LazyInit(const FgContext &fg, const Ren::ImageRWHandle depth) {
     const Ren::RenderTarget depth_target = {depth, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::Store};
     if (!pi_simple_[0]) {
+        auto &ctx = fg.ren_ctx();
+        auto &sh = fg.sh();
 #if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
 #else

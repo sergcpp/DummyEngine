@@ -17,18 +17,18 @@ void Eng::ExTransparent::DrawTransparent_Simple(
     const Ren::ApiContext &api = fg.ren_ctx().api();
     const Ren::StoragesRef &storages = fg.storages();
 
-    const Ren::BufferROHandle attrib_bufs[] = {fg.AccessROBuffer(vtx_buf1_), fg.AccessROBuffer(vtx_buf2_)};
-    const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(ndx_buf_);
+    const Ren::BufferROHandle attrib_bufs[] = {fg.AccessROBuffer(args_->vtx_buf1), fg.AccessROBuffer(args_->vtx_buf2)};
+    const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
 
-    [[maybe_unused]] const Ren::ImageROHandle brdf_lut = fg.AccessROImage(brdf_lut_);
-    const Ren::ImageROHandle noise = fg.AccessROImage(noise_);
-    [[maybe_unused]] const Ren::ImageROHandle cone_rt_lut = fg.AccessROImage(cone_rt_lut_);
-    const Ren::ImageROHandle dummy_black = fg.AccessROImage(dummy_black_);
+    [[maybe_unused]] const Ren::ImageROHandle brdf_lut = fg.AccessROImage(args_->brdf_lut);
+    const Ren::ImageROHandle noise = fg.AccessROImage(args_->noise);
+    [[maybe_unused]] const Ren::ImageROHandle cone_rt_lut = fg.AccessROImage(args_->cone_rt_lut);
+    const Ren::ImageROHandle dummy_black = fg.AccessROImage(args_->dummy_black);
 
     /*const Ren::Image *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
-        if (lm_tex_[i]) {
-            lm_tex[i] = &fg.AccessROImage(lm_tex_[i]);
+        if (args_->lm_tex[i]) {
+            lm_tex[i] = &fg.AccessROImage(args_->lm_tex[i]);
         } else {
             lm_tex[i] = &dummy_black;
         }

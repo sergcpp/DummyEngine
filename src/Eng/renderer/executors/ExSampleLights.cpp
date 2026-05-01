@@ -9,7 +9,7 @@
 #include "../shaders/sample_lights_interface.h"
 
 void Eng::ExSampleLights::Execute(const FgContext &fg) {
-    LazyInit(fg.ren_ctx(), fg.sh());
+    LazyInit(fg);
     if (fg.ren_ctx().capabilities.hwrt) {
         Execute_HWRT(fg);
     } else {
@@ -17,7 +17,9 @@ void Eng::ExSampleLights::Execute(const FgContext &fg) {
     }
 }
 
-void Eng::ExSampleLights::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void Eng::ExSampleLights::LazyInit(const FgContext &fg) {
+    auto &ctx = fg.ren_ctx();
+    auto &sh = fg.sh();
     if (!initialized_) {
         auto subgroup_select = [&ctx](std::string_view subgroup_shader, std::string_view nosubgroup_shader) {
             return ctx.capabilities.subgroup ? subgroup_shader : nosubgroup_shader;

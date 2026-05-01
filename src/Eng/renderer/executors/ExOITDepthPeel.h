@@ -35,7 +35,7 @@ class ExOITDepthPeel final : public FgExecutor {
     FgImgRWHandle depth_;
     FgBufRWHandle out_depth_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, Ren::ImageRWHandle depth);
+    void LazyInit(const FgContext &fg, Ren::ImageRWHandle depth);
     void DrawTransparent(const FgContext &fg, Ren::ImageRWHandle depth);
 
   public:

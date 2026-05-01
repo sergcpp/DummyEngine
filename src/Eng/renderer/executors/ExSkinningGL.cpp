@@ -10,7 +10,7 @@
 #include "../shaders/skinning_interface.h"
 
 void Eng::ExSkinning::Execute(const FgContext &fg) {
-    LazyInit(fg.ren_ctx(), fg.sh());
+    LazyInit(fg);
 
     const Ren::BufferROHandle skin_vtx = fg.AccessROBuffer(skin_vtx_);
     const Ren::BufferROHandle skin_transforms = fg.AccessROBuffer(skin_transforms_);

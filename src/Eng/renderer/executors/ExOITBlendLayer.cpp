@@ -3,42 +3,25 @@
 #include <Ren/Context.h>
 
 #include "../../utils/ShaderLoader.h"
-#include "../Renderer_DrawList.h"
 #include "../framegraph/FgBuilder.h"
-
-Eng::ExOITBlendLayer::ExOITBlendLayer(
-    PrimDraw &prim_draw, const DrawList **p_list, const view_state_t *view_state, const FgBufROHandle vtx_buf1,
-    const FgBufROHandle vtx_buf2, const FgBufROHandle ndx_buf, const FgBufROHandle materials,
-    const BindlessTextureData *bindless_tex, const FgBufROHandle cells, const FgBufROHandle items,
-    const FgBufROHandle lights, const FgBufROHandle decals, const FgImgROHandle noise, const FgImgROHandle dummy_white,
-    const FgImgROHandle shadow_depth, const FgImgROHandle ltc_luts, const FgImgROHandle env,
-    const FgBufROHandle instances, const FgBufROHandle instance_indices, const FgBufROHandle shared_data,
-    const FgImgRWHandle depth, const FgImgRWHandle color, const FgBufROHandle oit_depth,
-    const FgImgROHandle oit_specular, const int depth_layer_index, const FgImgROHandle irradiance,
-    const FgImgROHandle distance, const FgImgROHandle offset, const FgImgROHandle back_color,
-    const FgImgROHandle back_depth)
-    : prim_draw_(prim_draw), view_state_(view_state), bindless_tex_(bindless_tex), p_list_(p_list), vtx_buf1_(vtx_buf1),
-      vtx_buf2_(vtx_buf2), ndx_buf_(ndx_buf), instances_(instances), instance_indices_(instance_indices),
-      shared_data_(shared_data), materials_(materials), cells_(cells), items_(items), lights_(lights), decals_(decals),
-      noise_(noise), dummy_white_(dummy_white), shadow_depth_(shadow_depth), ltc_luts_(ltc_luts), env_(env),
-      oit_depth_(oit_depth), depth_layer_index_(depth_layer_index), oit_specular_(oit_specular),
-      irradiance_(irradiance), distance_(distance), offset_(offset), back_color_(back_color), back_depth_(back_depth),
-      depth_(depth), color_(color) {}
+#include "../renderer/Renderer_Structs.h"
 
 void Eng::ExOITBlendLayer::Execute(const FgContext &fg) {
-    const Ren::ImageRWHandle depth = fg.AccessRWImage(depth_);
-    const Ren::ImageRWHandle color = fg.AccessRWImage(color_);
+    const Ren::ImageRWHandle depth = fg.AccessRWImage(args_->depth);
+    const Ren::ImageRWHandle color = fg.AccessRWImage(args_->color);
 
-    LazyInit(fg.ren_ctx(), fg.sh(), depth, color);
+    LazyInit(fg, depth, color);
     DrawTransparent(fg, depth, color);
 }
 
-void Eng::ExOITBlendLayer::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::ImageRWHandle depth,
+void Eng::ExOITBlendLayer::LazyInit(const FgContext &fg, const Ren::ImageRWHandle depth,
                                     const Ren::ImageRWHandle color) {
     const Ren::RenderTarget color_targets[] = {{color, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
     const Ren::RenderTarget depth_target = {depth, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::Store};
-    if (!initialized) {
+    if (!initialized_) {
+        auto &ctx = fg.ren_ctx();
+        auto &sh = fg.sh();
 #if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
 #else
@@ -48,8 +31,8 @@ void Eng::ExOITBlendLayer::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, co
         prog_oit_blit_depth_ = sh.FindOrCreateProgram("internal/blit.vert.glsl", "internal/blit_oit_depth.frag.glsl");
 
         Ren::ProgramHandle oit_blend_simple_prog, oit_blend_vegetation_prog;
-        if (irradiance_) {
-            if (oit_specular_) {
+        if (args_->irradiance) {
+            if (args_->oit_specular) {
                 oit_blend_simple_prog = sh.FindOrCreateProgram(
                     bindless ? "internal/oit_blend_layer.vert.glsl" : "internal/oit_blend_layer@NO_BINDLESS.vert.glsl",
                     bindless ? "internal/oit_blend_layer@GI_CACHE;SPECULAR.frag.glsl"
@@ -71,7 +54,7 @@ void Eng::ExOITBlendLayer::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, co
                                                     : "internal/oit_blend_layer@GI_CACHE;NO_BINDLESS.frag.glsl");
             }
         } else {
-            if (oit_specular_) {
+            if (args_->oit_specular) {
                 oit_blend_simple_prog = sh.FindOrCreateProgram(
                     bindless ? "internal/oit_blend_layer.vert.glsl" : "internal/oit_blend_layer@NO_BINDLESS.vert.glsl",
                     bindless ? "internal/oit_blend_layer@SPECULAR.frag.glsl"
@@ -159,6 +142,6 @@ void Eng::ExOITBlendLayer::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, co
                 sh.FindOrCreatePipeline(rast_state, oit_blend_vegetation_prog, vi_vegetation, rp_oit_blend, 0);
         }
 
-        initialized = true;
+        initialized_ = true;
     }
 }

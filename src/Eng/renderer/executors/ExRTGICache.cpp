@@ -9,7 +9,7 @@
 #include "../shaders/rt_gi_cache_interface.h"
 
 void Eng::ExRTGICache::Execute(const FgContext &fg) {
-    LazyInit(fg.ren_ctx(), fg.sh());
+    LazyInit(fg);
     if (fg.ren_ctx().capabilities.hwrt) {
         Execute_HWRT(fg);
     } else {
@@ -17,7 +17,9 @@ void Eng::ExRTGICache::Execute(const FgContext &fg) {
     }
 }
 
-void Eng::ExRTGICache::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void Eng::ExRTGICache::LazyInit(const FgContext &fg) {
+    auto &ctx = fg.ren_ctx();
+    auto &sh = fg.sh();
     if (!initialized_) {
         auto hwrt_select = [&ctx](std::string_view hwrt_shader, std::string_view swrt_shader) {
             return ctx.capabilities.hwrt ? hwrt_shader : swrt_shader;

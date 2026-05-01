@@ -2,9 +2,10 @@
 
 #include "../../utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
+#include "../framegraph/FgBuilder.h"
 
-void Eng::ExSkinning::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+void Eng::ExSkinning::LazyInit(const FgContext &fg) {
     if (!pi_skinning_) {
-        pi_skinning_ = sh.FindOrCreatePipeline("internal/skinning.comp.glsl");
+        pi_skinning_ = fg.sh().FindOrCreatePipeline("internal/skinning.comp.glsl");
     }
 }

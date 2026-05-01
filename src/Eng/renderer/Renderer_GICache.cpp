@@ -60,7 +60,6 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
         data->distance = rt_gi_cache.AddTextureInput(frame_textures.gi_cache_distance, Stg::ComputeShader);
         data->offset = rt_gi_cache.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
 
-        data->view_state = &view_state_;
         data->partial_update = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
         data->probe_volumes = persistent_data.probe_volumes;
 

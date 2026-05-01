@@ -73,14 +73,14 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
                                  const Ren::ImageRWHandle velocity) {
     using namespace ExSharedInternal;
 
-    const Ren::BufferROHandle attrib_bufs[] = {fg.AccessROBuffer(vtx_buf1_), fg.AccessROBuffer(vtx_buf2_)};
-    const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(ndx_buf_);
+    const Ren::BufferROHandle attrib_bufs[] = {fg.AccessROBuffer(args_->vtx_buf1), fg.AccessROBuffer(args_->vtx_buf2)};
+    const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
 
-    const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(shared_data_);
-    const Ren::BufferROHandle instances = fg.AccessROBuffer(instances_);
-    const Ren::BufferROHandle instance_indices = fg.AccessROBuffer(instance_indices_);
-    const Ren::BufferROHandle materials = fg.AccessROBuffer(materials_);
-    const Ren::ImageROHandle noise = fg.AccessROImage(noise_);
+    const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(args_->shared_data);
+    const Ren::BufferROHandle instances = fg.AccessROBuffer(args_->instances);
+    const Ren::BufferROHandle instance_indices = fg.AccessROBuffer(args_->instance_indices);
+    const Ren::BufferROHandle materials = fg.AccessROBuffer(args_->materials);
+    const Ren::ImageROHandle noise = fg.AccessROImage(args_->noise);
 
     const Ren::ApiContext &api = fg.ren_ctx().api();
     const Ren::StoragesRef &storages = fg.storages();
@@ -148,7 +148,7 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
 
     { // solid meshes
         Ren::DebugMarker _m(api, cmd_buf, "STATIC-SOLID-SIMPLE");
-        const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
+        const int rp_index = (args_->clear_depth && !draws_count) ? 0 : 1;
 
         const Ren::FramebufferHandle fb = fg.FindOrCreateFramebuffer(rp_depth_only_[rp_index], depth, depth, {});
 
@@ -195,7 +195,7 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
 
     { // moving solid meshes (depth and velocity)
         Ren::DebugMarker _m(api, cmd_buf, "STATIC-SOLID-MOVING");
-        const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
+        const int rp_index = (args_->clear_depth && !draws_count) ? 0 : 1;
 
         const Ren::ImageRWHandle velocity_target[] = {velocity};
         const Ren::FramebufferHandle fb =
@@ -249,7 +249,7 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
 
     { // simple alpha-tested meshes (depth only)
         Ren::DebugMarker _m(api, fg.cmd_buf(), "STATIC-ALPHA-SIMPLE");
-        const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
+        const int rp_index = (args_->clear_depth && !draws_count) ? 0 : 1;
 
         const Ren::FramebufferHandle fb = fg.FindOrCreateFramebuffer(rp_depth_only_[rp_index], depth, depth, {});
 
@@ -302,7 +302,7 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
 
     { // moving alpha-tested meshes (depth and velocity)
         Ren::DebugMarker _m(api, fg.cmd_buf(), "STATIC-ALPHA-MOVING");
-        const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
+        const int rp_index = (args_->clear_depth && !draws_count) ? 0 : 1;
 
         const Ren::ImageRWHandle velocity_target[] = {velocity};
         const Ren::FramebufferHandle fb =
@@ -356,7 +356,7 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
 
     { // static solid vegetation
         Ren::DebugMarker _m(api, cmd_buf, "VEGE-SOLID-SIMPLE");
-        const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
+        const int rp_index = (args_->clear_depth && !draws_count) ? 0 : 1;
 
         const Ren::FramebufferHandle fb = fg.FindOrCreateFramebuffer(rp_depth_only_[rp_index], depth, depth, {});
 
@@ -402,7 +402,7 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
 
     { // moving solid vegetation (depth and velocity)
         Ren::DebugMarker _m(api, fg.cmd_buf(), "VEGE-SOLID-MOVING");
-        const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
+        const int rp_index = (args_->clear_depth && !draws_count) ? 0 : 1;
 
         const Ren::ImageRWHandle velocity_target[] = {velocity};
         const Ren::FramebufferHandle fb =
@@ -451,7 +451,7 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
 
     { // static alpha-tested vegetation (depth and velocity)
         Ren::DebugMarker _m(api, fg.cmd_buf(), "VEGE-ALPHA-SIMPLE");
-        const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
+        const int rp_index = (args_->clear_depth && !draws_count) ? 0 : 1;
 
         const Ren::ImageRWHandle velocity_target[] = {velocity};
         const Ren::FramebufferHandle fb =
@@ -502,7 +502,7 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
 
     { // moving alpha-tested vegetation (depth and velocity)
         Ren::DebugMarker _m(api, fg.cmd_buf(), "VEGE-ALPHA-MOVING");
-        const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
+        const int rp_index = (args_->clear_depth && !draws_count) ? 0 : 1;
 
         const Ren::ImageRWHandle velocity_target[] = {velocity};
         const Ren::FramebufferHandle fb =
@@ -553,7 +553,7 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
 
     { // solid skinned meshes (depth and velocity)
         Ren::DebugMarker _m(api, fg.cmd_buf(), "SKIN-SOLID-SIMPLE");
-        const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
+        const int rp_index = (args_->clear_depth && !draws_count) ? 0 : 1;
 
         const Ren::ImageRWHandle velocity_target[] = {velocity};
         const Ren::FramebufferHandle fb =
@@ -601,7 +601,7 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
 
     { // moving solid skinned (depth and velocity)
         Ren::DebugMarker _m(api, fg.cmd_buf(), "SKIN-SOLID-MOVING");
-        const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
+        const int rp_index = (args_->clear_depth && !draws_count) ? 0 : 1;
 
         const Ren::ImageRWHandle velocity_target[] = {velocity};
         const Ren::FramebufferHandle fb =
@@ -650,7 +650,7 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
 
     { // static alpha-tested skinned (depth and velocity)
         Ren::DebugMarker _m(api, fg.cmd_buf(), "SKIN-ALPHA-SIMPLE");
-        const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
+        const int rp_index = (args_->clear_depth && !draws_count) ? 0 : 1;
 
         const Ren::ImageRWHandle velocity_target[] = {velocity};
         const Ren::FramebufferHandle fb =
@@ -701,7 +701,7 @@ void Eng::ExDepthFill::DrawDepth(const FgContext &fg, const Ren::ImageRWHandle d
 
     { // moving alpha-tested skinned (depth and velocity)
         Ren::DebugMarker _m(api, fg.cmd_buf(), "SKIN-ALPHA-MOVING");
-        const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
+        const int rp_index = (args_->clear_depth && !draws_count) ? 0 : 1;
 
         const Ren::ImageRWHandle velocity_target[] = {velocity};
         const Ren::FramebufferHandle fb =

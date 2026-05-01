@@ -7,35 +7,35 @@
 #include "../framegraph/FgBuilder.h"
 
 void Eng::ExTransparent::Execute(const FgContext &fg) {
-    const Ren::ImageRWHandle color = fg.AccessRWImage(color_);
-    const Ren::ImageRWHandle normal = fg.AccessRWImage(normal_);
-    const Ren::ImageRWHandle spec = fg.AccessRWImage(spec_);
-    const Ren::ImageRWHandle depth = fg.AccessRWImage(depth_);
+    const Ren::ImageRWHandle color = fg.AccessRWImage(args_->color);
+    const Ren::ImageRWHandle normal = fg.AccessRWImage(args_->normal);
+    const Ren::ImageRWHandle spec = fg.AccessRWImage(args_->spec);
+    const Ren::ImageRWHandle depth = fg.AccessRWImage(args_->depth);
 
-    LazyInit(fg.ren_ctx(), fg.sh(), color, normal, spec, depth);
+    LazyInit(fg, color, normal, spec, depth);
     DrawTransparent(fg, color, normal, spec, depth);
 }
 
 void Eng::ExTransparent::DrawTransparent(const FgContext &fg, const Ren::ImageRWHandle color,
                                          const Ren::ImageRWHandle normal, const Ren::ImageRWHandle spec,
                                          const Ren::ImageRWHandle depth) {
-    const Ren::BufferROHandle instances = fg.AccessROBuffer(instances_);
-    const Ren::BufferROHandle instance_indices = fg.AccessROBuffer(instance_indices_);
-    const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(shared_data_);
-    const Ren::BufferROHandle materials = fg.AccessROBuffer(materials_);
-    const Ren::BufferROHandle cells = fg.AccessROBuffer(cells_);
-    const Ren::BufferROHandle items = fg.AccessROBuffer(items_);
-    const Ren::BufferROHandle lights = fg.AccessROBuffer(lights_);
-    const Ren::BufferROHandle decals = fg.AccessROBuffer(decals_);
+    const Ren::BufferROHandle instances = fg.AccessROBuffer(args_->instances);
+    const Ren::BufferROHandle instance_indices = fg.AccessROBuffer(args_->instance_indices);
+    const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(args_->shared_data);
+    const Ren::BufferROHandle materials = fg.AccessROBuffer(args_->materials);
+    const Ren::BufferROHandle cells = fg.AccessROBuffer(args_->cells);
+    const Ren::BufferROHandle items = fg.AccessROBuffer(args_->items);
+    const Ren::BufferROHandle lights = fg.AccessROBuffer(args_->lights);
+    const Ren::BufferROHandle decals = fg.AccessROBuffer(args_->decals);
 
-    const Ren::ImageROHandle shad = fg.AccessROImage(shadow_depth_);
-    const Ren::ImageROHandle ssao = fg.AccessROImage(ssao_);
+    const Ren::ImageROHandle shad = fg.AccessROImage(args_->shadow_depth);
+    const Ren::ImageROHandle ssao = fg.AccessROImage(args_->ssao);
 
     DrawTransparent_Simple(fg, instances, instance_indices, unif_shared_data, materials, cells, items, lights, decals,
                            shad, color, normal, spec, depth, ssao);
 }
 
-void Eng::ExTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::ImageRWHandle color,
+void Eng::ExTransparent::LazyInit(const FgContext &fg, const Ren::ImageRWHandle color,
                                   const Ren::ImageRWHandle normal, const Ren::ImageRWHandle spec,
                                   const Ren::ImageRWHandle depth) {
     const Ren::RenderTarget color_targets[] = {{color, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
@@ -44,7 +44,8 @@ void Eng::ExTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, cons
     const Ren::RenderTarget depth_target = {depth, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::Store};
 
-    if (!initialized) {
+    if (!initialized_) {
+        auto &sh = fg.sh();
         rp_transparent_ = sh.FindOrCreateRenderPass(depth_target, color_targets);
 
         [[maybe_unused]] const int buf1_stride = 16, buf2_stride = 16;
@@ -63,7 +64,7 @@ void Eng::ExTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, cons
         InitDescrSetLayout();
 #endif
 
-        initialized = true;
+        initialized_ = true;
     }
 
     /*if (moments_b0_.id && moments_z_and_z2_.id && moments_z3_and_z4_.id) {

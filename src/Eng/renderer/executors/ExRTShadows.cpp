@@ -9,7 +9,7 @@
 #include "../shaders/rt_shadows_interface.h"
 
 void Eng::ExRTShadows::Execute(const FgContext &fg) {
-    LazyInit(fg.ren_ctx(), fg.sh());
+    LazyInit(fg);
     if (fg.ren_ctx().capabilities.hwrt) {
         Execute_HWRT(fg);
     } else {
@@ -17,7 +17,9 @@ void Eng::ExRTShadows::Execute(const FgContext &fg) {
     }
 }
 
-void Eng::ExRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+void Eng::ExRTShadows::LazyInit(const FgContext &fg) {
+    auto &ctx = fg.ren_ctx();
+    auto &sh = fg.sh();
     if (!initialized_) {
         pi_rt_shadows_ = sh.FindOrCreatePipeline(
             ctx.capabilities.hwrt ? "internal/rt_shadows_hwrt.comp.glsl" : "internal/rt_shadows_swrt.comp.glsl", 32);

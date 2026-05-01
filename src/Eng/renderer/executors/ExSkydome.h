@@ -42,7 +42,7 @@ class ExSkydomeCube final : public FgExecutor {
     Ren::ProgramHandle prog_skydome_phys_;
     Ren::PipelineHandle pi_skydome_downsample_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    void LazyInit(const FgContext &fg);
 };
 
 class ExSkydomeScreen final : public FgExecutor {
@@ -76,7 +76,7 @@ class ExSkydomeScreen final : public FgExecutor {
 
   private:
     PrimDraw &prim_draw_;
-    bool initialized = false;
+    bool initialized_ = false;
 
     // temp data (valid only between Setup and Execute calls)
     const view_state_t *view_state_ = nullptr;
@@ -85,6 +85,6 @@ class ExSkydomeScreen final : public FgExecutor {
     // lazily initialized data
     Ren::ProgramHandle prog_skydome_simple_, prog_skydome_phys_[2];
 
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
+    void LazyInit(const FgContext &fg);
 };
 } // namespace Eng

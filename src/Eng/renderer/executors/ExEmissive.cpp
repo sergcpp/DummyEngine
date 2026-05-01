@@ -7,20 +7,22 @@
 #include "../framegraph/FgBuilder.h"
 
 void Eng::ExEmissive::Execute(const FgContext &fg) {
-    const Ren::ImageRWHandle color = fg.AccessRWImage(out_color_);
-    const Ren::ImageRWHandle depth = fg.AccessRWImage(out_depth_);
+    const Ren::ImageRWHandle color = fg.AccessRWImage(args_->out_color);
+    const Ren::ImageRWHandle depth = fg.AccessRWImage(args_->out_depth);
 
-    LazyInit(fg.ren_ctx(), fg.sh(), color, depth);
+    LazyInit(fg, color, depth);
     DrawOpaque(fg, color, depth);
 }
 
-void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::ImageRWHandle color,
+void Eng::ExEmissive::LazyInit(const FgContext &fg, const Ren::ImageRWHandle color,
                                const Ren::ImageRWHandle depth) {
     const Ren::RenderTarget color_targets[] = {{color, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
     const Ren::RenderTarget depth_target = {depth, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::Store};
 
-    if (!initialized) {
+    if (!initialized_) {
+        auto &ctx = fg.ren_ctx();
+        auto &sh = fg.sh();
 #if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
 #else
@@ -98,6 +100,6 @@ void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const R
                 sh.FindOrCreatePipeline(rast_state, emissive_vegetation_prog, vi_vegetation, rp_main_draw, 0);
         }
 
-        initialized = true;
+        initialized_ = true;
     }
 }

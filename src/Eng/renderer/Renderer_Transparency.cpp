@@ -657,66 +657,47 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Acce
             const std::string pass_name = "OIT BLEND #" + std::to_string(i);
 
             auto &oit_blend_layer = fg_builder_.AddNode(pass_name);
-            const FgBufROHandle vtx_buf1 = oit_blend_layer.AddVertexBufferInput(common_buffers.vertex_buf1);
-            const FgBufROHandle vtx_buf2 = oit_blend_layer.AddVertexBufferInput(common_buffers.vertex_buf2);
-            const FgBufROHandle ndx_buf = oit_blend_layer.AddIndexBufferInput(common_buffers.indices_buf);
-
-            const FgBufROHandle materials =
-                oit_blend_layer.AddStorageReadonlyInput(common_buffers.materials, Stg::VertexShader);
-
-            const FgImgROHandle noise = oit_blend_layer.AddTextureInput(
-                frame_textures.noise, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
-            const FgImgROHandle white = oit_blend_layer.AddTextureInput(
-                frame_textures.dummy_white, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
-            const FgBufROHandle instances =
-                oit_blend_layer.AddStorageReadonlyInput(common_buffers.instances, Stg::VertexShader);
-            const FgBufROHandle instances_indices =
+            auto *data = fg_builder_.AllocTempData<ExOITBlendLayer::Args>();
+            data->vtx_buf1 = oit_blend_layer.AddVertexBufferInput(common_buffers.vertex_buf1);
+            data->vtx_buf2 = oit_blend_layer.AddVertexBufferInput(common_buffers.vertex_buf2);
+            data->ndx_buf = oit_blend_layer.AddIndexBufferInput(common_buffers.indices_buf);
+            data->materials = oit_blend_layer.AddStorageReadonlyInput(common_buffers.materials, Stg::VertexShader);
+            data->noise = oit_blend_layer.AddTextureInput(frame_textures.noise,
+                                                           Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
+            data->dummy_white = oit_blend_layer.AddTextureInput(frame_textures.dummy_white,
+                                                                  Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
+            data->instances = oit_blend_layer.AddStorageReadonlyInput(common_buffers.instances, Stg::VertexShader);
+            data->instance_indices =
                 oit_blend_layer.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
-
-            const FgBufROHandle shader_data = oit_blend_layer.AddUniformBufferInput(
+            data->shared_data = oit_blend_layer.AddUniformBufferInput(
                 common_buffers.shared_data, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
-
-            const FgBufROHandle cells =
-                oit_blend_layer.AddStorageReadonlyInput(common_buffers.cells, Stg::FragmentShader);
-            const FgBufROHandle items =
-                oit_blend_layer.AddStorageReadonlyInput(common_buffers.items, Stg::FragmentShader);
-            const FgBufROHandle lights =
-                oit_blend_layer.AddStorageReadonlyInput(common_buffers.lights, Stg::FragmentShader);
-            const FgBufROHandle decals =
-                oit_blend_layer.AddStorageReadonlyInput(common_buffers.decals, Stg::FragmentShader);
-
-            const FgImgROHandle shadow_map =
-                oit_blend_layer.AddTextureInput(frame_textures.shadow_depth, Stg::FragmentShader);
-            const FgImgROHandle ltc_luts =
-                oit_blend_layer.AddTextureInput(frame_textures.ltc_luts, Stg::FragmentShader);
-            const FgImgROHandle envmap = oit_blend_layer.AddTextureInput(frame_textures.envmap, Stg::FragmentShader);
-
-            frame_textures.depth = oit_blend_layer.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
-            frame_textures.color = oit_blend_layer.AddColorOutput(frame_textures.color);
-            const FgBufROHandle oit_depth_ro = oit_blend_layer.AddStorageReadonlyInput(oit_depth, Stg::FragmentShader);
-
-            const int layer_index = oit_layer_count - 1 - i;
-
-            FgImgROHandle specular;
-            if (layer_index < OIT_REFLECTION_LAYERS && settings.reflections_quality != eReflectionsQuality::Off) {
-                specular = oit_blend_layer.AddTextureInput(oit_specular[layer_index], Stg::FragmentShader);
+            data->cells = oit_blend_layer.AddStorageReadonlyInput(common_buffers.cells, Stg::FragmentShader);
+            data->items = oit_blend_layer.AddStorageReadonlyInput(common_buffers.items, Stg::FragmentShader);
+            data->lights = oit_blend_layer.AddStorageReadonlyInput(common_buffers.lights, Stg::FragmentShader);
+            data->decals = oit_blend_layer.AddStorageReadonlyInput(common_buffers.decals, Stg::FragmentShader);
+            data->shadow_depth = oit_blend_layer.AddTextureInput(frame_textures.shadow_depth, Stg::FragmentShader);
+            data->ltc_luts = oit_blend_layer.AddTextureInput(frame_textures.ltc_luts, Stg::FragmentShader);
+            data->env = oit_blend_layer.AddTextureInput(frame_textures.envmap, Stg::FragmentShader);
+            frame_textures.depth = data->depth = oit_blend_layer.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
+            frame_textures.color = data->color = oit_blend_layer.AddColorOutput(frame_textures.color);
+            data->oit_depth = oit_blend_layer.AddStorageReadonlyInput(oit_depth, Stg::FragmentShader);
+            data->depth_layer_index = oit_layer_count - 1 - i;
+            if (data->depth_layer_index < OIT_REFLECTION_LAYERS &&
+                settings.reflections_quality != eReflectionsQuality::Off) {
+                data->oit_specular =
+                    oit_blend_layer.AddTextureInput(oit_specular[data->depth_layer_index], Stg::FragmentShader);
             }
-
-            FgImgROHandle irradiance, distance, offset;
             if (settings.gi_quality != eGIQuality::Off && frame_textures.gi_cache_irradiance) {
-                irradiance = oit_blend_layer.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::FragmentShader);
-                distance = oit_blend_layer.AddTextureInput(frame_textures.gi_cache_distance, Stg::FragmentShader);
-                offset = oit_blend_layer.AddTextureInput(frame_textures.gi_cache_offset, Stg::FragmentShader);
+                data->irradiance =
+                    oit_blend_layer.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::FragmentShader);
+                data->distance =
+                    oit_blend_layer.AddTextureInput(frame_textures.gi_cache_distance, Stg::FragmentShader);
+                data->offset =
+                    oit_blend_layer.AddTextureInput(frame_textures.gi_cache_offset, Stg::FragmentShader);
             }
-
-            oit_blend_layer.AddTextureInput(back_color, Stg::FragmentShader);
-            oit_blend_layer.AddTextureInput(back_depth, Stg::FragmentShader);
-
-            oit_blend_layer.make_executor<ExOITBlendLayer>(
-                prim_draw_, &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials, &bindless, cells, items,
-                lights, decals, noise, white, shadow_map, ltc_luts, envmap, instances, instances_indices, shader_data,
-                frame_textures.depth, frame_textures.color, oit_depth_ro, specular, layer_index, irradiance, distance,
-                offset, back_color, back_depth);
+            data->back_color = oit_blend_layer.AddTextureInput(back_color, Stg::FragmentShader);
+            data->back_depth = oit_blend_layer.AddTextureInput(back_depth, Stg::FragmentShader);
+            oit_blend_layer.make_executor<ExOITBlendLayer>(prim_draw_, &p_list_, &view_state_, &bindless, data);
         }
     }
 

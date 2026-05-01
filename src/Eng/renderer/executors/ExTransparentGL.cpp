@@ -61,10 +61,10 @@ void Eng::ExTransparent::DrawTransparent_Simple(
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
 
-    const Ren::ImageROHandle brdf_lut = fg.AccessROImage(brdf_lut_);
-    const Ren::ImageROHandle noise = fg.AccessROImage(noise_);
-    const Ren::ImageROHandle cone_rt_lut = fg.AccessROImage(cone_rt_lut_);
-    const Ren::ImageROHandle dummy_black = fg.AccessROImage(dummy_black_);
+    const Ren::ImageROHandle brdf_lut = fg.AccessROImage(args_->brdf_lut);
+    const Ren::ImageROHandle noise = fg.AccessROImage(args_->noise);
+    const Ren::ImageROHandle cone_rt_lut = fg.AccessROImage(args_->cone_rt_lut);
+    const Ren::ImageROHandle dummy_black = fg.AccessROImage(args_->dummy_black);
 
     if (/*!(*p_list_)->probe_storage ||*/ (*p_list_)->alpha_blend_start_index == -1) {
         return;

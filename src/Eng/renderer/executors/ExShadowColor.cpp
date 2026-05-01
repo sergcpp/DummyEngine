@@ -7,19 +7,21 @@
 #include "../framegraph/FgBuilder.h"
 
 void Eng::ExShadowColor::Execute(const FgContext &fg) {
-    const Ren::ImageRWHandle shadow_depth = fg.AccessRWImage(shadow_depth_);
-    const Ren::ImageRWHandle shadow_color = fg.AccessRWImage(shadow_color_);
+    const Ren::ImageRWHandle shadow_depth = fg.AccessRWImage(args_->shadow_depth);
+    const Ren::ImageRWHandle shadow_color = fg.AccessRWImage(args_->shadow_color);
 
-    LazyInit(fg.ren_ctx(), fg.sh(), shadow_depth, shadow_color);
+    LazyInit(fg, shadow_depth, shadow_color);
     DrawShadowMaps(fg, shadow_depth, shadow_color);
 }
 
-void Eng::ExShadowColor::LazyInit(Ren::Context &ctx, ShaderLoader &sh, const Ren::ImageRWHandle shadow_depth,
+void Eng::ExShadowColor::LazyInit(const FgContext &fg, const Ren::ImageRWHandle shadow_depth,
                                   const Ren::ImageRWHandle shadow_color) {
     const Ren::RenderTarget depth_target = {shadow_depth, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
     const Ren::RenderTarget color_targets[] = {{shadow_color, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
-    if (!initialized) {
+    if (!initialized_) {
+        auto &ctx = fg.ren_ctx();
+        auto &sh = fg.sh();
 #if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
 #else
@@ -92,6 +94,6 @@ void Eng::ExShadowColor::LazyInit(Ren::Context &ctx, ShaderLoader &sh, const Ren
             pi_solid_[1] = sh.FindOrCreatePipeline(rast_state, shadow_solid_prog, vi_depth_pass, rp_depth_only, 0);
             pi_alpha_[1] = sh.FindOrCreatePipeline(rast_state, shadow_alpha_prog, vi_depth_pass, rp_depth_only, 0);
         }
-        initialized = true;
+        initialized_ = true;
     }
 }

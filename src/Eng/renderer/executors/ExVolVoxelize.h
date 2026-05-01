@@ -47,7 +47,7 @@ class ExVolVoxelize final : public FgExecutor {
     const view_state_t *view_state_ = nullptr;
     const Args *args_ = nullptr;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    void LazyInit(const FgContext &fg);
 
     void Execute_HWRT(const FgContext &fg);
     void Execute_SWRT(const FgContext &fg);

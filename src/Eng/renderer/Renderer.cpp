@@ -480,7 +480,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
              Ren::eStoreOp::Store},
 #endif
             {Ren::eFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
-             Ren::eStoreOp::Store}};
+             Ren::eStoreOp::Store}
+        };
 
         // color_rts[2].flags = Ren::eImgFlags::SRGB;
 
@@ -645,7 +646,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             const Ren::Vec3d new_orig = view_state_.prev_world_origin - list.world_origin + Ren::Vec3d(volume.origin);
             volume.origin = Ren::Vec3f(new_orig);
 
-            const Ren::Vec3d new_prev_orig = view_state_.prev_world_origin - list.world_origin + Ren::Vec3d(volume.prev_origin);
+            const Ren::Vec3d new_prev_orig =
+                view_state_.prev_world_origin - list.world_origin + Ren::Vec3d(volume.prev_origin);
             volume.prev_origin = Ren::Vec3f(new_prev_orig);
 
             const Ren::Vec3i test = Ren::Vec3i{Floor((volume.pivot - volume.origin) / volume.spacing)};
@@ -1196,56 +1198,42 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         { // Shadow depth
             auto &shadow_depth = fg_builder_.AddNode("SHADOW DEPTH");
-            const FgBufROHandle vtx_buf1_res = shadow_depth.AddVertexBufferInput(common_buffers.vertex_buf1);
-            const FgBufROHandle vtx_buf2_res = shadow_depth.AddVertexBufferInput(common_buffers.vertex_buf2);
-            const FgBufROHandle ndx_buf_res = shadow_depth.AddIndexBufferInput(common_buffers.indices_buf);
 
-            const FgBufROHandle shared_data_res = shadow_depth.AddUniformBufferInput(
+            auto *data = fg_builder_.AllocTempData<ExShadowDepth::Args>();
+            data->vtx_buf1 = shadow_depth.AddVertexBufferInput(common_buffers.vertex_buf1);
+            data->vtx_buf2 = shadow_depth.AddVertexBufferInput(common_buffers.vertex_buf2);
+            data->ndx_buf = shadow_depth.AddIndexBufferInput(common_buffers.indices_buf);
+            data->shared_data = shadow_depth.AddUniformBufferInput(
                 common_buffers.shared_data, Ren::Bitmask{Ren::eStage::VertexShader} | Ren::eStage::FragmentShader);
-            const FgBufROHandle instances =
-                shadow_depth.AddStorageReadonlyInput(common_buffers.instances, Ren::eStage::VertexShader);
-            const FgBufROHandle instance_indices =
+            data->instances = shadow_depth.AddStorageReadonlyInput(common_buffers.instances, Ren::eStage::VertexShader);
+            data->instance_indices =
                 shadow_depth.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStage::VertexShader);
+            data->materials = shadow_depth.AddStorageReadonlyInput(common_buffers.materials, Ren::eStage::VertexShader);
+            data->noise = shadow_depth.AddTextureInput(frame_textures.noise, Ren::eStage::VertexShader);
+            data->dummy_white = shadow_depth.AddTextureInput(frame_textures.dummy_white, Ren::eStage::FragmentShader);
+            frame_textures.shadow_depth = data->shadow_depth = shadow_depth.AddDepthOutput(frame_textures.shadow_depth);
 
-            const FgBufROHandle materials =
-                shadow_depth.AddStorageReadonlyInput(common_buffers.materials, Ren::eStage::VertexShader);
-            const FgImgROHandle noise = shadow_depth.AddTextureInput(frame_textures.noise, Ren::eStage::VertexShader);
-            const FgImgROHandle dummy_white =
-                shadow_depth.AddTextureInput(frame_textures.dummy_white, Ren::eStage::FragmentShader);
-
-            frame_textures.shadow_depth = shadow_depth.AddDepthOutput(frame_textures.shadow_depth);
-
-            shadow_depth.make_executor<ExShadowDepth>(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, vtx_buf1_res,
-                                                      vtx_buf2_res, ndx_buf_res, materials, &bindless_tex, instances,
-                                                      instance_indices, shared_data_res, noise, dummy_white,
-                                                      frame_textures.shadow_depth);
+            shadow_depth.make_executor<ExShadowDepth>(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, &bindless_tex, data);
         }
         { // Shadow color
             auto &shadow_color = fg_builder_.AddNode("SHADOW COLOR");
-            const FgBufROHandle vtx_buf1_res = shadow_color.AddVertexBufferInput(common_buffers.vertex_buf1);
-            const FgBufROHandle vtx_buf2_res = shadow_color.AddVertexBufferInput(common_buffers.vertex_buf2);
-            const FgBufROHandle ndx_buf_res = shadow_color.AddIndexBufferInput(common_buffers.indices_buf);
 
-            const FgBufROHandle shared_data_res = shadow_color.AddUniformBufferInput(
+            auto *data = fg_builder_.AllocTempData<ExShadowColor::Args>();
+            data->vtx_buf1 = shadow_color.AddVertexBufferInput(common_buffers.vertex_buf1);
+            data->vtx_buf2 = shadow_color.AddVertexBufferInput(common_buffers.vertex_buf2);
+            data->ndx_buf = shadow_color.AddIndexBufferInput(common_buffers.indices_buf);
+            data->shared_data = shadow_color.AddUniformBufferInput(
                 common_buffers.shared_data, Ren::Bitmask{Ren::eStage::VertexShader} | Ren::eStage::FragmentShader);
-            const FgBufROHandle instances_res =
-                shadow_color.AddStorageReadonlyInput(common_buffers.instances, Ren::eStage::VertexShader);
-            const FgBufROHandle instance_indices_res =
+            data->instances = shadow_color.AddStorageReadonlyInput(common_buffers.instances, Ren::eStage::VertexShader);
+            data->instance_indices =
                 shadow_color.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStage::VertexShader);
+            data->materials = shadow_color.AddStorageReadonlyInput(common_buffers.materials, Ren::eStage::VertexShader);
+            data->noise = shadow_color.AddTextureInput(frame_textures.noise, Ren::eStage::VertexShader);
+            data->dummy_white = shadow_color.AddTextureInput(frame_textures.dummy_white, Ren::eStage::FragmentShader);
+            frame_textures.shadow_depth = data->shadow_depth = shadow_color.AddDepthOutput(frame_textures.shadow_depth);
+            frame_textures.shadow_color = data->shadow_color = shadow_color.AddColorOutput(frame_textures.shadow_color);
 
-            const FgBufROHandle materials_buf =
-                shadow_color.AddStorageReadonlyInput(common_buffers.materials, Ren::eStage::VertexShader);
-            const FgImgROHandle noise = shadow_color.AddTextureInput(frame_textures.noise, Ren::eStage::VertexShader);
-            const FgImgROHandle dummy_white =
-                shadow_color.AddTextureInput(frame_textures.dummy_white, Ren::eStage::FragmentShader);
-
-            frame_textures.shadow_depth = shadow_color.AddDepthOutput(frame_textures.shadow_depth);
-            frame_textures.shadow_color = shadow_color.AddColorOutput(frame_textures.shadow_color);
-
-            shadow_color.make_executor<ExShadowColor>(
-                SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials_buf,
-                &bindless_tex, instances_res, instance_indices_res, shared_data_res, noise, dummy_white,
-                frame_textures.shadow_depth, frame_textures.shadow_color);
+            shadow_color.make_executor<ExShadowColor>(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, &bindless_tex, data);
         }
 
         frame_textures.depth_desc.w = view_state_.ren_res[0];
@@ -1300,25 +1288,25 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         if (!list.render_settings.debug_culling) {
             auto &depth_fill = fg_builder_.AddNode("DEPTH FILL");
+            auto *data = fg_builder_.AllocTempData<ExDepthFill::Args>();
+            data->clear_depth = deferred_shading;
 
-            const FgBufROHandle vtx_buf1 = depth_fill.AddVertexBufferInput(common_buffers.vertex_buf1);
-            const FgBufROHandle vtx_buf2 = depth_fill.AddVertexBufferInput(common_buffers.vertex_buf2);
-            const FgBufROHandle ndx_buf = depth_fill.AddIndexBufferInput(common_buffers.indices_buf);
-
-            const FgBufROHandle shared_data_res = depth_fill.AddUniformBufferInput(
+            data->vtx_buf1 = depth_fill.AddVertexBufferInput(common_buffers.vertex_buf1);
+            data->vtx_buf2 = depth_fill.AddVertexBufferInput(common_buffers.vertex_buf2);
+            data->ndx_buf = depth_fill.AddIndexBufferInput(common_buffers.indices_buf);
+            data->shared_data = depth_fill.AddUniformBufferInput(
                 common_buffers.shared_data, Ren::Bitmask{Ren::eStage::VertexShader} | Ren::eStage::FragmentShader);
-            const FgBufROHandle instances =
+            data->instances =
                 depth_fill.AddStorageReadonlyInput(common_buffers.instances, Ren::eStage::VertexShader);
-            const FgBufROHandle instance_indices =
+            data->instance_indices =
                 depth_fill.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStage::VertexShader);
-
-            const FgBufROHandle materials =
+            data->materials =
                 depth_fill.AddStorageReadonlyInput(common_buffers.materials, Ren::eStage::VertexShader);
-            const FgImgROHandle noise = depth_fill.AddTextureInput(frame_textures.noise, Ren::eStage::VertexShader);
-            const FgImgROHandle dummy_white =
+            data->noise = depth_fill.AddTextureInput(frame_textures.noise, Ren::eStage::VertexShader);
+            data->dummy_white =
                 depth_fill.AddTextureInput(frame_textures.dummy_white, Ren::eStage::FragmentShader);
-
-            frame_textures.depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
+            frame_textures.depth = data->depth =
+                depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
 
             { // Image that holds 3D motion vectors
                 FgImgDesc desc;
@@ -1327,13 +1315,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 desc.format = Ren::eFormat::RGBA16F;
                 desc.sampling.wrap = Ren::eWrap::ClampToEdge;
 
-                frame_textures.velocity = depth_fill.AddColorOutput(MAIN_VELOCITY_TEX, desc);
+                frame_textures.velocity = data->velocity = depth_fill.AddColorOutput(MAIN_VELOCITY_TEX, desc);
             }
 
-            depth_fill.make_executor<ExDepthFill>(&p_list_, &view_state_, deferred_shading /* clear_depth */, vtx_buf1,
-                                                  vtx_buf2, ndx_buf, materials, &bindless_tex, instances,
-                                                  instance_indices, shared_data_res, noise, dummy_white,
-                                                  frame_textures.depth, frame_textures.velocity);
+            depth_fill.make_executor<ExDepthFill>(&p_list_, &view_state_, &bindless_tex, data);
         }
 
         //

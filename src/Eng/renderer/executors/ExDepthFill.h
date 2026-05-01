@@ -12,33 +12,33 @@ struct BindlessTextureData;
 struct view_state_t;
 
 class ExDepthFill final : public FgExecutor {
-    bool initialized = false;
+  public:
+    struct Args {
+        bool clear_depth = false;
+
+        FgBufROHandle vtx_buf1;
+        FgBufROHandle vtx_buf2;
+        FgBufROHandle ndx_buf;
+        FgBufROHandle instances;
+        FgBufROHandle instance_indices;
+        FgBufROHandle shared_data;
+        FgBufROHandle materials;
+        FgImgROHandle noise;
+        FgImgROHandle dummy_white;
+        FgImgRWHandle depth;
+        FgImgRWHandle velocity;
+    };
+
+    ExDepthFill(const DrawList **p_list, const view_state_t *view_state, const BindlessTextureData *bindless_tex,
+                const Args *args)
+        : p_list_(p_list), view_state_(view_state), bindless_tex_(bindless_tex), args_(args) {}
+
+    void Execute(const FgContext &fg) override;
+
+  private:
+    bool initialized_ = false;
 
     // lazily initialized data
-
-    // temp data (valid only between Setup and Execute calls)
-    const view_state_t *view_state_ = nullptr;
-    const BindlessTextureData *bindless_tex_ = nullptr;
-    bool clear_depth_ = false;
-
-    const DrawList **p_list_;
-
-    FgBufROHandle vtx_buf1_;
-    FgBufROHandle vtx_buf2_;
-    FgBufROHandle ndx_buf_;
-    FgBufROHandle instances_;
-    FgBufROHandle instance_indices_;
-    FgBufROHandle shared_data_;
-    FgBufROHandle materials_;
-    FgImgROHandle noise_;
-    FgImgROHandle dummy_white_;
-
-    FgImgRWHandle depth_;
-    FgImgRWHandle velocity_;
-
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, Ren::ImageRWHandle depth, Ren::ImageRWHandle velocity);
-    void DrawDepth(const FgContext &fg, Ren::ImageRWHandle depth, Ren::ImageRWHandle velocity);
-
     Ren::RenderPassHandle rp_depth_only_[2], rp_depth_velocity_[2];
 
     Ren::PipelineHandle pi_static_solid_[3], pi_static_transp_[3];
@@ -48,33 +48,13 @@ class ExDepthFill final : public FgExecutor {
     Ren::PipelineHandle pi_skin_static_solid_[2], pi_skin_static_transp_[2];
     Ren::PipelineHandle pi_skin_moving_solid_[2], pi_skin_moving_transp_[2];
 
-  public:
-    ExDepthFill(const DrawList **list, const view_state_t *view_state, bool clear_depth, const FgBufROHandle vtx_buf1,
-                const FgBufROHandle vtx_buf2, const FgBufROHandle ndx_buf, const FgBufROHandle materials,
-                const BindlessTextureData *bindless_tex, const FgBufROHandle instances,
-                const FgBufROHandle instance_indices, const FgBufROHandle shared_data, const FgImgROHandle noise,
-                const FgImgROHandle dummy_white, const FgImgRWHandle depth, const FgImgRWHandle velocity) {
-        view_state_ = view_state;
-        bindless_tex_ = bindless_tex;
-        clear_depth_ = clear_depth;
+    // temp data (valid only between Setup and Execute calls)
+    const DrawList **p_list_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
+    const BindlessTextureData *bindless_tex_ = nullptr;
+    const Args *args_ = nullptr;
 
-        p_list_ = list;
-
-        vtx_buf1_ = vtx_buf1;
-        vtx_buf2_ = vtx_buf2;
-        ndx_buf_ = ndx_buf;
-        instances_ = instances;
-        instance_indices_ = instance_indices;
-        shared_data_ = shared_data;
-        materials_ = materials;
-
-        noise_ = noise;
-        dummy_white_ = dummy_white;
-
-        depth_ = depth;
-        velocity_ = velocity;
-    }
-
-    void Execute(const FgContext &fg) override;
+    void LazyInit(const FgContext &fg, Ren::ImageRWHandle depth, Ren::ImageRWHandle velocity);
+    void DrawDepth(const FgContext &fg, Ren::ImageRWHandle depth, Ren::ImageRWHandle velocity);
 };
 } // namespace Eng

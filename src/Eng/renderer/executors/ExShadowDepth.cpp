@@ -7,14 +7,16 @@
 #include "../framegraph/FgBuilder.h"
 
 void Eng::ExShadowDepth::Execute(const FgContext &fg) {
-    const Ren::ImageRWHandle shadow_depth = fg.AccessRWImage(shadow_depth_);
+    const Ren::ImageRWHandle shadow_depth = fg.AccessRWImage(args_->shadow_depth);
 
-    LazyInit(fg.ren_ctx(), fg.sh(), shadow_depth);
+    LazyInit(fg, shadow_depth);
     DrawShadowMaps(fg, shadow_depth);
 }
 
-void Eng::ExShadowDepth::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::ImageRWHandle shadow_depth) {
-    if (!initialized) {
+void Eng::ExShadowDepth::LazyInit(const FgContext &fg, const Ren::ImageRWHandle shadow_depth) {
+    if (!initialized_) {
+        auto &ctx = fg.ren_ctx();
+        auto &sh = fg.sh();
 #if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
 #else
@@ -103,6 +105,6 @@ void Eng::ExShadowDepth::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, cons
             pi_alpha_[1] =
                 sh.FindOrCreatePipeline(rast_state, shadow_alpha_prog, vi_depth_pass_alpha, rp_depth_only, 0);
         }
-        initialized = true;
+        initialized_ = true;
     }
 }

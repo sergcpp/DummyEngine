@@ -19,7 +19,7 @@ class ExSkinning final : public FgExecutor {
     FgBufRWHandle vtx_buf1_;
     FgBufRWHandle vtx_buf2_;
 
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
+    void LazyInit(const FgContext &fg);
 
   public:
     ExSkinning(const DrawList *&p_list, const FgBufROHandle skin_vtx, const FgBufROHandle skin_transforms,

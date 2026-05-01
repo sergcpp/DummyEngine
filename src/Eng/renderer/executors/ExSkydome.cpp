@@ -20,7 +20,7 @@ const Ren::Vec2i g_sample_positions[16] = {Ren::Vec2i{1, 0}, Ren::Vec2i{3, 2}, R
 } // namespace ExSkydomeCubeInternal
 
 void Eng::ExSkydomeCube::Execute(const FgContext &fg) {
-    LazyInit(fg.ren_ctx(), fg.sh());
+    LazyInit(fg);
 
     const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(args_->shared_data);
     const Ren::ImageROHandle transmittance_lut = fg.AccessROImage(args_->transmittance_lut);
@@ -167,7 +167,8 @@ void Eng::ExSkydomeCube::Execute(const FgContext &fg) {
                              transitions);
 }
 
-void Eng::ExSkydomeCube::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+void Eng::ExSkydomeCube::LazyInit(const FgContext &fg) {
+    auto &sh = fg.sh();
     if (!initialized_) {
         prog_skydome_phys_ =
             sh.FindOrCreateProgram("internal/skydome_phys.vert.glsl", "internal/skydome_phys.frag.glsl");
@@ -178,7 +179,7 @@ void Eng::ExSkydomeCube::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
 }
 
 void Eng::ExSkydomeScreen::Execute(const FgContext &fg) {
-    LazyInit(fg.ren_ctx(), fg.sh());
+    LazyInit(fg);
 
     const Ren::BufferROHandle unif_sh_data_buf = fg.AccessROBuffer(args_->shared_data);
 
@@ -277,8 +278,9 @@ void Eng::ExSkydomeScreen::Execute(const FgContext &fg) {
     }
 }
 
-void Eng::ExSkydomeScreen::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
-    if (!initialized) {
+void Eng::ExSkydomeScreen::LazyInit(const FgContext &fg) {
+    auto &sh = fg.sh();
+    if (!initialized_) {
         prog_skydome_simple_ =
             sh.FindOrCreateProgram("internal/skydome_simple.vert.glsl", "internal/skydome_simple.frag.glsl");
         prog_skydome_phys_[0] =
@@ -286,7 +288,7 @@ void Eng::ExSkydomeScreen::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         prog_skydome_phys_[1] = sh.FindOrCreateProgram("internal/skydome_phys.vert.glsl",
                                                        "internal/skydome_phys@SCREEN;SUBSAMPLE.frag.glsl");
 
-        initialized = true;
+        initialized_ = true;
     }
 }
 

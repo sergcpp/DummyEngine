@@ -25,36 +25,36 @@ void Eng::ExOITBlendLayer::DrawTransparent(const FgContext &fg, const Ren::Image
                                            const Ren::ImageRWHandle color_tex) {
     using namespace ExSharedInternal;
 
-    const Ren::BufferROHandle attrib_bufs[] = {fg.AccessROBuffer(vtx_buf1_), fg.AccessROBuffer(vtx_buf2_)};
-    const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(ndx_buf_);
+    const Ren::BufferROHandle attrib_bufs[] = {fg.AccessROBuffer(args_->vtx_buf1), fg.AccessROBuffer(args_->vtx_buf2)};
+    const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
 
-    const Ren::ImageROHandle noise = fg.AccessROImage(noise_);
-    const Ren::ImageROHandle dummy_white = fg.AccessROImage(dummy_white_);
-    const Ren::ImageROHandle shadow_depth = fg.AccessROImage(shadow_depth_);
-    const Ren::ImageROHandle ltc_luts_tex = fg.AccessROImage(ltc_luts_);
-    const Ren::ImageROHandle env = fg.AccessROImage(env_);
-    const Ren::BufferROHandle instances = fg.AccessROBuffer(instances_);
-    const Ren::BufferROHandle instance_indices = fg.AccessROBuffer(instance_indices_);
-    const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(shared_data_);
-    const Ren::BufferROHandle materials = fg.AccessROBuffer(materials_);
-    const Ren::BufferROHandle cells = fg.AccessROBuffer(cells_);
-    const Ren::BufferROHandle items = fg.AccessROBuffer(items_);
-    const Ren::BufferROHandle lights = fg.AccessROBuffer(lights_);
-    const Ren::BufferROHandle decals = fg.AccessROBuffer(decals_);
-    const Ren::BufferROHandle oit_depth = fg.AccessROBuffer(oit_depth_);
-    const Ren::ImageROHandle back_color = fg.AccessROImage(back_color_);
-    const Ren::ImageROHandle back_depth = fg.AccessROImage(back_depth_);
+    const Ren::ImageROHandle noise = fg.AccessROImage(args_->noise);
+    const Ren::ImageROHandle dummy_white = fg.AccessROImage(args_->dummy_white);
+    const Ren::ImageROHandle shadow_depth = fg.AccessROImage(args_->shadow_depth);
+    const Ren::ImageROHandle ltc_luts_tex = fg.AccessROImage(args_->ltc_luts);
+    const Ren::ImageROHandle env = fg.AccessROImage(args_->env);
+    const Ren::BufferROHandle instances = fg.AccessROBuffer(args_->instances);
+    const Ren::BufferROHandle instance_indices = fg.AccessROBuffer(args_->instance_indices);
+    const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(args_->shared_data);
+    const Ren::BufferROHandle materials = fg.AccessROBuffer(args_->materials);
+    const Ren::BufferROHandle cells = fg.AccessROBuffer(args_->cells);
+    const Ren::BufferROHandle items = fg.AccessROBuffer(args_->items);
+    const Ren::BufferROHandle lights = fg.AccessROBuffer(args_->lights);
+    const Ren::BufferROHandle decals = fg.AccessROBuffer(args_->decals);
+    const Ren::BufferROHandle oit_depth = fg.AccessROBuffer(args_->oit_depth);
+    const Ren::ImageROHandle back_color = fg.AccessROImage(args_->back_color);
+    const Ren::ImageROHandle back_depth = fg.AccessROImage(args_->back_depth);
 
     Ren::ImageROHandle irr, dist, off;
-    if (irradiance_) {
-        irr = fg.AccessROImage(irradiance_);
-        dist = fg.AccessROImage(distance_);
-        off = fg.AccessROImage(offset_);
+    if (args_->irradiance) {
+        irr = fg.AccessROImage(args_->irradiance);
+        dist = fg.AccessROImage(args_->distance);
+        off = fg.AccessROImage(args_->offset);
     }
 
     Ren::ImageROHandle specular = {};
-    if (oit_specular_) {
-        specular = fg.AccessROImage(oit_specular_);
+    if (args_->oit_specular) {
+        specular = fg.AccessROImage(args_->oit_specular);
     }
 
     if ((*p_list_)->alpha_blend_start_index == -1) {
@@ -79,7 +79,7 @@ void Eng::ExOITBlendLayer::DrawTransparent(const FgContext &fg, const Ren::Image
 
         BlitOITDepth::Params uniform_params = {};
         uniform_params.img_size = view_state_->ren_res;
-        uniform_params.layer_index = depth_layer_index_;
+        uniform_params.layer_index = args_->depth_layer_index;
 
         const Ren::RenderTarget depth_target = {depth_tex, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                                 Ren::eStoreOp::Store};

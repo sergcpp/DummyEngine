@@ -63,16 +63,16 @@ void Eng::ExShadowDepth::DrawShadowMaps(const FgContext &fg, const Ren::ImageRWH
 
     const Ren::ApiContext &api = fg.ren_ctx().api();
 
-    const Ren::BufferROHandle attrib_bufs[] = {fg.AccessROBuffer(vtx_buf1_), fg.AccessROBuffer(vtx_buf2_)};
-    const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(ndx_buf_);
+    const Ren::BufferROHandle attrib_bufs[] = {fg.AccessROBuffer(args_->vtx_buf1), fg.AccessROBuffer(args_->vtx_buf2)};
+    const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
 
-    const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(shared_data_);
-    const Ren::BufferROHandle instances = fg.AccessROBuffer(instances_);
-    const Ren::BufferROHandle instance_indices = fg.AccessROBuffer(instance_indices_);
-    const Ren::BufferROHandle materials = fg.AccessROBuffer(materials_);
+    const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(args_->shared_data);
+    const Ren::BufferROHandle instances = fg.AccessROBuffer(args_->instances);
+    const Ren::BufferROHandle instance_indices = fg.AccessROBuffer(args_->instance_indices);
+    const Ren::BufferROHandle materials = fg.AccessROBuffer(args_->materials);
 
-    const Ren::ImageROHandle noise = fg.AccessROImage(noise_);
-    const Ren::ImageROHandle dummy_white = fg.AccessROImage(dummy_white_);
+    const Ren::ImageROHandle noise = fg.AccessROImage(args_->noise);
+    const Ren::ImageROHandle dummy_white = fg.AccessROImage(args_->dummy_white);
 
     const Ren::StoragesRef &storages = fg.storages();
 

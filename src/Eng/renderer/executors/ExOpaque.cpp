@@ -7,16 +7,16 @@
 #include "../framegraph/FgBuilder.h"
 
 void Eng::ExOpaque::Execute(const FgContext &fg) {
-    const Ren::ImageRWHandle color = fg.AccessRWImage(color_);
-    const Ren::ImageRWHandle normal = fg.AccessRWImage(normal_);
-    const Ren::ImageRWHandle spec = fg.AccessRWImage(spec_);
-    const Ren::ImageRWHandle depth = fg.AccessRWImage(depth_);
+    const Ren::ImageRWHandle color = fg.AccessRWImage(args_->color);
+    const Ren::ImageRWHandle normal = fg.AccessRWImage(args_->normal);
+    const Ren::ImageRWHandle spec = fg.AccessRWImage(args_->spec);
+    const Ren::ImageRWHandle depth = fg.AccessRWImage(args_->depth);
 
-    LazyInit(fg.ren_ctx(), fg.sh(), color, normal, spec, depth);
+    LazyInit(fg, color, normal, spec, depth);
     DrawOpaque(fg, color, normal, spec, depth);
 }
 
-void Eng::ExOpaque::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren::ImageRWHandle color,
+void Eng::ExOpaque::LazyInit(const FgContext &fg, const Ren::ImageRWHandle color,
                              const Ren::ImageRWHandle normal, const Ren::ImageRWHandle spec,
                              const Ren::ImageRWHandle depth) {
     const Ren::RenderTarget color_targets[] = {{color, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
@@ -25,7 +25,8 @@ void Eng::ExOpaque::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren
     const Ren::RenderTarget depth_target = {depth, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::Store};
 
-    if (!initialized) {
+    if (!initialized_) {
+        auto &sh = fg.sh();
         const int buf1_stride = 16, buf2_stride = 16;
 
         { // VertexInput for main drawing (uses all attributes)
@@ -44,6 +45,6 @@ void Eng::ExOpaque::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, const Ren
         InitDescrSetLayout();
 #endif
 
-        initialized = true;
+        initialized_ = true;
     }
 }

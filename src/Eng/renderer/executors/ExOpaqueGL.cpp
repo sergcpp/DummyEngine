@@ -175,30 +175,30 @@ void Eng::ExOpaque::DrawOpaque(const FgContext &fg, const Ren::ImageRWHandle col
     //
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
-    const Ren::BufferROHandle attrib_bufs[] = {fg.AccessROBuffer(vtx_buf1_), fg.AccessROBuffer(vtx_buf2_)};
-    const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(ndx_buf_);
+    const Ren::BufferROHandle attrib_bufs[] = {fg.AccessROBuffer(args_->vtx_buf1), fg.AccessROBuffer(args_->vtx_buf2)};
+    const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
 
-    const Ren::BufferROHandle instances = fg.AccessROBuffer(instances_);
-    const Ren::BufferROHandle instance_indices = fg.AccessROBuffer(instance_indices_);
-    const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(shared_data_);
-    const Ren::BufferROHandle materials = fg.AccessROBuffer(materials_);
-    const Ren::BufferROHandle cells = fg.AccessROBuffer(cells_);
-    const Ren::BufferROHandle items = fg.AccessROBuffer(items_);
-    const Ren::BufferROHandle lights = fg.AccessROBuffer(lights_);
-    const Ren::BufferROHandle decals = fg.AccessROBuffer(decals_);
+    const Ren::BufferROHandle instances = fg.AccessROBuffer(args_->instances);
+    const Ren::BufferROHandle instance_indices = fg.AccessROBuffer(args_->instance_indices);
+    const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(args_->shared_data);
+    const Ren::BufferROHandle materials = fg.AccessROBuffer(args_->materials);
+    const Ren::BufferROHandle cells = fg.AccessROBuffer(args_->cells);
+    const Ren::BufferROHandle items = fg.AccessROBuffer(args_->items);
+    const Ren::BufferROHandle lights = fg.AccessROBuffer(args_->lights);
+    const Ren::BufferROHandle decals = fg.AccessROBuffer(args_->decals);
 
-    const Ren::ImageROHandle shadow_depth = fg.AccessROImage(shadow_depth_);
-    const Ren::ImageROHandle ssao = fg.AccessROImage(ssao_);
-    const Ren::ImageROHandle brdf_lut = fg.AccessROImage(brdf_lut_);
-    const Ren::ImageROHandle noise = fg.AccessROImage(noise_);
-    const Ren::ImageROHandle cone_rt_lut = fg.AccessROImage(cone_rt_lut_);
+    const Ren::ImageROHandle shadow_depth = fg.AccessROImage(args_->shadow_depth);
+    const Ren::ImageROHandle ssao = fg.AccessROImage(args_->ssao);
+    const Ren::ImageROHandle brdf_lut = fg.AccessROImage(args_->brdf_lut);
+    const Ren::ImageROHandle noise = fg.AccessROImage(args_->noise);
+    const Ren::ImageROHandle cone_rt_lut = fg.AccessROImage(args_->cone_rt_lut);
 
-    const Ren::ImageROHandle dummy_black = fg.AccessROImage(dummy_black_);
+    const Ren::ImageROHandle dummy_black = fg.AccessROImage(args_->dummy_black);
 
     Ren::ImageROHandle lm_tex[4];
     for (int i = 0; i < 4; ++i) {
-        // if (lm_tex_[i]) {
-        // lm_tex[i] = &fg.AccessROImage(lm_tex_[i]);
+        // if (args_->lm_tex[i]) {
+        // lm_tex[i] = &fg.AccessROImage(args_->lm_tex[i]);
         //} else {
         lm_tex[i] = dummy_black;
         //}

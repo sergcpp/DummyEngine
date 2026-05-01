@@ -13,7 +13,7 @@ struct view_state_t;
 class ShaderLoader;
 
 class ExOITScheduleRays final : public FgExecutor {
-    bool initialized = false;
+    bool initialized_ = false;
 
     // lazily initialized data
     Ren::PipelineHandle pi_simple_[3];
@@ -42,7 +42,7 @@ class ExOITScheduleRays final : public FgExecutor {
 
     FgImgRWHandle depth_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, Ren::ImageRWHandle depth);
+    void LazyInit(const FgContext &fg, Ren::ImageRWHandle depth);
     void DrawTransparent(const FgContext &fg, Ren::ImageRWHandle depth);
 
   public:

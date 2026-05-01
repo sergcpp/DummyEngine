@@ -111,20 +111,20 @@ void Eng::ExGBufferFill::DrawOpaque(const FgContext &fg, const Ren::ImageRWHandl
     //
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
-    const Ren::BufferROHandle attrib_bufs[] = {fg.AccessROBuffer(vtx_buf1_), fg.AccessROBuffer(vtx_buf2_)};
-    const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(ndx_buf_);
+    const Ren::BufferROHandle attrib_bufs[] = {fg.AccessROBuffer(args_->vtx_buf1), fg.AccessROBuffer(args_->vtx_buf2)};
+    const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
 
-    const Ren::BufferROHandle instances = fg.AccessROBuffer(instances_);
-    const Ren::BufferROHandle instance_indices = fg.AccessROBuffer(instance_indices_);
-    const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(shared_data_);
-    const Ren::BufferROHandle materials = fg.AccessROBuffer(materials_);
-    const Ren::BufferROHandle cells = fg.AccessROBuffer(cells_);
-    const Ren::BufferROHandle items = fg.AccessROBuffer(items_);
-    const Ren::BufferROHandle decals = fg.AccessROBuffer(decals_);
+    const Ren::BufferROHandle instances = fg.AccessROBuffer(args_->instances);
+    const Ren::BufferROHandle instance_indices = fg.AccessROBuffer(args_->instance_indices);
+    const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(args_->shared_data);
+    const Ren::BufferROHandle materials = fg.AccessROBuffer(args_->materials);
+    const Ren::BufferROHandle cells = fg.AccessROBuffer(args_->cells);
+    const Ren::BufferROHandle items = fg.AccessROBuffer(args_->items);
+    const Ren::BufferROHandle decals = fg.AccessROBuffer(args_->decals);
 
-    const Ren::ImageROHandle noise = fg.AccessROImage(noise_);
-    const Ren::ImageROHandle dummy_white = fg.AccessROImage(dummy_white_);
-    const Ren::ImageROHandle dummy_black = fg.AccessROImage(dummy_black_);
+    const Ren::ImageROHandle noise = fg.AccessROImage(args_->noise);
+    const Ren::ImageROHandle dummy_white = fg.AccessROImage(args_->dummy_white);
+    const Ren::ImageROHandle dummy_black = fg.AccessROImage(args_->dummy_black);
 
     const Ren::BufferMain &materials_buf_main = storages.buffers[materials].first;
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf_main.buf));
