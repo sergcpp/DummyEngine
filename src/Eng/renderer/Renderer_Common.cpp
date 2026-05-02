@@ -1124,10 +1124,14 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPass(const FrameTextures &frame_textures
             uniform_params.unjitter = Ren::Vec2f{view_state_.jitter[0] - 0.5f, view_state_.jitter[1] - 0.5f};
             uniform_params.significant_change =
                 Dot(p_list_->env.sun_dir, view_state_.prev_sun_dir) < 0.99999f ? 1.0f : 0.0f;
-            if (static_accumulation && int(accumulated_frames_) < RendererInternal::TaaSampleCountStatic) {
-                uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
+            if (static_accumulation) {
+                if (int(accumulated_frames_) < RendererInternal::TaaSampleCountStatic) {
+                    uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
+                } else {
+                    uniform_params.mix_factor = 0.0f;
+                }
             } else {
-                uniform_params.mix_factor = 0.0f;
+                uniform_params.mix_factor = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
             }
             uniform_params.downscale_factor = 1.0f / p_list_->render_settings.resolution_scale;
             ++accumulated_frames_;

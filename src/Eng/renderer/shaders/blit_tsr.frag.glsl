@@ -69,12 +69,13 @@ vec4 FetchColor(sampler2D s, ivec2 icoord) {
     return ret;
 }
 
-vec4 SampleColor(sampler2D s, vec2 uvs) {
+vec4 SampleColorHistory(sampler2D s, vec2 uvs) {
 #if defined(CATMULL_ROM)
     vec4 ret = SampleCatmulRom4x4_5Tap(s, uvs, vec4(g_params.transform.zw, g_params.texel_size.zw));
 #else
     vec4 ret = textureLod(s, uvs, 0.0);
 #endif
+    ret.xyz *= g_params.mix_factor; // account for exposure difference
     ret.xyz = MaybeTonemap(ret.xyz);
     ret.xyz = MaybeRGB_to_YCoCg(ret.xyz);
     return ret;
@@ -293,7 +294,7 @@ void main() {
     const vec2 hist_uvs = norm_uvs - (closest_vel * g_params.texel_size.xy);
     vec4 col_hist = vec4(col_curr.xyz, 0.0);
     if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
-        col_hist = SampleColor(g_color_hist, hist_uvs);
+        col_hist = SampleColorHistory(g_color_hist, hist_uvs);
     }
 
     const float lum_curr = Luma(col_curr.xyz);

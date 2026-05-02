@@ -13,7 +13,7 @@ struct Params {
     float tonemap;
     float gamma;
     float fade;
-    float mix_factor; // for static accumulation
+    float mix_factor;
     float downscale_factor;
 };
 
