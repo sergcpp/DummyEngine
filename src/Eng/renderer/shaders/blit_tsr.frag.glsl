@@ -328,6 +328,7 @@ void main() {
     lock_status *= float(disocclusion.x < 0.1);
     // Motion divergence
     lock_status *= (1.0 - disocclusion.y);
+    lock_status *= float(g_params.significant_change < 0.5);
 #endif // LOCKING
 
     const vec3 clamped_hist = ClipAABB(col_min, col_max, col_hist.xyz);

@@ -164,6 +164,7 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
 
         struct cam_frame_t {
             Ren::Vec3d pos, dir;
+            std::optional<float> exposure;
         };
         std::vector<cam_frame_t> cam_frames;
 
@@ -238,6 +239,10 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
                     frame.pos[1] = js_frame_pos.at(1).as_num().val;
                     frame.pos[2] = js_frame_pos.at(2).as_num().val;
                     frame.dir = Ren::Vec3d(view_vec);
+
+                    if (const size_t exp_index = js_frame.IndexOf("exposure"); exp_index < js_frame.Size()) {
+                        frame.exposure = float(js_frame[exp_index].second.as_num().val);
+                    }
                 }
             }
         }
@@ -617,8 +622,10 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
             // Dynamic accumulation
             for (int i = 0; i < int(cam_frames.size()); ++i) {
                 const auto &frame = cam_frames[i];
+
                 scene_manager.SetupView(frame.pos, frame.pos + frame.dir, Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov,
-                                        Ren::Vec2f{0.0f}, gamma, min_exposure, max_exposure);
+                                        Ren::Vec2f{0.0f}, gamma, frame.exposure.value_or(min_exposure),
+                                        frame.exposure.value_or(max_exposure));
 
                 draw_list.Clear();
                 renderer->PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(),

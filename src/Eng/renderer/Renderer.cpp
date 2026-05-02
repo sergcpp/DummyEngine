@@ -758,7 +758,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     view_state_.env_generation = list.env.generation;
     view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
-    view_state_.prev_pre_exposure = std::min(std::max(view_state_.prev_pre_exposure, min_exposure_), max_exposure_);
+    //view_state_.prev_pre_exposure = std::min(std::max(view_state_.prev_pre_exposure, min_exposure_), max_exposure_);
 
     bool has_global_volume = Length2(list.env.fog.scatter_color) != 0.0f;
     has_global_volume |= list.env.fog.absorption != 1.0f;
