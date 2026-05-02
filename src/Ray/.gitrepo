@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Ray
-	branch = master
-	commit = 788eb32127ce26e5e25bf17b6cdc2ca2795094b7
-	parent = 6a9550b1fcf7e3cf42cbbc8349bb2020b990d502
+	branch = refactor_02_05
+	commit = 3d9c072b1f72c6b3bec97068ca32b87ebad88d63
+	parent = 310658de8ff20dc74cca87f53b1e515d9a22d64d
 	method = merge
 	cmdver = 0.4.6
