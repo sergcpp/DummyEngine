@@ -8,10 +8,10 @@
 #include "parser/AST.h"
 
 namespace glslx {
-// TODO: this is stupid
+// defaultfloat (i.e. %g) uses scientific notation when exponent >= precision or exponent < -4
 bool will_use_scientific_notation(const float value, const int precision_threshold) {
-    // Check if the magnitude of the value is beyond the precision threshold
-    return std::abs(value) >= std::pow(10.0, precision_threshold);
+    const float abs_val = std::abs(value);
+    return abs_val >= std::pow(10.0f, float(precision_threshold)) || (abs_val != 0.0f && abs_val < 1e-4f);
 }
 } // namespace glslx
 

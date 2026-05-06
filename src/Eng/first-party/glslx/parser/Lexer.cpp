@@ -208,7 +208,7 @@ void glslx::Lexer::ReadSingle(token_t &out) {
                 }
             } else if (is_long) {
                 out.type = eTokType::Const_ulong;
-                const unsigned long long value = strtoul(numeric.data(), nullptr, base);
+                const unsigned long long value = strtoull(numeric.data(), nullptr, base);
                 // TODO: Check if it actually fits
                 out.as_ulong = uint64_t(value);
             } else {

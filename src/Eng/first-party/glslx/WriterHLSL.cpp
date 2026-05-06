@@ -17,8 +17,7 @@ bool is_shadow_sampler(const ast_type *base_type) {
     return type->type == eKeyword::K_sampler1DShadow || type->type == eKeyword::K_sampler1DArrayShadow ||
            type->type == eKeyword::K_sampler2DShadow || type->type == eKeyword::K_sampler2DArrayShadow ||
            type->type == eKeyword::K_sampler2DRectShadow || type->type == eKeyword::K_samplerCubeShadow ||
-           type->type == eKeyword::K_samplerCubeArrayShadow || type->type == eKeyword::K_sampler1DArrayShadow ||
-           type->type == eKeyword::K_sampler2DArrayShadow;
+           type->type == eKeyword::K_samplerCubeArrayShadow;
 }
 
 bool is_combined_texturesampler(const ast_type *base_type) {
@@ -1917,12 +1916,11 @@ void glslx::WriterHLSL::Process_AtomicOperations(const ast_expression *expressio
 
 int glslx::WriterHLSL::Calc_FieldOffset(const ast_type *type, const char *field_name) {
     if (type->builtin) {
-        // TODO: fix this
         if (field_name[0] == 'x') {
             return 0;
-        } else if (field_name[1] == 'y') {
+        } else if (field_name[0] == 'y') {
             return 4;
-        } else if (field_name[2] == 'z') {
+        } else if (field_name[0] == 'z') {
             return 8;
         } else {
             return 12;

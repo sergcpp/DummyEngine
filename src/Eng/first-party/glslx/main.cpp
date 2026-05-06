@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(shader, "tesseval") == 0) {
             tu_type = glslx::eTrUnitType::TessEvaluation;
         } else if (strcmp(shader, "fragment") == 0) {
-            tu_type = glslx::eTrUnitType::Compute;
+            tu_type = glslx::eTrUnitType::Fragment;
         } else if (strcmp(shader, "compute") == 0) {
             tu_type = glslx::eTrUnitType::Compute;
         } else if (strcmp(shader, "raygen") == 0) {
