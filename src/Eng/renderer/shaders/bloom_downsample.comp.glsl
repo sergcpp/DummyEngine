@@ -79,7 +79,7 @@ void main() {
     result += 0.125 * (b0 + b1 + b2 + b3) / 4.0;  // blue
     result += 0.125 * (p0 + p1 + p2 + p3) / 4.0;  // purple
     result = TonemapInvert(result);
-    result = sanitize(result);
+    result = sanitize_fp16(result);
 
     imageStore(g_out_img, ivec2(gl_GlobalInvocationID.xy), vec4(result, 0.0));
 }

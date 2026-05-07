@@ -139,7 +139,7 @@ void main() {
 
     // Add center sample contribution
     result = result + (1.0 - total_weight) * center.color;
-    result = clamp(result, vec4(0.0), vec4(HALF_MAX));
+    result = clamp(result, vec4(0.0), vec4(HALF_MAX - 1.0));
 
 #if DEBUG_CLASSIFICATION
     if (abs(length2(tile_data.xy) - tile_data.z) < 24.0) {

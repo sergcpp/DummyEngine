@@ -104,7 +104,7 @@ void main() {
     result.b = saturate((b.b * wB + d.b * wB + f.b * wB + h.b * wB + e.b) / (1.0 + 4.0 * wB));
 
     result = TonemapInvert(result);
-    result = sanitize(result);
+    result = sanitize_fp16(result);
 
     imageStore(g_out_img, ivec2(gl_GlobalInvocationID.xy), vec4(result, 0.0));
 }

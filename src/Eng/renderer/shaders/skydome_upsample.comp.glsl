@@ -71,6 +71,6 @@ void main() {
             out_color = new_sample.xyz;
         }
     }
-
+    out_color = sanitize_fp16(out_color);
     imageStore(g_out_img, icoord, vec4(out_color, 1.0));
 }

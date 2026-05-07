@@ -303,21 +303,15 @@ vec3 compress_hdr(const vec3 val, const float pre_exposure) {
     return clamp(val * pre_exposure, vec3(0.0), vec3(HALF_MAX - 1.0));
 }
 
-float sanitize(const float val) {
-    return (isnan(val) || isinf(val)) ? 0.0 : val;
-}
+float sanitize(const float val) { return (isnan(val) || isinf(val)) ? 0.0 : val; }
+vec2 sanitize(const vec2 val) { return vec2(sanitize(val.x), sanitize(val.y)); }
+vec3 sanitize(const vec3 val) { return vec3(sanitize(val.x), sanitize(val.y), sanitize(val.z)); }
+vec4 sanitize(const vec4 val) { return vec4(sanitize(val.x), sanitize(val.y), sanitize(val.z), sanitize(val.w)); }
 
-vec2 sanitize(const vec2 val) {
-    return vec2(sanitize(val.x), sanitize(val.y));
-}
-
-vec3 sanitize(const vec3 val) {
-    return vec3(sanitize(val.x), sanitize(val.y), sanitize(val.z));
-}
-
-vec4 sanitize(const vec4 val) {
-    return vec4(sanitize(val.x), sanitize(val.y), sanitize(val.z), sanitize(val.w));
-}
+float sanitize_fp16(const float val) { return isnan(val) ? 0.0 : clamp(val, 0.0, HALF_MAX - 1.0); }
+vec2 sanitize_fp16(const vec2 val) { return vec2(sanitize_fp16(val.x), sanitize_fp16(val.y)); }
+vec3 sanitize_fp16(const vec3 val) { return vec3(sanitize_fp16(val.x), sanitize_fp16(val.y), sanitize_fp16(val.z)); }
+vec4 sanitize_fp16(const vec4 val) { return vec4(sanitize_fp16(val.x), sanitize_fp16(val.y), sanitize_fp16(val.z), sanitize_fp16(val.w)); }
 
 vec3 TransformFromClipSpace(const mat4 xxx_from_clip, vec4 pos_cs) {
 #if defined(VULKAN)
