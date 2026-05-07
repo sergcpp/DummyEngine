@@ -97,7 +97,8 @@ struct StrParam {
     }
 
     StrParam(const char *s) {
-        strcpy(str, s);
+        strncpy(str, s, sizeof(str) - 1);
+        str[sizeof(str) - 1] = '\0';
     }
 };
 

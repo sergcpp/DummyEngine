@@ -19,10 +19,6 @@
 namespace {
 const char WS_MAGIC[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-template <class T, class... Args> std::unique_ptr<T> _make_unique(Args &&...args) {
-    return std::unique_ptr<T>(new T(args...));
-}
-
 union WsHeader {
     struct {
         uint8_t opcode : 4;
@@ -63,11 +59,11 @@ Net::WsConnection::WsConnection(TCPSocket &&conn, const HTTPRequest &upgrade_req
     }
 
     HTTPResponse resp(101, "Switching Protocols");
-    resp.AddField(_make_unique<SimpleField>("Upgrade", "websocket"));
-    resp.AddField(_make_unique<SimpleField>("Connection", "Upgrade"));
-    resp.AddField(_make_unique<SimpleField>("Sec-WebSocket-Accept", key_hash));
-    resp.AddField(_make_unique<SimpleField>("Sec-WebSocket-Version", std::to_string(13)));
-    resp.AddField(_make_unique<SimpleField>("Sec-WebSocket-Protocol", "binary"));
+    resp.AddField(std::make_unique<SimpleField>("Upgrade", "websocket"));
+    resp.AddField(std::make_unique<SimpleField>("Connection", "Upgrade"));
+    resp.AddField(std::make_unique<SimpleField>("Sec-WebSocket-Accept", key_hash));
+    resp.AddField(std::make_unique<SimpleField>("Sec-WebSocket-Version", std::to_string(13)));
+    resp.AddField(std::make_unique<SimpleField>("Sec-WebSocket-Protocol", "binary"));
 
     std::string answer = resp.str();
     conn_.Send(answer.c_str(), int(answer.length()));
@@ -79,54 +75,62 @@ Net::WsConnection::WsConnection(WsConnection &&rhs) noexcept
 
 int Net::WsConnection::Receive(void *data, int size) {
     int received = conn_.Receive(data, size);
-    if (received >= sizeof(WsHeader)) {
-        auto *header = (WsHeader *)data;
-        if (header->fin) {
-            if (header->opcode == uint8_t(eOpCode::WS_CONTINUATION)) {
-                fprintf(stderr, "Continuation received\n");
-                return 0;
-            } else if (header->opcode == uint8_t(eOpCode::WS_TEXT_MESSAGE)) {
-                fprintf(stderr, "Text message received\n");
-                return 0;
-            } else if (header->opcode == uint8_t(eOpCode::WS_BINARY_MESSAGE)) {
-                void *payload = (void *)(uintptr_t(data) + sizeof(WsHeader));
-                int payload_len = header->payload_len;
-                if (payload_len == 126) {
-                    uint16_t len = *(uint16_t *)(uintptr_t(data) + sizeof(WsHeader));
-                    payload_len = ntohs(len);
-                    payload = (void *)(uintptr_t(data) + 4);
-                } else if (payload_len == 127) {
-                    // should not happen
-                    fprintf(stderr, "Implement 64-bit payload len\n");
-                }
-                if (header->mask) {
-                    uint32_t mask = *(uint32_t *)payload;
-                    payload = (void *)(uintptr_t(payload) + 4);
-                    ApplyMask(mask, (uint8_t *)payload, payload_len);
-                }
-                memmove(data, payload, (size_t)payload_len);
-                // LOGI("Binary message received");
-                return payload_len;
-            } else if (header->opcode == uint8_t(eOpCode::WS_CONNECTION_CLOSE)) {
-                printf("Connection close received\n");
-                if (on_connection_close) {
-                    on_connection_close(this);
-                }
-                return 0;
-            } else if (header->opcode == uint8_t(eOpCode::WS_PING)) {
-                header->opcode = uint8_t(eOpCode::WS_PONG);
-                Send(data, received);
-                return 0;
-            } else {
-                fprintf(stderr, "Unhandled opcode\n");
-                return 0;
-            }
-        } else {
-            // TODO: !!!
-            fprintf(stderr, "Fragmented packet received\n");
+    if (received < int(sizeof(WsHeader))) {
+        return 0;
+    }
+
+    auto *header = (WsHeader *)data;
+
+    void *payload = (void *)(uintptr_t(data) + sizeof(WsHeader));
+    int payload_len = header->payload_len;
+    if (payload_len == 126) {
+        uint16_t len = *(uint16_t *)(uintptr_t(data) + sizeof(WsHeader));
+        payload_len = ntohs(len);
+        payload = (void *)(uintptr_t(data) + 4);
+    } else if (payload_len == 127) {
+        fprintf(stderr, "64-bit payload length not supported\n");
+        fragment_buf_.clear();
+        return 0;
+    }
+    if (header->mask) {
+        uint32_t mask = *(uint32_t *)payload;
+        payload = (void *)(uintptr_t(payload) + 4);
+        ApplyMask(mask, (uint8_t *)payload, payload_len);
+    }
+
+    if (!header->fin) {
+        fragment_buf_.insert(fragment_buf_.end(), (uint8_t *)payload, (uint8_t *)payload + payload_len);
+        return 0;
+    }
+
+    if (header->opcode == uint8_t(eOpCode::WS_CONTINUATION)) {
+        fragment_buf_.insert(fragment_buf_.end(), (uint8_t *)payload, (uint8_t *)payload + payload_len);
+        const int total = int(fragment_buf_.size());
+        if (total > size) {
+            fragment_buf_.clear();
             return 0;
         }
+        memcpy(data, fragment_buf_.data(), (size_t)total);
+        fragment_buf_.clear();
+        return total;
+    } else if (header->opcode == uint8_t(eOpCode::WS_TEXT_MESSAGE)) {
+        fprintf(stderr, "Text message received\n");
+        return 0;
+    } else if (header->opcode == uint8_t(eOpCode::WS_BINARY_MESSAGE)) {
+        memmove(data, payload, (size_t)payload_len);
+        return payload_len;
+    } else if (header->opcode == uint8_t(eOpCode::WS_CONNECTION_CLOSE)) {
+        printf("Connection close received\n");
+        if (on_connection_close) {
+            on_connection_close(this);
+        }
+        return 0;
+    } else if (header->opcode == uint8_t(eOpCode::WS_PING)) {
+        header->opcode = uint8_t(eOpCode::WS_PONG);
+        Send(data, received);
+        return 0;
     } else {
+        fprintf(stderr, "Unhandled opcode\n");
         return 0;
     }
 }

@@ -71,10 +71,13 @@ class InterprocessLock {
     }
 
     InterprocessLock(const InterprocessLock &rhs) = delete;
-    InterprocessLock(InterprocessLock &&rhs) noexcept {
+    InterprocessLock(InterprocessLock &&rhs) noexcept : name_(std::move(rhs.name_)) {
 #ifdef _WIN32
         handle_ = rhs.handle_;
         rhs.handle_ = {};
+#else
+        handle_ = rhs.handle_;
+        rhs.handle_ = 0;
 #endif
     }
 
@@ -86,7 +89,15 @@ class InterprocessLock {
         }
         handle_ = rhs.handle_;
         rhs.handle_ = {};
+#else
+        if (handle_) {
+            lockf(handle_, F_UNLCK, 0);
+            close(handle_);
+        }
+        handle_ = rhs.handle_;
+        rhs.handle_ = 0;
 #endif
+        name_ = std::move(rhs.name_);
         return (*this);
     }
 };

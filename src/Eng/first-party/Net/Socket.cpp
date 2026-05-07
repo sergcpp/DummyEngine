@@ -76,28 +76,6 @@ namespace {
                     break;
                 }
             }
-            /*struct addrinfo hint = {0};
-            struct addrinfo *aip = NULL;
-
-            hint.ai_family = AF_INET;
-            hint.ai_socktype = SOCK_DGRAM;
-
-            if (getaddrinfo(hostname, NULL, &hint, &aip) != 0) {
-
-            }
-
-            struct addrinfo *cur_ip = aip;
-            while (cur_ip) {
-                struct in_addr addr;
-                memcpy(&addr, cur_ip->ai_addr, sizeof(struct in_addr));
-                local_addr = ntohl(addr.s_addr);
-                unsigned char a = (unsigned char)(local_addr >> 24);
-                if (a == 192 || a == 10 || a == 172) {
-                    break;
-                }
-                cur_ip = cur_ip->ai_next;
-            }
-            freeaddrinfo(aip);*/
         }
 #else
         local_addr = ntohl(g_android_local_ip_address);
@@ -353,34 +331,6 @@ bool Net::TCPSocket::Connect(const Address &dest) {
 
     [[maybe_unused]] int res = connect(handle_, (struct sockaddr *)&address, sizeof(sockaddr_in));
 
-    /*
-    int valopt;
-    fd_set myset;
-    struct timeval tv;
-    socklen_t lon;
-    if (res < 0) {
-        if (errno == EINPROGRESS || errno == WSAEWOULDBLOCK) {
-            tv.tv_sec = 5;
-            tv.tv_usec = 0;
-            FD_ZERO(&myset);
-            FD_SET(handle_, &myset);
-            if (select(handle_ + 1, NULL, &myset, NULL, &tv) > 0) {
-                lon = sizeof(int);
-                getsockopt(handle_, SOL_SOCKET, SO_ERROR, (char *)(&valopt), &lon);
-                if (valopt) {
-                    printf("Error in connection() %d - %s\n", valopt, strerror(valopt));
-                    return false;
-                }
-            } else {
-                printf("Timeout or error()\n");
-                return false;
-            }
-        } else {
-            printf("Error connecting %d - %s\n", errno, strerror(errno));
-            return false;
-        }
-    }
-*/
     connection_ = 0;
     return true;
 }

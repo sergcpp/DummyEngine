@@ -69,9 +69,6 @@ void Net::UDPConnection::Update(float dt_s) {
         } else if (state_ == eState::Connected) {
             printf("connection timed out\n");
             ClearData();
-            if (state_ == eState::Connecting) {
-                state_ = eState::ConnectFailed;
-            }
             OnDisconnect();
         }
     }

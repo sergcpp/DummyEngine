@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <vector>
 
 #include "Socket.h"
 
@@ -10,6 +11,7 @@ class HTTPRequest;
 class WsConnection {
     TCPSocket conn_;
     bool should_mask_;
+    std::vector<uint8_t> fragment_buf_;
 
     static void ApplyMask(uint32_t mask, uint8_t *data, int size);
 
