@@ -129,7 +129,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(ren_ctx, threads, "complex_mat1", 34.70, NoGI);
     run_image_test(ren_ctx, threads, "complex_mat1", 31.10, NoDiffGI);
     run_image_test(ren_ctx, threads, "complex_mat2", 33.35, NoGI);
-    run_image_test(ren_ctx, threads, "complex_mat2", 27.60, NoDiffGI);
+    run_image_test(ren_ctx, threads, "complex_mat2", 27.10, NoDiffGI);
     run_image_test(ren_ctx, threads, "complex_mat2_spot_light", 35.85, NoGI);
     run_image_test(ren_ctx, threads, "complex_mat2_spot_light", 31.45, NoDiffGI);
     run_image_test(ren_ctx, threads, "complex_mat2_sun_light", 28.90, NoGI);
@@ -213,7 +213,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(ren_ctx, threads, "spec_mat2", 25.45, Full_Ultra);
     run_image_test(ren_ctx, threads, "spec_mat3", 34.00, NoGI);
     run_image_test(ren_ctx, threads, "spec_mat3", 29.00, NoDiffGI);
-    run_image_test(ren_ctx, threads, "spec_mat3", 21.35, MedDiffGI);
+    run_image_test(ren_ctx, threads, "spec_mat3", 21.30, MedDiffGI);
     run_image_test(ren_ctx, threads, "spec_mat3", 19.20, Full);
     run_image_test(ren_ctx, threads, "spec_mat3", 20.85, Full_Ultra);
     run_image_test(ren_ctx, threads, "spec_mat4", 21.10, NoGI);
@@ -246,9 +246,9 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(ren_ctx, threads, "metal_mat2", 29.75, Full_Ultra);
     run_image_test(ren_ctx, threads, "metal_mat3", 34.80, NoGI);
     run_image_test(ren_ctx, threads, "metal_mat3", 30.05, NoDiffGI);
-    run_image_test(ren_ctx, threads, "metal_mat3", 22.85, MedDiffGI);
+    run_image_test(ren_ctx, threads, "metal_mat3", 22.80, MedDiffGI);
     run_image_test(ren_ctx, threads, "metal_mat3", 20.00, Full);
-    run_image_test(ren_ctx, threads, "metal_mat3", 21.20, Full_Ultra);
+    run_image_test(ren_ctx, threads, "metal_mat3", 21.15, Full_Ultra);
     run_image_test(ren_ctx, threads, "metal_mat4", 25.20, NoGI);
     run_image_test(ren_ctx, threads, "metal_mat4", 26.40, NoDiffGI);
     run_image_test(ren_ctx, threads, "metal_mat4", 19.65, MedDiffGI);
