@@ -336,6 +336,11 @@ void BaseState::Enter() {
         return true;
     });
 
+    cmdline_ui_->RegisterCommand("r_locking", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.enable_locking = !renderer_->settings.enable_locking;
+        return true;
+    });
+
     cmdline_ui_->RegisterCommand("r_tonemap", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
             if (args[1].num > 3.5) {
@@ -667,6 +672,11 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_showDisocclusion", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         renderer_->settings.debug_disocclusion = !renderer_->settings.debug_disocclusion;
+        return true;
+    });
+
+    cmdline_ui_->RegisterCommand("r_showLocking", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.debug_locking = !renderer_->settings.debug_locking;
         return true;
     });
 

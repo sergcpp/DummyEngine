@@ -20,6 +20,7 @@
 #include "shaders/blit_static_vel_interface.h"
 #include "shaders/blit_tsr_interface.h"
 #include "shaders/debug_gbuffer_interface.h"
+#include "shaders/debug_image_interface.h"
 #include "shaders/debug_velocity_interface.h"
 #include "shaders/gbuffer_shade_interface.h"
 #include "shaders/motion_blur_interface.h"
@@ -203,6 +204,7 @@ void Eng::Renderer::InitPipelines() {
     pi_debug_gbuffer_[1] = sh_.FindOrCreatePipeline("internal/debug_gbuffer@NORMALS.comp.glsl");
     pi_debug_gbuffer_[2] = sh_.FindOrCreatePipeline("internal/debug_gbuffer@ROUGHNESS.comp.glsl");
     pi_debug_gbuffer_[3] = sh_.FindOrCreatePipeline("internal/debug_gbuffer@METALLIC.comp.glsl");
+    pi_debug_image_ = sh_.FindOrCreatePipeline("internal/debug_image.comp.glsl");
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -212,7 +214,9 @@ void Eng::Renderer::InitPipelines() {
     blit_ao_prog_ = sh_.FindOrCreateProgram("internal/blit_ssao.vert.glsl", "internal/blit_ssao.frag.glsl");
     blit_bilateral_prog_ =
         sh_.FindOrCreateProgram("internal/blit_bilateral.vert.glsl", "internal/blit_bilateral.frag.glsl");
-    blit_tsr_prog_ =
+    blit_tsr_prog_[0] = sh_.FindOrCreateProgram(
+        "internal/blit_tsr.vert.glsl", "internal/blit_tsr@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg.frag.glsl");
+    blit_tsr_prog_[1] =
         sh_.FindOrCreateProgram("internal/blit_tsr.vert.glsl",
                                 "internal/blit_tsr@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;LOCKING.frag.glsl");
     blit_tsr_static_prog_ =
@@ -613,7 +617,8 @@ void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, cons
     data->vtx_buf2 = gbuf_fill.AddVertexBufferInput(common_buffers.vertex_buf2);
     data->ndx_buf = gbuf_fill.AddIndexBufferInput(common_buffers.indices_buf);
     data->materials = gbuf_fill.AddStorageReadonlyInput(common_buffers.materials, Stg::VertexShader);
-    data->noise = gbuf_fill.AddTextureInput(frame_textures.noise, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
+    data->noise =
+        gbuf_fill.AddTextureInput(frame_textures.noise, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
     data->dummy_white = gbuf_fill.AddTextureInput(frame_textures.dummy_white, Stg::FragmentShader);
     data->dummy_black = gbuf_fill.AddTextureInput(frame_textures.dummy_black, Stg::FragmentShader);
     data->instances = gbuf_fill.AddStorageReadonlyInput(common_buffers.instances, Stg::VertexShader);
@@ -646,8 +651,8 @@ void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, co
     data->dummy_black = opaque.AddTextureInput(frame_textures.dummy_black, Stg::FragmentShader);
     data->instances = opaque.AddStorageReadonlyInput(common_buffers.instances, Stg::VertexShader);
     data->instance_indices = opaque.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
-    data->shared_data = opaque.AddUniformBufferInput(common_buffers.shared_data,
-                                                     Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
+    data->shared_data =
+        opaque.AddUniformBufferInput(common_buffers.shared_data, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
     data->cells = opaque.AddStorageReadonlyInput(common_buffers.cells, Stg::FragmentShader);
     data->items = opaque.AddStorageReadonlyInput(common_buffers.items, Stg::FragmentShader);
     data->lights = opaque.AddStorageReadonlyInput(common_buffers.lights, Stg::FragmentShader);
@@ -1137,9 +1142,9 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPass(const FrameTextures &frame_textures
             ++accumulated_frames_;
 
             prim_draw_.DrawPrim(fg.cmd_buf(), PrimDraw::ePrim::Quad,
-                                static_accumulation ? blit_tsr_static_prog_ : blit_tsr_prog_, {}, render_targets,
-                                rast_state, fg.rast_state(), bindings, &uniform_params, sizeof(TSR::Params), 0,
-                                fg.framebuffers());
+                                static_accumulation ? blit_tsr_static_prog_ : blit_tsr_prog_[settings.enable_locking],
+                                {}, render_targets, rast_state, fg.rast_state(), bindings, &uniform_params,
+                                sizeof(TSR::Params), 0, fg.framebuffers());
         });
     }
     return resolved_color;
@@ -1475,6 +1480,51 @@ Eng::FgImgRWHandle Eng::Renderer::AddDebugGBufferPass(const FrameTextures &frame
         uniform_params.img_size[1] = view_state_.out_res[1];
 
         DispatchCompute(fg.cmd_buf(), pi_debug_gbuffer_[pi_index], fg.storages(), grp_count, bindings, &uniform_params,
+                        sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+    });
+
+    return output;
+}
+
+Eng::FgImgRWHandle Eng::Renderer::AddDebugImagePass(const FgImgROHandle img, const int channel) {
+    auto &debug_image = fg_builder_.AddNode("DEBUG IMAGE");
+
+    struct PassData {
+        FgImgROHandle in_image;
+        FgImgRWHandle out_color;
+    };
+
+    auto *data = fg_builder_.AllocTempData<PassData>();
+    data->in_image = debug_image.AddTextureInput(img, Ren::eStage::ComputeShader);
+
+    FgImgRWHandle output;
+    { // Output texture
+        FgImgDesc desc;
+        desc.w = view_state_.out_res[0];
+        desc.h = view_state_.out_res[1];
+        desc.format = Ren::eFormat::RGBA8;
+        desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+        output = data->out_color = debug_image.AddStorageImageOutput("GBuffer Debug", desc, Ren::eStage::ComputeShader);
+    }
+
+    debug_image.set_execute_cb([this, data, channel](const FgContext &fg) {
+        const Ren::ImageROHandle in_image = fg.AccessROImage(data->in_image);
+
+        const Ren::ImageRWHandle output = fg.AccessRWImage(data->out_color);
+
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, DebugImage::INPUT_TEX_SLOT, in_image},
+                                         {Ren::eBindTarget::ImageRW, DebugImage::OUT_IMG_SLOT, output}};
+
+        const auto grp_count = Ren::Vec3u{Ren::DivCeil<uint32_t>(view_state_.out_res[0], DebugGBuffer::GRP_SIZE_X),
+                                          Ren::DivCeil<uint32_t>(view_state_.out_res[1], DebugGBuffer::GRP_SIZE_Y), 1u};
+
+        DebugImage::Params uniform_params;
+        uniform_params.img_size[0] = view_state_.out_res[0];
+        uniform_params.img_size[1] = view_state_.out_res[1];
+        uniform_params.channel = channel;
+
+        DispatchCompute(fg.cmd_buf(), pi_debug_image_, fg.storages(), grp_count, bindings, &uniform_params,
                         sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
     });
 

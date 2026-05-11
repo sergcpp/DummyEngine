@@ -215,9 +215,9 @@ class Renderer {
     // Motion blur
     Ren::PipelineHandle pi_motion_blur_classify_[2], pi_motion_blur_dilate_, pi_motion_blur_filter_;
     // Debug
-    Ren::PipelineHandle pi_debug_velocity_, pi_debug_gbuffer_[4];
+    Ren::PipelineHandle pi_debug_velocity_, pi_debug_gbuffer_[4], pi_debug_image_;
 
-    Ren::ProgramHandle blit_static_vel_prog_, blit_gauss_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_tsr_prog_,
+    Ren::ProgramHandle blit_static_vel_prog_, blit_gauss_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_tsr_prog_[2],
         blit_tsr_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down_prog_,
         blit_down_depth_prog_, blit_ssr_compose_prog_, blit_fxaa_prog_, blit_vol_compose_prog_;
 
@@ -371,6 +371,7 @@ class Renderer {
     // Debugging
     FgImgRWHandle AddDebugVelocityPass(FgImgROHandle velocity);
     FgImgRWHandle AddDebugGBufferPass(const FrameTextures &frame_textures, int pi_index);
+    FgImgRWHandle AddDebugImagePass(FgImgROHandle img, int channel);
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);
 

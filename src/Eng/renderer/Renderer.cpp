@@ -480,8 +480,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
              Ren::eStoreOp::Store},
 #endif
             {Ren::eFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
-             Ren::eStoreOp::Store}
-        };
+             Ren::eStoreOp::Store}};
 
         // color_rts[2].flags = Ren::eImgFlags::SRGB;
 
@@ -758,7 +757,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     view_state_.env_generation = list.env.generation;
     view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
-    //view_state_.prev_pre_exposure = std::min(std::max(view_state_.prev_pre_exposure, min_exposure_), max_exposure_);
+    // view_state_.prev_pre_exposure = std::min(std::max(view_state_.prev_pre_exposure, min_exposure_), max_exposure_);
 
     bool has_global_volume = Length2(list.env.fog.scatter_color) != 0.0f;
     has_global_volume |= list.env.fog.absorption != 1.0f;
@@ -1296,17 +1295,13 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             data->ndx_buf = depth_fill.AddIndexBufferInput(common_buffers.indices_buf);
             data->shared_data = depth_fill.AddUniformBufferInput(
                 common_buffers.shared_data, Ren::Bitmask{Ren::eStage::VertexShader} | Ren::eStage::FragmentShader);
-            data->instances =
-                depth_fill.AddStorageReadonlyInput(common_buffers.instances, Ren::eStage::VertexShader);
+            data->instances = depth_fill.AddStorageReadonlyInput(common_buffers.instances, Ren::eStage::VertexShader);
             data->instance_indices =
                 depth_fill.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStage::VertexShader);
-            data->materials =
-                depth_fill.AddStorageReadonlyInput(common_buffers.materials, Ren::eStage::VertexShader);
+            data->materials = depth_fill.AddStorageReadonlyInput(common_buffers.materials, Ren::eStage::VertexShader);
             data->noise = depth_fill.AddTextureInput(frame_textures.noise, Ren::eStage::VertexShader);
-            data->dummy_white =
-                depth_fill.AddTextureInput(frame_textures.dummy_white, Ren::eStage::FragmentShader);
-            frame_textures.depth = data->depth =
-                depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
+            data->dummy_white = depth_fill.AddTextureInput(frame_textures.dummy_white, Ren::eStage::FragmentShader);
+            frame_textures.depth = data->depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_desc);
 
             { // Image that holds 3D motion vectors
                 FgImgDesc desc;
@@ -1546,6 +1541,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             resolved_color = frame_textures.color;
         }
 
+        FgImgRWHandle raw_resolved_color = resolved_color;
+
         //
         // Sharpening
         //
@@ -1607,6 +1604,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         }
         if (list.render_settings.debug_disocclusion) {
             resolved_color = frame_textures.disocclusion_mask;
+            bloom = {};
+        }
+        if (list.render_settings.debug_locking) {
+            resolved_color = AddDebugImagePass(raw_resolved_color, 3);
             bloom = {};
         }
         if (list.render_settings.debug_ssao) {

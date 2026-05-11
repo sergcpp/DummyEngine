@@ -272,6 +272,7 @@ struct render_settings_t {
             bool enable_aberration : 1;
             bool enable_purkinje : 1;
             bool enable_sharpen : 1;
+            bool enable_locking : 1;
         };
         uint32_t flags = 0xffffffff;
     };
@@ -290,6 +291,7 @@ struct render_settings_t {
             bool debug_freeze : 1;
             bool debug_motion : 1;
             bool debug_disocclusion : 1;
+            bool debug_locking : 1;
             bool debug_albedo : 1;
             bool debug_depth : 1;
             bool debug_normals : 1;
