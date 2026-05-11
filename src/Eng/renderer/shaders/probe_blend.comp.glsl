@@ -5,7 +5,7 @@
 
 #include "probe_blend_interface.h"
 
-#pragma multi_compile RADIANCE DISTANCE
+#pragma multi_compile IRRADIANCE DISTANCE
 #pragma multi_compile _ STOCH_LIGHTS
 #pragma multi_compile _ PARTIAL
 
@@ -13,7 +13,7 @@
     #pragma dont_compile
 #endif
 
-#if defined(RADIANCE)
+#if defined(IRRADIANCE)
     const int TEXEL_RES = PROBE_IRRADIANCE_RES;
 #elif defined(DISTANCE)
     const int TEXEL_RES = PROBE_DISTANCE_RES;
@@ -26,11 +26,7 @@ LAYOUT_PARAMS uniform UniformParams {
 layout(binding = RAY_DATA_TEX_SLOT) uniform sampler2DArray g_ray_data;
 layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
 
-#if defined(RADIANCE)
-    layout(binding = OUT_IMG_SLOT, rgba16f) uniform coherent image2DArray g_out_img;
-#elif defined(DISTANCE)
-    layout(binding = OUT_IMG_SLOT, rg16f) uniform coherent image2DArray g_out_img;
-#endif
+layout(binding = OUT_IMG_SLOT, rgba16f) uniform coherent image2DArray g_out_img;
 
 layout (local_size_x = TEXEL_RES, local_size_y = TEXEL_RES, local_size_z = 1) in;
 
@@ -64,6 +60,7 @@ void main() {
         const vec3 probe_ray_dir = get_oct_dir(probe_oct_uv);
 
         vec4 result = vec4(0.0);
+        float total_weight = 0.0;
         int backfaces = 0;
 
         for (int i = PROBE_FIXED_RAYS_COUNT; i < PROBE_TOTAL_RAYS_COUNT; ++i) {
@@ -75,7 +72,7 @@ void main() {
 
             vec4 ray_data = texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, g_params.input_offset), 0);
 
-#if defined(RADIANCE)
+#if defined(IRRADIANCE)
             ray_data.xyz = (ray_data.xyz / g_params.pre_exposure);
 
             if (ray_data.a < 0.0) {
@@ -85,7 +82,8 @@ void main() {
                 }
             }
 
-            result += vec4(weight * ray_data.xyz, weight);
+            result.xyz += weight * ray_data.xyz;
+            total_weight += weight;
 
 #elif defined(DISTANCE)
             const float max_ray_distance = length(g_params.grid_spacing) * 1.5;
@@ -94,16 +92,18 @@ void main() {
                 // add thickness to backfacing surfaces
                 //ray_distance = max(0.0, ray_distance - 0.25 * max_ray_distance);
             }
+            const float ray_distance_sqr = sqr(ray_distance);
 
             weight = pow(weight, 50.0);
-            result += vec4(weight * ray_distance, weight * ray_distance * ray_distance, 0.0, weight);
+            result += weight * vec4(ray_distance, ray_distance_sqr, ray_distance * ray_distance_sqr, sqr(ray_distance_sqr));
+            total_weight += weight;
 #endif
         }
 
         float epsilon = float(PROBE_TOTAL_RAYS_COUNT - PROBE_FIXED_RAYS_COUNT);
         epsilon *= 1e-9;
 
-        result.xyz *= 1.0 / (2.0 * max(result.a, epsilon));
+        result *= rcp(max(total_weight, epsilon));
 
         vec4 direct_light = vec4(0.0);
 #if defined(STOCH_LIGHTS)
@@ -117,18 +117,18 @@ void main() {
 
             direct_light += vec4(weight * light_color, 1.0);
         }
-        result.xyz += direct_light.xyz / (2.0 * direct_light.w);
+        result.xyz += (direct_light.xyz * rcp(direct_light.w));
 #endif
 
-        const vec4 probe_irradiance_mean = imageLoad(g_out_img, output_coords);
+        const vec4 probe_mean = imageLoad(g_out_img, output_coords);
 
-#if defined(RADIANCE)
+#if defined(IRRADIANCE)
         result.xyz = pow(result.xyz, vec3(1.0 / PROBE_RADIANCE_EXP));
 
         // Stable 2-sample accumulation (approximate)
         const float lum_curr = lum(result.xyz);
-        const float lum_prev = probe_irradiance_mean.w;
-        const float lum_hist = lum(probe_irradiance_mean.xyz);
+        const float lum_prev = probe_mean.w;
+        const float lum_hist = lum(probe_mean.xyz);
         const float lum_desired = 0.5 * (lum_curr + lum_prev);
 
         const float diff = lum_hist - lum_curr;
@@ -136,14 +136,14 @@ void main() {
 #elif defined(DISTANCE)
         float history_weight = 0.92;
 #endif
-        if (is_scrolling_plane_probe || max_component(probe_irradiance_mean.xyz) == 0.0) {
+        if (is_scrolling_plane_probe || max_component(probe_mean.xyz) == 0.0) {
             history_weight = 0.0;
         }
 
-#if defined(RADIANCE)
-        result = vec4(mix(result.xyz, probe_irradiance_mean.xyz, history_weight), lum_curr);
+#if defined(IRRADIANCE)
+        result = vec4(mix(result.xyz, probe_mean.xyz, history_weight), lum_curr);
 #elif defined(DISTANCE)
-        result = vec4(mix(result.xy, probe_irradiance_mean.xy, history_weight), 0.0, 1.0);
+        result = mix(result, probe_mean, history_weight);
 #endif
 
         imageStore(g_out_img, output_coords, result);

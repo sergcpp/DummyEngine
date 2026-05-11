@@ -859,12 +859,12 @@ void Eng::SceneManager::AllocGICache() {
         scene_data_.persistent_data->probe_irradiance = ren_ctx_.CreateImage(
             Ren::String{"Probe Volume Irradiance"}, {}, p, scene_data_.persistent_data->mem_allocs.get());
     }
-    { // ~54.0mb
+    { // ~48.0mb
         Ren::ImgParams p;
         p.w = PROBE_VOLUME_RES_X * PROBE_DISTANCE_RES;
         p.h = PROBE_VOLUME_RES_Z * PROBE_DISTANCE_RES;
         p.d = PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
-        p.format = Ren::eFormat::RG16F;
+        p.format = Ren::eFormat::RGBA16F;
         p.flags = Ren::eImgFlags::Array;
         p.usage = Ren::Bitmask(Ren::eImgUsage::Storage) | Ren::eImgUsage::Sampled | Ren::eImgUsage::Transfer;
         p.sampling.filter = Ren::eFilter::Bilinear;

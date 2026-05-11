@@ -39,7 +39,8 @@ void main() {
     const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
     const vec3 P = pos_ws;
-    const vec3 I = normalize(P - g_shrd_data.cam_pos_and_exp.xyz);
+    float hit_t;
+    const vec3 I = normalize_len(P - g_shrd_data.cam_pos_and_exp.xyz, hit_t);
 
     const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).x);
 
@@ -47,11 +48,11 @@ void main() {
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
         if (weight > 0.0) {
-            final_color += weight * get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_shrd_data.probe_volumes[i].spacing.xyz), normal.xyz,
-                                                              g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, true);
+            final_color += weight * get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_shrd_data.probe_volumes[i].spacing.xyz, 0.5 * hit_t), normal.xyz,
+                                                          g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, true, true);
             if (weight < 1.0 && i < PROBE_VOLUMES_COUNT - 1) {
-                final_color += (1.0 - weight) * get_volume_irradiance_sep(i + 1, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_shrd_data.probe_volumes[i + 1].spacing.xyz), normal.xyz,
-                                                                      g_shrd_data.probe_volumes[i + 1].scroll.xyz, g_shrd_data.probe_volumes[i + 1].origin.xyz, g_shrd_data.probe_volumes[i + 1].spacing.xyz, true);
+                final_color += (1.0 - weight) * get_volume_irradiance(i + 1, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_shrd_data.probe_volumes[i + 1].spacing.xyz, 0.5 * hit_t), normal.xyz,
+                                                                      g_shrd_data.probe_volumes[i + 1].scroll.xyz, g_shrd_data.probe_volumes[i + 1].origin.xyz, g_shrd_data.probe_volumes[i + 1].spacing.xyz, true, true);
             }
             break;
         }

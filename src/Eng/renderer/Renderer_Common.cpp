@@ -99,11 +99,11 @@ void Eng::Renderer::InitPipelines() {
     pi_tile_clear_[3] = sh_.FindOrCreatePipeline("internal/tile_clear@AVERAGE;VARIANCE.comp.glsl");
 
     // GI Cache
-    pi_probe_blend_[0][0] = sh_.FindOrCreatePipeline("internal/probe_blend@RADIANCE.comp.glsl");
-    pi_probe_blend_[1][0] = sh_.FindOrCreatePipeline("internal/probe_blend@RADIANCE;STOCH_LIGHTS.comp.glsl");
+    pi_probe_blend_[0][0] = sh_.FindOrCreatePipeline("internal/probe_blend@IRRADIANCE.comp.glsl");
+    pi_probe_blend_[1][0] = sh_.FindOrCreatePipeline("internal/probe_blend@IRRADIANCE;STOCH_LIGHTS.comp.glsl");
     pi_probe_blend_[2][0] = sh_.FindOrCreatePipeline("internal/probe_blend@DISTANCE.comp.glsl");
-    pi_probe_blend_[0][1] = sh_.FindOrCreatePipeline("internal/probe_blend@RADIANCE;PARTIAL.comp.glsl");
-    pi_probe_blend_[1][1] = sh_.FindOrCreatePipeline("internal/probe_blend@RADIANCE;STOCH_LIGHTS;PARTIAL.comp.glsl");
+    pi_probe_blend_[0][1] = sh_.FindOrCreatePipeline("internal/probe_blend@IRRADIANCE;PARTIAL.comp.glsl");
+    pi_probe_blend_[1][1] = sh_.FindOrCreatePipeline("internal/probe_blend@IRRADIANCE;STOCH_LIGHTS;PARTIAL.comp.glsl");
     pi_probe_blend_[2][1] = sh_.FindOrCreatePipeline("internal/probe_blend@DISTANCE;PARTIAL.comp.glsl");
     pi_probe_relocate_[0] = sh_.FindOrCreatePipeline("internal/probe_relocate.comp.glsl");
     pi_probe_relocate_[1] = sh_.FindOrCreatePipeline("internal/probe_relocate@PARTIAL.comp.glsl");

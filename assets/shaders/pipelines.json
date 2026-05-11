@@ -157,11 +157,11 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/probe_blend@RADIANCE.comp.glsl" ]
+        "shaders" : [ "internal/probe_blend@IRRADIANCE.comp.glsl" ]
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/probe_blend@RADIANCE;STOCH_LIGHTS.comp.glsl" ]
+        "shaders" : [ "internal/probe_blend@IRRADIANCE;STOCH_LIGHTS.comp.glsl" ]
     },
     {
         "type" : "compute",
@@ -169,11 +169,11 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/probe_blend@RADIANCE;PARTIAL.comp.glsl" ]
+        "shaders" : [ "internal/probe_blend@IRRADIANCE;PARTIAL.comp.glsl" ]
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/probe_blend@RADIANCE;STOCH_LIGHTS;PARTIAL.comp.glsl" ]
+        "shaders" : [ "internal/probe_blend@IRRADIANCE;STOCH_LIGHTS;PARTIAL.comp.glsl" ]
     },
     {
         "type" : "compute",

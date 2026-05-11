@@ -253,11 +253,11 @@ void main() {
         const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
         if (weight > 0.0) {
             if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0) {
-                gi_color += weight * get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_shrd_data.probe_volumes[i].spacing.xyz), normal.xyz,
-                                                               g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
+                gi_color += weight * get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, vec3(0.0), normal.xyz,
+                                                           g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false, true);
                 if (weight < 1.0 && i < PROBE_VOLUMES_COUNT - 1) {
-                    gi_color += (1.0 - weight) * get_volume_irradiance_sep(i + 1, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_shrd_data.probe_volumes[i + 1].spacing.xyz), normal.xyz,
-                                                                           g_shrd_data.probe_volumes[i + 1].scroll.xyz, g_shrd_data.probe_volumes[i + 1].origin.xyz, g_shrd_data.probe_volumes[i + 1].spacing.xyz, false);
+                    gi_color += (1.0 - weight) * get_volume_irradiance(i + 1, g_irradiance_tex, g_distance_tex, g_offset_tex, P, vec3(0.0), normal.xyz,
+                                                                       g_shrd_data.probe_volumes[i + 1].scroll.xyz, g_shrd_data.probe_volumes[i + 1].origin.xyz, g_shrd_data.probe_volumes[i + 1].spacing.xyz, false, true);
                 }
                 gi_color *= (lobe_masks.diffuse_mul / M_PI);
                 gi_color *= base_color * ltc.diff_t2.x;
@@ -265,8 +265,8 @@ void main() {
 #ifndef SPECULAR
             if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
                 const vec3 refl_dir = reflect(I, N);
-                vec3 avg_radiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(I, g_shrd_data.probe_volumes[i].spacing.xyz), refl_dir,
-                                                              g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
+                vec3 avg_radiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, vec3(0.0), refl_dir,
+                                                          g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false, true);
                 avg_radiance *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
                 gi_color += FN * (1.0 / M_PI) * avg_radiance;
             }

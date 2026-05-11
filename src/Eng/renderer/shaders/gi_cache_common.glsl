@@ -240,6 +240,124 @@ bool IsScrollingPlaneProbe(const int probe_index, const ivec3 grid_scroll, const
     //return any(equal(test_coord, probe_coords));
 }
 
+float ComputeVisibility_VSM2(const vec4 moments, const float distance) {
+    float visibility = 1.0;
+    if (distance > moments.x) {
+        // Find the variance of the mean distance
+        const float variance = abs(moments.x * moments.x - moments.y);
+
+        // v must be greater than 0, which is guaranteed by the if condition above.
+        const float v = distance - moments.x;
+        visibility = variance / (variance + v * v);
+    }
+    return visibility;
+}
+
+float ComputeVisibility_MSM4(const vec4 moments, const float distance, const float strength, const float bleed_reduction, const float variance_bleed_scale) {
+    // Moment bias for robustness
+    const float alpha = 3e-5;
+    vec4 b = mix(moments, vec4(0.5), alpha);
+
+    // Scale normalization
+    const float s = max(1e-4, sqrt(moments[1]));
+    const float inv_s = 1.0 / s;
+    const float inv_s2 = inv_s * inv_s;
+    const float inv_s3 = inv_s2 * inv_s;
+    const float inv_s4 = inv_s2 * inv_s2;
+
+    b *= vec4(inv_s, inv_s2, inv_s3, inv_s4);
+
+    // Prevent self-shadowing acne
+    const float zf = max(distance, 1e-4);
+    const float z = zf * inv_s;
+
+    // Compute normalized variance for adaptive LBR
+    const float var_n = max(0.0, b[1] - b[0] * b[0]);
+    const float var_factor = saturate(sqrt(var_n));
+
+    // Bleed reduction
+    const float bleed = clamp(bleed_reduction + variance_bleed_scale * var_factor, 0.0, 0.99);
+
+    // Hamburger 4MSM (Algorithm 3)
+    const float eps = 1e-3;
+
+    // Solve B c = (1, z, z^2)^T with LDL^T for symmetric 3x3:
+    // B = [ 1   b1  b2
+    //       b1  b2  b3
+    //       b2  b3  b4 ]
+    const float l10 = b[0];
+    const float l20 = b[1];
+
+    const float d1  = max(eps, b[1] - b[0] * b[0]);
+    const float l21 = (b[2] - b[1] * b[0]) / d1;
+    const float d2  = max(eps, b[3] - b[1] * b[1] - l21 * l21 * d1);
+
+    // Forward solve L y = rhs
+    const float rhs0 = 1.0;
+    const float rhs1 = z;
+    const float rhs2 = z * z;
+
+    const float y0 = rhs0;
+    const float y1 = rhs1 - l10 * y0;
+    const float y2 = rhs2 - l20 * y0 - l21 * y1;
+
+    // Diagonal solve D zV = y
+    const float z0 = y0;        // d0 == 1
+    const float z1 = y1 / d1;
+    const float z2v = y2 / d2;
+
+    // Back solve L^T c = zV
+    // c = (c0, c1, c2) such that: c2*x^2 + c1*x + c0 = 0
+    const float c2 = z2v;
+    const float c1 = z1 - l21 * c2;
+    const float c0 = z0 - l10 * c1 - l20 * c2;
+
+    float shadow = 0;
+    // If quadratic degenerates, fall back to VSM-style bound using first two moments.
+    if (abs(c2) < eps) {
+        if (z > b[0]) {
+            const float diff = z - b[0];
+            shadow = 1.0 - d1 / (d1 + diff * diff);
+        }
+    } else {
+        const float disc = max(0.0, c1 * c1 - 4.0 * c2 * c0);
+        const float sd = sqrt(disc);
+
+        float z2r = (-c1 - sd) / (2.0 * c2);
+        float z3r = (-c1 + sd) / (2.0 * c2);
+
+        // Sort roots so z2r <= z3r
+        if (z2r > z3r) {
+            float t = z2r;
+            z2r = z3r;
+            z3r = t;
+        }
+
+        // If roots collapse, fall back (avoids rare div-by-small artifacts).
+        if (abs(z3r - z2r) < eps) {
+            if (z > b[0]) {
+                const float diff = z - b[0];
+                shadow = 1.0 - d1 / (d1 + diff * diff);
+            }
+        } else if (z <= z2r) {
+            shadow = 0.0;
+        } else if (z <= z3r) {
+            // Middle branch
+            const float denom = (z3r - z2r) * max(eps, (z - z2r));
+            shadow = (z * z3r - b[0] * (z + z3r) + b[1]) / denom;
+        } else {
+            // Far branch
+            const float denom = max(eps, (z - z2r) * (z - z3r));
+            shadow = 1.0 - (z2r * z3r - b[0] * (z2r + z3r) + b[1]) / denom;
+        }
+    }
+
+    float visibility = 1.0 - saturate(shadow * strength);
+    visibility = linstep(bleed, 1.0, visibility);
+
+    return visibility;
+}
+
 vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex, sampler2DArray distance_tex, sampler2DArray offset_tex,
                            const vec3 world_position, const vec3 surface_bias, const vec3 direction,
                            const ivec3 grid_scroll, const vec3 grid_origin, const vec3 grid_spacing, const bool diffuse_only, const bool skip_inactive) {
@@ -257,8 +375,7 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
 
     const vec3 alpha = clamp(grid_space_distance / grid_spacing, vec3(0.0), vec3(1.0));
 
-    vec3 irradiance = vec3(0.0);
-    float total_weight = 0.0;
+    vec4 irradiance = vec4(0.0);
 
     // Iterate over the 8 closest probes and accumulate their contributions
     for (int i = 0; i < 8; ++i) {
@@ -275,7 +392,8 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
 
         // Early Out: don 't allow inactive probes to contribute to irradiance
         const ivec3 adj_texel_coords = get_probe_texel_coords(adjacent_probe_index, volume_index);
-        if (skip_inactive && texelFetch(offset_tex, adj_texel_coords, 0).w < 0.5) {
+        const float probe_state = texelFetch(offset_tex, adj_texel_coords, 0).w;
+        if (skip_inactive && probe_state < 0.5) {
             continue;
         }
 
@@ -310,26 +428,19 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
         vec3 probe_texture_uv = get_probe_uv(adjacent_probe_index, volume_index, octant_coords, PROBE_DISTANCE_RES - 2);
 
         // Sample the probe's distance texture to get the mean distance to nearby surfaces
-        const vec2 filtered_distance = 2.0 * textureLod(distance_tex, probe_texture_uv, 0.0).xy;
+        const vec4 distance_moments = textureLod(distance_tex, probe_texture_uv, 0.0);
 
-        float chebyshev_weight = 1.0;
+        float visibility = 1.0;
 
-        // Occlusion test
-        if (biased_pos_to_adj_probe_dist > filtered_distance.x) {
-            // Find the variance of the mean distance
-            const float variance = abs(filtered_distance.x * filtered_distance.x - filtered_distance.y);
+        //visibility = ComputeVisibility_VSM2(distance_moments, biased_pos_to_adj_probe_dist);
+        visibility = ComputeVisibility_MSM4(distance_moments, biased_pos_to_adj_probe_dist, 1.2, 0.2, 0.15);
 
-            // v must be greater than 0, which is guaranteed by the if condition above.
-            const float v = biased_pos_to_adj_probe_dist - filtered_distance.x;
-            chebyshev_weight = variance / (variance + v * v);
-
-            // Increase the contrast in the weight
-            chebyshev_weight = clamp(chebyshev_weight * chebyshev_weight * chebyshev_weight, 0.0, 1.0);
-        }
+        // Increase the contrast in the weight
+        visibility = saturate(visibility * visibility * visibility);
 
         // Avoid visibility weights ever going all the way to zero because
         // when *no* probe has visibility we need a fallback value
-        weight *= max(0.05, chebyshev_weight);
+        weight *= max(0.05, visibility);
 
         // Avoid a weight of zero
         weight = max(0.000001, weight);
@@ -352,27 +463,20 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
 
         // Sample the probe's irradiance
         vec3 probe_irradiance = textureLod(irradiance_tex, probe_texture_uv, 0.0).xyz;
-        probe_irradiance = pow(probe_irradiance, vec3(0.5 * PROBE_RADIANCE_EXP));
 
         // Accumulate the weighted irradiance
-        irradiance += (weight * probe_irradiance);
-        total_weight += weight;
+        irradiance += vec4(weight * probe_irradiance, weight);
     }
 
-    if (total_weight == 0.0) {
+    if (irradiance.w == 0.0) {
         return vec3(0.0);
     }
 
-    irradiance *= (1.0 / total_weight);     // Normalize by the accumulated weights
-    irradiance *= irradiance;               // Go back to linear irradiance
-    irradiance *= 2.0 * M_PI;               // Multiply by the area of the integration domain (hemisphere) to complete the Monte Carlo Estimator equation
+    irradiance.xyz *= rcp(irradiance.w);    // Normalize by the accumulated weights
+    irradiance.xyz = pow(irradiance.xyz, vec3(PROBE_RADIANCE_EXP));
+    irradiance.xyz *= M_PI;                 // Multiply by the area of the integration domain (hemisphere) to complete the Monte Carlo Estimator equation
 
-    // Adjust for energy loss due to reduced precision in the R10G10B10A2 irradiance texture format
-    //if (volume.probeIrradianceFormat == RTXGI_DDGI_VOLUME_TEXTURE_FORMAT_U32) {
-    //    irradiance *= 1.0989f;
-    //}
-
-    return irradiance;
+    return irradiance.xyz;
 }
 
 vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance_tex, sampler2DArray distance_tex, sampler2DArray offset_tex,
@@ -446,26 +550,19 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
         vec3 probe_texture_uv = get_probe_uv(adjacent_probe_index, volume_index, octant_coords, PROBE_DISTANCE_RES - 2);
 
         // Sample the probe's distance texture to get the mean distance to nearby surfaces
-        const vec2 filtered_distance = 2.0 * textureLod(distance_tex, probe_texture_uv, 0.0).xy;
+        const vec4 distance_moments = textureLod(distance_tex, probe_texture_uv, 0.0);
 
-        float chebyshev_weight = 1.0;
+        float visibility = 1.0;
 
-        // Occlusion test
-        if (biased_pos_to_adj_probe_dist > filtered_distance.x) {
-            // Find the variance of the mean distance
-            const float variance = abs(filtered_distance.x * filtered_distance.x - filtered_distance.y);
+        //visibility = ComputeVisibility_VSM2(distance_moments, biased_pos_to_adj_probe_dist);
+        visibility = ComputeVisibility_MSM4(distance_moments, biased_pos_to_adj_probe_dist, 1.2, 0.2, 0.15);
 
-            // v must be greater than 0, which is guaranteed by the if condition above.
-            const float v = biased_pos_to_adj_probe_dist - filtered_distance.x;
-            chebyshev_weight = variance / (variance + v * v);
-
-            // Increase the contrast in the weight
-            chebyshev_weight = saturate(chebyshev_weight * chebyshev_weight * chebyshev_weight);
-        }
+        // Increase the contrast in the weight
+        visibility = saturate(visibility * visibility * visibility);
 
         // Avoid visibility weights ever going all the way to zero because
         // when *no* probe has visibility we need a fallback value
-        weight *= max(0.05, chebyshev_weight);
+        weight *= max(0.05, visibility);
 
         // Avoid a weight of zero
         weight = max(0.000001, weight);
@@ -513,17 +610,19 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
     const float k = linstep(0.6, 1.0, outdoor_weight / (indoor_weight + outdoor_weight));
     vec3 irradiance = mix(indoor_irradiance, outdoor_irradiance, k);
     irradiance *= irradiance;   // Go back to linear irradiance
-    irradiance *= 2.0 * M_PI;   // Multiply by the area of the integration domain (hemisphere) to complete the Monte Carlo Estimator equation
+    irradiance *= M_PI;   // Multiply by the area of the integration domain (hemisphere) to complete the Monte Carlo Estimator equation
 
     return irradiance;
 }
 
-vec3 get_surface_bias(const vec3 normal, const vec3 view, const vec3 grid_spacing) {
-    return ((normal * 0.1) + (-view * 0.2)) * grid_spacing;
+vec3 get_surface_bias(const vec3 normal, const vec3 view, const vec3 grid_spacing, const float dist_limit) {
+    const vec3 ret = ((normal * 0.2) + (-view * 0.4)) * grid_spacing;
+    return saturate(dist_limit / length(ret)) * ret;
 }
 
-vec3 get_surface_bias(const vec3 view, const vec3 grid_spacing) {
-    return (-view * 0.3) * grid_spacing;
+vec3 get_surface_bias(const vec3 view, const vec3 grid_spacing, const float dist_limit) {
+    const vec3 ret = (-view * 0.4) * grid_spacing;
+    return saturate(dist_limit / length(ret)) * ret;
 }
 
 #endif // GI_CACHE_COMMON_GLSL

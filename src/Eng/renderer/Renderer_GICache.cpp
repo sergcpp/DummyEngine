@@ -63,7 +63,7 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
         data->partial_update = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
         data->probe_volumes = persistent_data.probe_volumes;
 
-        { // ~56.6mb
+        { // ~64.0mb
             FgImgDesc desc;
             desc.w = PROBE_TOTAL_RAYS_COUNT;
             desc.h = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z;

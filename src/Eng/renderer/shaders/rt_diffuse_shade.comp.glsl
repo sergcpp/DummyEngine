@@ -498,15 +498,15 @@ void main() {
     if (cascade_index != -1) {
         if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
             const vec3 refl_dir = reflect(gi_ray_ws, N);
-            vec3 avg_radiance = get_volume_irradiance_sep(cascade_index, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(gi_ray_ws, g_shrd_data.probe_volumes[cascade_index].spacing.xyz), refl_dir,
-                                                          g_shrd_data.probe_volumes[cascade_index].scroll.xyz, g_shrd_data.probe_volumes[cascade_index].origin.xyz, g_shrd_data.probe_volumes[cascade_index].spacing.xyz, false);
+            vec3 avg_radiance = get_volume_irradiance(cascade_index, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(gi_ray_ws, g_shrd_data.probe_volumes[cascade_index].spacing.xyz, 0.5 * hit_t), refl_dir,
+                                                      g_shrd_data.probe_volumes[cascade_index].scroll.xyz, g_shrd_data.probe_volumes[cascade_index].origin.xyz, g_shrd_data.probe_volumes[cascade_index].spacing.xyz, false, true);
             avg_radiance *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
             avg_radiance *= saturate(hit_t / (0.5 * length(g_shrd_data.probe_volumes[cascade_index].spacing.xyz)));
             final_color += throughput * (1.0 / M_PI) * avg_radiance;
         }
         if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && hit_t > 0.5 * length(g_shrd_data.probe_volumes[cascade_index].spacing.xyz)) {
-            vec3 irradiance = get_volume_irradiance_sep(cascade_index, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(gi_ray_ws, g_shrd_data.probe_volumes[cascade_index].spacing.xyz), N,
-                                                        g_shrd_data.probe_volumes[cascade_index].scroll.xyz, g_shrd_data.probe_volumes[cascade_index].origin.xyz, g_shrd_data.probe_volumes[cascade_index].spacing.xyz, false);
+            vec3 irradiance = get_volume_irradiance(cascade_index, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(gi_ray_ws, g_shrd_data.probe_volumes[cascade_index].spacing.xyz, 0.5 * hit_t), N,
+                                                    g_shrd_data.probe_volumes[cascade_index].scroll.xyz, g_shrd_data.probe_volumes[cascade_index].origin.xyz, g_shrd_data.probe_volumes[cascade_index].spacing.xyz, false, true);
             irradiance *= base_color * ltc.diff_t2.x;
             final_color += throughput * lobe_masks.diffuse_mul * (1.0 / M_PI) * irradiance;
             // terminate ray

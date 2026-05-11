@@ -148,7 +148,7 @@ const int PROBE_VOLUMES_COUNT = 6;
 const int PROBE_TOTAL_RAYS_COUNT = 128;
 const int PROBE_FIXED_RAYS_COUNT = 32;
 const int PROBE_IRRADIANCE_RES = 6;
-const int PROBE_DISTANCE_RES = 12;
+const int PROBE_DISTANCE_RES = 8;
 const float PROBE_RADIANCE_EXP = 5;
 
 const float PROBE_STATE_INACTIVE = 0;
