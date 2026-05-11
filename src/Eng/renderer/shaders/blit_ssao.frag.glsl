@@ -75,7 +75,7 @@ void main() {
         occlusion += mod_cont.y;
     }
 
-    occlusion = clamp(1.0 - 2.0 * (occlusion - 0.5), 0.0, 1.0);
+    occlusion = saturate(1.0 - 2.0 * (occlusion - 0.5));
 
     // smooth fadeout
     float k = max((lin_depth - fadeout_start) / (fadeout_end - fadeout_start), 0.0);

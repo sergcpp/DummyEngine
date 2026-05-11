@@ -59,7 +59,7 @@ void main() {
     float val = g_shrd_data.transp_params_and_time[3] + g_vtx_pos.y * 10.0;
     float kk = 0.75 + 0.25 * step(val - floor(val), 0.5);
 
-    float tr = 0.75 * clamp(1.2 - dot(normal, -view_ray_ws), 0.0, 1.0);
+    float tr = 0.75 * saturate(1.2 - dot(normal, -view_ray_ws));
 
     float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);

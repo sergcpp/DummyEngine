@@ -460,7 +460,7 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
             chebyshev_weight = variance / (variance + v * v);
 
             // Increase the contrast in the weight
-            chebyshev_weight = clamp(chebyshev_weight * chebyshev_weight * chebyshev_weight, 0.0, 1.0);
+            chebyshev_weight = saturate(chebyshev_weight * chebyshev_weight * chebyshev_weight);
         }
 
         // Avoid visibility weights ever going all the way to zero because

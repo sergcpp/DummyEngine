@@ -73,7 +73,7 @@ vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
 
     const float MinLayers = 64.0;
     const float MaxLayers = 64.0;
-    float layer_count = mix(MaxLayers, MinLayers, clamp(abs(dir.z), 0.0, 1.0));
+    float layer_count = mix(MaxLayers, MinLayers, saturate(abs(dir.z)));
 
     float layer_height = 1.0 / layer_count;
     float cur_layer_height = 1.0;
@@ -115,7 +115,7 @@ vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
 vec2 ParallaxOcclusionMapping(vec3 dir, vec2 uvs, out float iterations) {
     const float MinLayers = 32.0;
     const float MaxLayers = 256.0;
-    float layer_count = mix(MaxLayers, MinLayers, clamp(abs(dir.z), 0.0, 1.0));
+    float layer_count = mix(MaxLayers, MinLayers, saturate(abs(dir.z)));
 
     float layer_height = 1.0 / layer_count;
     float cur_layer_height = 1.0;
@@ -147,7 +147,7 @@ vec2 ConeSteppingExact(vec3 dir, vec2 uvs) {
     ivec2 tex_size = textureSizeBindless(g_mat3_tex, 0);
     float w = 1.0 / float(max(tex_size.x, tex_size.y));
 
-    float iz = sqrt(1.0 - clamp(dir.z * dir.z, 0.0, 1.0));
+    float iz = sqrt(1.0 - saturate(dir.z * dir.z));
 
     vec2 h = textureLodBindless(g_mat3_tex, uvs, 0.0).xy;
     h.y = max(h.y, 1.0/255.0);
@@ -173,7 +173,7 @@ vec2 ConeSteppingExact(vec3 dir, vec2 uvs) {
 }
 
 vec2 ConeSteppingFixed(vec3 dir, vec2 uvs) {
-    float iz = sqrt(1.0 - clamp(dir.z * dir.z, 0.0, 1.0));
+    float iz = sqrt(1.0 - saturate(dir.z * dir.z));
 
     vec2 h = textureBindless(g_mat3_tex, uvs).xy;
     float t = (1.0 - h.x) / (dir.z + iz / (h.y * h.y));
@@ -204,7 +204,7 @@ vec2 ConeSteppingFixed(vec3 dir, vec2 uvs) {
 }
 
 vec2 ConeSteppingLoop(vec3 dir, vec2 uvs) {
-    float iz = sqrt(1.0 - clamp(dir.z * dir.z, 0.0, 1.0));
+    float iz = sqrt(1.0 - saturate(dir.z * dir.z));
 
     const float MinLayers = 64.0;
     const float MaxLayers = 64.0;
@@ -221,7 +221,7 @@ vec2 ConeSteppingLoop(vec3 dir, vec2 uvs) {
 }
 
 vec2 ConeSteppingLoop32(vec3 dir, vec2 uvs) {
-    float iz = sqrt(1.0 - clamp(dir.z * dir.z, 0.0, 1.0));
+    float iz = sqrt(1.0 - saturate(dir.z * dir.z));
 
     const float MinLayers = 32.0;
     const float MaxLayers = 32.0;
@@ -248,7 +248,7 @@ vec2 ConeSteppingRelaxed(vec3 dir, vec2 uvs) {
     vec3 pos = vec3(uvs, 0.0);
     for (int i = 0; i < ConeSteps; i++) {
         vec2 h = textureLodBindless(g_mat3_tex, pos.xy, 0.0).xy;
-        float height = clamp(h.x - pos.z, 0.0, 1.0);
+        float height = saturate(h.x - pos.z);
         float d = h.y * height / (ray_ratio + h.y);
         pos += dir * d;
     }
@@ -527,7 +527,7 @@ void main() {
         atten = (atten - factor) / (1.0 - LIGHT_ATTEN_CUTOFF);
         atten = max(atten, 0.0);
 
-        float _dot1 = clamp(dot(L, normal), 0.0, 1.0);
+        float _dot1 = saturate(dot(L, normal));
         float _dot2 = dot(L, dir_and_spot.xyz);
 
         atten = _dot1 * atten;
@@ -572,7 +572,7 @@ void main() {
     indirect_col /= max(total_fade, 1.0);
     indirect_col = max(indirect_col, vec3(0.0));
 
-    float lambert = clamp(dot(normal, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
+    float lambert = saturate(dot(normal, g_shrd_data.sun_dir.xyz));
     float visibility = 0.0;
     if (lambert > 0.00001) {
         visibility = GetSunVisibility(lin_depth, g_shadow_tex, g_vtx_sh_uvs);
@@ -585,7 +585,7 @@ void main() {
                                          additional_light);
 
 
-    float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
+    float N_dot_V = saturate(dot(normal, view_ray_ws));
 
     vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, spec_color.xyz, spec_color.a);
 

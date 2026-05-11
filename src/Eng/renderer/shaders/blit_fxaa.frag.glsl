@@ -82,7 +82,7 @@ vec4 FxaaPixelShader(vec2 pos, sampler2D tex, vec2 fxaaQualityRcpFrame,
     bool pairN = abs(gradientN) >= abs(gradientS);
     float gradient = max(abs(gradientN), abs(gradientS));
     if (pairN) lengthSign = -lengthSign;
-    float subpixC = clamp(abs(subpixB) * subpixRcpRange, 0.0, 1.0);
+    float subpixC = saturate(abs(subpixB) * subpixRcpRange);
     vec2 posB = posM;
     vec2 offNP;
     offNP.x = (!horzSpan) ? 0.0 : fxaaQualityRcpFrame.x;

@@ -49,7 +49,7 @@ vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
 
     const float MinLayers = 4.0;
     const float MaxLayers = 32.0;
-    float layer_count = mix(MaxLayers, MinLayers, clamp(abs(dir.z), 0.0, 1.0));
+    float layer_count = mix(MaxLayers, MinLayers, saturate(abs(dir.z)));
 
     float layer_height = 1.0 / layer_count;
     float cur_layer_height = 1.0 - g_tex_height;
@@ -93,7 +93,7 @@ vec2 ParallaxOcclusionMapping(vec3 dir, vec2 uvs) {
 
     const float MinLayers = 4.0;
     const float MaxLayers = 16.0;
-    float layer_count = mix(MaxLayers, MinLayers, clamp(abs(dir.z), 0.0, 1.0));
+    float layer_count = mix(MaxLayers, MinLayers, saturate(abs(dir.z)));
 
     float layer_height = 1.0 / layer_count;
     float cur_layer_height = 0.0;//1.0 - g_tex_height;
@@ -231,7 +231,7 @@ void main() {
         atten = (atten - factor) / (1.0 - LIGHT_ATTEN_CUTOFF);
         atten = max(atten, 0.0);
 
-        float _dot1 = clamp(dot(L, normal), 0.0, 1.0);
+        float _dot1 = saturate(dot(L, normal));
         float _dot2 = dot(L, dir_and_spot.xyz);
 
         atten = _dot1 * atten;
@@ -274,7 +274,7 @@ void main() {
     indirect_col /= max(total_fade, 1.0);
     indirect_col = max(1.0 * indirect_col, vec3(0.0));
 
-    float lambert = clamp(dot(normal, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
+    float lambert = saturate(dot(normal, g_shrd_data.sun_dir.xyz));
     float visibility = 0.0;
     if (lambert > 0.00001) {
         visibility = GetSunVisibility(lin_depth, g_shadow_tex, g_vtx_sh_uvs);
@@ -286,7 +286,7 @@ void main() {
                                          ambient_occlusion * ambient_occlusion * indirect_col +
                                          additional_light);
 
-    float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
+    float N_dot_V = saturate(dot(normal, view_ray_ws));
 
     vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, specular_color.xyz, specular_color.a);
 

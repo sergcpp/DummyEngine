@@ -1,5 +1,7 @@
 #version 430 core
 
+#include "_fs_common.glsl"
+
 layout(binding = 0) uniform samplerCubeArray g_tex;
 
 #if defined(VULKAN)
@@ -81,7 +83,7 @@ float DistributionGGX(float NdotH, float a) {
 vec4 RGBMEncode(vec3 color) {
     vec4 rgbm;
     color *= 1.0 / 4.0;
-    rgbm.a = clamp(max(max(color.x, color.y), max(color.z, 1e-6)), 0.0, 1.0);
+    rgbm.a = saturate(max(max(color.x, color.y), max(color.z, 1e-6)));
     rgbm.a = ceil(rgbm.a * 255.0) / 255.0;
     rgbm.xyz = color / rgbm.a;
     return rgbm;
@@ -105,7 +107,7 @@ vec3 PrefilterEnvMap(float roughness, vec3 r) {
         vec3 h = ImportanceSampleGGX(rand2d, roughness, n);
         vec3 l = 2.0 * dot(v, h) * h - v;
 
-        float n_dot_l = clamp(dot(n, l), 0.0, 1.0);
+        float n_dot_l = saturate(dot(n, l));
         if (n_dot_l > 0.0) {
             float n_dot_h = dot(n, h);
 

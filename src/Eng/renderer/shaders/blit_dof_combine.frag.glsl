@@ -68,7 +68,7 @@ void main() {
     if (depth > 100000.0) {
         coc = near_coc;
     } else {
-        float far_coc = clamp(g_dof_equation.x * depth + g_dof_equation.y, 0.0, 1.0);
+        float far_coc = saturate(g_dof_equation.x * depth + g_dof_equation.y);
         coc = max(near_coc, far_coc * g_dof_equation.z);
     }
 

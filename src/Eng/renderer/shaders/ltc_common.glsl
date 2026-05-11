@@ -507,7 +507,7 @@ vec3 LTC_Evaluate_Line(vec3 N, vec3 V, vec3 P, vec4 t1_fetch, vec3 points[2], fl
     );
 
     float Iline = radius * I_ltc_line(p1, p2, Minv);
-    return vec3(clamp(Iline, 0.0, 1.0));
+    return vec3(saturate(Iline));
 }
 
 #endif // LTC_COMMON_GLSL

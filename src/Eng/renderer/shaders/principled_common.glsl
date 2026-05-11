@@ -232,7 +232,7 @@ struct ltc_params_t {
 ltc_params_t SampleLTC_Params(sampler2D luts, float N_dot_V, float roughness, float clearcoat_roughness2) {
     ltc_params_t ret;
 
-    const vec2 diff_ltc_uv = LTC_Coords(N_dot_V, clamp(roughness, 0.0, 1.0));
+    const vec2 diff_ltc_uv = LTC_Coords(N_dot_V, saturate(roughness));
 #if SIMPLIFIED_LTC_DIFFUSE
     ret.diff_t1 = vec4(1.0, 0.0, 0.0, 1.0);
 #else

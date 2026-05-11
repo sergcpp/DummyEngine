@@ -45,7 +45,7 @@ void main() {
     g_vtx_sh_uvs[2] = gl_TessCoord[0] * g_vtx_sh_uvs_es[0][2] + gl_TessCoord[1] * g_vtx_sh_uvs_es[1][2] + gl_TessCoord[2] * g_vtx_sh_uvs_es[2][2];
     g_vtx_sh_uvs[3] = gl_TessCoord[0] * g_vtx_sh_uvs_es[0][3] + gl_TessCoord[1] * g_vtx_sh_uvs_es[1][3] + gl_TessCoord[2] * g_vtx_sh_uvs_es[2][3];
 
-    float k = clamp((32.0 - distance(g_shrd_data.cam_pos_and_exp.xyz, g_vtx_pos)) / 32.0, 0.0, 1.0);
+    float k = saturate((32.0 - distance(g_shrd_data.cam_pos_and_exp.xyz, g_vtx_pos)) / 32.0);
     k *= k;
     k = 1.0;
     //float k = gl_TessLevelInner[0] / 64.0;

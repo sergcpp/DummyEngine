@@ -22,7 +22,7 @@ layout(location = 0) out float outCoc;
 
 void main() {
     vec4 depth = textureGather(g_depth, g_vtx_uvs, 0);
-    vec4 coc = clamp(g_dof_equation.x * depth + g_dof_equation.y, 0.0, 1.0);
+    vec4 coc = saturate(g_dof_equation.x * depth + g_dof_equation.y);
 
     float max_coc = max(max(coc.x, coc.y), max(coc.z, coc.w));
     outCoc = max_coc;

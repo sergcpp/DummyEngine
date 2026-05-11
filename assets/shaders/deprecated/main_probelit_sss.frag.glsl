@@ -92,7 +92,7 @@ void main() {
     vec3 normal_g = normalize(mat3(g_vtx_tangent, cross(g_vtx_normal, g_vtx_tangent), g_vtx_normal) * (normal_color_g * 2.0 - 1.0));
     vec3 normal_b = normalize(mat3(g_vtx_tangent, cross(g_vtx_normal, g_vtx_tangent), g_vtx_normal) * (normal_color_b * 2.0 - 1.0));
 
-    float curvature = clamp(aVertexUVAndCurvature_.z, 0.0, 1.0);
+    float curvature = saturate(aVertexUVAndCurvature_.z);
 
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
 
@@ -191,7 +191,7 @@ void main() {
     indirect_col = max(indirect_col, vec3(0.0));
 
     float N_dot_L = dot(normal, g_shrd_data.sun_dir.xyz);
-    float lambert = clamp(N_dot_L, 0.0, 1.0);
+    float lambert = saturate(N_dot_L);
 
     float visibility = 0.0;
     if (lambert > 0.00001) {
@@ -205,7 +205,7 @@ void main() {
     vec3 base_color = albedo_color * (g_shrd_data.sun_col.xyz * sun_diffuse * visibility + ambient_occlusion * indirect_col + additional_light);
 
     vec3 view_ray_ws = normalize(g_shrd_data.cam_pos_and_exp.xyz - g_vtx_pos);
-    float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
+    float N_dot_V = saturate(dot(normal, view_ray_ws));
 
     vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, spec_color.xyz, spec_color.a);
 

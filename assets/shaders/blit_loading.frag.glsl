@@ -36,7 +36,7 @@ void main() {
         float dis = length( uv - pos );
         vec3  col = mix( vec3(0.194*sin(iTime/6.0)+0.3,0.2,0.3*pha), vec3(1.1*sin(iTime/9.0)+0.3,0.2*pha,0.4), 0.5+0.5*sin(float(i)));
         float f = length(uv-pos)/rad;
-        f = sqrt(clamp(1.0+(sin((iTime)*siz)*0.5)*f,0.0,1.0));
+        f = sqrt(saturate(1.0+(sin((iTime)*siz)*0.5)*f));
         color += col.zyx *(1.0-smoothstep( rad*0.15, rad, dis ));
     }
     color *= sqrt(1.5-0.5*length(uv));

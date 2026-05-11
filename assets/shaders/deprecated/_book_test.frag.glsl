@@ -82,7 +82,7 @@ void main() {
         atten = (atten - factor) / (1.0 - LIGHT_ATTEN_CUTOFF);
         atten = max(atten, 0.0);
 
-        float _dot1 = clamp(dot(L, normal), 0.0, 1.0);
+        float _dot1 = saturate(dot(L, normal));
         float _dot2 = dot(L, dir_and_spot.xyz);
 
         atten = _dot1 * atten;
@@ -125,7 +125,7 @@ void main() {
     indirect_col /= max(total_fade, 1.0);
     indirect_col = max(4.0 * indirect_col, vec3(0.0));
 
-    float lambert = clamp(dot(normal, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
+    float lambert = saturate(dot(normal, g_shrd_data.sun_dir.xyz));
     float visibility = 0.0;
     if (lambert > 0.00001) {
         visibility = GetSunVisibility(lin_depth, g_shadow_tex, g_vtx_sh_uvs);
@@ -139,7 +139,7 @@ void main() {
         float s = sig_dist - 0.5;
         float v = s / fwidth(s);
 
-        albedo_color = mix(albedo_color, vec3(0.0), clamp(v + 0.5, 0.0, 1.0));
+        albedo_color = mix(albedo_color, vec3(0.0), saturate(v + 0.5));
     }
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) * g_shrd_data.ren_res.zw;

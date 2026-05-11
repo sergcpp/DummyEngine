@@ -55,8 +55,8 @@ void main() {
     vec3 view_ray_ws = normalize(g_vtx_pos - g_shrd_data.cam_pos_and_exp.xyz);
 
     const float R0 = 0.04f;
-    float factor = pow5(clamp(1.0 - dot(normal, -view_ray_ws), 0.0, 1.0));
-    float fresnel = clamp(R0 + (1.0 - R0) * factor, 0.0, 1.0);
+    float factor = pow5(saturate(1.0 - dot(normal, -view_ray_ws)));
+    float fresnel = saturate(R0 + (1.0 - R0) * factor);
 
     float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);

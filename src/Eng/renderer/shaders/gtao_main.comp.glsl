@@ -21,7 +21,7 @@ layout(local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) i
 float Falloff(const float dist2) {
     const float FALLOFF_START2 = 0.3;
     const float FALLOFF_END2 = 0.8;
-    return 2.0 * clamp((dist2 - FALLOFF_START2) / (FALLOFF_END2 - FALLOFF_START2), 0.0, 1.0);
+    return 2.0 * saturate((dist2 - FALLOFF_START2) / (FALLOFF_END2 - FALLOFF_START2));
 }
 
 void main() {

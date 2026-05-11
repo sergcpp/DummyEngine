@@ -120,7 +120,7 @@ float Gaussian(float x, float m, float sigma) {
 #define PREFILTER_DEPTH_SIGMA 0.01
 
 float16_t GetEdgeStoppingNormalWeight(const f16vec3 normal_p, const f16vec3 normal_q) {
-    return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), PREFILTER_NORMAL_SIGMA);
+    return pow(saturate(dot(normal_p, normal_q)), PREFILTER_NORMAL_SIGMA);
 }
 
 float16_t GetEdgeStoppingDepthWeight(const float center_depth, const float neighbor_depth) {

@@ -621,7 +621,7 @@ float ComputeTransmittanceAtDepthFrom4PowerMoments(float b_0, vec4 b, float dept
     polynomial[0] = f0-polynomial[0] * z[0];
     float absorbance = polynomial[0] + dot(b.xy, polynomial.yz);;
     // Turn the normalized absorbance into transmittance
-    return clamp(exp(-b_0 * absorbance), 0.0, 1.0);
+    return saturate(exp(-b_0 * absorbance));
 }
 
 void ResolveMoments(float depth, float b0, vec4 b_1234, out float transmittance_at_depth, out float total_transmittance) {

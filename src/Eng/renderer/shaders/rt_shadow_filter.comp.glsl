@@ -163,7 +163,7 @@ float GetDepthSimilarity(const float center_depth, const float neighbor_depth, c
 }
 
 float GetNormalSimilarity(const vec3 x1, const vec3 x2) {
-    return pow(clamp(dot(x1, x2), 0.0, 1.0), 32.0);
+    return pow(saturate(dot(x1, x2)), 32.0);
 }
 
 const float DepthSimilaritySigma = 1024.0;

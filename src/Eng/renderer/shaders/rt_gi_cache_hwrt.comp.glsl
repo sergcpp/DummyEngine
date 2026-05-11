@@ -562,7 +562,7 @@ void main() {
                     vec3 irradiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.prev_probe_volumes[i].spacing.xyz), N,
                                                                 g_shrd_data.prev_probe_volumes[i].scroll.xyz, g_shrd_data.prev_probe_volumes[i].origin.xyz, g_shrd_data.prev_probe_volumes[i].spacing.xyz, false);
                     irradiance *= base_color * ltc.diff_t2.x;
-                    irradiance *= clamp(hit_t / (0.5 * length(g_shrd_data.prev_probe_volumes[i].spacing.xyz)), 0.0, 1.0);
+                    irradiance *= saturate(hit_t / (0.5 * length(g_shrd_data.prev_probe_volumes[i].spacing.xyz)));
                     final_diffuse_only += lobe_masks.diffuse_mul * (1.0 / M_PI) * irradiance;
                     final_total += GI_CACHE_MULTIBOUNCE_FACTOR * lobe_masks.diffuse_mul * (1.0 / M_PI) * irradiance;
                 }

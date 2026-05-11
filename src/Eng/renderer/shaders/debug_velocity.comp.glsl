@@ -82,7 +82,7 @@ float arrow(vec2 p, vec2 v) {
 				   min(0.0, cos(ARROW_HEAD_ANGLE / 2.0) - dot(normalize(v * 0.33 - p), dir_v)) * mag_v * 0.8; // cutout
 		}
 
-		return clamp(1.0 + dist, 0.0, 1.0);
+		return saturate(1.0 + dist);
 	} else {
 		// Center of the pixel is always on the arrow
 		return max(0.0, 1.2 - mag_p);
