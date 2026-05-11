@@ -28,7 +28,7 @@ template <typename T, int N> class Vec {
 
   public:
     force_inline explicit Vec(eUninitialized) noexcept {}
-    force_inline Vec() noexcept : data_{(T)0} {}
+    force_inline Vec() noexcept : data_{T(0)} {}
     force_inline Vec(const T v) noexcept {
         for (int i = 0; i < N; ++i) {
             data_[i] = v;
@@ -42,7 +42,7 @@ template <typename T, int N> class Vec {
     template <typename S, int M> force_inline explicit Vec(const Vec<S, M> &rhs) noexcept {
         const int count = N < M ? N : M;
         for (int i = 0; i < count; ++i) {
-            data_[i] = (T)rhs[i];
+            data_[i] = T(rhs[i]);
         }
         for (int i = count; i < N; ++i) {
             data_[i] = T(0);
@@ -51,8 +51,15 @@ template <typename T, int N> class Vec {
 
     template <typename S> force_inline explicit Vec(const Vec<S, N> &rhs) noexcept {
         for (int i = 0; i < N; ++i) {
-            data_[i] = (T)rhs[i];
+            data_[i] = T(rhs[i]);
         }
+    }
+
+    template <typename S> force_inline explicit Vec(const Vec<S, N - 1> &rhs, const S last) noexcept {
+        for (int i = 0; i < N - 1; ++i) {
+            data_[i] = T(rhs[i]);
+        }
+        data_[N - 1] = T(last);
     }
 
     force_inline T &operator[](const int i) { return data_[i]; }
@@ -237,7 +244,7 @@ template <typename T, int N> force_inline Vec<T, N> Floor(const Vec<T, N> &v) {
 template <typename T, int N> force_inline Vec<T, N> AbsFloor(const Vec<T, N> &v) {
     Vec<T, N> ret;
     for (int i = 0; i < N; ++i) {
-        if (ret[i] > 0) {
+        if (v[i] > 0) {
             ret[i] = std::floor(v[i]);
         } else {
             ret[i] = std::ceil(v[i]);
@@ -275,8 +282,30 @@ template <typename T, int N> force_inline Vec<T, N> Step(const Vec<T, N> &edge, 
     return ret;
 }
 
-template <typename T, int N> force_inline const T *ValuePtr(const Vec<T, N> &v) { return &v[0]; }
+template <typename T> force_inline T Step(const T &edge, const T &x) { return x < edge ? T(0) : T(1); }
 
+template <typename T, int N>
+force_inline Vec<T, N> SmoothStep(const Vec<T, N> &edge0, const Vec<T, N> &edge1, const Vec<T, N> &x) {
+    const Vec<T, N> t = Clamp((x - edge0) / (edge1 - edge0), T(0), T(1));
+    return t * t * (T(3) - T(2) * t);
+}
+
+template <typename T> force_inline T SmoothStep(const T &edge0, const T &edge1, const T &x) {
+    const T t = Clamp((x - edge0) / (edge1 - edge0), T(0), T(1));
+    return t * t * (T(3) - T(2) * t);
+}
+
+template <typename T, int N> force_inline Vec<T, N> Sqrt(const Vec<T, N> &x) {
+    Vec<T, N> ret;
+    for (int i = 0; i < N; ++i) {
+        ret[i] = std::sqrt(x[i]);
+    }
+    return ret;
+}
+
+template <typename T> force_inline T Sqrt(const T &x) { return std::sqrt(x); }
+
+template <typename T, int N> force_inline const T *ValuePtr(const Vec<T, N> &v) { return &v[0]; }
 template <typename T, int N> force_inline const T *ValuePtr(const Vec<T, N> *v) { return &(*v)[0]; }
 
 template <typename T> force_inline Vec<T, 2> MakeVec2(const T *v) { return Vec<T, 2>(v[0], v[1]); }
