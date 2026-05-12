@@ -80,7 +80,7 @@ runs:
         #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --res-scale 1.0 --sun-dir 0 1 0 --exposure 3.25 --preset medium --psnr 21.40 --freeze-sky --no-postprocess --tex-budget 1024
         #mv bistro.png bistro_night_medium.png
         #cp bistro_night_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --res-scale 1.0 --sun-dir 0 1 0 --exposure 3.25 --preset medium --psnr 21.40 --freeze-sky --no-postprocess --tex-budget 1024
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --res-scale 1.0 --sun-dir 0 1 0 --exposure 3.25 --preset high --psnr 23.40 --freeze-sky --no-postprocess --tex-budget 1024
         mv bistro.png bistro_night_high.png
         cp bistro_night_high.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --res-scale 1.0 --sun-dir 0 1 0 --exposure 3.25 --preset ultra --psnr 23.40 --freeze-sky --no-postprocess --tex-budget 1024
