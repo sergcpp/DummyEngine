@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = master
-	commit = 5655037e2a180918380411fe247df8fec05adcab
+	branch = msm4_probes
+	commit = 964eb801b7d42c1ee1a7fc5e7fa644a1ace6cef3
 	method = merge
 	cmdver = 0.4.6
-	parent = 20a0549d66149ed5f98ce9f3296ea86e71b1dcf0
+	parent = 924a7f27194558beaa2c09eb146da46228f89c70
