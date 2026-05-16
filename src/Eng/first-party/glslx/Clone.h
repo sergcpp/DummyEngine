@@ -8,6 +8,7 @@ namespace glslx {
 class Clone {
     ast_version_directive *Clone_VersionDirective(const ast_version_directive *in);
     ast_extension_directive *Clone_ExtensionDirective(const ast_extension_directive *in);
+    ast_pragma_directive *Clone_PragmaDirective(const ast_pragma_directive *in);
     ast_default_precision *Clone_DefaultPrecision(const ast_default_precision *in);
 
     template <typename T> T *Clone_Constant(const T *in) { return dst_->make<T>(in->value); }

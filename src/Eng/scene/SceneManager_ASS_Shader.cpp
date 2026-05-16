@@ -296,19 +296,29 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                             ctx.log->Error("%s", preprocessor.error().data());
                         }
 
-                        if (preprocessed.find("#pragma dont_compile") != std::string::npos) {
-                            return true;
-                        }
-
                         glslx::Parser parser(preprocessed, out_file);
                         std::unique_ptr<glslx::TrUnit> ast = parser.Parse(unit_type);
                         if (!ast) {
+                            if (const glslx::TrUnit *tu = parser.internal_ast()) {
+                                for (const glslx::ast_pragma_directive *pr : tu->pragmas) {
+                                    if (strcmp(pr->name, "dont_compile") == 0) {
+                                        // 'dont_compile' shaders are allowed to be non-compileable
+                                        return true;
+                                    }
+                                }
+                            }
                             ctx.log->Error("GLSL parsing failed %s", out_file);
                             ctx.log->Error("%s", parser.error());
 #if !defined(NDEBUG) && defined(_WIN32)
                             __debugbreak();
 #endif
                             return false;
+                        }
+
+                        for (const glslx::ast_pragma_directive *pr : ast->pragmas) {
+                            if (strcmp(pr->name, "dont_compile") == 0) {
+                                return true;
+                            }
                         }
 
 #if !defined(NDEBUG)

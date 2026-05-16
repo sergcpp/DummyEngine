@@ -41,20 +41,21 @@ glslx::TrUnit::~TrUnit() {
     }
 }
 
-char *glslx::TrUnit::makestr(const char *s) {
+char *glslx::TrUnit::makestr(const char *s, const int len) {
     if (!s) {
         return nullptr;
     }
-    char **existing = str.Find(s);
+    const size_t size = (len < 0 ? strlen(s) : size_t(len)) + 1;
+    char **existing = str.Find(std::string_view(s, size - 1));
     if (existing) {
         return *existing;
     }
-    const size_t size = strlen(s) + 1;
     char *copy = alloc.allocator.allocate(size);
     if (!copy) {
         return nullptr;
     }
-    memcpy(copy, s, size);
+    memcpy(copy, s, size - 1);
+    copy[size - 1] = '\0';
     str.Insert(copy);
     return copy;
 }
@@ -102,6 +103,10 @@ int glslx::Compare(const TrUnit *lhs, const TrUnit *rhs) {
     const int ext_cmp = Compare_PointerSpans<ast_extension_directive *>(lhs->extensions, rhs->extensions);
     if (ext_cmp != 0) {
         return ext_cmp;
+    }
+    const int pragma_cmp = Compare_PointerSpans<ast_pragma_directive *>(lhs->pragmas, rhs->pragmas);
+    if (pragma_cmp != 0) {
+        return pragma_cmp;
     }
     const int def_cmp = Compare_PointerSpans<ast_default_precision *>(lhs->default_precision, rhs->default_precision);
     if (def_cmp != 0) {
@@ -224,6 +229,29 @@ int glslx::Compare(const ast_extension_directive *lhs, const ast_extension_direc
         return true;
     } else if (lhs->behavior == rhs->behavior) {
         return str_compare(lhs->name, rhs->name);
+    }
+    return 0;
+}
+
+int glslx::Compare(const ast_pragma_directive *lhs, const ast_pragma_directive *rhs) {
+    if (lhs == nullptr || rhs == nullptr) {
+        if (lhs == rhs) {
+            return 0;
+        }
+        return (lhs == nullptr) ? -1 : +1;
+    }
+    const int name_cmp = str_compare(lhs->name, rhs->name);
+    if (name_cmp != 0) {
+        return name_cmp;
+    }
+    if (lhs->arguments.size() != rhs->arguments.size()) {
+        return lhs->arguments.size() < rhs->arguments.size() ? -1 : +1;
+    }
+    for (int i = 0; i < int(lhs->arguments.size()); ++i) {
+        const int arg_cmp = str_compare(lhs->arguments[i], rhs->arguments[i]);
+        if (arg_cmp != 0) {
+            return arg_cmp;
+        }
     }
     return 0;
 }

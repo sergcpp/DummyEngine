@@ -4,17 +4,18 @@
 #include <ostream>
 
 namespace glslx {
-static const int32_t FormatVersion = 1;
+static const int32_t FormatVersion = 2;
 
 static const int32_t Block_Version = 0;
 static const int32_t Block_Strings = 1;
 static const int32_t Block_Extensions = 2;
-static const int32_t Block_Builtins = 3;
-static const int32_t Block_DefaultPrecision = 4;
-static const int32_t Block_Structures = 5;
-static const int32_t Block_InterfaceBlocks = 6;
-static const int32_t Block_Globals = 7;
-static const int32_t Block_Functions = 8;
+static const int32_t Block_Pragmas = 3;
+static const int32_t Block_Builtins = 4;
+static const int32_t Block_DefaultPrecision = 5;
+static const int32_t Block_Structures = 6;
+static const int32_t Block_InterfaceBlocks = 7;
+static const int32_t Block_Globals = 8;
+static const int32_t Block_Functions = 9;
 } // namespace glslx
 
 void glslx::Serialize::Serialize_VersionDirective(const ast_version_directive *version, std::ostream &out) {
@@ -41,6 +42,32 @@ glslx::ast_extension_directive *glslx::Serialize::Deserialize_ExtensionDirective
     int32_t name_index = -1;
     in.read((char *)&name_index, sizeof(int32_t));
     ret->name = strings_[name_index];
+    return ret;
+}
+
+void glslx::Serialize::Serialize_PragmaDirective(const ast_pragma_directive *pragma, std::ostream &out) {
+    const int32_t name_index = string_index_[pragma->name];
+    out.write((const char *)&name_index, sizeof(int32_t));
+    const int32_t arg_count = int32_t(pragma->arguments.size());
+    out.write((const char *)&arg_count, sizeof(int32_t));
+    for (char *arg : pragma->arguments) {
+        const int32_t arg_index = string_index_[arg];
+        out.write((const char *)&arg_index, sizeof(int32_t));
+    }
+}
+
+glslx::ast_pragma_directive *glslx::Serialize::Deserialize_PragmaDirective(std::istream &in) {
+    ast_pragma_directive *ret = dst_->make<ast_pragma_directive>(dst_->alloc.allocator);
+    int32_t name_index = -1;
+    in.read((char *)&name_index, sizeof(int32_t));
+    ret->name = strings_[name_index];
+    int32_t arg_count = 0;
+    in.read((char *)&arg_count, sizeof(int32_t));
+    for (int32_t i = 0; i < arg_count; ++i) {
+        int32_t arg_index = -1;
+        in.read((char *)&arg_index, sizeof(int32_t));
+        ret->arguments.push_back(strings_[arg_index]);
+    }
     return ret;
 }
 
@@ -886,6 +913,20 @@ void glslx::Serialize::SerializeAST(const TrUnit *tu, std::ostream &out) {
         assert(int32_t(extensions_end - extensions_beg) == block_size);
         (void)extensions_beg, (void)extensions_end;
     }
+    if (!tu->pragmas.empty()) {
+        out.write((char *)&Block_Pragmas, sizeof(int32_t));
+        const std::streampos block_size_pos = out.tellp();
+        const int32_t temp_block_size = 0;
+        out.write((char *)&temp_block_size, sizeof(int32_t));
+        for (const ast_pragma_directive *pragma : tu->pragmas) {
+            Serialize_PragmaDirective(pragma, out);
+        }
+        const std::streampos pragmas_end_pos = out.tellp();
+        out.seekp(block_size_pos, std::ios::beg);
+        const int32_t block_size = int32_t(pragmas_end_pos - block_size_pos) - sizeof(int32_t);
+        out.write((char *)&block_size, sizeof(int32_t));
+        out.seekp(pragmas_end_pos, std::ios::beg);
+    }
     if (!tu->builtins.empty()) {
         out.write((char *)&Block_Builtins, sizeof(int32_t));
         const int32_t block_size = tu->builtins.size() * sizeof(eKeyword);
@@ -1005,6 +1046,11 @@ bool glslx::Serialize::DeserializeAST(TrUnit *tu, std::istream &in) {
             const std::streampos block_end = in.tellg() + std::streampos(block_size);
             while (in.tellg() < block_end) {
                 tu->extensions.push_back(Deserialize_ExtensionDirective(in));
+            }
+        } else if (block_id == Block_Pragmas) {
+            const std::streampos block_end = in.tellg() + std::streampos(block_size);
+            while (in.tellg() < block_end) {
+                tu->pragmas.push_back(Deserialize_PragmaDirective(in));
             }
         } else if (block_id == Block_Builtins) {
             const std::streampos block_end = in.tellg() + std::streampos(block_size);

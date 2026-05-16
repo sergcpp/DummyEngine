@@ -86,6 +86,7 @@ class WriterGLSL : public WriterBase {
 
     void Write_VersionDirective(const ast_version_directive *version, std::ostream &out_stream);
     void Write_ExtensionDirective(const ast_extension_directive *extension, std::ostream &out_stream);
+    void Write_PragmaDirective(const ast_pragma_directive *pragma, std::ostream &out_stream);
     void Write_DefaultPrecision(const ast_default_precision *precision, std::ostream &out_stream);
 
   public:

@@ -45,7 +45,7 @@ enum class eOperator : uint8_t {
 };
 #undef X
 
-enum class eDirType : uint8_t { Version, Extension };
+enum class eDirType : uint8_t { Version, Extension, Pragma };
 
 enum class eVerType : uint8_t { Core, Compatibility, ES };
 
@@ -62,6 +62,10 @@ struct directive_t {
             const char *name;
             eExtBehavior behavior;
         } as_extension;
+        struct {
+            const char *name;
+            const char *argument;
+        } as_pragma;
     };
 };
 

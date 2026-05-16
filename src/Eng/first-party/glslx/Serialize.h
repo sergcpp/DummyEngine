@@ -14,6 +14,9 @@ class Serialize {
     void Serialize_ExtensionDirective(const ast_extension_directive *extension, std::ostream &out);
     ast_extension_directive *Deserialize_ExtensionDirective(std::istream &in);
 
+    void Serialize_PragmaDirective(const ast_pragma_directive *pragma, std::ostream &out);
+    ast_pragma_directive *Deserialize_PragmaDirective(std::istream &in);
+
     void Serialize_Builtin(const ast_builtin *builtin, std::ostream &out);
     ast_builtin *Deserialize_Builtin(std::istream &in);
 

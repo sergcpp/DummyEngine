@@ -392,6 +392,44 @@ void glslx::Lexer::ReadSingle(token_t &out) {
 
             out.string_mem.assign(error.data(), error.data() + error.length() + 1);
             error_ = out.string_mem.data();
+        } else if (chars == "pragma") {
+            out.type = eTokType::Directive;
+            out.as_directive.type = eDirType::Pragma;
+
+            SkipWhitespace();
+
+            std::string pragma_name;
+            while (isalpha(at()) || isdigit(at()) || at() == '_') {
+                pragma_name.push_back(at());
+                loc_.advance();
+            }
+            if (pragma_name.empty()) {
+                error_ = "Expected name in #pragma directive";
+                return;
+            }
+
+            // Skip horizontal whitespace before argument
+            while (position() != source_.size() && (at() == ' ' || at() == '\t')) {
+                loc_.advance();
+            }
+
+            // Collect the rest of the line as the argument
+            std::string argument;
+            while (position() != source_.size() && at() != '\n' && at() != '\r') {
+                argument.push_back(at());
+                loc_.advance();
+            }
+            // Trim trailing whitespace from argument
+            while (!argument.empty() && (argument.back() == ' ' || argument.back() == '\t')) {
+                argument.pop_back();
+            }
+
+            // Pack name\0argument\0 into string_mem
+            out.string_mem.assign(pragma_name.data(), pragma_name.data() + pragma_name.size() + 1);
+            const size_t arg_offset = out.string_mem.size();
+            out.string_mem.insert(out.string_mem.end(), argument.data(), argument.data() + argument.size() + 1);
+            out.as_directive.as_pragma.name = out.string_mem.data();
+            out.as_directive.as_pragma.argument = out.string_mem.data() + arg_offset;
         } else {
             error_ = "Unsupported directive";
             return;

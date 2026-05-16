@@ -54,6 +54,7 @@ class Parser {
 
     std::unique_ptr<TrUnit> Parse(eTrUnitType type);
 
+    const TrUnit *internal_ast() const { return ast_.get(); }
     [[nodiscard]] const char *error() const { return error_; }
 
   protected:

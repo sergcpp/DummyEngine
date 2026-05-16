@@ -153,6 +153,7 @@ struct ast_function;
 struct ast_global_variable;
 struct ast_version_directive;
 struct ast_extension_directive;
+struct ast_pragma_directive;
 struct ast_expression;
 using ast_constant_expression = ast_expression;
 struct ast_layout_qualifier;
@@ -184,6 +185,7 @@ struct TrUnit {
 
     ast_version_directive *version = nullptr;
     global_vector<ast_extension_directive *> extensions;
+    global_vector<ast_pragma_directive *> pragmas;
     global_vector<ast_default_precision *> default_precision;
     global_vector<ast_interface_block *> interface_blocks;
     global_vector<ast_builtin *> builtins; // always sorted by keyword
@@ -202,7 +204,7 @@ struct TrUnit {
     ~TrUnit();
 
     template <class T, class... Args> T *make(Args &&...args) { return new (&alloc) T(std::forward<Args>(args)...); }
-    char *makestr(const char *s);
+    char *makestr(const char *s, int len = -1);
 
     ast_builtin *FindBuiltin(eKeyword type) const;
     int FindBuiltinIndex(eKeyword type) const;
@@ -283,6 +285,16 @@ struct ast_extension_directive : ast_type {
 };
 
 int Compare(const ast_extension_directive *lhs, const ast_extension_directive *rhs);
+
+struct ast_pragma_directive : ast_type {
+    char *name = nullptr;
+    local_vector<char *> arguments;
+
+    explicit ast_pragma_directive(MultiPoolAllocator<char> &_alloc) noexcept : ast_type(false), arguments(_alloc) {}
+    OPERATOR_NEW(ast_pragma_directive)
+};
+
+int Compare(const ast_pragma_directive *lhs, const ast_pragma_directive *rhs);
 
 struct ast_default_precision : ast_type {
     ePrecision precision = ePrecision::None;

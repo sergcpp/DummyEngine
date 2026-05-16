@@ -242,6 +242,29 @@ bool glslx::Parser::ParseSource(std::string_view source) {
                 extension->name = ast_->makestr(tok_.as_directive.as_extension.name);
                 extension->behavior = tok_.as_directive.as_extension.behavior;
                 ast_->extensions.push_back(extension);
+            } else if (tok_.as_directive.type == eDirType::Pragma) {
+                auto *pragma = ast_->make<ast_pragma_directive>(ast_->alloc.allocator);
+                if (!pragma) {
+                    fatal("internal error");
+                    return false;
+                }
+                pragma->name = ast_->makestr(tok_.as_directive.as_pragma.name);
+                const char *arg = tok_.as_directive.as_pragma.argument;
+                while (arg && *arg) {
+                    while (*arg == ' ' || *arg == '\t') {
+                        ++arg;
+                    }
+                    if (!*arg) {
+                        break;
+                    }
+                    const char *end = arg;
+                    while (*end && *end != ' ' && *end != '\t') {
+                        ++end;
+                    }
+                    pragma->arguments.push_back(ast_->makestr(arg, int(end - arg)));
+                    arg = end;
+                }
+                ast_->pragmas.push_back(pragma);
             }
             continue;
         }
@@ -3623,7 +3646,7 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
     return nullptr;
 }
 
-/*#include <sstream>
+#include <sstream>
 
 std::string glslx::Parser::DumpASTBlob() {
     std::stringstream temp;
@@ -3636,4 +3659,4 @@ std::string glslx::Parser::DumpASTBlob() {
         ret += ", ";
     }
     return ret;
-}*/
+}

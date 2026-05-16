@@ -36,12 +36,24 @@ void test_parser() {
 
     { // directives
         static const char source[] = "#version 330 core\n"
-                                     "#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require\n";
+                                     "#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require\n"
+                                     "#pragma multi_compile FIRST SECOND\n"
+                                     "#pragma multi_compile _ NO_SUBGROUP\n";
         static const char *expected = source;
 
         Parser parser(source, "directives.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
+
+        require(tr_unit->pragmas.size() == 2);
+        require(strcmp(tr_unit->pragmas[0]->name, "multi_compile") == 0);
+        require(tr_unit->pragmas[0]->arguments.size() == 2);
+        require(strcmp(tr_unit->pragmas[0]->arguments[0], "FIRST") == 0);
+        require(strcmp(tr_unit->pragmas[0]->arguments[1], "SECOND") == 0);
+        require(strcmp(tr_unit->pragmas[1]->name, "multi_compile") == 0);
+        require(tr_unit->pragmas[1]->arguments.size() == 2);
+        require(strcmp(tr_unit->pragmas[1]->arguments[0], "_") == 0);
+        require(strcmp(tr_unit->pragmas[1]->arguments[1], "NO_SUBGROUP") == 0);
 
         tr_unit = test_clone(tr_unit.get());
         tr_unit = test_serialize(tr_unit.get());

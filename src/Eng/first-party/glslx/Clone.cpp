@@ -14,6 +14,15 @@ glslx::ast_extension_directive *glslx::Clone::Clone_ExtensionDirective(const ast
     return ret;
 }
 
+glslx::ast_pragma_directive *glslx::Clone::Clone_PragmaDirective(const ast_pragma_directive *in) {
+    ast_pragma_directive *ret = dst_->make<ast_pragma_directive>(dst_->alloc.allocator);
+    ret->name = *dst_->str.Find(in->name);
+    for (const char *arg : in->arguments) {
+        ret->arguments.push_back(*dst_->str.Find(arg));
+    }
+    return ret;
+}
+
 glslx::ast_default_precision *glslx::Clone::Clone_DefaultPrecision(const ast_default_precision *in) {
     ast_default_precision *ret = dst_->make<ast_default_precision>();
     ret->precision = in->precision;
@@ -523,6 +532,9 @@ std::unique_ptr<glslx::TrUnit> glslx::Clone::CloneAST(const TrUnit *tu) {
     }
     for (const ast_extension_directive *extension : tu->extensions) {
         dst_->extensions.push_back(Clone_ExtensionDirective(extension));
+    }
+    for (const ast_pragma_directive *pragma : tu->pragmas) {
+        dst_->pragmas.push_back(Clone_PragmaDirective(pragma));
     }
     for (const ast_builtin *builtin : tu->builtins) {
         dst_->FindOrAddBuiltin(builtin->type);
