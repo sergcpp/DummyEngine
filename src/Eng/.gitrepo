@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = msm4_probes
-	commit = 964eb801b7d42c1ee1a7fc5e7fa644a1ace6cef3
+	branch = refactor_18_05
+	commit = b23f2ecd42fe1cf5a32930d4626fcab19cd9a643
 	method = merge
-	cmdver = 0.4.6
-	parent = 924a7f27194558beaa2c09eb146da46228f89c70
+	cmdver = 0.4.9
+	parent = 54887358cd33b5db3dae7b4411d615b8a7419d17
