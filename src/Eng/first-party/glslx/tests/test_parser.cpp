@@ -941,7 +941,10 @@ void test_parser() {
                                      "\n"
                                      "\n"
                                      "#line 42\n"
-                                     "#error 1111\n";
+                                     "#warning 1111\n"
+                                     "#line 43 \"path/to\\file.glsl\"\n"
+                                     "#warning 2222\n"
+                                     "#error 3333\n";
 
         Parser parser(source, "line_directive.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
@@ -952,7 +955,10 @@ void test_parser() {
         tr_unit = test_serialize(tr_unit.get());
         require_fatal(tr_unit == nullptr);
 
-        require(strcmp(parser.error(), "line_directive.glsl:43:12: error: 1111") == 0);
+        require(parser.warnings().size() == 2);
+        require(strcmp(parser.warnings()[0], "line_directive.glsl:42:14: warning: 1111") == 0);
+        require(strcmp(parser.warnings()[1], "path/to\\file.glsl:43:14: warning: 2222") == 0);
+        require(strcmp(parser.error(), "path/to\\file.glsl:44:12: error: 3333") == 0);
     }
     { // first character invalid
         const char source[] = "`\n";

@@ -45,7 +45,7 @@ enum class eOperator : uint8_t {
 };
 #undef X
 
-enum class eDirType : uint8_t { Version, Extension, Pragma };
+enum class eDirType : uint8_t { Version, Extension, Pragma, Warning };
 
 enum class eVerType : uint8_t { Core, Compatibility, ES };
 
@@ -66,6 +66,9 @@ struct directive_t {
             const char *name;
             const char *argument;
         } as_pragma;
+        struct {
+            const char *argument;
+        } as_warning;
     };
 };
 
@@ -94,7 +97,8 @@ struct token_t {
 
 struct location_t {
     size_t col = 1;
-    size_t line = 1;
+    long long line = 1;
+    std::string file;
     size_t pos = 0;
 
     void advance(size_t count = 1) {
@@ -140,6 +144,7 @@ class Lexer {
     [[nodiscard]] location_t location() const { return loc_; }
     [[nodiscard]] size_t position() const { return loc_.pos; }
     [[nodiscard]] size_t line() const { return loc_.line; }
+    [[nodiscard]] std::string_view file() const { return loc_.file; }
     [[nodiscard]] size_t column() const { return loc_.col; }
 
     void set_location(const location_t &loc) { loc_ = loc; }

@@ -34,6 +34,7 @@ class Parser {
     std::string_view source_;
     token_t tok_;
     global_vector<scope> scopes_;
+    global_vector<const char *> warnings_;
     const char *error_ = nullptr;
     const char *file_name_ = nullptr;
 
@@ -54,7 +55,8 @@ class Parser {
 
     std::unique_ptr<TrUnit> Parse(eTrUnitType type);
 
-    const TrUnit *internal_ast() const { return ast_.get(); }
+    [[nodiscard]] const TrUnit *internal_ast() const { return ast_.get(); }
+    [[nodiscard]] Span<const char *> warnings() { return warnings_; }
     [[nodiscard]] const char *error() const { return error_; }
 
   protected:
@@ -112,6 +114,7 @@ class Parser {
 
     static bool is_vector_type(const ast_type *type);
 
+    void warning(_Printf_format_string_ const char *fmt, ...) CHECK_FORMAT_STRING(2, 3);
     void fatal(_Printf_format_string_ const char *fmt, ...) CHECK_FORMAT_STRING(2, 3);
 
     ast_constant_expression *Evaluate(ast_expression *expression);

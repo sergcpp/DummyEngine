@@ -27,7 +27,7 @@ bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_fi
         return false;
     }
 
-    int line_counter = 0;
+    int line_counter = 1;
 
     std::string line;
     while (std::getline(src_stream, line)) {
@@ -44,7 +44,7 @@ bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_fi
             const auto slash_pos = size_t(intptr_t(strrchr(in_file, '/') - in_file));
             const std::string full_path = std::string(in_file, slash_pos + 1) + file_name;
 
-            output += "#line 0\r\n";
+            output += "#line 1 \"" + file_name + "\"\n";
 
             auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), full_path);
             if (it == std::end(out_dependencies)) {
@@ -55,10 +55,12 @@ bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_fi
                 return false;
             }
 
-            output += "\r\n#line " + std::to_string(line_counter) + "\r\n";
+            output += "\n#line " + std::to_string(line_counter + 1) + " \"" + in_file + "\"\n";
         } else {
-            output += line + "\r\n";
+            output += line + '\n';
         }
+
+        ++line_counter;
     }
 
     return true;
@@ -81,7 +83,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
         }
         std::string line;
 
-        int line_counter = 0;
+        int line_counter = 1;
 
         while (std::getline(src_stream, line)) {
             /*if (!line.empty() && line.back() == '\r') {
@@ -92,7 +94,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 if (ctx.platform == "pc" && line.rfind("es") != std::string::npos) {
                     line = "#version 430";
                 }
-                orig_glsl_file_data += line + "\r\n";
+                orig_glsl_file_data += line + '\n';
             } else if (line.rfind("#include ") == 0) {
                 const size_t n1 = line.find_first_of('\"');
                 const size_t n2 = line.find_last_of('\"');
@@ -101,7 +103,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 const std::string full_path =
                     (std::filesystem::path(in_file).parent_path() / file_name).generic_string();
 
-                orig_glsl_file_data += "#line 0\r\n";
+                orig_glsl_file_data += "#line 1 \"" + file_name + "\"\n";
 
                 auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), full_path);
                 if (it == std::end(out_dependencies)) {
@@ -113,7 +115,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                     return false;
                 }
 
-                orig_glsl_file_data += "\r\n#line " + std::to_string(line_counter + 2) + "\r\n";
+                orig_glsl_file_data += "\n#line " + std::to_string(line_counter + 1) + " \"" + in_file + "\"\n";
             } else if (line.find("#pragma multi_compile ") == 0) {
                 std::vector<std::string> new_permutations;
                 line = line.substr(22);
@@ -153,11 +155,13 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 }
 
                 permutations = std::move(all_permutations);
+
+                orig_glsl_file_data += '\n'; // ensure equal lines count
             } else {
                 if (!line.empty() && line.back() == '\r') {
                     line.pop_back();
                 }
-                orig_glsl_file_data += line + "\r\n";
+                orig_glsl_file_data += line + '\n';
             }
 
             ++line_counter;
@@ -229,7 +233,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                                 }
 
                                 preamble += std::string(p1, p2);
-                                preamble += "\n";
+                                preamble += '\n';
 
                                 if (*p2) {
                                     p1 = ++p2;
@@ -237,7 +241,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                             } else if (*p2 == ';') {
                                 preamble += "#define ";
                                 preamble += std::string(p1, p2);
-                                preamble += "\n";
+                                preamble += '\n';
 
                                 p1 = ++p2;
                             }
@@ -250,8 +254,12 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                         if (p1 != p2) {
                             preamble += "#define ";
                             preamble += std::string(p1, p2);
-                            preamble += "\n";
+                            preamble += '\n';
                         }
+                    }
+
+                    if (!preamble.empty()) {
+                        preamble.append("#line 1\n");
                     }
 
                     std::string glsl_file_data = preamble + orig_glsl_file_data;

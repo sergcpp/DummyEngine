@@ -376,12 +376,28 @@ void glslx::Lexer::ReadSingle(token_t &out) {
                 return;
             }
 
-            loc_.line = strtoull(line.data(), nullptr, 10);
+            loc_.line = strtoll(line.data(), nullptr, 10) - 1;
+
+            SkipWhitespace();
+
+            if (at() == '\"') {
+                loc_.advance();
+                loc_.file.clear();
+                while (isalpha(at()) || isdigit(at()) || at() == '_' || at() == '.' || at() == '/' || at() == '\\') {
+                    loc_.file.push_back(at());
+                    loc_.advance();
+                }
+                if (at() != '\"') {
+                    error_ = "Expected closing \"";
+                    return;
+                }
+                loc_.advance();
+            }
         } else if (chars == "error") {
             SkipWhitespace();
 
             std::string error;
-            while (isalpha(at()) || isdigit(at()) || at() == '"') {
+            while (isalpha(at()) || isdigit(at()) || at() == '\"' || at() == '_') {
                 error.push_back(at());
                 loc_.advance();
             }
@@ -430,6 +446,24 @@ void glslx::Lexer::ReadSingle(token_t &out) {
             out.string_mem.insert(out.string_mem.end(), argument.data(), argument.data() + argument.size() + 1);
             out.as_directive.as_pragma.name = out.string_mem.data();
             out.as_directive.as_pragma.argument = out.string_mem.data() + arg_offset;
+        } else if (chars == "warning") {
+            out.type = eTokType::Directive;
+            out.as_directive.type = eDirType::Warning;
+
+            SkipWhitespace();
+
+            std::string warning;
+            while (isalpha(at()) || isdigit(at()) || at() == '\"' || at() == '_') {
+                warning.push_back(at());
+                loc_.advance();
+            }
+            if (warning.empty()) {
+                error_ = "Empty #warning directive";
+                return;
+            }
+
+            out.string_mem.assign(warning.data(), warning.data() + warning.length() + 1);
+            out.as_directive.as_warning.argument = out.string_mem.data();
         } else {
             error_ = "Unsupported directive";
             return;

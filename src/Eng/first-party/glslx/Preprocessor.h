@@ -6,6 +6,7 @@
 #include <functional>
 #include <istream>
 #include <memory>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -151,6 +152,8 @@ class Preprocessor {
     std::deque<token_t> tokens_queue_;
     local_string temp_str_;
 
+    int additional_newlines_ = 0;
+
     bool expect(const eTokenType expected_type, const eTokenType actual_type) {
         if (expected_type != actual_type) {
             error_ = "Unexpected token at " + std::to_string(source_line_);
@@ -168,19 +171,22 @@ class Preprocessor {
     local_string ExtractSingleLineComment(const local_string &line);
     local_string ExtractMultiLineComment(local_string &line);
 
-    bool CreateMacroDefinition();
-    bool RemoveMacroDefinition(std::string_view macro_name);
+    bool CreateMacroDefinition(token_t &curr_token);
+    bool RemoveMacroDefinition(token_t &curr_token);
 
     bool ProcessInclude();
     bool ProcessExtension(std::string &output);
 
-    bool ProcessIf();
-    bool ProcessIfdef();
-    bool ProcessIfndef();
+    bool ProcessIf(token_t &curr_token);
+    bool ProcessIfdef(token_t &curr_token);
+    bool ProcessIfndef(token_t &curr_token);
     bool ProcessElse();
-    bool ProcessElif();
+    bool ProcessElif(token_t &curr_token);
 
-    [[nodiscard]] bool ShouldTokenBeSkipped() const {
+    [[nodiscard]] bool ShouldTokenBeSkipped(const eTokenType tok) const {
+        if (tok == eTokenType::Newline) {
+            return false;
+        }
         for (int i = int(if_blocks_.size()) - 1; i >= 0; --i) {
             if (if_blocks_[i].should_be_skipped) {
                 return true;

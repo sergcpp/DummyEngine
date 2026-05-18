@@ -224,6 +224,7 @@ bool glslx::Parser::ParseSource(std::string_view source) {
                 if (ast_->version) {
                     fatal("multiple version directives are not allowed");
                     return false;
+#
                 }
                 auto *directive = ast_->make<ast_version_directive>();
                 if (!directive) {
@@ -265,6 +266,8 @@ bool glslx::Parser::ParseSource(std::string_view source) {
                     arg = end;
                 }
                 ast_->pragmas.push_back(pragma);
+            } else if (tok_.as_directive.type == eDirType::Warning) {
+                warning("%s", tok_.as_directive.as_warning.argument);
             }
             continue;
         }
@@ -1026,9 +1029,52 @@ bool glslx::Parser::is_vector_type(const ast_type *type) {
            btype->type == eKeyword::K_uvec2 || btype->type == eKeyword::K_uvec3 || btype->type == eKeyword::K_uvec4;
 }
 
-void CHECK_FORMAT_STRING(2, 3) glslx::Parser::fatal(_Printf_format_string_ const char *fmt, ...) {
+void CHECK_FORMAT_STRING(2, 3) glslx::Parser::warning(_Printf_format_string_ const char *fmt, ...) {
+    const char *file_name = lexer_.file().empty() ? file_name_ : lexer_.file().data();
     char *banner = nullptr;
-    const int banner_len = allocfmt(&banner, "%s:%zu:%zu: error: ", file_name_, lexer_.line(), lexer_.column());
+    const int banner_len = allocfmt(&banner, "%s:%zu:%zu: warning: ", file_name, lexer_.line(), lexer_.column());
+    if (banner_len == -1) {
+        error_ = "Out of memory";
+        return;
+    }
+
+    char *message = nullptr;
+    va_list va;
+    va_start(va, fmt);
+    const int message_len = allocvfmt(&message, fmt, va);
+    if (message_len == -1) {
+        va_end(va);
+        error_ = "Out of memory";
+        return;
+    }
+    va_end(va);
+
+    // concatenate
+    char *concat = ast_->alloc.allocator.allocate(banner_len + message_len + 1);
+    if (!concat) {
+        free(banner);
+        free(message);
+        error_ = "Out of memory";
+        return;
+    }
+
+    memcpy(concat, banner, banner_len);
+    memcpy(concat + banner_len, message, message_len + 1);
+    free(banner);
+    free(message);
+
+    warnings_.push_back(concat);
+    const bool inserted = ast_->str.Insert(concat);
+    if (!inserted) {
+        warnings_.back() = *ast_->str.Find(concat);
+        ast_->alloc.allocator.deallocate(concat, banner_len + message_len + 1);
+    }
+}
+
+void CHECK_FORMAT_STRING(2, 3) glslx::Parser::fatal(_Printf_format_string_ const char *fmt, ...) {
+    const char *file_name = lexer_.file().empty() ? file_name_ : lexer_.file().data();
+    char *banner = nullptr;
+    const int banner_len = allocfmt(&banner, "%s:%zu:%zu: error: ", file_name, lexer_.line(), lexer_.column());
     if (banner_len == -1) {
         error_ = "Out of memory";
         return;
