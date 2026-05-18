@@ -85,6 +85,8 @@ class HashMap32 : HashFunc, KeyEqual, Allocator {
     uint32_t size() const { return size_; }
     uint32_t capacity() const { return capacity_; }
 
+    bool empty() const { return size_ == 0; }
+
     void clear() {
         for (uint32_t i = 0; i < capacity_ && size_; i++) {
             if (ctrl_[i] & OccupiedBit) {
@@ -334,6 +336,15 @@ class HashMap32 : HashFunc, KeyEqual, Allocator {
         nodes_[it.index_].val.~V();
 
         return iter_at(next);
+    }
+
+    uint32_t FindOccupiedInRange(const uint32_t start, const uint32_t end) {
+        for (uint32_t i = start; i < end; ++i) {
+            if (ctrl_[i] & OccupiedBit) {
+                return i;
+            }
+        }
+        return end;
     }
 
   private:
