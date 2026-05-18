@@ -4,9 +4,17 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <algorithm>
 #include <array>
 #include <type_traits>
 #include <vector>
+
+#ifdef __GNUC__
+#define force_inline __attribute__((always_inline)) inline
+#endif
+#ifdef _MSC_VER
+#define force_inline __forceinline
+#endif
 
 namespace Snd {
 template <typename T> struct remove_all_const : std::remove_const<T> {};
@@ -34,17 +42,17 @@ template <typename T> class Span {
     Span(T *p_begin, T *p_end) : p_data_(p_begin), size_(p_end - p_begin) {}
 
     template <size_t N>
-    Span(const std::array<typename remove_all_const<T>::type, N> &arr) : Span(arr.data(), arr.size()) {}
+    Span(const std::array<typename remove_all_const<T>::type, N> &arr) : Span(static_cast<T *>(arr.data()), arr.size()) {}
     template <size_t N>
     Span(const std::array<const typename remove_all_const<T>::type, N> &arr) : Span(arr.data(), arr.size()) {}
-    template <size_t N> Span(std::array<typename std::remove_cv<T>::type, N> &arr) : Span(arr.data(), arr.size()) {}
+    template <size_t N> Span(std::array<typename std::remove_cv<T>::type, N> &arr) : Span(static_cast<T *>(arr.data()), arr.size()) {}
 
     template <typename Alloc>
-    Span(const std::vector<typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
+    Span(const std::vector<typename remove_all_const<T>::type, Alloc> &v) : Span(static_cast<T *>(v.data()), v.size()) {}
     template <typename Alloc>
     Span(const std::vector<const typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
     template <typename Alloc>
-    Span(std::vector<typename std::remove_cv<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
+    Span(std::vector<typename std::remove_cv<T>::type, Alloc> &v) : Span(static_cast<T *>(v.data()), v.size()) {}
 
     template <size_t N> Span(T (&arr)[N]) : Span(arr, N) {}
 
@@ -55,19 +63,25 @@ template <typename T> class Span {
     Span(const Span &rhs) = default;
     Span &operator=(const Span &rhs) = default;
 
-    T *data() const { return p_data_; }
-    ptrdiff_t size() const { return size_; }
-    ptrdiff_t size_bytes() const { return size_ * sizeof(T); }
-    bool empty() const { return size_ == 0; }
+    force_inline T *data() const { return p_data_; }
+    force_inline ptrdiff_t size() const { return size_; }
+    force_inline ptrdiff_t size_bytes() const { return size_ * sizeof(T); }
+    force_inline bool empty() const { return size_ == 0; }
 
-    T &front() const { return p_data_[0]; }
-    T &back() const { return p_data_[size_ - 1]; }
+    force_inline T &front() const {
+        assert(!empty());
+        return p_data_[0];
+    }
+    force_inline T &back() const {
+        assert(!empty());
+        return p_data_[size_ - 1];
+    }
 
-    T &operator[](const ptrdiff_t i) const {
+    force_inline T &operator[](const ptrdiff_t i) const {
         assert(i >= 0 && i < size_);
         return p_data_[i];
     }
-    T &operator()(const ptrdiff_t i) const {
+    force_inline T &operator()(const ptrdiff_t i) const {
         assert(i >= 0 && i < size_);
         return p_data_[i];
     }
@@ -75,10 +89,10 @@ template <typename T> class Span {
     using iterator = T *;
     using const_iterator = const T *;
 
-    iterator begin() const { return p_data_; }
-    iterator end() const { return p_data_ + size_; }
-    const_iterator cbegin() const { return p_data_; }
-    const_iterator cend() const { return p_data_ + size_; }
+    force_inline iterator begin() const { return p_data_; }
+    force_inline iterator end() const { return p_data_ + size_; }
+    force_inline const_iterator cbegin() const { return p_data_; }
+    force_inline const_iterator cend() const { return p_data_ + size_; }
 
     template <typename IterType> class reverse_iterator_t {
         IterType iter_;
@@ -135,10 +149,10 @@ template <typename T> class Span {
     using reverse_iterator = reverse_iterator_t<T *>;
     using const_reverse_iterator = reverse_iterator_t<const T *>;
 
-    reverse_iterator rbegin() const { return reverse_iterator(p_data_ + size_); }
-    reverse_iterator rend() const { return reverse_iterator(p_data_); }
-    const_reverse_iterator crbegin() const { return const_reverse_iterator(p_data_ + size_); }
-    const_reverse_iterator crend() const { return const_reverse_iterator(p_data_); }
+    force_inline reverse_iterator rbegin() const { return reverse_iterator(p_data_ + size_); }
+    force_inline reverse_iterator rend() const { return reverse_iterator(p_data_); }
+    force_inline const_reverse_iterator crbegin() const { return const_reverse_iterator(p_data_ + size_); }
+    force_inline const_reverse_iterator crend() const { return const_reverse_iterator(p_data_); }
 
     Span<T> first(const size_t n) const { return Span<T>{p_data_, n}; }
     Span<T> last(const size_t n) const { return Span<T>{p_data_ + size_ - n, n}; }
@@ -172,4 +186,6 @@ template <typename T, typename U> bool operator<(Span<T> lhs, Span<U> rhs) {
 template <typename T, typename U> bool operator<=(Span<T> lhs, Span<U> rhs) { return !operator<(rhs, lhs); }
 template <typename T, typename U> bool operator>(Span<T> lhs, Span<U> rhs) { return operator<(rhs, lhs); }
 template <typename T, typename U> bool operator>=(Span<T> lhs, Span<U> rhs) { return !operator<(lhs, rhs); }
-} // namespace Ren
+} // namespace Snd
+
+#undef force_inline
