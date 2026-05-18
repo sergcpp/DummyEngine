@@ -54,10 +54,16 @@ class HashMap32 : HashFunc, KeyEqual, Allocator {
     HashMap32(const HashMap32 &rhs) = delete;
     HashMap32 &operator=(const HashMap32 &rhs) = delete;
 
-    HashMap32(HashMap32 &&rhs) noexcept { (*this) = std::move(rhs); }
+    HashMap32(HashMap32 &&rhs) noexcept : ctrl_(nullptr), nodes_(nullptr), capacity_(0), size_(0) {
+        (*this) = std::move(rhs);
+    }
     HashMap32 &operator=(HashMap32 &&rhs) noexcept {
         if (this == &rhs) {
             return (*this);
+        }
+        if (ctrl_) {
+            clear();
+            this->deallocate(ctrl_, mem_size(capacity_));
         }
         if constexpr (std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value) {
             Allocator::operator=(static_cast<Allocator &&>(rhs));

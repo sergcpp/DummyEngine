@@ -164,10 +164,16 @@ class HashSet32 : HashFunc, KeyEqual, Allocator {
     HashSet32(const HashSet32 &rhs) = delete;
     HashSet32 &operator=(const HashSet32 &rhs) = delete;
 
-    HashSet32(HashSet32 &&rhs) noexcept { (*this) = std::move(rhs); }
+    HashSet32(HashSet32 &&rhs) noexcept : ctrl_(nullptr), nodes_(nullptr), capacity_(0), size_(0) {
+        (*this) = std::move(rhs);
+    }
     HashSet32 &operator=(HashSet32 &&rhs) noexcept {
         if (this == &rhs) {
             return (*this);
+        }
+        if (ctrl_) {
+            clear();
+            this->deallocate(ctrl_, mem_size(capacity_));
         }
         if constexpr (std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value) {
             Allocator::operator=(static_cast<Allocator &&>(rhs));
