@@ -250,8 +250,8 @@ void main() {
             }
         }
 
-        imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES_Y), vec4(compress_hdr(out_color, g_shrd_data.cam_pos_and_exp.w), 0));
-        imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 3 * PROBE_VOLUME_RES_Y), vec4(out_dir, 0));
+        imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 1 * PROBE_VOLUME_RES_Y), vec4(compress_hdr(out_color, g_shrd_data.cam_pos_and_exp.w), 0));
+        imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES_Y), vec4(out_dir, 0));
     }
 #endif
 
@@ -327,7 +327,7 @@ void main() {
         break;
     }
 
-    vec3 final_diffuse_only = vec3(0.0), final_total = vec3(0.0);
+    vec3 final_total = vec3(0.0);
     float final_distance = 0.0;
 
     if (inter.mask == 0) {
@@ -363,7 +363,7 @@ void main() {
         const vec3 rotated_dir = rotate_xz(probe_ray_dir, g_shrd_data.env_col.w);
         const float env_mip_count = g_shrd_data.ambient_hack.w;
 
-        final_diffuse_only = final_total = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, env_mip_count - 4.0).xyz;
+        final_total = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, env_mip_count - 4.0).xyz;
         final_distance = 1e27;
     } else {
         const bool backfacing = (inter.prim_index < 0);
@@ -605,7 +605,6 @@ void main() {
         }
 
         final_distance = backfacing ? -inter.tmax : inter.tmax;
-        final_diffuse_only += light_total;
         final_total += light_total;
 
         for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
@@ -613,16 +612,15 @@ void main() {
             if (weight > 0.0) {
                 if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0) {
                     vec3 irradiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.probe_volumes[i].spacing.xyz, 0.5 * inter.tmax), N,
-                                                            g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false, true);
+                                                            g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, true);
                     irradiance *= base_color * ltc.diff_t2.x;
                     irradiance *= saturate(inter.tmax / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)));
-                    final_diffuse_only += lobe_masks.diffuse_mul * (1.0 / M_PI) * irradiance;
                     final_total += GI_CACHE_MULTIBOUNCE_FACTOR * lobe_masks.diffuse_mul * (1.0 / M_PI) * irradiance;
                 }
                 if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
                     const vec3 refl_dir = reflect(probe_ray_dir, N);
                     vec3 avg_radiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.probe_volumes[i].spacing.xyz, 0.5 * inter.tmax), refl_dir,
-                                                              g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false, true);
+                                                              g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, true);
                     avg_radiance *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
                     avg_radiance *= saturate(inter.tmax / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)));
                     final_total += GI_CACHE_MULTIBOUNCE_FACTOR * (1.0 / M_PI) * avg_radiance;
@@ -632,9 +630,6 @@ void main() {
         }
     }
 
-    final_diffuse_only = compress_hdr(final_diffuse_only, g_shrd_data.cam_pos_and_exp.w);
     final_total = compress_hdr(final_total, g_shrd_data.cam_pos_and_exp.w);
-
     imageStore(g_out_ray_data_img, output_coords, vec4(final_total, final_distance));
-    imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, PROBE_VOLUME_RES_Y), vec4(final_diffuse_only, final_distance));
 }

@@ -63,11 +63,11 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
         data->partial_update = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
         data->probe_volumes = persistent_data.probe_volumes;
 
-        { // ~64.0mb
+        { // ~48.0mb
             FgImgDesc desc;
             desc.w = PROBE_TOTAL_RAYS_COUNT;
             desc.h = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z;
-            desc.d = 4 * PROBE_VOLUME_RES_Y;
+            desc.d = 3 * PROBE_VOLUME_RES_Y;
             desc.format = Ren::eFormat::RGBA16F;
             desc.flags = Ren::eImgFlags::Array;
             desc.usage = Ren::Bitmask(Ren::eImgUsage::Storage) | Ren::eImgUsage::Sampled | Ren::eImgUsage::Transfer;
@@ -124,16 +124,6 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
             uniform_params.pre_exposure = view_state_.pre_exposure;
 
-            // total irradiance
-            uniform_params.input_offset = 0;
-            uniform_params.output_offset = 0;
-            DispatchCompute(fg.cmd_buf(), pi_probe_blend_[bool(persistent_data.stoch_lights)][partial], fg.storages(),
-                            Ren::Vec3u{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y}, bindings,
-                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
-
-            // diffuse-only irradiance
-            uniform_params.input_offset = PROBE_VOLUME_RES_Y;
-            uniform_params.output_offset = PROBE_VOLUMES_COUNT * PROBE_VOLUME_RES_Y;
             DispatchCompute(fg.cmd_buf(), pi_probe_blend_[bool(persistent_data.stoch_lights)][partial], fg.storages(),
                             Ren::Vec3u{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y}, bindings,
                             &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());

@@ -48,7 +48,7 @@ void main() {
         return;
     }
 
-    const ivec3 output_coords = ivec3(gl_GlobalInvocationID.xy, g_params.output_offset + gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES_Y);
+    const ivec3 output_coords = ivec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES_Y);
 
     const bool is_border_texel = (gl_LocalInvocationID.x == 0) || (gl_LocalInvocationID.x == (TEXEL_RES - 2 + 1)) ||
                                  (gl_LocalInvocationID.y == 0) || (gl_LocalInvocationID.y == (TEXEL_RES - 2 + 1));
@@ -70,7 +70,7 @@ void main() {
 
             const ivec3 ray_data_coords = get_ray_data_coords(i, probe_index);
 
-            vec4 ray_data = texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, g_params.input_offset), 0);
+            vec4 ray_data = texelFetch(g_ray_data, ray_data_coords, 0);
 
 #if defined(IRRADIANCE)
             ray_data.xyz = (ray_data.xyz / g_params.pre_exposure);
@@ -110,8 +110,8 @@ void main() {
         for (int i = 0; i < PROBE_TOTAL_RAYS_COUNT; ++i) {
             const ivec3 ray_data_coords = get_ray_data_coords(i, probe_index);
 
-            const vec3 light_color = (texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES_Y), 0).xyz / g_params.pre_exposure);
-            const vec3 light_dir = texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, 3 * PROBE_VOLUME_RES_Y), 0).xyz;
+            const vec3 light_color = (texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, 1 * PROBE_VOLUME_RES_Y), 0).xyz / g_params.pre_exposure);
+            const vec3 light_dir = texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES_Y), 0).xyz;
 
             const float weight = saturate(dot(probe_ray_dir, light_dir));
 
@@ -155,7 +155,7 @@ void main() {
         const bool is_corner_texel = (gl_LocalInvocationID.x == 0 || gl_LocalInvocationID.x == (TEXEL_RES - 1)) && (gl_LocalInvocationID.y == 0 || gl_LocalInvocationID.y == (TEXEL_RES - 1));
         const bool is_row_texel = (gl_LocalInvocationID.x > 0 && gl_LocalInvocationID.x < (TEXEL_RES - 1));
 
-        ivec3 copy_coords = ivec3(gl_WorkGroupID.x * TEXEL_RES, gl_WorkGroupID.y * TEXEL_RES, g_params.output_offset + gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES_Y);
+        ivec3 copy_coords = ivec3(gl_WorkGroupID.x * TEXEL_RES, gl_WorkGroupID.y * TEXEL_RES, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES_Y);
 
         if (is_corner_texel) {
             copy_coords.x += int(gl_LocalInvocationID.x > 0 ? 1 : (TEXEL_RES - 2));

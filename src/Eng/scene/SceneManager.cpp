@@ -846,11 +846,11 @@ void Eng::SceneManager::AllocGICache() {
         probe_volume_spacing *= 3.0f;
     }
 
-    { // ~54.0mb
+    { // ~27.0mb
         Ren::ImgParams p;
         p.w = PROBE_VOLUME_RES_X * PROBE_IRRADIANCE_RES;
         p.h = PROBE_VOLUME_RES_Z * PROBE_IRRADIANCE_RES;
-        p.d = 2 * PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
+        p.d = PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
         p.format = Ren::eFormat::RGBA16F;
         p.flags = Ren::eImgFlags::Array;
         p.usage = Ren::Bitmask(Ren::eImgUsage::Storage) | Ren::eImgUsage::Sampled | Ren::eImgUsage::Transfer;

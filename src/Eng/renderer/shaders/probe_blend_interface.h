@@ -8,17 +8,13 @@ INTERFACE_START(ProbeBlend)
 struct Params {
     int volume_index;
     int oct_index;
-    int input_offset;
-    int output_offset;
+    float pre_exposure;
+    float _pad0;
     vec4 grid_origin;
     ivec4 grid_scroll;
     ivec4 grid_scroll_diff;
     vec4 grid_spacing;
     vec4 quat_rot;
-    float pre_exposure;
-    float _unused0;
-    float _unused1;
-    float _unused2;
 };
 
 const int RAY_DATA_TEX_SLOT = 1;

@@ -257,13 +257,13 @@ void main() {
         if (weight > 0.0) {
             if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0) {
                 const vec3 irradiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, -I, g_shrd_data.probe_volumes[i].spacing.xyz, 0.5 * gl_HitTEXT), N,
-                                                              g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false, true);
+                                                              g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, true);
                 light_total += lobe_masks.diffuse_mul * (1.0 / M_PI) * base_color * irradiance;
             }
             if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
                 const vec3 refl_dir = reflect(-I, N);
                 vec3 avg_radiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, -I, g_shrd_data.probe_volumes[i].spacing.xyz, 0.5 * gl_HitTEXT), refl_dir,
-                                                          g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false, true);
+                                                          g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, true);
                 avg_radiance *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
                 light_total += avg_radiance * (1.0 / M_PI);
             }

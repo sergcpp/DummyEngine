@@ -360,7 +360,7 @@ float ComputeVisibility_MSM4(const vec4 moments, const float distance, const flo
 
 vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex, sampler2DArray distance_tex, sampler2DArray offset_tex,
                            const vec3 world_position, const vec3 surface_bias, const vec3 direction,
-                           const ivec3 grid_scroll, const vec3 grid_origin, const vec3 grid_spacing, const bool diffuse_only, const bool skip_inactive) {
+                           const ivec3 grid_scroll, const vec3 grid_origin, const vec3 grid_spacing, const bool skip_inactive) {
     // Bias the world space position
     const vec3 biased_world_position = (world_position + surface_bias);
 
@@ -481,7 +481,7 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
 
 vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance_tex, sampler2DArray distance_tex, sampler2DArray offset_tex,
                                const vec3 world_position, const vec3 surface_bias, const vec3 direction,
-                               const ivec3 grid_scroll, const vec3 grid_origin, const vec3 grid_spacing, const bool diffuse_only) {
+                               const ivec3 grid_scroll, const vec3 grid_origin, const vec3 grid_spacing) {
     // Bias the world space position
     const vec3 biased_world_position = (world_position + surface_bias);
 
@@ -582,9 +582,6 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
 
         // Get the probe's texture coordinates
         probe_texture_uv = get_probe_uv(adjacent_probe_index, volume_index, octant_coords, PROBE_IRRADIANCE_RES - 2);
-        if (diffuse_only) {
-            probe_texture_uv.z += float(PROBE_VOLUMES_COUNT * PROBE_VOLUME_RES_Y);
-        }
 
         // Sample the probe's irradiance
         vec3 probe_irradiance = textureLod(irradiance_tex, probe_texture_uv, 0.0).xyz;
