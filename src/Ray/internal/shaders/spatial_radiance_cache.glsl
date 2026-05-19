@@ -28,7 +28,7 @@ uint hash64(const uint64_t hash_key) {
            hash_jenkins32(uint((hash_key >> 32) & 0xffffffff));
 }
 
-float log_base(const float x, const float base) { return log(x) / log(base); }
+float log_base(const float x, const float base) { return log2(x) / log2(base); }
 
 uint calc_grid_level(const vec3 p, const cache_grid_params_t params) {
     const float distance = length(params.cam_pos_curr - p);
