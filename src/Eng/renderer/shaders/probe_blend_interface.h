@@ -19,6 +19,7 @@ struct Params {
 
 const uint RAY_DATA_TEX_SLOT = 1;
 const uint OFFSET_TEX_SLOT = 2;
+const uint DIRECT_LIGHT_BUF_SLOT = 3;
 
 const uint OUT_IMG_SLOT = 0;
 

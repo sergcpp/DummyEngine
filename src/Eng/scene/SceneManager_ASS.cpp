@@ -18,7 +18,7 @@
 #include <Gui/Utils.h>
 
 namespace Eng::SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 111;
+const uint32_t AssetsBuildVersion = 115;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = size_t(in_file.size());
@@ -129,7 +129,7 @@ std::vector<float> FlushSeams(const float *pixels, int width, int height, float 
     return temp_pixels1;
 }
 
-void ReadAllFiles_r(assets_context_t &ctx, const std::filesystem::path &in_folder,
+void VisitAllFiles_r(assets_context_t &ctx, const std::filesystem::path &in_folder,
                     const std::function<void(assets_context_t &ctx, const std::filesystem::path &)> &callback) {
     if (!std::filesystem::exists(in_folder)) {
         // ctx.log->Error("Cannot open folder %s", in_folder.generic_string().c_str());
@@ -138,14 +138,14 @@ void ReadAllFiles_r(assets_context_t &ctx, const std::filesystem::path &in_folde
 
     for (const auto &entry : std::filesystem::directory_iterator(in_folder)) {
         if (std::filesystem::is_directory(entry.path())) {
-            ReadAllFiles_r(ctx, entry.path(), callback);
+            VisitAllFiles_r(ctx, entry.path(), callback);
         } else {
             callback(ctx, entry.path());
         }
     }
 }
 
-void ReadAllFiles_MT_r(assets_context_t &ctx, const std::filesystem::path &in_folder,
+void VisitAllFiles_MT_r(assets_context_t &ctx, const std::filesystem::path &in_folder,
                        const std::function<void(assets_context_t &ctx, const std::filesystem::path &)> &callback,
                        Sys::ThreadPool *threads, std::deque<std::future<void>> &events) {
     if (!std::filesystem::exists(in_folder)) {
@@ -155,7 +155,7 @@ void ReadAllFiles_MT_r(assets_context_t &ctx, const std::filesystem::path &in_fo
 
     for (const auto &entry : std::filesystem::directory_iterator(in_folder)) {
         if (std::filesystem::is_directory(entry.path())) {
-            ReadAllFiles_MT_r(ctx, entry.path(), callback, threads, events);
+            VisitAllFiles_MT_r(ctx, entry.path(), callback, threads, events);
         } else {
             events.push_back(threads->Enqueue([entry, &ctx, callback]() { callback(ctx, entry.path()); }));
         }
@@ -943,7 +943,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
     if (p_threads) {
         std::deque<std::future<void>> events;
-        ReadAllFiles_MT_r(ctx, in_folder, convert_file, p_threads, events);
+        VisitAllFiles_MT_r(ctx, in_folder, convert_file, p_threads, events);
 
         for (int i = 0; i < p_threads->workers_count(); ++i) {
             events.push_back(p_threads->Enqueue([&ctx]() {
@@ -956,7 +956,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
             e.wait();
         }
     } else {
-        ReadAllFiles_r(ctx, in_folder, convert_file);
+        VisitAllFiles_r(ctx, in_folder, convert_file);
     }
 
     WriteDB(ctx.cache->js_db, out_folder, ctx.log);

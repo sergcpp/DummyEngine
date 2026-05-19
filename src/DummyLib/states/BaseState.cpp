@@ -705,6 +705,11 @@ void BaseState::Enter() {
         return true;
     });
 
+    cmdline_ui_->RegisterCommand("r_showRadCache", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.debug_rad_cache = !renderer_->settings.debug_rad_cache;
+        return true;
+    });
+
     cmdline_ui_->RegisterCommand("r_showUI", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         ui_enabled_ = !ui_enabled_;
         return true;

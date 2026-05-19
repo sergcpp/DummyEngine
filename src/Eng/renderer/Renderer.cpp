@@ -1643,6 +1643,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             resolved_color = AddDebugGBufferPass(frame_textures, 3);
             bloom = {};
         }
+        if (list.render_settings.debug_rad_cache) {
+            resolved_color = AddDebugRadCachePass(frame_textures, common_buffers);
+            bloom = {};
+        }
 
         bool apply_dof = false;
 

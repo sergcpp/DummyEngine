@@ -172,9 +172,9 @@ void main() {
 
     const float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
     const float k = log2(lin_depth / g_shrd_data.rt_clip_info[1]) / g_shrd_data.rt_clip_info[3];
-    const uint tile_x = clamp(uint(projected_p.x * ITEM_GRID_RES_X), 0u, ITEM_GRID_RES_X - 1u),
-               tile_y = clamp(uint(projected_p.y * ITEM_GRID_RES_Y), 0u, ITEM_GRID_RES_Y - 1u),
-               tile_z = clamp(uint(k * ITEM_GRID_RES_Z), 0u, ITEM_GRID_RES_Z - 1u);
+    const uint tile_x = uint(clamp(int(projected_p.x * ITEM_GRID_RES_X), 0, ITEM_GRID_RES_X - 1)),
+               tile_y = uint(clamp(int(projected_p.y * ITEM_GRID_RES_Y), 0, ITEM_GRID_RES_Y - 1)),
+               tile_z = uint(clamp(int(k * ITEM_GRID_RES_Z), 0, ITEM_GRID_RES_Z - 1));
 
     const uint cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
 

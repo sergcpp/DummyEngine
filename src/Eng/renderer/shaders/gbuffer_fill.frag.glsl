@@ -157,7 +157,7 @@ void main() {
 #else
     g_out_albedo = vec4(0.5, 0.5, 0.5, g_shadow_vis);
 #endif
-    g_out_normal = PackNormalAndRoughnessNew(normal, final_roughness, dither);
+    g_out_normal = PackNormalAndRoughnessUint(normal, final_roughness, dither);
 #ifndef FORCE_METALLIC
     g_out_specular = PackMaterialParams(g_mat_params0, g_mat_params1 * vec4(metl_color, 1.0, 1.0, 1.0));
 #else

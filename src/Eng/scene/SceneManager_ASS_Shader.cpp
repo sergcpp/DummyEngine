@@ -485,9 +485,11 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
         }
     }
 
-    // Wait-and-help until all tasks finish
+    // Wait-and-help until all dependent tasks finish
     while (counter != 0) {
-        ProcessContinuation(ctx);
+        if (!ProcessContinuation(ctx)) {
+            std::this_thread::yield();
+        }
     }
 
     return success;

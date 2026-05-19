@@ -140,6 +140,8 @@ set(EXECUTORS_SOURCES   renderer/executors/ExBuildAccStructures.h
                         renderer/executors/ExRTShadows.cpp
                         renderer/executors/ExSampleLights.h
                         renderer/executors/ExSampleLights.cpp
+                        renderer/executors/ExSampleLightsProbe.h
+                        renderer/executors/ExSampleLightsProbe.cpp
                         renderer/executors/ExShadowColor.h
                         renderer/executors/ExShadowColor.cpp
                         renderer/executors/ExShadowDepth.h
@@ -198,6 +200,7 @@ elseif(${REN_BACKEND} STREQUAL "VK")
                             renderer/executors/ExRTSpecularVK.cpp
                             renderer/executors/ExRTShadows_VK.cpp
                             renderer/executors/ExSampleLightsVK.cpp
+                            renderer/executors/ExSampleLightsProbeVK.cpp
                             renderer/executors/ExShadowColorVK.cpp
                             renderer/executors/ExShadowDepthVK.cpp
                             renderer/executors/ExSkinningVK.cpp

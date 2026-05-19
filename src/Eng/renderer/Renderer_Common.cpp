@@ -19,13 +19,15 @@
 #include "shaders/blit_gauss_interface.h"
 #include "shaders/blit_static_vel_interface.h"
 #include "shaders/blit_tsr_interface.h"
-#include "shaders/debug_gbuffer_interface.h"
-#include "shaders/debug_image_interface.h"
-#include "shaders/debug_velocity_interface.h"
 #include "shaders/gbuffer_shade_interface.h"
 #include "shaders/motion_blur_interface.h"
 #include "shaders/prepare_disocclusion_interface.h"
 #include "shaders/reconstruct_depth_interface.h"
+
+#include "shaders/debug_gbuffer_interface.h"
+#include "shaders/debug_image_interface.h"
+#include "shaders/debug_rad_cache_interface.h"
+#include "shaders/debug_velocity_interface.h"
 
 namespace RendererInternal {
 const float GoldenRatio = 1.61803398875f;
@@ -99,6 +101,12 @@ void Eng::Renderer::InitPipelines() {
     pi_tile_clear_[3] = sh_.FindOrCreatePipeline("internal/tile_clear@AVERAGE;VARIANCE.comp.glsl");
 
     // GI Cache
+    pi_cache_shade_[0][0] = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_shade.comp.glsl"));
+    pi_cache_shade_[0][1] = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_shade@PARTIAL.comp.glsl"));
+    pi_cache_shade_[1][0] =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_shade@STOCH_LIGHTS_MIS.comp.glsl"));
+    pi_cache_shade_[1][1] =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_shade@STOCH_LIGHTS_MIS;PARTIAL.comp.glsl"));
     pi_probe_blend_[0][0] = sh_.FindOrCreatePipeline("internal/probe_blend@IRRADIANCE.comp.glsl");
     pi_probe_blend_[1][0] = sh_.FindOrCreatePipeline("internal/probe_blend@IRRADIANCE;STOCH_LIGHTS.comp.glsl");
     pi_probe_blend_[2][0] = sh_.FindOrCreatePipeline("internal/probe_blend@DISTANCE.comp.glsl");
@@ -205,6 +213,7 @@ void Eng::Renderer::InitPipelines() {
     pi_debug_gbuffer_[2] = sh_.FindOrCreatePipeline("internal/debug_gbuffer@ROUGHNESS.comp.glsl");
     pi_debug_gbuffer_[3] = sh_.FindOrCreatePipeline("internal/debug_gbuffer@METALLIC.comp.glsl");
     pi_debug_image_ = sh_.FindOrCreatePipeline("internal/debug_image.comp.glsl");
+    pi_debug_rad_cache_ = sh_.FindOrCreatePipeline("internal/debug_rad_cache.comp.glsl");
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1494,6 +1503,64 @@ Eng::FgImgRWHandle Eng::Renderer::AddDebugGBufferPass(const FrameTextures &frame
                         sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
     });
 
+    return output;
+}
+
+Eng::FgImgRWHandle Eng::Renderer::AddDebugRadCachePass(const FrameTextures &frame_textures,
+                                                       const CommonBuffers &common_buffers) {
+    using Stg = Ren::eStage;
+    using Trg = Ren::eBindTarget;
+
+    auto &debug_rad_cache = fg_builder_.AddNode("DEBUG RAD CACHE");
+
+    struct PassData {
+        FgBufROHandle shared_data;
+        FgImgROHandle depth, normal;
+        FgImgRWHandle output;
+    };
+
+    auto *data = fg_builder_.AllocTempData<PassData>();
+    data->shared_data = debug_rad_cache.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+
+    data->depth = debug_rad_cache.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+    data->normal = debug_rad_cache.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+
+    FgImgRWHandle output;
+    { // Output texture
+        FgImgDesc desc;
+        desc.w = view_state_.out_res[0];
+        desc.h = view_state_.out_res[1];
+        desc.format = Ren::eFormat::RGBA8;
+        desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+        output = data->output =
+            debug_rad_cache.AddStorageImageOutput("Rad Cache Debug", desc, Ren::eStage::ComputeShader);
+    }
+
+    debug_rad_cache.set_execute_cb([this, data](const FgContext &fg) {
+        using namespace DebugRadCache;
+
+        const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(data->shared_data);
+
+        const Ren::ImageROHandle depth = fg.AccessROImage(data->depth);
+        const Ren::ImageROHandle normal = fg.AccessROImage(data->normal);
+
+        const Ren::ImageRWHandle out_color = fg.AccessRWImage(data->output);
+
+        const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_shared_data},
+                                         {Trg::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},
+                                         {Trg::TexSampled, NORM_TEX_SLOT, normal},
+                                         {Trg::ImageRW, OUT_IMG_SLOT, out_color}};
+
+        const auto grp_count = Ren::Vec3u(Ren::DivCeil(view_state_.out_res[0], GRP_SIZE_X),
+                                          Ren::DivCeil(view_state_.out_res[1], GRP_SIZE_Y), 1u);
+
+        Params uniform_params;
+        uniform_params.img_size = Ren::Vec2u(view_state_.out_res[0], view_state_.out_res[1]);
+
+        DispatchCompute(fg.cmd_buf(), pi_debug_rad_cache_, fg.storages(), grp_count, bindings, &uniform_params,
+                        sizeof(uniform_params), fg.descr_alloc(), fg.log());
+    });
     return output;
 }
 

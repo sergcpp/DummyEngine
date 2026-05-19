@@ -15,8 +15,8 @@ uint GetCellIndex(const uint ux, const uint uy, const uint slice, const uvec2 re
 }
 
 // Rounds value to the nearest multiple of 8
-uvec2 RoundUp8(uvec2 value) {
-    uvec2 round_down = value & ~7u; // 0b111
+uvec2 RoundUp8(const uvec2 value) {
+    const uvec2 round_down = value & ~7u; // 0b111
     return (round_down == value) ? value : value + 8;
 }
 

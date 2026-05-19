@@ -486,7 +486,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                 FgBufROHandle mesh_instances;
                 FgBufROHandle geo_data;
                 FgBufROHandle materials;
-                FgBufROHandle vtx_data0_buf;
+                FgBufROHandle vtx_data0;
                 FgBufROHandle ndx_buf;
                 FgBufROHandle lights;
                 FgImgROHandle shadow_depth, shadow_color;
@@ -516,7 +516,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
             data->mesh_instances = diff_shade.AddStorageReadonlyInput(rt_obj_instances_res, Stg::ComputeShader);
             data->geo_data = diff_shade.AddStorageReadonlyInput(rt_geo_instances_res, Stg::ComputeShader);
             data->materials = diff_shade.AddStorageReadonlyInput(common_buffers.materials, Stg::ComputeShader);
-            data->vtx_data0_buf = diff_shade.AddStorageReadonlyInput(common_buffers.vertex_buf1, Stg::ComputeShader);
+            data->vtx_data0 = diff_shade.AddStorageReadonlyInput(common_buffers.vertex_buf1, Stg::ComputeShader);
             data->ndx_buf = diff_shade.AddStorageReadonlyInput(common_buffers.indices_buf, Stg::ComputeShader);
             data->lights = diff_shade.AddStorageReadonlyInput(common_buffers.lights, Stg::ComputeShader);
             data->shadow_depth = diff_shade.AddTextureInput(frame_textures.shadow_depth, Stg::ComputeShader);
@@ -563,7 +563,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                 const Ren::BufferROHandle mesh_instances = fg.AccessROBuffer(data->mesh_instances);
                 const Ren::BufferROHandle geo_data = fg.AccessROBuffer(data->geo_data);
                 const Ren::BufferROHandle materials = fg.AccessROBuffer(data->materials);
-                const Ren::BufferROHandle vtx_data0_buf = fg.AccessROBuffer(data->vtx_data0_buf);
+                const Ren::BufferROHandle vtx_data0 = fg.AccessROBuffer(data->vtx_data0);
                 const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(data->ndx_buf);
                 const Ren::BufferROHandle lights = fg.AccessROBuffer(data->lights);
                 const Ren::ImageROHandle shadow_depth = fg.AccessROImage(data->shadow_depth);
@@ -603,7 +603,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                     {Trg::UTBuf, MESH_INSTANCES_BUF_SLOT, mesh_instances},
                     {Trg::SBufRO, GEO_DATA_BUF_SLOT, geo_data},
                     {Trg::SBufRO, MATERIAL_BUF_SLOT, materials},
-                    {Trg::UTBuf, VTX_BUF1_SLOT, vtx_data0_buf},
+                    {Trg::UTBuf, VTX_BUF1_SLOT, vtx_data0},
                     {Trg::UTBuf, NDX_BUF_SLOT, ndx_buf},
                     {Trg::SBufRO, LIGHTS_BUF_SLOT, lights},
                     {Trg::TexSampled, SHADOW_DEPTH_TEX_SLOT, shadow_depth},

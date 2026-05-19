@@ -191,7 +191,8 @@ class Renderer {
         pi_specular_stabilization_;
     Ren::PipelineHandle pi_tile_clear_[4];
     // GI Cache
-    Ren::PipelineHandle pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[5], pi_probe_sample_;
+    Ren::PipelineHandle pi_cache_shade_[2][2], pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[5],
+        pi_probe_sample_;
     // GTAO
     Ren::PipelineHandle pi_gtao_main_[2], pi_gtao_filter_[2], pi_gtao_accumulate_[2];
     // Diffuse GI
@@ -215,7 +216,7 @@ class Renderer {
     // Motion blur
     Ren::PipelineHandle pi_motion_blur_classify_[2], pi_motion_blur_dilate_, pi_motion_blur_filter_;
     // Debug
-    Ren::PipelineHandle pi_debug_velocity_, pi_debug_gbuffer_[4], pi_debug_image_;
+    Ren::PipelineHandle pi_debug_velocity_, pi_debug_gbuffer_[4], pi_debug_image_, pi_debug_rad_cache_;
 
     Ren::ProgramHandle blit_static_vel_prog_, blit_gauss_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_tsr_prog_[2],
         blit_tsr_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down_prog_,
@@ -371,6 +372,7 @@ class Renderer {
     // Debugging
     FgImgRWHandle AddDebugVelocityPass(FgImgROHandle velocity);
     FgImgRWHandle AddDebugGBufferPass(const FrameTextures &frame_textures, int pi_index);
+    FgImgRWHandle AddDebugRadCachePass(const FrameTextures &frame_textures, const CommonBuffers &common_buffers);
     FgImgRWHandle AddDebugImagePass(FgImgROHandle img, int channel);
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);

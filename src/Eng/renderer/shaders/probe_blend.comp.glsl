@@ -26,6 +26,12 @@ LAYOUT_PARAMS uniform UniformParams {
 layout(binding = RAY_DATA_TEX_SLOT) uniform sampler2DArray g_ray_data;
 layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
 
+#if defined(STOCH_LIGHTS)
+    layout(std430, binding = DIRECT_LIGHT_BUF_SLOT) readonly buffer DirectLightData {
+        uvec2 g_sh1_direct_light[];
+    };
+#endif
+
 layout(binding = OUT_IMG_SLOT, rgba16f) uniform coherent image2DArray g_out_img;
 
 layout (local_size_x = TEXEL_RES, local_size_y = TEXEL_RES, local_size_z = 1) in;
@@ -105,19 +111,15 @@ void main() {
 
         result *= rcp(max(total_weight, epsilon));
 
-        vec4 direct_light = vec4(0.0);
 #if defined(STOCH_LIGHTS)
-        for (uint i = 0; i < PROBE_TOTAL_RAYS_COUNT; ++i) {
-            const uvec3 ray_data_coords = get_ray_data_coords(i, probe_index);
+        const vec4 sh1_r = unpackHalf4x16(g_sh1_direct_light[3 * probe_index + 0]);
+        const vec4 sh1_g = unpackHalf4x16(g_sh1_direct_light[3 * probe_index + 1]);
+        const vec4 sh1_b = unpackHalf4x16(g_sh1_direct_light[3 * probe_index + 2]);
 
-            const vec3 light_color = (texelFetch(g_ray_data, ivec3(ray_data_coords + uvec3(0, 0, 1 * PROBE_VOLUME_RES_Y)), 0).xyz / g_params.pre_exposure);
-            const vec3 light_dir = texelFetch(g_ray_data, ivec3(ray_data_coords + uvec3(0, 0, 2 * PROBE_VOLUME_RES_Y)), 0).xyz;
-
-            const float weight = saturate(dot(probe_ray_dir, light_dir));
-
-            direct_light += vec4(weight * light_color, 1.0);
-        }
-        result.xyz += (direct_light.xyz * rcp(direct_light.w));
+        const vec3 direct_irradiance = vec3(max(dot(sh1_r, vec4(probe_ray_dir, 1.0)), 0.0),
+                                            max(dot(sh1_g, vec4(probe_ray_dir, 1.0)), 0.0),
+                                            max(dot(sh1_b, vec4(probe_ray_dir, 1.0)), 0.0));
+        result.xyz += direct_irradiance;
 #endif
 
         const vec4 probe_mean = imageLoad(g_out_img, ivec3(output_coords));

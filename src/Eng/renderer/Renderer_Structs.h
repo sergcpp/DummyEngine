@@ -297,6 +297,7 @@ struct render_settings_t {
             bool debug_normals : 1;
             bool debug_roughness : 1;
             bool debug_metallic : 1;
+            bool debug_rad_cache : 1;
         };
         uint32_t debug_flags = 0;
     };

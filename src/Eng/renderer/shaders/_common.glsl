@@ -36,6 +36,14 @@ uint fast_div(const uint x, const uint magic) {
 	return msb;
 }
 
+uvec2 packHalf4x16(const vec4 v) {
+    return uvec2(packHalf2x16(v.xy), packHalf2x16(v.zw));
+}
+
+vec4 unpackHalf4x16(const uvec2 v) {
+    return vec4(unpackHalf2x16(v.x), unpackHalf2x16(v.y));
+}
+
 // SmoothStep
 // REQUIREMENT: a < b
 #define _SmoothStep01( x ) ( x * x * ( 3.0 - 2.0 * x ) )
@@ -210,7 +218,7 @@ vec4 PackNormalAndRoughness(vec3 N, float roughness) {
     return p;
 }
 
-uint PackNormalAndRoughnessNew(const vec3 N, const float roughness, const vec2 rand) {
+uint PackNormalAndRoughnessUint(const vec3 N, const float roughness, const vec2 rand) {
     vec3 p;
 
     p.xy = PackUnitVector(N);
@@ -221,8 +229,8 @@ uint PackNormalAndRoughnessNew(const vec3 N, const float roughness, const vec2 r
     return uint(p.z) | (uint(p.y) << 8) | (uint(p.x) << 20);
 }
 
-uint PackNormalAndRoughnessNew(const vec3 N, const float roughness) {
-    return PackNormalAndRoughnessNew(N, roughness, vec2(0.0));
+uint PackNormalAndRoughnessUint(const vec3 N, const float roughness) {
+    return PackNormalAndRoughnessUint(N, roughness, vec2(0.0));
 }
 
 vec4 UnpackNormalAndRoughness(vec4 p) {
@@ -307,6 +315,10 @@ vec3 limit_intensity(vec3 color, const float limit) {
 
 vec3 compress_hdr(const vec3 val, const float pre_exposure) {
     return clamp(val * pre_exposure, vec3(0.0), vec3(HALF_MAX - 1.0));
+}
+
+vec4 compress_hdr(const vec4 val, const float pre_exposure) {
+    return clamp(val * pre_exposure, vec4(0.0), vec4(HALF_MAX - 1.0));
 }
 
 float sanitize(const float val) { return (isnan(val) || isinf(val)) ? 0.0 : val; }

@@ -18,6 +18,7 @@
 #include "pmj_common.glsl"
 #include "rt_specular_common.glsl"
 #include "light_bvh_common.glsl"
+
 #include "sample_lights_interface.h"
 
 #pragma multi_compile _ HWRT
@@ -235,16 +236,12 @@ void main() {
                 const uint i1 = texelFetch(g_vtx_indices, int(geo.indices_start + 3 * tri_index + 1)).x;
                 const uint i2 = texelFetch(g_vtx_indices, int(geo.indices_start + 3 * tri_index + 2)).x;
 
-                const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
-                const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
-                const vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
-
-                const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
-                const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
-                const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
+                const vec2 uv0 = unpackHalf2x16(floatBitsToUint(texelFetch(g_vtx_data0, int(geo.vertices_start + i0)).w));
+                const vec2 uv1 = unpackHalf2x16(floatBitsToUint(texelFetch(g_vtx_data0, int(geo.vertices_start + i1)).w));
+                const vec2 uv2 = unpackHalf2x16(floatBitsToUint(texelFetch(g_vtx_data0, int(geo.vertices_start + i2)).w));
 
                 const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-                const float alpha = textureLodBindless(mat.texture_indices[MAT_TEX_ALPHA], uv, 0.0).x;
+                const float alpha = textureLodBindless(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
                 if (alpha < 0.5) {
                     continue;
                 }
@@ -294,13 +291,9 @@ void main() {
                 const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
                 const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
 
-                const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
-                const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
-                const vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
-
-                const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
-                const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
-                const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
+                const vec2 uv0 = unpackHalf2x16(floatBitsToUint(texelFetch(g_vtx_data0, int(geo.vertices_start + i0)).w));
+                const vec2 uv1 = unpackHalf2x16(floatBitsToUint(texelFetch(g_vtx_data0, int(geo.vertices_start + i1)).w));
+                const vec2 uv2 = unpackHalf2x16(floatBitsToUint(texelFetch(g_vtx_data0, int(geo.vertices_start + i2)).w));
 
                 const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
     #if defined(BINDLESS_TEXTURES)

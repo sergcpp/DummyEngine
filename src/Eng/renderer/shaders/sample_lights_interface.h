@@ -11,8 +11,21 @@ struct Params {
     uint frame_index;
 };
 
+struct Params2 {
+    uint volume_index;
+    uint stoch_lights_count;
+    uint pass_hash;
+    uint oct_index;
+    vec4 grid_origin;
+    ivec4 grid_scroll;
+    ivec4 grid_scroll_diff;
+    vec4 grid_spacing;
+};
+
 const uint GRP_SIZE_X = 8;
 const uint GRP_SIZE_Y = 8;
+
+const uint GRP_SIZE2_X = 64;
 
 const uint TLAS_SLOT = 2;
 const uint RANDOM_SEQ_BUF_SLOT = 3;
@@ -31,9 +44,11 @@ const uint PRIM_NDX_BUF_SLOT = 15;
 const uint MESH_INSTANCES_BUF_SLOT = 16;
 const uint LIGHTS_BUF_SLOT = 17;
 const uint LIGHT_NODES_BUF_SLOT = 18;
+const uint OFFSET_TEX_SLOT = 4; // overlaps with ALBEDO_TEX_SLOT
 
 const uint OUT_DIFFUSE_IMG_SLOT = 0;
 const uint OUT_SPECULAR_IMG_SLOT = 1;
+const uint OUT_SH1_DATA_BUF_SLOT = 1;
 
 INTERFACE_END
 
