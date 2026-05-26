@@ -10,9 +10,10 @@
 #include <glslang/Include/glslang_c_interface.h>
 #include <glslx/glslx.h>
 
-namespace SceneManagerInternal {
+namespace Eng::SceneManagerInternal {
 bool SkipAssetForCurrentBuild(Ren::Bitmask<Eng::eAssetBuildFlags> flags);
-}
+bool ProcessContinuation(assets_context_t &ctx);
+} // namespace Eng::SceneManagerInternal
 
 extern "C" {
 int (*compile_spirv_shader)(const glslang_input_t *glslang_input, const int use_spv14, const int optimize,
@@ -173,8 +174,8 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
     const size_t ext_pos = std::string_view(out_file).find('.');
     assert(ext_pos != std::string::npos);
 
-    std::deque<std::future<bool>> futures;
-    bool result = true;
+    std::atomic_int counter = {};
+    std::atomic_bool success = true;
 
     for (const eShaderOutput sh_output : {eShaderOutput::GLSL, eShaderOutput::VK_SPIRV}) {
         for (const bool EnableOptimization : {false, true}) {
@@ -378,7 +379,10 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                         return true;
                     }
 
-                    out_outputs.push_back(asset_output_t{output_file, flags});
+                    { //
+                        std::unique_lock<std::mutex> lock(ctx.continuations_mtx);
+                        out_outputs.push_back(asset_output_t{output_file, flags});
+                    }
 
                     if (SkipAssetForCurrentBuild(flags)) {
                         return true;
@@ -464,29 +468,27 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                                                           output_file.c_str(), ctx.log, msg_callback);
                         return result == 1;
                     }
-
                     return true;
                 };
-                if (ctx.p_threads) {
-                    while (!futures.empty() &&
-                           futures.front().wait_for(std::chrono::milliseconds(100)) == std::future_status::ready) {
-                        futures.pop_front();
-                    }
-                    if (futures.size() < 2) {
-                        futures.push_back(ctx.p_threads->Enqueue(compile_job, sh_output, EnableOptimization, perm));
-                    } else {
-                        result &= compile_job(sh_output, EnableOptimization, perm);
-                    }
-                } else {
-                    result &= compile_job(sh_output, EnableOptimization, perm);
+                ++counter;
+                { //
+                    std::unique_lock<std::mutex> lock(ctx.continuations_mtx);
+                    ctx.continuations.emplace_back([=, &counter, &success, job = std::move(compile_job)]() {
+                        const bool result = job(sh_output, EnableOptimization, perm);
+                        if (!result) {
+                            success = false;
+                        }
+                        --counter;
+                    });
                 }
             }
         }
     }
 
-    for (auto &f : futures) {
-        result &= f.get();
+    // Wait-and-help until all tasks finish
+    while (counter != 0) {
+        ProcessContinuation(ctx);
     }
 
-    return result;
+    return success;
 }

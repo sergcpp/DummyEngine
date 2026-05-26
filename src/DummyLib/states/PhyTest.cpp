@@ -7,6 +7,7 @@
 #include <Eng/widgets/CmdlineUI.h>
 #include <Gui/Renderer.h>
 #include <Ren/Context.h>
+#include <Sys/Json.h>
 #include <Sys/Time_.h>
 
 #include "../Viewer.h"

@@ -17,8 +17,8 @@
 #include <Gui/Renderer.h>
 #include <Gui/Utils.h>
 
-namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 104;
+namespace Eng::SceneManagerInternal {
+const uint32_t AssetsBuildVersion = 105;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = size_t(in_file.size());
@@ -129,8 +129,8 @@ std::vector<float> FlushSeams(const float *pixels, int width, int height, float 
     return temp_pixels1;
 }
 
-void ReadAllFiles_r(Eng::assets_context_t &ctx, const std::filesystem::path &in_folder,
-                    const std::function<void(Eng::assets_context_t &ctx, const std::filesystem::path &)> &callback) {
+void ReadAllFiles_r(assets_context_t &ctx, const std::filesystem::path &in_folder,
+                    const std::function<void(assets_context_t &ctx, const std::filesystem::path &)> &callback) {
     if (!std::filesystem::exists(in_folder)) {
         // ctx.log->Error("Cannot open folder %s", in_folder.generic_string().c_str());
         return;
@@ -145,8 +145,8 @@ void ReadAllFiles_r(Eng::assets_context_t &ctx, const std::filesystem::path &in_
     }
 }
 
-void ReadAllFiles_MT_r(Eng::assets_context_t &ctx, const std::filesystem::path &in_folder,
-                       const std::function<void(Eng::assets_context_t &ctx, const std::filesystem::path &)> &callback,
+void ReadAllFiles_MT_r(assets_context_t &ctx, const std::filesystem::path &in_folder,
+                       const std::function<void(assets_context_t &ctx, const std::filesystem::path &)> &callback,
                        Sys::ThreadPool *threads, std::deque<std::future<void>> &events) {
     if (!std::filesystem::exists(in_folder)) {
         // ctx.log->Error("Cannot open folder %s", in_folder.generic_string().c_str());
@@ -196,31 +196,77 @@ template <typename TP> std::time_t to_time_t(TP tp) {
     return system_clock::to_time_t(sctp);
 }
 
-bool SkipAssetForCurrentBuild(const Ren::Bitmask<Eng::eAssetBuildFlags> flags) {
+bool SkipAssetForCurrentBuild(const Ren::Bitmask<eAssetBuildFlags> flags) {
 #if defined(NDEBUG)
-    if (flags & Eng::eAssetBuildFlags::DebugOnly) {
+    if (flags & eAssetBuildFlags::DebugOnly) {
         return true;
     }
 #else
-    if (flags & Eng::eAssetBuildFlags::ReleaseOnly) {
+    if (flags & eAssetBuildFlags::ReleaseOnly) {
         return true;
     }
 #endif
 #if !defined(REN_GL_BACKEND)
-    if (flags & Eng::eAssetBuildFlags::GLOnly) {
+    if (flags & eAssetBuildFlags::GLOnly) {
         return true;
     }
 #endif
 #if !defined(REN_VK_BACKEND)
-    if (flags & Eng::eAssetBuildFlags::VKOnly) {
+    if (flags & eAssetBuildFlags::VKOnly) {
         return true;
     }
 #endif
     return false;
 }
 
+struct AssetCache {
+    Sys::JsObjectP js_db;
+    Ren::HashMap32<std::string, uint32_t> texture_averages;
+
+    explicit AssetCache(const Sys::MultiPoolAllocator<char> &mp_alloc) : js_db(mp_alloc) {}
+
+    void WriteTextureAverage(const char *tex_name, const uint8_t average_color[4]) {
+        uint32_t color;
+        memcpy(&color, average_color, 4);
+        texture_averages.Insert(tex_name, color);
+
+        Sys::JsObjectP &js_files = js_db["files"].as_obj();
+        if (const size_t i = js_files.IndexOf(tex_name); i < js_files.Size()) {
+            Sys::JsObjectP &js_file = js_files[i].second.as_obj();
+            if (const size_t color_ndx = js_file.IndexOf("color"); color_ndx < js_file.Size()) {
+                Sys::JsNumber &js_color = js_file[color_ndx].second.as_num();
+                js_color.val = double(color);
+            } else {
+                auto js_color = Sys::JsNumber{double(color)};
+                js_file.Insert("color", js_color);
+            }
+        }
+    }
+};
+
+void WriteTextureAverage(AssetCache &cache, const char *tex_name, const uint8_t average_color[4]) {
+    cache.WriteTextureAverage(tex_name, average_color);
+}
+
+bool ProcessContinuation(assets_context_t &ctx) {
+    std::function<void()> task;
+    bool ret = false;
+    { // grab task
+        std::unique_lock<std::mutex> lock(ctx.continuations_mtx);
+        if (!ctx.continuations.empty()) {
+            task = std::move(ctx.continuations.front());
+            ctx.continuations.pop_front();
+            ret = !ctx.continuations.empty();
+        }
+    }
+    if (task) {
+        task();
+    }
+    return ret;
+}
+
 bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesystem::path &out_file,
-                       Eng::assets_context_t &ctx) {
+                       assets_context_t &ctx) {
 #if !defined(NDEBUG) && 0
     ctx.log->Info("Warning: glsl is forced to be not skipped!");
     if (in_file.extension() == ".glsl") {
@@ -252,7 +298,7 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
 
             const Sys::JsObjectP &js_outputs = js_in_file[outputs_ndx].second.as_obj();
             for (const auto &output : js_outputs.elements) {
-                const Ren::Bitmask<Eng::eAssetBuildFlags> flags = Ren::Bitmask<Eng::eAssetBuildFlags>{
+                const Ren::Bitmask<eAssetBuildFlags> flags = Ren::Bitmask<eAssetBuildFlags>{
                     uint32_t(atoi(output.second.as_obj().at("flags").as_str().val.c_str()))};
                 if (SkipAssetForCurrentBuild(flags)) {
                     continue;
@@ -293,7 +339,7 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
                 if (js_in_file_hash.val == in_hash_str) {
                     Sys::JsObjectP &js_outputs = js_in_file[outputs_ndx].second.as_obj();
                     for (auto &output : js_outputs.elements) {
-                        const Ren::Bitmask<Eng::eAssetBuildFlags> flags = Ren::Bitmask<Eng::eAssetBuildFlags>{
+                        const Ren::Bitmask<eAssetBuildFlags> flags = Ren::Bitmask<eAssetBuildFlags>{
                             uint32_t(atoi(output.second.as_obj().at("flags").as_str().val.c_str()))};
                         if (SkipAssetForCurrentBuild(flags)) {
                             continue;
@@ -515,7 +561,7 @@ bool WriteDB(const Sys::JsObjectP &js_db, const char *out_folder, Ren::ILog *log
     return write_successful;
 }
 
-std::string ExtractHTMLData(Eng::assets_context_t &ctx, const char *in_file, std::string &out_caption) {
+std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file, std::string &out_caption) {
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
     const int file_size = int(src_stream.tellg());
     src_stream.seekg(0, std::ios::beg);
@@ -636,7 +682,7 @@ std::vector<uint8_t> base64_decode(const std::string_view encoded_string) {
 enum class eGLTFComponentType { Byte = 5120, UByte = 5121, Short = 5122, UShort = 5123, UInt = 5125, Float = 5126 };
 
 bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]);
-} // namespace SceneManagerInternal
+} // namespace Eng::SceneManagerInternal
 
 Ren::HashMap32<std::string, Eng::SceneManager::Handler> Eng::SceneManager::g_asset_handlers;
 
@@ -895,12 +941,16 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         initialize();
     }
 
-    // Sys::ThreadPool additional_threads(8);
-    // ctx.p_threads = &additional_threads;
-
     if (p_threads) {
         std::deque<std::future<void>> events;
         ReadAllFiles_MT_r(ctx, in_folder, convert_file, p_threads, events);
+
+        for (int i = 0; i < p_threads->workers_count(); ++i) {
+            events.push_back(p_threads->Enqueue([&ctx]() {
+                while (ProcessContinuation(ctx))
+                    ;
+            }));
+        }
 
         for (std::future<void> &e : events) {
             e.wait();

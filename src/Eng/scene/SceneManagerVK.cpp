@@ -11,9 +11,9 @@
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
-namespace SceneManagerConstants {} // namespace SceneManagerConstants
+namespace Eng::SceneManagerConstants {} // namespace Eng::SceneManagerConstants
 
-namespace SceneManagerInternal {
+namespace Eng::SceneManagerInternal {
 uint32_t next_power_of_two(uint32_t v) {
     v--;
     v |= v >> 1;
@@ -39,7 +39,7 @@ void to_khr_xform(const Ren::Mat4f &xform, float matrix[3][4]) {
 }
 
 const VkDeviceSize AccStructAlignment = 256;
-} // namespace SceneManagerInternal
+} // namespace Eng::SceneManagerInternal
 
 bool Eng::SceneManager::UpdateMaterialsBuffer() {
     using namespace SceneManagerInternal;

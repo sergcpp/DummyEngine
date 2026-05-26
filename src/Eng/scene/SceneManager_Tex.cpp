@@ -10,12 +10,12 @@
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
-namespace SceneManagerConstants {
+namespace Eng::SceneManagerConstants {
 __itt_string_handle *itt_read_file_str = __itt_string_handle_create("ReadFile");
 __itt_string_handle *itt_sort_tex_str = __itt_string_handle_create("SortTextures");
-} // namespace SceneManagerConstants
+} // namespace Eng::SceneManagerConstants
 
-namespace SceneManagerInternal {
+namespace Eng::SceneManagerInternal {
 void CaptureMaterialTextureChange(Ren::Context &ctx, Eng::SceneData &scene_data, const Ren::ImageHandle old_handle,
                                   const Ren::ImageHandle new_handle) {
     const Ren::StoragesRef &storages = ctx.storages();
@@ -47,7 +47,7 @@ void CaptureMaterialTextureChange(Ren::Context &ctx, Eng::SceneData &scene_data,
         }
     }
 }
-} // namespace SceneManagerInternal
+} // namespace Eng::SceneManagerInternal
 
 void Eng::SceneManager::TextureLoaderProc() {
     using namespace SceneManagerConstants;

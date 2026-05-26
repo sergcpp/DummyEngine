@@ -13,6 +13,7 @@
 #include <Gui/Utils.h>
 #include <Ren/Context.h>
 #include <Sys/AssetFile.h>
+#include <Sys/Json.h>
 #include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
 

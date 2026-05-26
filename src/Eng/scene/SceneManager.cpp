@@ -31,7 +31,7 @@ extern __itt_domain *__g_itt_domain;
 #include "../utils/Load.h"
 #include "../utils/ShaderLoader.h"
 
-namespace SceneManagerConstants {
+namespace Eng::SceneManagerConstants {
 const float NEAR_CLIP = 0.05f;
 const float FAR_CLIP = 10000.0f;
 
@@ -48,9 +48,9 @@ const float DefaultSunShadowBias[2] = {4.0f, 8.0f};
 __itt_string_handle *itt_load_scene_str = __itt_string_handle_create("SceneManager::LoadScene");
 __itt_string_handle *itt_serve_str = __itt_string_handle_create("SceneManager::Serve");
 __itt_string_handle *itt_on_loaded_str = __itt_string_handle_create("SceneManager::OnTextureDataLoaded");
-} // namespace SceneManagerConstants
+} // namespace Eng::SceneManagerConstants
 
-namespace SceneManagerInternal {
+namespace Eng::SceneManagerInternal {
 template <typename T> class DefaultCompStorage : public Eng::CompStorage {
     Ren::SparseArray<T> data_;
 
@@ -122,7 +122,7 @@ void __init_wind_params(const Eng::VegState &vs, const Eng::Environment &env, co
 }
 
 #include "precomputed/__cam_rig.inl"
-} // namespace SceneManagerInternal
+} // namespace Eng::SceneManagerInternal
 
 Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Snd::Context *snd_ctx,
                                 Sys::ThreadPool &threads, const path_config_t &paths)

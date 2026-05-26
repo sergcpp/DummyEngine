@@ -18,7 +18,7 @@ extern "C" {
 
 #include "../utils/Load.h"
 
-namespace SceneManagerInternal {
+namespace Eng::SceneManagerInternal {
 void GetTexturesAverageColor(const unsigned char *image_data, int w, int h, int channels, uint8_t out_color[4]) {
     uint32_t sum[4] = {};
     for (int y = 0; y < h; y++) {
@@ -40,6 +40,8 @@ void GetTexturesAverageColor(const unsigned char *image_data, int w, int h, int 
         out_color[i] = 255;
     }
 }
+
+void WriteTextureAverage(AssetCache &cache, const char *tex_name, const uint8_t average_color[4]);
 
 std::unique_ptr<uint8_t[]> ComputeBumpConemap(const unsigned char *img_data, int width, int height, int channels,
                                               Eng::assets_context_t &ctx) {
@@ -203,13 +205,13 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(const unsigned char *img_data, int
     int counter = 0;
     for (int y = 0; y < height; y += TileSize) {
         for (int x = 0; x < width; x += TileSize) {
-            if (ctx.p_threads) {
-                futures.emplace_back(ctx.p_threads->Enqueue(std::bind(compute_tile, x, y)));
-            } else {
+            //if (ctx.p_threads) {
+            //    futures.emplace_back(ctx.p_threads->Enqueue(std::bind(compute_tile, x, y)));
+            //} else {
                 compute_tile(x, y);
                 ctx.log->Info("Computing conemap %i%%",
                               int(100.0f * float(++counter) / float((width * height) / (TileSize * TileSize))));
-            }
+            //}
         }
     }
 
@@ -835,7 +837,7 @@ bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]) {
     return true;
 }
 
-} // namespace SceneManagerInternal
+} // namespace Eng::SceneManagerInternal
 
 bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
                                    Ren::SmallVectorImpl<std::string> &out_dependencies,
@@ -978,7 +980,7 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
         Write_DDS(image_data, width, height, channels, false /* flip_y */, use_YCoCg, out_file, average_color);
     if (res) {
         std::lock_guard<std::mutex> _(ctx.cache_mtx);
-        ctx.cache->WriteTextureAverage(in_file, average_color);
+        WriteTextureAverage(*ctx.cache, in_file, average_color);
     }
     return res;
 }

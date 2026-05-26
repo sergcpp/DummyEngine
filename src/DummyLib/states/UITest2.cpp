@@ -12,6 +12,7 @@
 #include <Gui/Image.h>
 #include <Gui/Image9Patch.h>
 #include <Gui/Utils.h>
+#include <Sys/Json.h>
 #include <Sys/Time_.h>
 
 #include "../Viewer.h"
@@ -48,8 +49,7 @@ void UITest2::Enter() {
     BaseState::LoadScene("scenes/empty.json");
 
     { // Load dictionary
-        std::ifstream dict_file("assets_pc/scenes/test/test_dict/de-en.dict",
-                                std::ios::binary);
+        std::ifstream dict_file("assets_pc/scenes/test/test_dict/de-en.dict", std::ios::binary);
         dict_->Load(dict_file, log_);
     }
 }

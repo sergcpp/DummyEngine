@@ -14,7 +14,7 @@
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
-namespace SceneManagerInternal {
+namespace Eng::SceneManagerInternal {
 const float BoundsMargin = 0.2f;
 
 float surface_area(const Eng::bvh_node_t &n) {
@@ -93,7 +93,7 @@ Phy::Vec3f adapt(const Ren::Vec3f &v) { return Phy::Vec3f{v[0], v[1], v[2]}; }
 
 __itt_string_handle *itt_rebuild_bvh_str = __itt_string_handle_create("SceneManager::RebuildSceneBVH");
 __itt_string_handle *itt_update_bvh_str = __itt_string_handle_create("SceneManager::UpdateBVH");
-} // namespace SceneManagerInternal
+} // namespace Eng::SceneManagerInternal
 
 void Eng::SceneManager::RebuildSceneBVH() {
     using namespace SceneManagerInternal;

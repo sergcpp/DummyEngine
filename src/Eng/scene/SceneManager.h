@@ -38,34 +38,10 @@ namespace Eng {
 class ShaderLoader;
 } // namespace Eng
 
-#include <Sys/Json.h>
+//#include <Sys/Json.h>
 
-namespace SceneManagerInternal {
-// TODO: remove this from header file
-struct AssetCache {
-    Sys::JsObjectP js_db;
-    Ren::HashMap32<std::string, uint32_t> texture_averages;
-
-    explicit AssetCache(const Sys::MultiPoolAllocator<char> &mp_alloc) : js_db(mp_alloc) {}
-
-    void WriteTextureAverage(const char *tex_name, const uint8_t average_color[4]) {
-        uint32_t color;
-        memcpy(&color, average_color, 4);
-        texture_averages.Insert(tex_name, color);
-
-        Sys::JsObjectP &js_files = js_db["files"].as_obj();
-        if (const size_t i = js_files.IndexOf(tex_name); i < js_files.Size()) {
-            Sys::JsObjectP &js_file = js_files[i].second.as_obj();
-            if (const size_t color_ndx = js_file.IndexOf("color"); color_ndx < js_file.Size()) {
-                Sys::JsNumber &js_color = js_file[color_ndx].second.as_num();
-                js_color.val = double(color);
-            } else {
-                auto js_color = Sys::JsNumber{double(color)};
-                js_file.Insert("color", js_color);
-            }
-        }
-    }
-};
+namespace Eng::SceneManagerInternal {
+struct AssetCache;
 } // namespace SceneManagerInternal
 
 namespace Eng {
@@ -80,10 +56,12 @@ struct assets_context_t {
     std::string_view platform;
     Ren::ILog *log;
     std::unique_ptr<SceneManagerInternal::AssetCache> cache;
-    Sys::MultiPoolAllocator<char> *mp_alloc;
-    Sys::ThreadPool *p_threads;
+    Sys::MultiPoolAllocator<char, std::allocator<char>> *mp_alloc;
     Sys::DynLib spirv_compiler;
     std::mutex cache_mtx;
+
+    std::deque<std::function<void()>> continuations;
+    std::mutex continuations_mtx;
 };
 
 enum class eAssetBuildFlags : uint32_t { DebugOnly, ReleaseOnly, GLOnly, VKOnly };

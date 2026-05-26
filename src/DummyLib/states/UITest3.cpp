@@ -12,6 +12,7 @@
 #include <Gui/Image9Patch.h>
 #include <Gui/Utils.h>
 #include <Sys/AssetFile.h>
+#include <Sys/Json.h>
 #include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
 
@@ -319,8 +320,8 @@ bool UITest3::HandleInput(const Eng::input_event_t &evt, const std::vector<bool>
 
     switch (evt.type) {
     case Eng::eInputEvent::P1Down: {
-        //const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
-        //                                           Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        // const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
+        //                                            Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (book_state_ == eBookState::BkOpened) {
         }
     } break;
@@ -387,9 +388,9 @@ bool UITest3::HandleInput(const Eng::input_event_t &evt, const std::vector<bool>
     case Eng::eInputEvent::P2Up: {
     } break;
     case Eng::eInputEvent::P1Move: {
-        //const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
-        //                                           Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
-        // paged_reader_->Hover(p);
+        // const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
+        //                                            Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        //  paged_reader_->Hover(p);
 
         hit_point_screen_ = {};
     } break;

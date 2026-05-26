@@ -121,7 +121,7 @@ __itt_string_handle *itt_exec_dr_str = __itt_string_handle_create("ExecuteDrawLi
 } // namespace RendererInternal
 
 // TODO: remove this coupling!!!
-namespace SceneManagerInternal {
+namespace Eng::SceneManagerInternal {
 int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y, bool is_rgbm, const char *name);
 }
 
@@ -480,7 +480,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
              Ren::eStoreOp::Store},
 #endif
             {Ren::eFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
-             Ren::eStoreOp::Store}};
+             Ren::eStoreOp::Store}
+        };
 
         // color_rts[2].flags = Ren::eImgFlags::SRGB;
 
