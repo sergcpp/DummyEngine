@@ -95,6 +95,121 @@ void test_async_file() {
         }
     }
 
+    { // error: non-existent file (blocking buf variant)
+        AsyncFileReader reader;
+        DefaultFileReadBuf buf;
+        require(!reader.ReadFileBlocking("__no_such_file__.bin", 0, WholeFile, buf));
+    }
+
+    { // error: non-existent file (blocking void* variant)
+        AsyncFileReader reader;
+        char tmp[64];
+        size_t sz = sizeof(tmp);
+        require(!reader.ReadFileBlocking("__no_such_file__.bin", 0, WholeFile, tmp, sz));
+    }
+
+    { // error: read_offset past end of file
+        AsyncFileReader reader;
+        DefaultFileReadBuf buf;
+        require(!reader.ReadFileBlocking(test_file_name, test_file_size + 1, WholeFile, buf));
+    }
+
+    { // error: read_offset past end of file (non-blocking)
+        AsyncFileReader reader;
+        DefaultFileReadBuf buf;
+        FileReadEvent event;
+        require(!reader.ReadFileNonBlocking(test_file_name, test_file_size + 1, WholeFile, buf, event));
+    }
+
+    { // partial read with sector-aligned offset (blocking buf variant)
+        const size_t read_off = 4096 * 1000; // multiple of sector size and of pattern period
+        const size_t read_len = 1000 * 1000;
+
+        AsyncFileReader reader;
+        DefaultFileReadBuf buf;
+        require(reader.ReadFileBlocking(test_file_name, read_off, read_len, buf));
+        require(buf.data_len() == read_len);
+
+        for (size_t i = 0; i < buf.data_len(); i += 1000) {
+            require(memcmp(&buf.data()[i], &test_data[0], 1000) == 0);
+        }
+    }
+
+    { // partial read with sector-aligned offset (blocking void* variant)
+        const size_t read_off = 4096 * 1000;
+        const size_t read_len = 1000 * 1000;
+
+        AsyncFileReader reader;
+        std::unique_ptr<char[]> tmp(new char[read_len]);
+        size_t sz = read_len;
+        require(reader.ReadFileBlocking(test_file_name, read_off, read_len, tmp.get(), sz));
+        require(sz == read_len);
+
+        for (size_t i = 0; i < sz; i += 1000) {
+            require(memcmp(&tmp[i], &test_data[0], 1000) == 0);
+        }
+    }
+
+    { // partial read with unaligned offset (tests internal data_off_ alignment)
+        const size_t read_off = 4096 + 512; // not sector-aligned
+        const size_t read_len = 1000 * 1000;
+
+        AsyncFileReader reader;
+        DefaultFileReadBuf buf;
+        require(reader.ReadFileBlocking(test_file_name, read_off, read_len, buf));
+        require(buf.data_len() == read_len);
+
+        // verify data at the given offset: pattern repeats every 1000 bytes
+        const size_t pattern_off = read_off % 1000;
+        for (size_t i = 0; i < read_len; ++i) {
+            require(buf.data()[i] == test_data[(pattern_off + i) % 1000]);
+        }
+    }
+
+    { // partial non-blocking read with offset
+        const size_t read_off = 4096 * 2000;
+        const size_t read_len = 1000 * 1000;
+
+        AsyncFileReader reader;
+        DefaultFileReadBuf buf;
+        FileReadEvent event;
+
+        require(reader.ReadFileNonBlocking(test_file_name, read_off, read_len, buf, event));
+
+        size_t bytes_read;
+        require(event.GetResult(true, &bytes_read) == eFileReadResult::Successful);
+        require(buf.data_len() == read_len);
+
+        for (size_t i = 0; i < buf.data_len(); i += 1000) {
+            require(memcmp(&buf.data()[i], &test_data[0], 1000) == 0);
+        }
+    }
+
+    { // FileReadEvent move assignment — result survives move
+        AsyncFileReader reader;
+        DefaultFileReadBuf buf;
+        FileReadEvent event1;
+
+        require(reader.ReadFileNonBlocking(test_file_name, 0, WholeFile, buf, event1));
+
+        FileReadEvent event2;
+        event2 = std::move(event1); // move — event1 is now empty
+
+        size_t bytes_read;
+        require(event2.GetResult(true, &bytes_read) == eFileReadResult::Successful);
+        require(buf.data_len() == test_file_size);
+    }
+
+    { // FileReadEvent destroyed while a non-blocking read is in-flight (no crash/leak)
+        AsyncFileReader reader;
+        DefaultFileReadBuf buf;
+        {
+            FileReadEvent event;
+            require(reader.ReadFileNonBlocking(test_file_name, 0, WholeFile, buf, event));
+            // event goes out of scope here — destructor must cancel cleanly
+        }
+    }
+
     // remove test file
     std::remove(test_file_name);
 

@@ -43,13 +43,24 @@ FileReadEvent::FileReadEvent() {
 }
 
 FileReadEvent::~FileReadEvent() {
-    ::CloseHandle(h_file_);
-    ::CloseHandle(ev_);
+    if (h_file_) {
+        ::CloseHandle(h_file_);
+    }
+    if (ev_) {
+        ::CloseHandle(ev_);
+    }
 }
 
 FileReadEvent &FileReadEvent::operator=(FileReadEvent &&rhs) noexcept {
     if (&rhs == this) {
         return *this;
+    }
+
+    if (h_file_) {
+        ::CloseHandle(h_file_);
+    }
+    if (ev_) {
+        ::CloseHandle(ev_);
     }
 
     h_file_ = std::exchange(rhs.h_file_, nullptr);
@@ -75,7 +86,11 @@ bool FileReadEvent::ReadFile(void *h_file, const size_t read_offset, const size_
 
     assert(read_offset % MaxVolumeSectorSize == 0);
     assert(read_size % MaxVolumeSectorSize == 0);
-    return ::ReadFile(h_file, out_buf, DWORD(read_size), NULL, &ov) == FALSE && ::GetLastError() == ERROR_IO_PENDING;
+    DWORD bytes_transferred;
+    if (::ReadFile(h_file, out_buf, DWORD(read_size), &bytes_transferred, &ov)) {
+        return true; // synchronous completion
+    }
+    return ::GetLastError() == ERROR_IO_PENDING;
 }
 
 eFileReadResult FileReadEvent::GetResult(const bool block, size_t *bytes_read) {
@@ -125,6 +140,10 @@ class AsyncFileReaderImpl {
         LARGE_INTEGER size;
         GetFileSizeEx(h_file, &size);
 
+        if (read_offset >= size_t(size.QuadPart)) {
+            out_size = 0;
+            return false;
+        }
         read_size = std::min(read_size, size_t(size.QuadPart) - read_offset);
         const size_t out_buf_size = out_size;
 
@@ -214,6 +233,11 @@ class AsyncFileReaderImpl {
         LARGE_INTEGER size;
         GetFileSizeEx(h_file, &size);
 
+        if (read_offset >= size_t(size.QuadPart)) {
+            out_buf.set_data_off(0);
+            out_buf.set_data_len(0);
+            return false;
+        }
         read_size = std::min(read_size, size_t(size.QuadPart) - read_offset);
 
         // read offset must be aligned to volume sector size
@@ -244,7 +268,7 @@ class AsyncFileReaderImpl {
             size_t bytes_read;
             events[i % events_count].GetResult(true /* block */, &bytes_read);
 
-            const int next_request = i + SimultaniousFileRequests;
+            const int next_request = i + events_count;
             if (next_request < chunks_count) {
                 const size_t req_size = std::min(size_t(out_buf.chunk_size()), left_to_request);
                 if (!events[next_request % events_count].ReadFile(
@@ -277,6 +301,12 @@ class AsyncFileReaderImpl {
         LARGE_INTEGER size;
         GetFileSizeEx(h_file, &size);
 
+        if (read_offset >= size_t(size.QuadPart)) {
+            out_buf.set_data_off(0);
+            out_buf.set_data_len(0);
+            ::CloseHandle(h_file);
+            return false;
+        }
         read_size = std::min(read_size, size_t(size.QuadPart) - read_offset);
 
         // read offset must be aligned to volume sector size
