@@ -73,9 +73,83 @@ Ren::Vec2i splat_pixel_energy(const int ox, const int oy, const int oz,
     }
     return Ren::Vec2i{imin, imax};
 }
+
+static const float GaussOmegaI = 3.6f;
+static const float GaussOmegaS = 1.0f;
+
+static const int ProximityRadius = 7;
+static const int MaxSwappingIterations = 10000000;
+
+template <int SampleCount>
+float calc_pixel_proximity(const int ox, const int oy, const int oz,
+                           const Ren::Vec2f values[SampleCount][TileRes][TileRes]) {
+    const Ren::Vec2f oval = values[oz][oy][ox];
+
+    double total_proximity = 0.0;
+    for (int z = oz - ProximityRadius; z <= oz + ProximityRadius; ++z) {
+        const int wrapped_z = (z + SampleCount) % SampleCount;
+        const int dz = std::abs(z - oz);
+        for (int y = oy - ProximityRadius; y <= oy + ProximityRadius; ++y) {
+            const int wrapped_y = (y + TileRes) % TileRes;
+            const int dy = std::abs(y - oy);
+            for (int x = ox - ProximityRadius; x <= ox + ProximityRadius; ++x) {
+                const int wrapped_x = (x + TileRes) % TileRes;
+                const int dx = std::abs(x - ox);
+                if (wrapped_x == ox && wrapped_y == oy && wrapped_z == oz) {
+                    continue;
+                }
+                float proximity = 0.0f;
+                if ((wrapped_x == ox && wrapped_y == oy) || wrapped_z == oz) {
+                    proximity += (dx * dx + dy * dy + dz * dz) / GaussOmegaI;
+                    // calc distance ^ (2.0 / 3.0)
+                    proximity += cbrtf(Ren::Distance2(values[wrapped_z][wrapped_y][wrapped_x], oval)) / GaussOmegaS;
+                    proximity = std::exp(-proximity);
+                }
+                total_proximity += proximity;
+            }
+        }
+    }
+    return float(total_proximity);
+}
+
+template <int SampleCount, bool Sign>
+void splat_pixel_proximity(const int ox, const int oy, const int oz,
+                           const Ren::Vec2f values[SampleCount][TileRes][TileRes],
+                           float energy[SampleCount][TileRes][TileRes]) {
+    const Ren::Vec2f oval = values[oz][oy][ox];
+    for (int z = oz - ProximityRadius; z <= oz + ProximityRadius; ++z) {
+        const int wrapped_z = (z + SampleCount) % SampleCount;
+        const int dz = std::abs(z - oz);
+        for (int y = oy - ProximityRadius; y <= oy + ProximityRadius; ++y) {
+            const int wrapped_y = (y + TileRes) % TileRes;
+            const int dy = std::abs(y - oy);
+            for (int x = ox - ProximityRadius; x <= ox + ProximityRadius; ++x) {
+                const int wrapped_x = (x + TileRes) % TileRes;
+                const int dx = std::abs(x - ox);
+                if (wrapped_x == ox && wrapped_y == oy && wrapped_z == oz) {
+                    continue;
+                }
+
+                float proximity = 0.0f;
+                if ((wrapped_x == ox && wrapped_y == oy) || wrapped_z == oz) {
+                    proximity += (dx * dx + dy * dy + dz * dz) / GaussOmegaI;
+                    // calc distance ^ (2.0 / 3.0)
+                    proximity += cbrtf(Ren::Distance2(values[wrapped_z][wrapped_y][wrapped_x], oval)) / GaussOmegaS;
+                    proximity = std::exp(-proximity);
+                }
+                if constexpr (Sign) {
+                    energy[wrapped_z][wrapped_y][wrapped_x] += proximity;
+                } else {
+                    energy[wrapped_z][wrapped_y][wrapped_x] -= proximity;
+                }
+            }
+        }
+    }
+}
 } // namespace STBN
 
-void WriteDDS(const float *data, int w, int h, int d, const char *name);
+void WriteDDS(const float data[], int w, int h, int d, const char *name);
+void WriteDDS(const Ren::Vec2f data[], int w, int h, int d, const char *name);
 } // namespace Eng::BNInternal
 
 template <int Log2SampleCount> void Eng::Generate1D_STBN(const unsigned int seed, const bool strided_access) {
@@ -324,6 +398,170 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN(const unsigned int seed
     }
 }
 
+template <int Log2SampleCount> void Eng::Generate2D_STBN(unsigned int seed) {
+    using namespace BNInternal;
+    using namespace STBN;
+
+    static const int SampleCount = (1 << Log2SampleCount);
+
+    // Dynamic allocation is used to avoid stack overflow
+    struct bn_data_t {
+        Ren::Vec2f samples[SampleCount][TileRes][TileRes];
+        float proximity[SampleCount][TileRes][TileRes] = {};
+
+        // temp data
+        float debug_values[SampleCount][TileRes][TileRes] = {};
+    };
+    auto data = std::make_unique<bn_data_t>();
+
+    std::mt19937 gen(seed);
+    std::uniform_int_distribution<int> uniform_index(0, SampleCount * TileRes * TileRes - 1);
+    std::uniform_real_distribution<float> uniform_unorm_float(0.0f, 1.0f);
+
+    // Generate initial samples
+    for (int z = 0; z < SampleCount; ++z) {
+        for (int y = 0; y < TileRes; ++y) {
+            for (int x = 0; x < TileRes; ++x) {
+                data->samples[z][y][x] = Ren::Vec2f(uniform_unorm_float(gen), uniform_unorm_float(gen));
+            }
+        }
+    }
+
+    float best_total_proximity = 0.0f;
+    for (int z = 0; z < SampleCount; ++z) {
+        for (int y = 0; y < TileRes; ++y) {
+            for (int x = 0; x < TileRes; ++x) {
+                data->proximity[z][y][x] = calc_pixel_proximity<SampleCount>(x, y, z, data->samples);
+                best_total_proximity += data->proximity[z][y][x];
+            }
+        }
+    }
+
+    char name_buf[128];
+
+    for (int iter = 0; iter < MaxSwappingIterations; ++iter) {
+        if ((iter % 1000) == 0) {
+            printf("Swapping Iteration %i (%f)\n", iter, best_total_proximity);
+
+            float min_proximity = FLT_MAX, max_proximity = 0.0f;
+            for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
+                const auto [x, y, z] = xyz_from_index(j);
+
+                data->debug_values[z][y][x] = data->proximity[z][y][x];
+                min_proximity = std::min(min_proximity, data->debug_values[z][y][x]);
+                max_proximity = std::max(max_proximity, data->debug_values[z][y][x]);
+            }
+            // normalize errors (for easier debugging)
+            for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
+                const auto [x, y, z] = xyz_from_index(j);
+
+                float &e = data->debug_values[z][y][x];
+                e = (e - min_proximity) / (max_proximity - min_proximity);
+            }
+
+            snprintf(name_buf, sizeof(name_buf), "debug_energy_%i.dds", SampleCount);
+            WriteDDS(&data->debug_values[0][0][0], TileRes, TileRes, SampleCount, name_buf);
+
+            snprintf(name_buf, sizeof(name_buf), "debug_samples_%i.dds", SampleCount);
+            WriteDDS(&data->samples[0][0][0], TileRes, TileRes, SampleCount, name_buf);
+        }
+
+        // Randomly swap two pixels
+        const int index1 = uniform_index(gen), index2 = uniform_index(gen);
+        const auto [ox1, oy1, oz1] = xyz_from_index(index1);
+        const auto [ox2, oy2, oz2] = xyz_from_index(index2);
+
+        // Substract swapped pixels contribution
+        splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz1, data->samples, data->proximity);
+        splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz2, data->samples, data->proximity);
+
+        std::swap(data->samples[oz1][oy1][ox1], data->samples[oz2][oy2][ox2]);
+
+        // Recalc proximity of changed pixels
+        data->proximity[oz1][oy1][ox1] = calc_pixel_proximity<SampleCount>(ox1, oy1, oz1, data->samples);
+        data->proximity[oz2][oy2][ox2] = calc_pixel_proximity<SampleCount>(ox2, oy2, oz2, data->samples);
+
+        // Add swapped pixels contribution
+        splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz1, data->samples, data->proximity);
+        splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz2, data->samples, data->proximity);
+
+        float total_proximity = 0.0f;
+        for (int z = 0; z < SampleCount; ++z) {
+            for (int y = 0; y < TileRes; ++y) {
+                for (int x = 0; x < TileRes; ++x) {
+                    total_proximity += data->proximity[z][y][x];
+                }
+            }
+        }
+
+        if (total_proximity < best_total_proximity) {
+            // Accept this iteration
+            best_total_proximity = total_proximity;
+        } else {
+            // Revert swap
+            splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz1, data->samples, data->proximity);
+            splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz2, data->samples, data->proximity);
+
+            std::swap(data->samples[oz1][oy1][ox1], data->samples[oz2][oy2][ox2]);
+
+            data->proximity[oz1][oy1][ox1] = calc_pixel_proximity<SampleCount>(ox1, oy1, oz1, data->samples);
+            data->proximity[oz2][oy2][ox2] = calc_pixel_proximity<SampleCount>(ox2, oy2, oz2, data->samples);
+
+            splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz1, data->samples, data->proximity);
+            splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz2, data->samples, data->proximity);
+        }
+    }
+
+    { // Debug values
+        float min_proximity = FLT_MAX, max_proximity = 0.0f;
+        for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
+            const auto [x, y, z] = xyz_from_index(j);
+
+            data->debug_values[z][y][x] = data->proximity[z][y][x];
+            min_proximity = std::min(min_proximity, data->debug_values[z][y][x]);
+            max_proximity = std::max(max_proximity, data->debug_values[z][y][x]);
+        }
+        // normalize errors (for easier debugging)
+        for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
+            const auto [x, y, z] = xyz_from_index(j);
+
+            float &e = data->debug_values[z][y][x];
+            e = (e - min_proximity) / (max_proximity - min_proximity);
+        }
+
+        snprintf(name_buf, sizeof(name_buf), "debug_energy_%i.dds", SampleCount);
+        WriteDDS(&data->debug_values[0][0][0], TileRes, TileRes, SampleCount, name_buf);
+
+        snprintf(name_buf, sizeof(name_buf), "debug_samples_%i.dds", SampleCount);
+        WriteDDS(&data->samples[0][0][0], TileRes, TileRes, SampleCount, name_buf);
+    }
+
+    { // dump C array
+        snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/__stbn_sampler_2D_%ispp.inl", SampleCount);
+
+        std::ofstream out_file(name_buf, std::ios::binary);
+        out_file << "const int w = " << TileRes << ";\n";
+        out_file << "const int h = " << TileRes << ";\n";
+        out_file << "const int d = " << SampleCount << ";\n";
+        out_file << "const uint8_t stbn_samples[" << 2 * SampleCount * TileRes * TileRes << "] = {\n    ";
+        for (int z = 0; z < SampleCount; ++z) {
+            for (int y = 0; y < TileRes; ++y) {
+                for (int x = 0; x < TileRes; ++x) {
+                    out_file << std::clamp(int(data->samples[z][y][x][0] * 255.0f), 0, 255);
+                    out_file << "u, ";
+                    out_file << std::clamp(int(data->samples[z][y][x][1] * 255.0f), 0, 255);
+                    if (x != TileRes - 1 || y != TileRes - 1 || z != SampleCount - 1) {
+                        out_file << "u, ";
+                    } else {
+                        out_file << "u\n";
+                    }
+                }
+            }
+        }
+        out_file << "};\n";
+    }
+}
+
 template void Eng::Generate1D_STBN<0>(unsigned int seed, bool strided_access);
 template void Eng::Generate1D_STBN<1>(unsigned int seed, bool strided_access);
 template void Eng::Generate1D_STBN<2>(unsigned int seed, bool strided_access);
@@ -334,7 +572,17 @@ template void Eng::Generate1D_STBN<6>(unsigned int seed, bool strided_access);
 template void Eng::Generate1D_STBN<7>(unsigned int seed, bool strided_access);
 template void Eng::Generate1D_STBN<8>(unsigned int seed, bool strided_access);
 
-void Eng::BNInternal::WriteDDS(const float *data, const int w, const int h, const int d, const char *name) {
+template void Eng::Generate2D_STBN<0>(unsigned int seed);
+template void Eng::Generate2D_STBN<1>(unsigned int seed);
+template void Eng::Generate2D_STBN<2>(unsigned int seed);
+template void Eng::Generate2D_STBN<3>(unsigned int seed);
+template void Eng::Generate2D_STBN<4>(unsigned int seed);
+template void Eng::Generate2D_STBN<5>(unsigned int seed);
+template void Eng::Generate2D_STBN<6>(unsigned int seed);
+template void Eng::Generate2D_STBN<7>(unsigned int seed);
+template void Eng::Generate2D_STBN<8>(unsigned int seed);
+
+void Eng::BNInternal::WriteDDS(const float data[], const int w, const int h, const int d, const char *name) {
     Ren::DDSHeader header = {};
     header.dwMagic = (unsigned('D') << 0u) | (unsigned('D') << 8u) | (unsigned('S') << 16u) | (unsigned(' ') << 24u);
     header.dwSize = 124;
@@ -365,4 +613,38 @@ void Eng::BNInternal::WriteDDS(const float *data, const int w, const int h, cons
     }
 
     out_file.write((char *)u8data.data(), w * h * d);
+}
+
+void Eng::BNInternal::WriteDDS(const Ren::Vec2f data[], const int w, const int h, const int d, const char *name) {
+    Ren::DDSHeader header = {};
+    header.dwMagic = (unsigned('D') << 0u) | (unsigned('D') << 8u) | (unsigned('S') << 16u) | (unsigned(' ') << 24u);
+    header.dwSize = 124;
+    header.dwFlags = Ren::DDSD_CAPS | Ren::DDSD_HEIGHT | Ren::DDSD_WIDTH | Ren::DDSD_DEPTH | Ren::DDSD_PIXELFORMAT;
+    header.dwWidth = w;
+    header.dwHeight = h;
+    header.dwDepth = d;
+    header.sPixelFormat.dwSize = 32;
+    header.sPixelFormat.dwFlags = Ren::DDPF_FOURCC;
+    header.sPixelFormat.dwFourCC = Ren::FourCC_DX10;
+
+    header.sCaps.dwCaps1 = Ren::DDSCAPS_TEXTURE | Ren::DDSCAPS_MIPMAP;
+
+    Ren::DDS_HEADER_DXT10 dx10Header = {};
+    dx10Header.dxgiFormat = Ren::DXGI_FORMAT_R8G8_UNORM;
+    dx10Header.resourceDimension = Ren::D3D10_RESOURCE_DIMENSION_TEXTURE3D;
+    dx10Header.miscFlag = 0;
+    dx10Header.arraySize = 1;
+    dx10Header.miscFlags2 = 0;
+
+    std::ofstream out_file(name, std::ios::binary);
+    out_file.write((char *)&header, sizeof(Ren::DDSHeader));
+    out_file.write((char *)&dx10Header, sizeof(Ren::DDS_HEADER_DXT10));
+
+    std::vector<uint8_t> u8data(2 * w * h * d);
+    for (int i = 0; i < w * h * d; ++i) {
+        u8data[2 * i + 0] = uint8_t(std::clamp(int(data[i][0] * 255.0f), 0, 255));
+        u8data[2 * i + 1] = uint8_t(std::clamp(int(data[i][1] * 255.0f), 0, 255));
+    }
+
+    out_file.write((char *)u8data.data(), 2 * w * h * d);
 }
