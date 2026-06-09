@@ -418,7 +418,8 @@ void main() {
         const float pa = length(tri_normal);
         tri_normal /= pa;
 
-        float cone_width = 0.0;//_cone_width + g_params.pixel_spread_angle * inter.tmax;
+        const float PixelSpreadAngle = 0.05; // Assume lowres probe
+        const float cone_width = PixelSpreadAngle * inter.tmax;
 
         float tex_lod = 0.5 * log2(ta / pa);
         tex_lod += log2(cone_width);
