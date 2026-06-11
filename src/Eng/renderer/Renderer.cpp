@@ -74,6 +74,13 @@ extern const Ren::Vec2f PMJSamples64[64] = {
     Ren::Vec2f{0.603472f, 0.588461f}, Ren::Vec2f{0.288023f, 0.473484f}, Ren::Vec2f{0.940450f, 0.121696f},
     Ren::Vec2f{0.113382f, 0.834329f}};
 
+// Optimized for EMA stability on heavyside functions (blue noise in time dimension)
+extern const int PMJReorder16[16] = {7, 6, 3, 2, 1, 0, 13, 4, 10, 15, 14, 11, 9, 12, 5, 8};
+extern const int PMJReorder64[64] = {58, 11, 8,  57, 35, 30, 23, 28, 4,  53, 26, 47, 38, 33, 16, 29,
+                                     59, 21, 24, 18, 7,  44, 49, 22, 20, 5,  63, 6,  17, 60, 3,  62,
+                                     55, 56, 41, 45, 48, 27, 46, 1,  10, 36, 2,  31, 32, 13, 12, 42,
+                                     9,  40, 39, 50, 54, 51, 61, 34, 52, 25, 14, 19, 43, 0,  37, 15};
+
 extern const int TaaSampleCountNormal = 16;
 extern const int TaaSampleCountStatic = 64;
 
@@ -768,11 +775,12 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     view_state_.skip_volumetrics = !has_global_volume && list.rt_obj_instances[int(eTLASIndex::Volume)].count == 0;
 
     if (list.render_settings.taa_mode != eTAAMode::Off) {
-        const int samples_to_use =
-            (list.render_settings.taa_mode == eTAAMode::Static) ? TaaSampleCountStatic : TaaSampleCountNormal;
-        const int sample_index =
-            ((list.render_settings.taa_mode == eTAAMode::Static) ? accumulated_frames_ : list.frame_index) %
-            samples_to_use;
+        int sample_index;
+        if (list.render_settings.taa_mode == eTAAMode::Static) {
+            sample_index = (accumulated_frames_ % TaaSampleCountStatic);
+        } else {
+            sample_index = PMJReorder16[list.frame_index % TaaSampleCountNormal];
+        }
         Ren::Vec2f jitter = PMJSamples64[sample_index];
 
         auto lookup_filter_table = [this](float x) {
