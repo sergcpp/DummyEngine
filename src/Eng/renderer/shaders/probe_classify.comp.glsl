@@ -28,16 +28,16 @@ layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2DArray g_out_img;
 layout (local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    int probe_index = int(gl_GlobalInvocationID.x);
+    uint probe_index = gl_GlobalInvocationID.x;
     if (probe_index >= PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z) {
         return;
     }
 
-    const ivec3 probe_coords = get_probe_coords(probe_index);
+    const uvec3 probe_coords = get_probe_coords(probe_index);
     probe_index = get_scrolling_probe_index(probe_coords, g_params.grid_scroll.xyz);
-    const ivec3 output_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
+    const uvec3 output_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
 
-    vec4 offset = imageLoad(g_out_img, output_coords);
+    vec4 offset = imageLoad(g_out_img, ivec3(output_coords));
 
 #ifdef RESET
     offset.w = PROBE_STATE_ACTIVE;
@@ -45,20 +45,20 @@ void main() {
 
 #ifdef PARTIAL
     const bool is_scrolling_plane_probe = IsScrollingPlaneProbe(probe_index, g_params.grid_scroll.xyz, g_params.grid_scroll_diff.xyz);
-    const ivec3 oct_index = get_probe_coords(probe_index) & 1;
-    const bool is_wrong_oct = (oct_index.x | (oct_index.y << 1) | (oct_index.z << 2)) != g_params.oct_index;
+    const uvec3 oct_index = get_probe_coords(probe_index) & 1u;
+    const bool is_wrong_oct = (oct_index.x | (oct_index.y << 1u) | (oct_index.z << 2u)) != g_params.oct_index;
     if (!is_scrolling_plane_probe && is_wrong_oct) {
         return;
     }
 #endif // PARTIAL
 
-    int backface_count = 0, outdoor_count = 0;
+    uint backface_count = 0, outdoor_count = 0;
     float hit_distances[PROBE_FIXED_RAYS_COUNT];
 
-    for (int i = 0; i < PROBE_FIXED_RAYS_COUNT; ++i) {
-        const ivec3 ray_data_coords = get_ray_data_coords(i, probe_index);
+    for (uint i = 0; i < PROBE_FIXED_RAYS_COUNT; ++i) {
+        const uvec3 ray_data_coords = get_ray_data_coords(i, probe_index);
 
-        hit_distances[i] = texelFetch(g_ray_data, ray_data_coords, 0).w;
+        hit_distances[i] = texelFetch(g_ray_data, ivec3(ray_data_coords), 0).w;
         if (hit_distances[i] < 0.0) {
             ++backface_count;
         }
@@ -73,7 +73,7 @@ void main() {
         offset.w = PROBE_STATE_INACTIVE;
     } else {
         offset.w = PROBE_STATE_INACTIVE;
-        for (int i = 0; i < PROBE_FIXED_RAYS_COUNT; ++i) {
+        for (uint i = 0; i < PROBE_FIXED_RAYS_COUNT; ++i) {
             if (hit_distances[i] < 0.0) {
                 continue;
             }
@@ -127,5 +127,5 @@ void main() {
 
 #endif // RESET
 
-    imageStore(g_out_img, output_coords, offset);
+    imageStore(g_out_img, ivec3(output_coords), offset);
 }

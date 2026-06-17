@@ -23,16 +23,16 @@ layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2DArray g_out_img;
 layout (local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    int probe_index = int(gl_GlobalInvocationID.x);
+    uint probe_index = gl_GlobalInvocationID.x;
     if (probe_index >= PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z) {
         return;
     }
 
-    const ivec3 probe_coords = get_probe_coords(probe_index);
+    const uvec3 probe_coords = get_probe_coords(probe_index);
     probe_index = get_scrolling_probe_index(probe_coords, g_params.grid_scroll.xyz);
-    const ivec3 output_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
+    const uvec3 output_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
 
-    vec4 offset = imageLoad(g_out_img, output_coords);
+    vec4 offset = imageLoad(g_out_img, ivec3(output_coords));
 
 #ifdef RESET
     offset.xyz = vec3(0.0);
@@ -40,8 +40,8 @@ void main() {
 
 #ifdef PARTIAL
     const bool is_scrolling_plane_probe = IsScrollingPlaneProbe(probe_index, g_params.grid_scroll.xyz, g_params.grid_scroll_diff.xyz);
-    const ivec3 oct_index = get_probe_coords(probe_index) & 1;
-    const bool is_wrong_oct = (oct_index.x | (oct_index.y << 1) | (oct_index.z << 2)) != g_params.oct_index;
+    const uvec3 oct_index = get_probe_coords(probe_index) & 1u;
+    const bool is_wrong_oct = (oct_index.x | (oct_index.y << 1u) | (oct_index.z << 2u)) != g_params.oct_index;
     if (!is_scrolling_plane_probe && is_wrong_oct) {
         return;
     }
@@ -51,24 +51,24 @@ void main() {
     float closest_back_dist = 1e27, closest_front_dist = 1e27, farthest_front_dist = 0.0;
     float backface_count = 0.0;
 
-    for (int i = 0; i < PROBE_FIXED_RAYS_COUNT; ++i) {
-        const ivec3 ray_data_coords = get_ray_data_coords(i, probe_index);
+    for (uint i = 0; i < PROBE_FIXED_RAYS_COUNT; ++i) {
+        const uvec3 ray_data_coords = get_ray_data_coords(i, probe_index);
 
-        float hit_dist = texelFetch(g_ray_data, ray_data_coords, 0).w;
+        float hit_dist = texelFetch(g_ray_data, ivec3(ray_data_coords), 0).w;
         if (hit_dist < 0.0) {
             backface_count += 1.0;
             hit_dist = -5.0 * hit_dist;
             if (hit_dist < closest_back_dist) {
                 closest_back_dist = hit_dist;
-                closest_back_index = i;
+                closest_back_index = int(i);
             }
         } else {
             if (hit_dist < closest_front_dist) {
                 closest_front_dist = hit_dist;
-                closest_front_index = i;
+                closest_front_index = int(i);
             } else if (hit_dist > farthest_front_dist) {
                 farthest_front_dist = hit_dist;
-                farthest_front_index = i;
+                farthest_front_index = int(i);
             }
         }
     }
@@ -77,11 +77,11 @@ void main() {
     vec3 full_offset = vec3(1e27);
 
     if (closest_back_index != -1 && (backface_count / float(PROBE_FIXED_RAYS_COUNT)) > 0.25) {
-        const vec3 closest_back_dir = get_probe_ray_dir(closest_back_index, g_params.quat_rot);
+        const vec3 closest_back_dir = get_probe_ray_dir(uint(closest_back_index), g_params.quat_rot);
         full_offset = offset.xyz + closest_back_dir * (closest_back_dist + MinFrontDistance * 0.5);
     } else if (closest_front_dist < MinFrontDistance) {
-        const vec3 closest_front_dir = get_probe_ray_dir(closest_front_index, g_params.quat_rot);
-        vec3 farthest_front_dir = get_probe_ray_dir(farthest_front_index, g_params.quat_rot);
+        const vec3 closest_front_dir = get_probe_ray_dir(uint(closest_front_index), g_params.quat_rot);
+        vec3 farthest_front_dir = get_probe_ray_dir(uint(farthest_front_index), g_params.quat_rot);
         if (dot(closest_front_dir, farthest_front_dir) <= 0.0) {
             farthest_front_dir *= min(farthest_front_dist, 1.0);
             full_offset = offset.xyz + farthest_front_dir;
@@ -97,5 +97,5 @@ void main() {
         offset.xyz = full_offset;
     }
 #endif // RESET
-    imageStore(g_out_img, output_coords, offset);
+    imageStore(g_out_img, ivec3(output_coords), offset);
 }

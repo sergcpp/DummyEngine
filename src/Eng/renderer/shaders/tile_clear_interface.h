@@ -10,14 +10,14 @@ struct Params {
     uint _pad[3];
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 8;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 8;
 
-const int TILE_LIST_BUF_SLOT = 3;
+const uint TILE_LIST_BUF_SLOT = 3;
 
-const int OUT_RAD_IMG_SLOT = 0;
-const int OUT_AVG_RAD_IMG_SLOT = 1;
-const int OUT_VARIANCE_IMG_SLOT = 2;
+const uint OUT_RAD_IMG_SLOT = 0;
+const uint OUT_AVG_RAD_IMG_SLOT = 1;
+const uint OUT_VARIANCE_IMG_SLOT = 2;
 
 INTERFACE_END
 

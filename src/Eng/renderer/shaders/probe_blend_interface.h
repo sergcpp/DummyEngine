@@ -6,8 +6,8 @@
 INTERFACE_START(ProbeBlend)
 
 struct Params {
-    int volume_index;
-    int oct_index;
+    uint volume_index;
+    uint oct_index;
     float pre_exposure;
     float _pad0;
     vec4 grid_origin;
@@ -17,10 +17,10 @@ struct Params {
     vec4 quat_rot;
 };
 
-const int RAY_DATA_TEX_SLOT = 1;
-const int OFFSET_TEX_SLOT = 2;
+const uint RAY_DATA_TEX_SLOT = 1;
+const uint OFFSET_TEX_SLOT = 2;
 
-const int OUT_IMG_SLOT = 0;
+const uint OUT_IMG_SLOT = 0;
 
 INTERFACE_END
 

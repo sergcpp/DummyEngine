@@ -6,17 +6,17 @@
 INTERFACE_START(DepthHierarchy)
 
 struct Params {
-    ivec4 depth_size;
+    uvec4 depth_size;
     vec4 clip_info;
 };
 
-const int GRP_SIZE_X = 64;
-const int GRP_SIZE_Y = 64;
+const uint GRP_SIZE_X = 64;
+const uint GRP_SIZE_Y = 64;
 
-const int DEPTH_TEX_SLOT = 14;
-const int ATOMIC_CNT_SLOT = 15;
+const uint DEPTH_TEX_SLOT = 14;
+const uint ATOMIC_CNT_SLOT = 15;
 
-const int DEPTH_IMG_SLOT = 0;
+const uint DEPTH_IMG_SLOT = 0;
 
 INTERFACE_END
 

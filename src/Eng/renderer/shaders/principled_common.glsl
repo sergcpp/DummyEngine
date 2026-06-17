@@ -266,14 +266,14 @@ struct _light_item_t {
     vec4 shadow_pos_and_tri_index;
 };
 
-_light_item_t FetchLightItem(usamplerBuffer lights_buf, const int li) {
+_light_item_t FetchLightItem(usamplerBuffer lights_buf, const uint li) {
     _light_item_t ret;
-    ret.col_and_type = uintBitsToFloat(texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 0));
-    ret.pos_and_radius = uintBitsToFloat(texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 1));
-    ret.dir_and_spot = uintBitsToFloat(texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 2));
-    ret.u_and_reg = uintBitsToFloat(texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 3));
-    ret.v_and_blend = uintBitsToFloat(texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 4));
-    ret.shadow_pos_and_tri_index = uintBitsToFloat(texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 5));
+    ret.col_and_type = uintBitsToFloat(texelFetch(lights_buf, int(li * LIGHTS_BUF_STRIDE + 0)));
+    ret.pos_and_radius = uintBitsToFloat(texelFetch(lights_buf, int(li * LIGHTS_BUF_STRIDE + 1)));
+    ret.dir_and_spot = uintBitsToFloat(texelFetch(lights_buf, int(li * LIGHTS_BUF_STRIDE + 2)));
+    ret.u_and_reg = uintBitsToFloat(texelFetch(lights_buf, int(li * LIGHTS_BUF_STRIDE + 3)));
+    ret.v_and_blend = uintBitsToFloat(texelFetch(lights_buf, int(li * LIGHTS_BUF_STRIDE + 4)));
+    ret.shadow_pos_and_tri_index = uintBitsToFloat(texelFetch(lights_buf, int(li * LIGHTS_BUF_STRIDE + 5)));
     return ret;
 }
 

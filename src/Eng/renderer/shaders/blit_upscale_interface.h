@@ -11,9 +11,9 @@ struct Params {
     vec4 clip_info;
 };
 
-const int DEPTH_TEX_SLOT = 0;
-const int DEPTH_LOW_TEX_SLOT = 1;
-const int INPUT_TEX_SLOT = 2;
+const uint DEPTH_TEX_SLOT = 0;
+const uint DEPTH_LOW_TEX_SLOT = 1;
+const uint INPUT_TEX_SLOT = 2;
 
 INTERFACE_END
 

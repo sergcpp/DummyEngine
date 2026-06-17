@@ -5,8 +5,8 @@
 
 INTERFACE_START(RTDiffuseWriteIndirectArgs)
 
-const int RAY_COUNTER_SLOT = 0;
-const int INDIR_ARGS_SLOT = 1;
+const uint RAY_COUNTER_SLOT = 0;
+const uint INDIR_ARGS_SLOT = 1;
 
 INTERFACE_END
 

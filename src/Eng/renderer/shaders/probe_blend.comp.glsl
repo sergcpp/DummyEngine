@@ -14,9 +14,9 @@
 #endif
 
 #if defined(IRRADIANCE)
-    const int TEXEL_RES = PROBE_IRRADIANCE_RES;
+    const uint TEXEL_RES = PROBE_IRRADIANCE_RES;
 #elif defined(DISTANCE)
-    const int TEXEL_RES = PROBE_DISTANCE_RES;
+    const uint TEXEL_RES = PROBE_DISTANCE_RES;
 #endif
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -31,15 +31,15 @@ layout(binding = OUT_IMG_SLOT, rgba16f) uniform coherent image2DArray g_out_img;
 layout (local_size_x = TEXEL_RES, local_size_y = TEXEL_RES, local_size_z = 1) in;
 
 void main() {
-    const int probe_index = get_probe_index(ivec3(gl_GlobalInvocationID), TEXEL_RES);
+    const uint probe_index = get_probe_index(gl_GlobalInvocationID, TEXEL_RES);
     const bool is_scrolling_plane_probe = IsScrollingPlaneProbe(probe_index, g_params.grid_scroll.xyz, g_params.grid_scroll_diff.xyz);
 
-    const ivec3 tex_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
-    const bool is_inactive = texelFetch(g_offset_tex, tex_coords, 0).w < 0.5;
+    const uvec3 tex_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
+    const bool is_inactive = texelFetch(g_offset_tex, ivec3(tex_coords), 0).w < 0.5;
 
 #ifdef PARTIAL
-    const ivec3 oct_index = get_probe_coords(probe_index) & 1;
-    const bool is_wrong_oct = (oct_index.x | (oct_index.y << 1) | (oct_index.z << 2)) != g_params.oct_index;
+    const uvec3 oct_index = get_probe_coords(probe_index) & 1u;
+    const bool is_wrong_oct = (oct_index.x | (oct_index.y << 1u) | (oct_index.z << 2u)) != g_params.oct_index;
 #else
     const bool is_wrong_oct = false;
 #endif
@@ -48,13 +48,13 @@ void main() {
         return;
     }
 
-    const ivec3 output_coords = ivec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES_Y);
+    const uvec3 output_coords = uvec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES_Y);
 
     const bool is_border_texel = (gl_LocalInvocationID.x == 0) || (gl_LocalInvocationID.x == (TEXEL_RES - 2 + 1)) ||
                                  (gl_LocalInvocationID.y == 0) || (gl_LocalInvocationID.y == (TEXEL_RES - 2 + 1));
     if (!is_border_texel) {
-        const ivec3 thread_coords = ivec3(gl_WorkGroupID.xy * (TEXEL_RES - 2),
-                                          gl_GlobalInvocationID.z) + ivec3(gl_LocalInvocationID) - ivec3(1, 1, 0);
+        const uvec3 thread_coords = uvec3(gl_WorkGroupID.xy * (TEXEL_RES - 2),
+                                          gl_GlobalInvocationID.z) + gl_LocalInvocationID - uvec3(1, 1, 0);
 
         const vec2 probe_oct_uv = get_normalized_oct_coords(thread_coords.xy, TEXEL_RES);
         const vec3 probe_ray_dir = get_oct_dir(probe_oct_uv);
@@ -63,14 +63,14 @@ void main() {
         float total_weight = 0.0;
         int backfaces = 0;
 
-        for (int i = PROBE_FIXED_RAYS_COUNT; i < PROBE_TOTAL_RAYS_COUNT; ++i) {
+        for (uint i = PROBE_FIXED_RAYS_COUNT; i < PROBE_TOTAL_RAYS_COUNT; ++i) {
             const vec3 ray_dir = get_probe_ray_dir(i, g_params.quat_rot);
 
             float weight = saturate(dot(probe_ray_dir, ray_dir));
 
-            const ivec3 ray_data_coords = get_ray_data_coords(i, probe_index);
+            const uvec3 ray_data_coords = get_ray_data_coords(i, probe_index);
 
-            vec4 ray_data = texelFetch(g_ray_data, ray_data_coords, 0);
+            vec4 ray_data = texelFetch(g_ray_data, ivec3(ray_data_coords), 0);
 
 #if defined(IRRADIANCE)
             ray_data.xyz = (ray_data.xyz / g_params.pre_exposure);
@@ -107,11 +107,11 @@ void main() {
 
         vec4 direct_light = vec4(0.0);
 #if defined(STOCH_LIGHTS)
-        for (int i = 0; i < PROBE_TOTAL_RAYS_COUNT; ++i) {
-            const ivec3 ray_data_coords = get_ray_data_coords(i, probe_index);
+        for (uint i = 0; i < PROBE_TOTAL_RAYS_COUNT; ++i) {
+            const uvec3 ray_data_coords = get_ray_data_coords(i, probe_index);
 
-            const vec3 light_color = (texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, 1 * PROBE_VOLUME_RES_Y), 0).xyz / g_params.pre_exposure);
-            const vec3 light_dir = texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES_Y), 0).xyz;
+            const vec3 light_color = (texelFetch(g_ray_data, ivec3(ray_data_coords + uvec3(0, 0, 1 * PROBE_VOLUME_RES_Y)), 0).xyz / g_params.pre_exposure);
+            const vec3 light_dir = texelFetch(g_ray_data, ivec3(ray_data_coords + uvec3(0, 0, 2 * PROBE_VOLUME_RES_Y)), 0).xyz;
 
             const float weight = saturate(dot(probe_ray_dir, light_dir));
 
@@ -120,7 +120,7 @@ void main() {
         result.xyz += (direct_light.xyz * rcp(direct_light.w));
 #endif
 
-        const vec4 probe_mean = imageLoad(g_out_img, output_coords);
+        const vec4 probe_mean = imageLoad(g_out_img, ivec3(output_coords));
 
 #if defined(IRRADIANCE)
         result.xyz = pow(result.xyz, vec3(1.0 / PROBE_RADIANCE_EXP));
@@ -146,7 +146,7 @@ void main() {
         result = mix(result, probe_mean, history_weight);
 #endif
 
-        imageStore(g_out_img, output_coords, result);
+        imageStore(g_out_img, ivec3(output_coords), result);
     }
 
     groupMemoryBarrier(); barrier();
@@ -169,6 +169,6 @@ void main() {
         }
 
         const vec4 result = imageLoad(g_out_img, copy_coords);
-        imageStore(g_out_img, output_coords, result);
+        imageStore(g_out_img, ivec3(output_coords), result);
     }
 }

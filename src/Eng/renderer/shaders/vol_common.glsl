@@ -7,11 +7,11 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     shared_data_t g_shrd_data;
 };
 
-float vol_slice_distance(const int z, const float offset, const int froxel_res_z) {
+float vol_slice_distance(const uint z, const float offset, const uint froxel_res_z) {
     return g_shrd_data.clip_info.y * pow(g_shrd_data.clip_info.z / g_shrd_data.clip_info.y, (float(z) + offset) / float(froxel_res_z));
 }
 
-vec3 froxel_to_uvw(const ivec3 coord, const float z_offset, const ivec3 froxel_res) {
+vec3 froxel_to_uvw(const uvec3 coord, const float z_offset, const uvec3 froxel_res) {
     const float z = vol_slice_distance(coord.z, z_offset, froxel_res.z);
     return vec3((vec2(coord.xy) + 0.5) / vec2(froxel_res.xy), DelinearizeDepth(z, g_shrd_data.clip_info));
 }

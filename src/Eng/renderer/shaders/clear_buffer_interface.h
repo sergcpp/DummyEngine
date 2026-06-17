@@ -9,9 +9,9 @@ struct Params {
     uint data_len;
 };
 
-const int GRP_SIZE_X = 256;
+const uint GRP_SIZE_X = 256;
 
-const int OUT_BUF_SLOT = 0;
+const uint OUT_BUF_SLOT = 0;
 
 INTERFACE_END
 

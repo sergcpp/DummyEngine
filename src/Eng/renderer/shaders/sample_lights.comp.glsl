@@ -74,7 +74,7 @@ void main() {
     }
 
     const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
-    const vec2 norm_uvs = (vec2(icoord) + 0.5) * g_shrd_data.ren_res.zw;
+    const vec2 norm_uvs = (vec2(icoord) + 0.5) * g_shrd_data.fren_res.zw;
 
     const float depth = texelFetch(g_depth_tex, icoord, 0).x;
     if (depth == 0.0) {
@@ -156,7 +156,7 @@ void main() {
 
     //
 
-    _light_item_t litem = FetchLightItem(g_lights_buf, li);
+    _light_item_t litem = FetchLightItem(g_lights_buf, uint(li));
     const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
     const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
     const bool is_doublesided = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DOUBLESIDED_BIT) != 0;

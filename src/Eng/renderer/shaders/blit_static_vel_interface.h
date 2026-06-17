@@ -9,7 +9,7 @@ struct Params {
     vec4 transform;
 };
 
-const int DEPTH_TEX_SLOT = 0;
+const uint DEPTH_TEX_SLOT = 0;
 
 INTERFACE_END
 

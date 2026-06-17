@@ -12,11 +12,11 @@ struct Params {
     float _pad2;
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 8;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 8;
 
-const int HDR_TEX_SLOT = 1;
-const int OUT_IMG_SLOT = 0;
+const uint HDR_TEX_SLOT = 1;
+const uint OUT_IMG_SLOT = 0;
 
 INTERFACE_END
 

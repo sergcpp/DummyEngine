@@ -193,7 +193,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
     float history_linear_depth;
 
     vec3 motion_vector = texelFetch(g_velocity_tex, dispatch_thread_id, 0).xyz;
-    motion_vector.xy *= g_shrd_data.ren_res.zw;
+    motion_vector.xy *= g_shrd_data.fren_res.zw;
     const vec2 surf_repr_uv = center_uv - motion_vector.xy;
     const vec2 hit_repr_uv = GetHitPositionReprojection(dispatch_thread_id, center_uv, ray_len);
 

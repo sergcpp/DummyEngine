@@ -22,23 +22,23 @@ layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
 
 layout(location = 0) out vec3 g_vtx_pos;
 layout(location = 1) out flat vec3 g_probe_center;
-layout(location = 2) out flat int g_probe_index;
-layout(location = 3) out flat int g_volume_index;
+layout(location = 2) out flat uint g_probe_index;
+layout(location = 3) out flat uint g_volume_index;
 layout(location = 4) out flat float g_probe_state;
 layout(location = 5) out flat int g_is_scrolling_probe;
 
 void main() {
-    const int probe_index = gl_InstanceIndex;
+    const uint probe_index = gl_InstanceIndex;
 
-    const ivec3 probe_coords = get_probe_coords(probe_index);
+    const uvec3 probe_coords = get_probe_coords(probe_index);
     const vec3 probe_center = get_probe_pos_ws(g_params.volume_index, probe_coords, g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz, g_offset_tex);
     g_probe_center = probe_center;
 
-    const int scroll_probe_index = get_scrolling_probe_index(probe_coords, g_params.grid_scroll.xyz);
+    const uint scroll_probe_index = get_scrolling_probe_index(probe_coords, g_params.grid_scroll.xyz);
     g_probe_index = scroll_probe_index;
     g_volume_index = g_params.volume_index;
-    const ivec3 scroll_tex_coords = get_probe_texel_coords(scroll_probe_index, g_params.volume_index);
-    g_probe_state = texelFetch(g_offset_tex, scroll_tex_coords, 0).w;
+    const uvec3 scroll_tex_coords = get_probe_texel_coords(scroll_probe_index, g_params.volume_index);
+    g_probe_state = texelFetch(g_offset_tex, ivec3(scroll_tex_coords), 0).w;
 
     g_is_scrolling_probe = IsScrollingPlaneProbe(g_probe_index, g_params.grid_scroll.xyz, g_params.grid_scroll_diff.xyz) ? 1 : 0;
 

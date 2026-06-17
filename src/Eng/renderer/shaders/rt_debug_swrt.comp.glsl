@@ -327,13 +327,13 @@ void main() {
 
         const float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
         const float k = log2(lin_depth / g_shrd_data.rt_clip_info[1]) / g_shrd_data.rt_clip_info[3];
-        const int tile_x = clamp(int(projected_p.x * ITEM_GRID_RES_X), 0, ITEM_GRID_RES_X - 1),
-                  tile_y = clamp(int(projected_p.y * ITEM_GRID_RES_Y), 0, ITEM_GRID_RES_Y - 1),
-                  tile_z = clamp(int(k * ITEM_GRID_RES_Z), 0, ITEM_GRID_RES_Z - 1);
+        const uint tile_x = clamp(uint(projected_p.x * ITEM_GRID_RES_X), 0u, ITEM_GRID_RES_X - 1u),
+                   tile_y = clamp(uint(projected_p.y * ITEM_GRID_RES_Y), 0u, ITEM_GRID_RES_Y - 1u),
+                   tile_z = clamp(uint(k * ITEM_GRID_RES_Z), 0u, ITEM_GRID_RES_Z - 1u);
 
-        const int cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
+        const uint cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
 
-        const uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+        const uvec2 cell_data = texelFetch(g_cells_buf, int(cell_index)).xy;
         const uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
         const uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
@@ -398,7 +398,7 @@ void main() {
         }
 
 #ifdef GI_CACHE
-        for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+        for (uint i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
             const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
             if (weight > 0.0) {
                 if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0) {

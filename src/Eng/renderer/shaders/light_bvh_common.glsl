@@ -537,7 +537,7 @@ float EvalTriLightFactor(const vec3 P, samplerBuffer nodes_buf, usamplerBuffer l
                 }
             }
         } else {
-            const int light_index = int(cur & PRIM_INDEX_BITS);
+            const uint light_index = (cur & PRIM_INDEX_BITS);
 
             const _light_item_t litem = FetchLightItem(lights_buf, light_index);
             const uint type = floatBitsToUint(litem.col_and_type.w) & LIGHT_TYPE_BITS;

@@ -10,17 +10,17 @@ struct Params {
     uvec2 _pad;
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 8;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 8;
 
-const int DEPTH_TEX_SLOT = 1;
-const int NORM_TEX_SLOT = 2;
-const int SSAO_TEX_SLOT = 3;
-const int IRRADIANCE_TEX_SLOT = 4;
-const int DISTANCE_TEX_SLOT = 5;
-const int OFFSET_TEX_SLOT = 6;
+const uint DEPTH_TEX_SLOT = 1;
+const uint NORM_TEX_SLOT = 2;
+const uint SSAO_TEX_SLOT = 3;
+const uint IRRADIANCE_TEX_SLOT = 4;
+const uint DISTANCE_TEX_SLOT = 5;
+const uint OFFSET_TEX_SLOT = 6;
 
-const int OUT_IMG_SLOT = 0;
+const uint OUT_IMG_SLOT = 0;
 
 INTERFACE_END
 

@@ -403,20 +403,20 @@ void main() {
 
     const float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
     const float k = log2(lin_depth / g_shrd_data.rt_clip_info[1]) / g_shrd_data.rt_clip_info[3];
-    const int tile_x = clamp(int(projected_p.x * ITEM_GRID_RES_X), 0, ITEM_GRID_RES_X - 1),
-              tile_y = clamp(int(projected_p.y * ITEM_GRID_RES_Y), 0, ITEM_GRID_RES_Y - 1),
-              tile_z = clamp(int(k * ITEM_GRID_RES_Z), 0, ITEM_GRID_RES_Z - 1);
+    const uint tile_x = clamp(uint(projected_p.x * ITEM_GRID_RES_X), 0u, ITEM_GRID_RES_X - 1u),
+               tile_y = clamp(uint(projected_p.y * ITEM_GRID_RES_Y), 0u, ITEM_GRID_RES_Y - 1u),
+               tile_z = clamp(uint(k * ITEM_GRID_RES_Z), 0u, ITEM_GRID_RES_Z - 1u);
 
-    const int cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
+    const uint cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
 #if !defined(NO_SUBGROUP)
     [[dont_flatten]] if (subgroupAllEqual(cell_index)) {
-        const int s_first_cell_index = subgroupBroadcastFirst(cell_index);
-        const uvec2 s_cell_data = texelFetch(g_cells_buf, s_first_cell_index).xy;
+        const uint s_first_cell_index = subgroupBroadcastFirst(cell_index);
+        const uvec2 s_cell_data = texelFetch(g_cells_buf, int(s_first_cell_index)).xy;
         const uvec2 s_offset_and_lcount = uvec2(bitfieldExtract(s_cell_data.x, 0, 24), bitfieldExtract(s_cell_data.x, 24, 8));
         const uvec2 s_dcount_and_pcount = uvec2(bitfieldExtract(s_cell_data.y, 0, 8), bitfieldExtract(s_cell_data.y, 8, 8));
         for (uint i = s_offset_and_lcount.x; i < s_offset_and_lcount.x + s_offset_and_lcount.y; ++i) {
             const uint s_item_data = texelFetch(g_items_buf, int(i)).x;
-            const int s_li = int(bitfieldExtract(s_item_data, 0, 12));
+            const uint s_li = bitfieldExtract(s_item_data, 0, 12);
 
             const _light_item_t litem = g_lights[s_li];
             const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
@@ -435,13 +435,13 @@ void main() {
     } else
 #endif // !defined(NO_SUBGROUP)
     {
-        const uvec2 v_cell_data = texelFetch(g_cells_buf, cell_index).xy;
+        const uvec2 v_cell_data = texelFetch(g_cells_buf, int(cell_index)).xy;
         const uvec2 v_offset_and_lcount = uvec2(bitfieldExtract(v_cell_data.x, 0, 24), bitfieldExtract(v_cell_data.x, 24, 8));
         const uvec2 v_dcount_and_pcount = uvec2(bitfieldExtract(v_cell_data.y, 0, 8), bitfieldExtract(v_cell_data.y, 8, 8));
         for (uint i = v_offset_and_lcount.x; i < v_offset_and_lcount.x + v_offset_and_lcount.y; ) {
             const uint v_item_data = texelFetch(g_items_buf, int(i)).x;
-            const int v_li = int(bitfieldExtract(v_item_data, 0, 12));
-            const int s_li = subgroupMin(v_li);
+            const uint v_li = bitfieldExtract(v_item_data, 0, 12);
+            const uint s_li = subgroupMin(v_li);
             [[flatten]] if (s_li == v_li) {
                 ++i;
                 const _light_item_t litem = g_lights[s_li];
@@ -488,10 +488,10 @@ void main() {
 
 #ifdef GI_CACHE
     int cascade_index = -1;
-    for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+    for (uint i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
         if (weight > 0.0) {
-            cascade_index = i;
+            cascade_index = int(i);
             break;
         }
     }

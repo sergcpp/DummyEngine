@@ -719,28 +719,15 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
             const float angle = 1.0f * Ren::Pi<float>() * uniform_unorm_float(temp_gen);
             f.n = Ren::Vec2f(std::cos(angle), std::sin(angle));
 
-            std::vector<float> test_data(256 * 256);
-
             double integral_val = 0.0;
             for (int y = 0; y < 256; ++y) {
                 const float fy = float(y) / 255.0f;
                 for (int x = 0; x < 256; ++x) {
                     const float fx = float(x) / 255.0f;
-
-                    const float val = test_function_2D(Ren::Vec2f(fx, fy), f.o, f.n);
-                    integral_val += val;
-                    test_data[y * 256 + x] = val;
+                    integral_val += test_function_2D(Ren::Vec2f(fx, fy), f.o, f.n);
                 }
             }
-            integral_val /= (256 * 256);
-
-            f.integral_val = float(integral_val);
-
-            /*if (i < 16) {
-                char name_buf[128];
-                snprintf(name_buf, sizeof(name_buf), "debug_%i.tga", i);
-                WriteTGA(test_data.data(), 256, 256, 256, 1, 3, name_buf);
-            }*/
+            f.integral_val = float(integral_val / (256 * 256));
         }
     }
 

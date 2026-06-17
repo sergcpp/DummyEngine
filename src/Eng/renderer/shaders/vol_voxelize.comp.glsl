@@ -47,12 +47,12 @@ layout(binding = OUT_FR_SCATTER_IMG_SLOT, rgba16f) uniform writeonly image3D g_o
 layout (local_size_x = GRP_SIZE_2D_X, local_size_y = GRP_SIZE_2D_Y, local_size_z = 1) in;
 
 void main() {
-    ivec3 icoord = ivec3(gl_GlobalInvocationID.xy, 0);
-    if (any(greaterThanEqual(icoord.xy, g_params.froxel_res.xy))) {
+    uvec3 ucoord = uvec3(gl_GlobalInvocationID.xy, 0);
+    if (any(greaterThanEqual(ucoord.xy, g_params.froxel_res.xy))) {
         return;
     }
 
-    const vec2 norm_uvs = (vec2(icoord.xy) + 0.5) / g_params.froxel_res.xy;
+    const vec2 norm_uvs = (vec2(ucoord.xy) + 0.5) / g_params.froxel_res.xy;
     const vec2 d = norm_uvs * 2.0 - 1.0;
 
     vec3 origin_ws = g_shrd_data.cam_pos_and_exp.xyz;
@@ -63,7 +63,7 @@ void main() {
     const float k = dot(dir_ws, g_shrd_data.frustum_planes[4].xyz);
 
     const uint px_hash = hash((gl_GlobalInvocationID.x << 16) | gl_GlobalInvocationID.y);
-    const float offset_rand = textureLod(g_stbn_tex, vec3((vec2(icoord.xy) + 0.5) / 64.0, float(g_params.frame_index % 64)), 0.0).x;
+    const float offset_rand = textureLod(g_stbn_tex, vec3((vec2(ucoord.xy) + 0.5) / 64.0, float(g_params.frame_index % 64)), 0.0).x;
 
     const int MAX_VOL_STACK_SIZE = 6;
 
@@ -172,15 +172,15 @@ void main() {
 
         // Apply jittering (check if sampling point is within ray segment)
         const float z_val = log2(k * next_t / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-        int z_next = min(int(z_val * g_params.froxel_res.z), g_params.froxel_res.z - 1);
+        uint z_next = min(uint(z_val * g_params.froxel_res.z), g_params.froxel_res.z - 1);
         const float dist_next = vol_slice_distance(z_next, offset_rand, g_params.froxel_res.z);
-        z_next += int(k * next_t > dist_next);
+        z_next += uint(k * next_t > dist_next);
 
         vec4 emission_density = emission[vol_stack_size - 1];
         emission_density.xyz = compress_hdr(emission_density.xyz, g_shrd_data.cam_pos_and_exp.w);
-        for (; icoord.z < z_next; ++icoord.z) {
-            imageStore(g_out_fr_emission_img, icoord, emission_density);
-            imageStore(g_out_fr_scatter_img, icoord, scatter[vol_stack_size - 1]);
+        for (; ucoord.z < z_next; ++ucoord.z) {
+            imageStore(g_out_fr_emission_img, ivec3(ucoord), emission_density);
+            imageStore(g_out_fr_scatter_img, ivec3(ucoord), scatter[vol_stack_size - 1]);
         }
 
         if (enter == 1) {
@@ -192,8 +192,8 @@ void main() {
         cur_t = next_t + 0.0005;
     }
 
-    for (; icoord.z < g_params.froxel_res.z; ++icoord.z) {
-        imageStore(g_out_fr_emission_img, icoord, vec4(0.0));
-        imageStore(g_out_fr_scatter_img, icoord, vec4(0.0));
+    for (; ucoord.z < g_params.froxel_res.z; ++ucoord.z) {
+        imageStore(g_out_fr_emission_img, ivec3(ucoord), vec4(0.0));
+        imageStore(g_out_fr_scatter_img, ivec3(ucoord), vec4(0.0));
     }
 }

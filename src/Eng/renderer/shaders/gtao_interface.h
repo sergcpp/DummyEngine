@@ -13,17 +13,17 @@ struct Params {
     mat4 view_from_world;
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 8;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 8;
 
-const int DEPTH_TEX_SLOT = 1;
-const int NORM_TEX_SLOT = 2;
-const int GTAO_TEX_SLOT = 3;
-const int GTAO_HIST_TEX_SLOT = 4;
-const int VELOCITY_TEX_SLOT = 5;
-const int DEPTH_HIST_TEX_SLOT = 6;
+const uint DEPTH_TEX_SLOT = 1;
+const uint NORM_TEX_SLOT = 2;
+const uint GTAO_TEX_SLOT = 3;
+const uint GTAO_HIST_TEX_SLOT = 4;
+const uint VELOCITY_TEX_SLOT = 5;
+const uint DEPTH_HIST_TEX_SLOT = 6;
 
-const int OUT_IMG_SLOT = 0;
+const uint OUT_IMG_SLOT = 0;
 
 INTERFACE_END
 

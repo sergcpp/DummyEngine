@@ -10,17 +10,17 @@ struct Params {
     uint frame_index;
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 4;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 4;
 
-const int DEPTH_TEX_SLOT = 2;
-const int NORM_TEX_SLOT = 3;
-const int TILE_COUNTER_SLOT = 5;
-const int TILE_LIST_SLOT = 6;
-const int BN_PMJ_SEQ_BUF_SLOT = 7;
+const uint DEPTH_TEX_SLOT = 2;
+const uint NORM_TEX_SLOT = 3;
+const uint TILE_COUNTER_SLOT = 5;
+const uint TILE_LIST_SLOT = 6;
+const uint BN_PMJ_SEQ_BUF_SLOT = 7;
 
-const int OUT_RAY_HITS_IMG_SLOT = 0;
-const int OUT_NOISE_IMG_SLOT = 1;
+const uint OUT_RAY_HITS_IMG_SLOT = 0;
+const uint OUT_NOISE_IMG_SLOT = 1;
 
 INTERFACE_END
 

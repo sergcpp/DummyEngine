@@ -12,8 +12,8 @@ struct Params {
     float vertical;
 };
 
-const int DEPTH_TEX_SLOT = 0;
-const int INPUT_TEX_SLOT = 1;
+const uint DEPTH_TEX_SLOT = 0;
+const uint INPUT_TEX_SLOT = 1;
 
 INTERFACE_END
 

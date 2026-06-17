@@ -12,8 +12,8 @@ layout(binding = IRRADIANCE_TEX_SLOT) uniform sampler2DArray g_irradiance_tex;
 
 layout(location = 0) in vec3 g_vtx_pos;
 layout(location = 1) in flat vec3 g_probe_center;
-layout(location = 2) in flat int g_probe_index;
-layout(location = 3) in flat int g_volume_index;
+layout(location = 2) in flat uint g_probe_index;
+layout(location = 3) in flat uint g_volume_index;
 layout(location = 4) in flat float g_probe_state;
 layout(location = 5) in flat int g_is_scrolling_probe;
 

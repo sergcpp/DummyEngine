@@ -10,7 +10,7 @@ const int RAND_DIM_VOL_OFFSET = 2;
 
 uint hash_combine(uint seed, uint v) { return seed ^ (v + (seed << 6) + (seed >> 2)); }
 
-uint laine_karras_permutation(uint x, uint seed) {
+uint laine_karras_permutation(uint x, const uint seed) {
     x += seed;
     x ^= x * 0x6c50b47cu;
     x ^= x * 0xb82f1e52u;
@@ -19,7 +19,7 @@ uint laine_karras_permutation(uint x, uint seed) {
     return x;
 }
 
-uint nested_uniform_scramble_base2(uint x, uint seed) {
+uint nested_uniform_scramble_base2(uint x, const uint seed) {
     x = bitfieldReverse(x);
     x = laine_karras_permutation(x, seed);
     x = bitfieldReverse(x);
@@ -31,7 +31,7 @@ float scramble_unorm(const uint seed, uint val) {
     return float(val >> 8) / 16777216.0;
 }
 
-vec2 get_scrambled_2d_rand(usamplerBuffer random_seq, const uint dim, const uint seed, const int _sample) {
+vec2 get_scrambled_2d_rand(usamplerBuffer random_seq, const uint dim, const uint seed, const uint _sample) {
     const uint i_seed = hash_combine(seed, dim),
                x_seed = hash_combine(seed, 2 * dim + 0),
                y_seed = hash_combine(seed, 2 * dim + 1);

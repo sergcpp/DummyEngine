@@ -1949,7 +1949,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                              temp_sub_frustums_.data);
 
             std::future<void> futures[ITEM_GRID_RES_Z];
-            std::atomic_int items_count = {};
+            std::atomic_uint items_count = {};
 
             for (int i = 0; i < ITEM_GRID_RES_Z; i++) {
                 futures[i] = threads_.Enqueue(ClusterItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
@@ -1967,7 +1967,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             list.ext_cam.ExtractSubFrustums(ITEM_GRID_RES_X, ITEM_GRID_RES_Y, ITEM_GRID_RES_Z, temp_sub_frustums_.data);
 
             std::future<void> futures[ITEM_GRID_RES_Z];
-            std::atomic_int items_count = {};
+            std::atomic_uint items_count = {};
 
             for (int i = 0; i < ITEM_GRID_RES_Z; i++) {
                 futures[i] = threads_.Enqueue(ClusterItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
@@ -2152,7 +2152,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
                                               const BBox *decals_boxes, const LightSource *const light_sources,
                                               Ren::Span<const uint32_t> litem_to_lsource, const DrawList &list,
                                               cell_data_t out_cells[], item_data_t out_items[],
-                                              std::atomic_int &items_count) {
+                                              std::atomic_uint &items_count) {
     using namespace RendererInternal;
     using namespace Ren;
 

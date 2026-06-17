@@ -9,12 +9,12 @@ struct Params {
     uvec2 img_size;
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 4;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 4;
 
-const int HIT_MASK_TEX_SLOT = 1;
+const uint HIT_MASK_TEX_SLOT = 1;
 
-const int SHADOW_MASK_BUF_SLOT = 0;
+const uint SHADOW_MASK_BUF_SLOT = 0;
 
 INTERFACE_END
 

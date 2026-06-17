@@ -6,8 +6,8 @@
 INTERFACE_START(Fog)
 
 struct Params {
-    ivec4 froxel_res;
-    ivec2 img_res;
+    uvec4 froxel_res;
+    uvec2 img_res;
     int thread_offset;
     float anisotropy;
     vec4 scatter_color; // w is absorption
@@ -19,44 +19,44 @@ struct Params {
     int _pad2[2];
 };
 
-const int GRP_SIZE_2D_X = 8;
-const int GRP_SIZE_2D_Y = 8;
+const uint GRP_SIZE_2D_X = 8;
+const uint GRP_SIZE_2D_Y = 8;
 
-const int GRP_SIZE_3D_X = 4;
-const int GRP_SIZE_3D_Y = 4;
-const int GRP_SIZE_3D_Z = 4;
+const uint GRP_SIZE_3D_X = 4;
+const uint GRP_SIZE_3D_Y = 4;
+const uint GRP_SIZE_3D_Z = 4;
 
-const int SHADOW_DEPTH_TEX_SLOT = 2;
-const int SHADOW_COLOR_TEX_SLOT = 3;
-const int FR_EMISSION_TEX_SLOT = 4;
-const int FR_SCATTER_TEX_SLOT = 5;
-const int DEPTH_TEX_SLOT = 6;
-const int STBN_TEX_SLOT = 7;
+const uint SHADOW_DEPTH_TEX_SLOT = 2;
+const uint SHADOW_COLOR_TEX_SLOT = 3;
+const uint FR_EMISSION_TEX_SLOT = 4;
+const uint FR_SCATTER_TEX_SLOT = 5;
+const uint DEPTH_TEX_SLOT = 6;
+const uint STBN_TEX_SLOT = 7;
 
-const int LIGHT_BUF_SLOT = 8;
-const int DECAL_BUF_SLOT = 9;
-const int CELLS_BUF_SLOT = 10;
-const int ITEMS_BUF_SLOT = 11;
-const int ENVMAP_TEX_SLOT = 12;
+const uint LIGHT_BUF_SLOT = 8;
+const uint DECAL_BUF_SLOT = 9;
+const uint CELLS_BUF_SLOT = 10;
+const uint ITEMS_BUF_SLOT = 11;
+const uint ENVMAP_TEX_SLOT = 12;
 
-const int IRRADIANCE_TEX_SLOT = 13;
-const int DISTANCE_TEX_SLOT = 14;
-const int OFFSET_TEX_SLOT = 15;
+const uint IRRADIANCE_TEX_SLOT = 13;
+const uint DISTANCE_TEX_SLOT = 14;
+const uint OFFSET_TEX_SLOT = 15;
 
-const int GEO_DATA_BUF_SLOT = 8;
-const int MATERIAL_BUF_SLOT = 9;
-const int TLAS_SLOT = 10;
-const int BLAS_BUF_SLOT = 11;
-const int TLAS_BUF_SLOT = 12;
-const int PRIM_NDX_BUF_SLOT = 13;
-const int MESH_INSTANCES_BUF_SLOT = 14;
+const uint GEO_DATA_BUF_SLOT = 8;
+const uint MATERIAL_BUF_SLOT = 9;
+const uint TLAS_SLOT = 10;
+const uint BLAS_BUF_SLOT = 11;
+const uint TLAS_BUF_SLOT = 12;
+const uint PRIM_NDX_BUF_SLOT = 13;
+const uint MESH_INSTANCES_BUF_SLOT = 14;
 
-const int VTX_BUF1_SLOT = 15;
-const int NDX_BUF_SLOT = 16;
+const uint VTX_BUF1_SLOT = 15;
+const uint NDX_BUF_SLOT = 16;
 
-const int OUT_FR_EMISSION_IMG_SLOT = 0;
-const int OUT_FR_SCATTER_IMG_SLOT = 1;
-const int OUT_FR_FINAL_IMG_SLOT = 0;
+const uint OUT_FR_EMISSION_IMG_SLOT = 0;
+const uint OUT_FR_SCATTER_IMG_SLOT = 1;
+const uint OUT_FR_FINAL_IMG_SLOT = 0;
 
 INTERFACE_END
 

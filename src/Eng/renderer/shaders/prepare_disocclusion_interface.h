@@ -6,21 +6,21 @@
 INTERFACE_START(PrepareDisocclusion)
 
 struct Params {
-    ivec2 img_size;
+    uvec2 img_size;
     vec2 texel_size;
     vec4 clip_info;
     vec4 frustum_info;
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 8;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 8;
 
-const int DILATED_DEPTH_TEX_SLOT = 1;
-const int DILATED_VELOCITY_TEX_SLOT = 2;
-const int RECONSTRUCTED_DEPTH_TEX_SLOT = 3;
-const int VELOCITY_TEX_SLOT = 4;
+const uint DILATED_DEPTH_TEX_SLOT = 1;
+const uint DILATED_VELOCITY_TEX_SLOT = 2;
+const uint RECONSTRUCTED_DEPTH_TEX_SLOT = 3;
+const uint VELOCITY_TEX_SLOT = 4;
 
-const int OUT_IMG_SLOT = 0;
+const uint OUT_IMG_SLOT = 0;
 
 INTERFACE_END
 

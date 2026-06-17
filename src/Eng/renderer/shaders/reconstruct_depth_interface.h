@@ -6,19 +6,19 @@
 INTERFACE_START(ReconstructDepth)
 
 struct Params {
-    ivec2 img_size;
+    uvec2 img_size;
     vec2 texel_size;
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 8;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 8;
 
-const int DEPTH_TEX_SLOT = 3;
-const int VELOCITY_TEX_SLOT = 4;
+const uint DEPTH_TEX_SLOT = 3;
+const uint VELOCITY_TEX_SLOT = 4;
 
-const int OUT_RECONSTRUCTED_DEPTH_IMG_SLOT = 0;
-const int OUT_DILATED_DEPTH_IMG_SLOT = 1;
-const int OUT_DILATED_VELOCITY_IMG_SLOT = 2;
+const uint OUT_RECONSTRUCTED_DEPTH_IMG_SLOT = 0;
+const uint OUT_DILATED_DEPTH_IMG_SLOT = 1;
+const uint OUT_DILATED_VELOCITY_IMG_SLOT = 2;
 
 INTERFACE_END
 

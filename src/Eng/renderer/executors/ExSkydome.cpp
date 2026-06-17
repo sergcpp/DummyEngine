@@ -13,10 +13,10 @@
 
 namespace ExSkydomeCubeInternal {
 // PMJ samples stretched to 4x4 region
-const Ren::Vec2i g_sample_positions[16] = {Ren::Vec2i{1, 0}, Ren::Vec2i{3, 2}, Ren::Vec2i{0, 3}, Ren::Vec2i{2, 1},
-                                           Ren::Vec2i{0, 1}, Ren::Vec2i{2, 3}, Ren::Vec2i{1, 2}, Ren::Vec2i{3, 0},
-                                           Ren::Vec2i{0, 0}, Ren::Vec2i{2, 2}, Ren::Vec2i{1, 3}, Ren::Vec2i{3, 1},
-                                           Ren::Vec2i{1, 1}, Ren::Vec2i{3, 3}, Ren::Vec2i{0, 2}, Ren::Vec2i{2, 0}};
+const Ren::Vec2u g_sample_positions[16] = {Ren::Vec2u{1, 0}, Ren::Vec2u{3, 2}, Ren::Vec2u{0, 3}, Ren::Vec2u{2, 1},
+                                           Ren::Vec2u{0, 1}, Ren::Vec2u{2, 3}, Ren::Vec2u{1, 2}, Ren::Vec2u{3, 0},
+                                           Ren::Vec2u{0, 0}, Ren::Vec2u{2, 2}, Ren::Vec2u{1, 3}, Ren::Vec2u{3, 1},
+                                           Ren::Vec2u{1, 1}, Ren::Vec2u{3, 3}, Ren::Vec2u{0, 2}, Ren::Vec2u{2, 0}};
 } // namespace ExSkydomeCubeInternal
 
 void Eng::ExSkydomeCube::Execute(const FgContext &fg) {
@@ -150,8 +150,8 @@ void Eng::ExSkydomeCube::Execute(const FgContext &fg) {
             uniform_params.mip_count = std::min(4, mip_count - mip);
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u(Ren::DivCeil(int(uniform_params.img_size[0]), SkydomeDownsample::GRP_SIZE_X),
-                           Ren::DivCeil(int(uniform_params.img_size[1]), SkydomeDownsample::GRP_SIZE_Y), 1u);
+                Ren::Vec3u{Ren::DivCeil(uniform_params.img_size[0], SkydomeDownsample::GRP_SIZE_X),
+                           Ren::DivCeil(uniform_params.img_size[1], SkydomeDownsample::GRP_SIZE_Y), 1u};
 
             DispatchCompute(fg.cmd_buf(), pi_skydome_downsample_, fg.storages(), grp_count, _bindings, &uniform_params,
                             sizeof(uniform_params), fg.descr_alloc(), fg.log());
@@ -292,6 +292,6 @@ void Eng::ExSkydomeScreen::LazyInit(const FgContext &fg) {
     }
 }
 
-Ren::Vec2i Eng::ExSkydomeScreen::sample_pos(const int frame_index) {
+Ren::Vec2u Eng::ExSkydomeScreen::sample_pos(const int frame_index) {
     return ExSkydomeCubeInternal::g_sample_positions[frame_index % 16];
 }

@@ -18,7 +18,7 @@
 #include <Gui/Utils.h>
 
 namespace Eng::SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 105;
+const uint32_t AssetsBuildVersion = 111;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = size_t(in_file.size());

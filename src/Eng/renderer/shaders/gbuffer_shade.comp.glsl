@@ -59,7 +59,7 @@ layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) 
 #define MAX_TRACE_DIST 0.15
 #define MAX_TRACE_STEPS 16
 #define Z_THICKNESS 0.025
-#define STRIDE (3.0 * g_shrd_data.ren_res.z)
+#define STRIDE (3.0 * g_shrd_data.fren_res.z)
 
 float LinearDepthFetch_Nearest(const vec2 hit_uv) {
     return LinearizeDepth(textureLod(g_depth_tex, hit_uv, 0.0).x, g_shrd_data.clip_info);
@@ -153,27 +153,27 @@ void main() {
         return;
     }
 
-    const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
-    const vec2 norm_uvs = (vec2(icoord) + 0.5) * g_shrd_data.ren_res.zw;
+    const uvec2 ucoord = gl_GlobalInvocationID.xy;
+    const vec2 norm_uvs = (vec2(ucoord) + 0.5) * g_shrd_data.fren_res.zw;
 
-    const float depth = texelFetch(g_depth_tex, icoord, 0).x;
+    const float depth = texelFetch(g_depth_tex, ivec2(ucoord), 0).x;
     if (depth == 0.0) {
         return;
     }
     const float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
 
     const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
+    const uint slice = clamp(uint(k * float(ITEM_GRID_RES_Z)), 0u, ITEM_GRID_RES_Z - 1u);
 
-    const int cell_index = GetCellIndex(icoord.x, icoord.y, slice, g_shrd_data.ren_res.xy);
+    const uint cell_index = GetCellIndex(ucoord.x, ucoord.y, slice, g_shrd_data.uren_res.xy);
 
     const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
     const vec3 pos_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, pos_cs);
     const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
-    const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).xyz;
-    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).x);
-    const uint packed_mat_params = texelFetch(g_specular_tex, icoord, 0).x;
+    const vec3 base_color = texelFetch(g_albedo_tex, ivec2(ucoord), 0).xyz;
+    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, ivec2(ucoord), 0).x);
+    const uint packed_mat_params = texelFetch(g_specular_tex, ivec2(ucoord), 0).x;
 
     //
     // Artificial lights
@@ -246,12 +246,12 @@ void main() {
     vec3 brightest_light_contribution = vec3(0.0), brightest_light_pos;
 #if !defined(NO_SUBGROUP)
     [[dont_flatten]] if (subgroupAllEqual(cell_index)) {
-        const int s_first_cell_index = subgroupBroadcastFirst(cell_index);
-        const uvec2 s_cell_data = texelFetch(g_cells_buf, s_first_cell_index).xy;
+        const uint s_first_cell_index = subgroupBroadcastFirst(cell_index);
+        const uvec2 s_cell_data = texelFetch(g_cells_buf, int(s_first_cell_index)).xy;
         const uvec2 s_offset_and_lcount = uvec2(bitfieldExtract(s_cell_data.x, 0, 24), bitfieldExtract(s_cell_data.x, 24, 8));
         for (uint i = s_offset_and_lcount.x; i < s_offset_and_lcount.x + s_offset_and_lcount.y; ++i) {
             const uint s_item_data = texelFetch(g_items_buf, int(i)).x;
-            const int s_li = int(bitfieldExtract(s_item_data, 0, 12));
+            const uint s_li = bitfieldExtract(s_item_data, 0, 12);
 
             const _light_item_t litem = FetchLightItem(g_lights_buf, s_li);
             const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
@@ -281,12 +281,12 @@ void main() {
     } else
 #endif // !defined(NO_SUBGROUP)
     {
-        const uvec2 v_cell_data = texelFetch(g_cells_buf, cell_index).xy;
+        const uvec2 v_cell_data = texelFetch(g_cells_buf, int(cell_index)).xy;
         const uvec2 v_offset_and_lcount = uvec2(bitfieldExtract(v_cell_data.x, 0, 24), bitfieldExtract(v_cell_data.x, 24, 8));
         for (uint i = v_offset_and_lcount.x; i < v_offset_and_lcount.x + v_offset_and_lcount.y; ) {
             const uint v_item_data = texelFetch(g_items_buf, int(i)).x;
-            const int v_li = int(bitfieldExtract(v_item_data, 0, 12));
-            const int s_li = subgroupMin(v_li);
+            const uint v_li = bitfieldExtract(v_item_data, 0, 12);
+            const uint s_li = subgroupMin(v_li);
             [[flatten]] if (s_li == v_li) {
                 ++i;
                 const _light_item_t litem = FetchLightItem(g_lights_buf, s_li);
@@ -352,7 +352,7 @@ void main() {
         }
     }
 
-    const vec2 px_uvs = (vec2(icoord) + 0.5) * g_shrd_data.ren_res.zw;
+    const vec2 px_uvs = (vec2(ucoord) + 0.5) * g_shrd_data.fren_res.zw;
     const vec4 gi_fetch = textureLod(g_gi_tex, px_uvs, 0.0);
     vec3 gi_contribution = lobe_masks.diffuse_mul * gi_fetch.xyz / g_shrd_data.cam_pos_and_exp.w;
     gi_contribution *= base_color * g_ltc[gl_LocalInvocationIndex].diff_t2.x;
@@ -362,5 +362,5 @@ void main() {
     final_color += artificial_light;
     final_color += gi_contribution;
 
-    imageStore(g_out_color_img, icoord, vec4(compress_hdr(final_color, g_shrd_data.cam_pos_and_exp.w), 0.0));
+    imageStore(g_out_color_img, ivec2(ucoord), vec4(compress_hdr(final_color, g_shrd_data.cam_pos_and_exp.w), 0.0));
 }

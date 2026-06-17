@@ -136,13 +136,13 @@ void main() {
     const vec2 oct_dir = vec2(packed_dir & 0xffffu, (packed_dir >> 16) & 0xffffu) / 65535.0;
     vec3 refl_ray_ws = UnpackUnitVector(oct_dir);
 
-    int frag_index = int(layer_index) * g_shrd_data.ires_and_ifres.x * g_shrd_data.ires_and_ifres.y;
-    frag_index += int(ray_coords.y) * g_shrd_data.ires_and_ifres.x + int(ray_coords.x);
-    const float depth = uintBitsToFloat(texelFetch(g_oit_depth_buf, frag_index).x);
+    uint frag_index = layer_index * g_shrd_data.uren_res.x * g_shrd_data.uren_res.y;
+    frag_index += ray_coords.y * g_shrd_data.uren_res.x + ray_coords.x;
+    const float depth = uintBitsToFloat(texelFetch(g_oit_depth_buf, int(frag_index)).x);
     const float first_roughness = 0.0;
 
     const ivec2 icoord = ivec2(ray_coords);
-    const vec2 norm_uvs = (vec2(ray_coords) + 0.5) * g_shrd_data.ren_res.zw;
+    const vec2 norm_uvs = (vec2(ray_coords) + 0.5) * g_shrd_data.fren_res.zw;
     const vec3 ray_origin_ss = vec3(norm_uvs, depth);
     const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy - 1.0, ray_origin_ss.z, 1.0);
     const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);

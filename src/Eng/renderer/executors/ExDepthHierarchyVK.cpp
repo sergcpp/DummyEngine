@@ -74,12 +74,12 @@ void Eng::ExDepthHierarchy::Execute(const FgContext &fg) {
     api.vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi.pipeline);
     api.vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi.layout, 0, 1, &descr_set, 0, nullptr);
 
-    const int grp_x = Ren::DivCeil(int(output_cold.params.w), DepthHierarchy::GRP_SIZE_X);
-    const int grp_y = Ren::DivCeil(int(output_cold.params.h), DepthHierarchy::GRP_SIZE_Y);
+    const uint32_t grp_x = Ren::DivCeil(uint32_t(output_cold.params.w), DepthHierarchy::GRP_SIZE_X);
+    const uint32_t grp_y = Ren::DivCeil(uint32_t(output_cold.params.h), DepthHierarchy::GRP_SIZE_Y);
 
     DepthHierarchy::Params uniform_params;
     uniform_params.depth_size =
-        Ren::Vec4i{view_state_->ren_res[0], view_state_->ren_res[1], output_cold.params.mip_count, grp_x * grp_y};
+        Ren::Vec4u{view_state_->ren_res[0], view_state_->ren_res[1], output_cold.params.mip_count, grp_x * grp_y};
     uniform_params.clip_info = view_state_->clip_info;
 
     api.vkCmdPushConstants(cmd_buf, pi.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params), &uniform_params);

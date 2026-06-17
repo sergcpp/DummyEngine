@@ -5,10 +5,10 @@
 
 INTERFACE_START(ClearImage)
 
-const int GRP_SIZE_X = 16;
-const int GRP_SIZE_Y = 16;
+const uint GRP_SIZE_X = 16;
+const uint GRP_SIZE_Y = 16;
 
-const int OUT_IMG_SLOT = 0;
+const uint OUT_IMG_SLOT = 0;
 
 INTERFACE_END
 

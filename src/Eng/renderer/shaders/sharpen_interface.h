@@ -11,13 +11,13 @@ struct Params {
     float pre_exposure;
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 8;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 8;
 
-const int INPUT_TEX_SLOT = 1;
-const int EXPOSURE_TEX_SLOT = 2;
+const uint INPUT_TEX_SLOT = 1;
+const uint EXPOSURE_TEX_SLOT = 2;
 
-const int OUT_IMG_SLOT = 0;
+const uint OUT_IMG_SLOT = 0;
 
 INTERFACE_END
 

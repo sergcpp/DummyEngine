@@ -26,17 +26,17 @@ layout(binding = DEPTH_IMG_SLOT, r32f) uniform image2D g_depth_hierarchy[13];
 
 layout(local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
 
-ivec2 limit_coords(ivec2 icoord) {
-    return clamp(icoord, ivec2(0), g_params.depth_size.xy - 1);
+uvec2 limit_coords(const uvec2 ucoord) {
+    return clamp(ucoord, uvec2(0), g_params.depth_size.xy - 1u);
 }
 
 #define REDUCE_OP max
 
-float ReduceSrcDepth4(ivec2 base) {
-    float v0 = texelFetch(g_depth_tex, limit_coords(base + ivec2(0, 0)), 0).x;
-    float v1 = texelFetch(g_depth_tex, limit_coords(base + ivec2(0, 1)), 0).x;
-    float v2 = texelFetch(g_depth_tex, limit_coords(base + ivec2(1, 0)), 0).x;
-    float v3 = texelFetch(g_depth_tex, limit_coords(base + ivec2(1, 1)), 0).x;
+float ReduceSrcDepth4(const uvec2 base) {
+    float v0 = texelFetch(g_depth_tex, ivec2(limit_coords(base + uvec2(0, 0))), 0).x;
+    float v1 = texelFetch(g_depth_tex, ivec2(limit_coords(base + uvec2(0, 1))), 0).x;
+    float v2 = texelFetch(g_depth_tex, ivec2(limit_coords(base + uvec2(1, 0))), 0).x;
+    float v3 = texelFetch(g_depth_tex, ivec2(limit_coords(base + uvec2(1, 1))), 0).x;
     return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
 }
 
@@ -50,8 +50,8 @@ float ReduceQuad(float v) {
 }
 #endif // !defined(NO_SUBGROUP)
 
-void WriteDstDepth(int index, ivec2 icoord, float v) {
-    imageStore(g_depth_hierarchy[index], icoord, vec4(v));
+void WriteDstDepth(uint index, uvec2 icoord, float v) {
+    imageStore(g_depth_hierarchy[index], ivec2(icoord), vec4(v));
 }
 
 shared float g_shared_depth[16][16];
@@ -73,7 +73,7 @@ float ReduceLoad4(ivec2 base) {
     return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
 }
 
-void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id, uint x, uint y) {
+void DownsampleNext4Levels(uint base_level, uint levels_total, uvec2 work_group_id, uint x, uint y) {
     if (levels_total <= base_level + 1) return;
     { // Init mip level 3 or
 #if defined(NO_SUBGROUP)
@@ -196,18 +196,18 @@ void main() {
     //
 
     // Copy the first level
-    for (int i = 0; i < 2; ++i) {
-        for (int j = 0; j < 8; ++j) {
-            ivec2 icoord = ivec2(2 * gl_GlobalInvocationID.x + i, 8 * gl_GlobalInvocationID.y + j);
+    for (uint i = 0; i < 2; ++i) {
+        for (uint j = 0; j < 8; ++j) {
+            uvec2 icoord = uvec2(2 * gl_GlobalInvocationID.x + i, 8 * gl_GlobalInvocationID.y + j);
             float depth_val = 0.0;
             if (icoord.x < g_params.depth_size.x && icoord.y < g_params.depth_size.y) {
-                depth_val = texelFetch(g_depth_tex, icoord, 0).x;
+                depth_val = texelFetch(g_depth_tex, ivec2(icoord), 0).x;
             }
-            imageStore(g_depth_hierarchy[0], icoord, vec4(depth_val));
+            imageStore(g_depth_hierarchy[0], ivec2(icoord), vec4(depth_val));
         }
     }
 
-    const int required_mips = g_params.depth_size.z;
+    const uint required_mips = g_params.depth_size.z;
     if (required_mips <= 1) return;
 
     const uvec2 sub_8x8 = RemapLane8x8(gl_LocalInvocationIndex % 64);
@@ -216,23 +216,23 @@ void main() {
 
     { // Init mip levels 1 and 2
         float v[4];
-        ivec2 icoord;
+        uvec2 ucoord;
 
-        icoord = ivec2(gl_WorkGroupID.xy * 32) + ivec2(x, y);
-        v[0] = ReduceSrcDepth4(icoord * 2);
-        WriteDstDepth(1, icoord, v[0]);
+        ucoord = gl_WorkGroupID.xy * 32u + uvec2(x, y);
+        v[0] = ReduceSrcDepth4(ucoord * 2);
+        WriteDstDepth(1, ucoord, v[0]);
 
-        icoord = ivec2(gl_WorkGroupID.xy * 32) + ivec2(x + 16, y);
-        v[1] = ReduceSrcDepth4(icoord * 2);
-        WriteDstDepth(1, icoord, v[1]);
+        ucoord = gl_WorkGroupID.xy * 32u + uvec2(x + 16, y);
+        v[1] = ReduceSrcDepth4(ucoord * 2);
+        WriteDstDepth(1, ucoord, v[1]);
 
-        icoord = ivec2(gl_WorkGroupID.xy * 32) + ivec2(x, y + 16);
-        v[2] = ReduceSrcDepth4(icoord * 2);
-        WriteDstDepth(1, icoord, v[2]);
+        ucoord = gl_WorkGroupID.xy * 32u + uvec2(x, y + 16);
+        v[2] = ReduceSrcDepth4(ucoord * 2);
+        WriteDstDepth(1, ucoord, v[2]);
 
-        icoord = ivec2(gl_WorkGroupID.xy * 32) + ivec2(x + 16, y + 16);
-        v[3] = ReduceSrcDepth4(icoord * 2);
-        WriteDstDepth(1, icoord, v[3]);
+        ucoord = gl_WorkGroupID.xy * 32u + uvec2(x + 16, y + 16);
+        v[3] = ReduceSrcDepth4(ucoord * 2);
+        WriteDstDepth(1, ucoord, v[3]);
 
         if (required_mips <= 2) return;
 
@@ -277,7 +277,7 @@ void main() {
         barrier();
     }
 
-    DownsampleNext4Levels(2, required_mips, gl_WorkGroupID.xy, x, y);
+    DownsampleNext4Levels(2u, required_mips, gl_WorkGroupID.xy, x, y);
 
 #ifndef MIPS_7
     if (required_mips <= 7) return;
@@ -320,6 +320,6 @@ void main() {
         barrier();
     }
 
-    DownsampleNext4Levels(8, required_mips, uvec2(0, 0), x, y);
+    DownsampleNext4Levels(8u, required_mips, uvec2(0, 0), x, y);
 #endif
 }

@@ -58,7 +58,7 @@ void main() {
     if (pix_uvs.x >= g_params.resolution.x || pix_uvs.y >= g_params.resolution.y) {
         return;
     }
-    const vec2 norm_uvs = (vec2(pix_uvs) + 0.5) * g_shrd_data.ren_res.zw;
+    const vec2 norm_uvs = (vec2(pix_uvs) + 0.5) * g_shrd_data.fren_res.zw;
 
     const vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, pix_uvs, 0).x).xyz;
     const float depth = texelFetch(g_depth_tex, pix_uvs, 0).x;

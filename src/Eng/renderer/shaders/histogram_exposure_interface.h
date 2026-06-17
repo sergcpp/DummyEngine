@@ -15,9 +15,9 @@ struct Params {
     float _pad2;
 };
 
-const int HISTOGRAM_TEX_SLOT = 1;
-const int EXPOSURE_PREV_TEX_SLOT = 2;
-const int OUT_TEX_SLOT = 0;
+const uint HISTOGRAM_TEX_SLOT = 1;
+const uint EXPOSURE_PREV_TEX_SLOT = 2;
+const uint OUT_TEX_SLOT = 0;
 
 INTERFACE_END
 

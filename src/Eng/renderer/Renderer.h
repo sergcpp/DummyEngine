@@ -126,7 +126,7 @@ class Renderer {
     };
     struct VisObjStorage {
         std::vector<VisObj> objects;
-        std::atomic_int count = 0;
+        std::atomic_uint count = 0;
 
         VisObjStorage() = default;
         VisObjStorage(VisObjStorage &&rhs) noexcept : objects(std::move(rhs.objects)), count(rhs.count.load()) {}
@@ -391,7 +391,7 @@ class Renderer {
     static void ClusterItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const BBox *decals_boxes,
                                           const LightSource *light_sources, Ren::Span<const uint32_t> litem_to_lsource,
                                           const DrawList &list, cell_data_t out_cells[], item_data_t out_items[],
-                                          std::atomic_int &items_count);
+                                          std::atomic_uint &items_count);
 
     // Generate auxiliary textures
     static std::unique_ptr<uint16_t[]> Generate_BRDF_LUT(int res, std::string &out_c_header);

@@ -18,10 +18,10 @@ struct Params {
     float pre_exposure;
 };
 
-const int INPUT_TEX_SLOT = 0;
-const int BLOOM_TEX_SLOT = 1;
-const int EXPOSURE_TEX_SLOT = 2;
-const int LUT_TEX_SLOT = 3;
+const uint INPUT_TEX_SLOT = 0;
+const uint BLOOM_TEX_SLOT = 1;
+const uint EXPOSURE_TEX_SLOT = 2;
+const uint LUT_TEX_SLOT = 3;
 
 INTERFACE_END
 

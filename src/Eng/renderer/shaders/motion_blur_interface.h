@@ -11,19 +11,19 @@ struct Params {
     vec4 clip_info;
 };
 
-const int TILE_RES = 20;
+const uint TILE_RES = 20;
 
 const uint GRP_SIZE_X = 8;
 const uint GRP_SIZE_Y = 8;
 
-const int GRP_SIZE = GRP_SIZE_X * GRP_SIZE_Y;
+const uint GRP_SIZE = GRP_SIZE_X * GRP_SIZE_Y;
 
-const int COLOR_TEX_SLOT = 1;
-const int DEPTH_TEX_SLOT = 2;
-const int VELOCITY_TEX_SLOT = 3;
-const int TILES_TEX_SLOT = 4;
+const uint COLOR_TEX_SLOT = 1;
+const uint DEPTH_TEX_SLOT = 2;
+const uint VELOCITY_TEX_SLOT = 3;
+const uint TILES_TEX_SLOT = 4;
 
-const int OUT_IMG_SLOT = 0;
+const uint OUT_IMG_SLOT = 0;
 
 INTERFACE_END
 

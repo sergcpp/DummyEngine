@@ -11,7 +11,7 @@ struct Params {
     vec2 _pad;
 };
 
-const int INPUT_TEX_SLOT = 0;
+const uint INPUT_TEX_SLOT = 0;
 
 INTERFACE_END
 

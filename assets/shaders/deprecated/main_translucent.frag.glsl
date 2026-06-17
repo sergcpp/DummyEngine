@@ -58,12 +58,12 @@ void main() {
     float mask_value = textureBindless(g_mask_tex, g_vtx_uvs).x;
 
     float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
+    uint slice = clamp(uint(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
-    int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.ren_res.xy);
+    uint ix = uint(gl_FragCoord.x), iy = uint(gl_FragCoord.y);
+    uint cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.uren_res.xy);
 
-    uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+    uvec2 cell_data = texelFetch(g_cells_buf, int(cell_index)).xy;
     uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
                                     bitfieldExtract(cell_data.x, 24, 8));
     uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
@@ -77,12 +77,12 @@ void main() {
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
         uint item_data = texelFetch(g_items_buf, int(i)).x;
-        int di = int(bitfieldExtract(item_data, 12, 12));
+        uint di = bitfieldExtract(item_data, 12, 12);
 
         mat4 de_proj;
-        de_proj[0] = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 0);
-        de_proj[1] = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 1);
-        de_proj[2] = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 2);
+        de_proj[0] = texelFetch(g_decals_buf, int(di * DECALS_BUF_STRIDE + 0));
+        de_proj[1] = texelFetch(g_decals_buf, int(di * DECALS_BUF_STRIDE + 1));
+        de_proj[2] = texelFetch(g_decals_buf, int(di * DECALS_BUF_STRIDE + 2));
         de_proj[3] = vec4(0.0, 0.0, 0.0, 1.0);
         de_proj = transpose(de_proj);
 
@@ -97,20 +97,20 @@ void main() {
 
         if (app.x < 1.0 && app.y < 1.0 && app.z < 1.0) {
             float decal_influence = 1.0;
-            vec4 mask_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 3);
+            vec4 mask_uvs_tr = texelFetch(g_decals_buf, int(di * DECALS_BUF_STRIDE + 3));
             if (mask_uvs_tr.z > 0.0) {
                 vec2 mask_uvs = mask_uvs_tr.xy + mask_uvs_tr.zw * uvs;
                 decal_influence = textureGrad(g_decals_tex, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).x;
             }
 
-            vec4 diff_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 4);
+            vec4 diff_uvs_tr = texelFetch(g_decals_buf, int(di * DECALS_BUF_STRIDE + 4));
             if (diff_uvs_tr.z > 0.0) {
                 vec2 diff_uvs = diff_uvs_tr.xy + diff_uvs_tr.zw * uvs;
                 vec3 decal_diff = YCoCg_to_RGB(textureGrad(g_decals_tex, diff_uvs, diff_uvs_tr.zw * duv_dx, diff_uvs_tr.zw * duv_dy));
                 albedo_color = mix(albedo_color, SRGBToLinear(decal_diff), decal_influence);
             }
 
-            vec4 norm_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 5);
+            vec4 norm_uvs_tr = texelFetch(g_decals_buf, int(di * DECALS_BUF_STRIDE + 5));
 
             if (norm_uvs_tr.z > 0.0) {
                 vec2 norm_uvs = norm_uvs_tr.xy + norm_uvs_tr.zw * uvs;
@@ -118,7 +118,7 @@ void main() {
                 normal_color = mix(normal_color, decal_norm, decal_influence);
             }
 
-            vec4 spec_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 6);
+            vec4 spec_uvs_tr = texelFetch(g_decals_buf, int(di * DECALS_BUF_STRIDE + 6));
 
             if (spec_uvs_tr.z > 0.0) {
                 vec2 spec_uvs = spec_uvs_tr.xy + spec_uvs_tr.zw * uvs;
@@ -136,11 +136,11 @@ void main() {
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         uint item_data = texelFetch(g_items_buf, int(i)).x;
-        int li = int(bitfieldExtract(item_data, 0, 12));
+        uint li = bitfieldExtract(item_data, 0, 12);
 
-        vec4 pos_and_radius = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 0);
-        vec4 col_and_index = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 1);
-        vec4 dir_and_spot = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 2);
+        vec4 pos_and_radius = texelFetch(g_lights_buf, int(li * LIGHTS_BUF_STRIDE + 0));
+        vec4 col_and_index = texelFetch(g_lights_buf, int(li * LIGHTS_BUF_STRIDE + 1));
+        vec4 dir_and_spot = texelFetch(g_lights_buf, int(li * LIGHTS_BUF_STRIDE + 2));
 
         vec3 L = pos_and_radius.xyz - g_vtx_pos;
         float dist = length(L);

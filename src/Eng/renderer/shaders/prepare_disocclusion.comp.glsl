@@ -18,14 +18,14 @@ layout(binding = OUT_IMG_SLOT, rg8) uniform image2D g_out_img;
 layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
-    const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
-    if (icoord.x >= g_params.img_size.x || icoord.y >= g_params.img_size.y) {
+    const uvec2 ucoord = gl_GlobalInvocationID.xy;
+    if (ucoord.x >= g_params.img_size.x || ucoord.y >= g_params.img_size.y) {
         return;
     }
 
-    const vec2 norm_uvs = (vec2(icoord) + 0.5) * g_params.texel_size;
-    const vec2 closest_vel = texelFetch(g_dilated_velocity, icoord, 0).xy;
-    const float dilated_depth = texelFetch(g_dilated_depth, icoord, 0).x;
+    const vec2 norm_uvs = (vec2(ucoord) + 0.5) * g_params.texel_size;
+    const vec2 closest_vel = texelFetch(g_dilated_velocity, ivec2(ucoord), 0).xy;
+    const float dilated_depth = texelFetch(g_dilated_depth, ivec2(ucoord), 0).x;
     const float dilated_depth_lin = LinearizeDepth(dilated_depth, g_params.clip_info);
 
     //
@@ -88,14 +88,14 @@ void main() {
     //
     // Compute motion divergence
     //
-    const vec2 center_motion = texelFetch(g_velocity, icoord, 0).xy * g_params.texel_size;
+    const vec2 center_motion = texelFetch(g_velocity, ivec2(ucoord), 0).xy * g_params.texel_size;
     float max_velocity_uv = length(center_motion);
 
     float min_convergence = 1.0;
     if (max_velocity_uv > 0.00001) {
         for (int dy = -1; dy <= 1; ++dy) {
             for (int dx = -1; dx <= 1; ++dx) {
-                const ivec2 sample_pos = clamp(icoord + ivec2(dx, dy), ivec2(0), g_params.img_size);
+                const ivec2 sample_pos = clamp(ivec2(ucoord) + ivec2(dx, dy), ivec2(0), ivec2(g_params.img_size));
 
                 const vec2 motion = texelFetch(g_velocity, sample_pos, 0).xy * g_params.texel_size;
                 float velocity_uv = length(motion);
@@ -113,5 +113,5 @@ void main() {
         out_motion_divergence = 1.0;
     }
 
-    imageStore(g_out_img, icoord, vec4(out_disocclusion, out_motion_divergence, 0.0, 0.0));
+    imageStore(g_out_img, ivec2(ucoord), vec4(out_disocclusion, out_motion_divergence, 0.0, 0.0));
 }

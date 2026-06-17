@@ -30,10 +30,10 @@ void main() {
         return;
     }
 
-    const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
-    const vec2 norm_uvs = (vec2(icoord) + 0.5) * g_shrd_data.ren_res.zw;
+    const uvec2 ucoord = gl_GlobalInvocationID.xy;
+    const vec2 norm_uvs = (vec2(ucoord) + 0.5) * g_shrd_data.fren_res.zw;
 
-    const float depth = texelFetch(g_depth_tex, icoord, 0).x;
+    const float depth = texelFetch(g_depth_tex, ivec2(ucoord), 0).x;
 
     const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
     const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
@@ -42,10 +42,10 @@ void main() {
     float hit_t;
     const vec3 I = normalize_len(P - g_shrd_data.cam_pos_and_exp.xyz, hit_t);
 
-    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).x);
+    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, ivec2(ucoord), 0).x);
 
     vec3 final_color = vec3(0.0);
-    for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+    for (uint i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
         if (weight > 0.0) {
             final_color += weight * get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_shrd_data.probe_volumes[i].spacing.xyz, 0.5 * hit_t), normal.xyz,
@@ -57,7 +57,7 @@ void main() {
             break;
         }
     }
-    final_color *= texelFetch(g_ssao_tex, icoord, 0).x;
+    final_color *= texelFetch(g_ssao_tex, ivec2(ucoord), 0).x;
 
-    imageStore(g_out_color_img, icoord, vec4(compress_hdr(final_color / M_PI, g_shrd_data.cam_pos_and_exp.w), 1.0));
+    imageStore(g_out_color_img, ivec2(ucoord), vec4(compress_hdr(final_color / M_PI, g_shrd_data.cam_pos_and_exp.w), 1.0));
 }

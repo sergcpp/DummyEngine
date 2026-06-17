@@ -72,7 +72,7 @@ class ExSkydomeScreen final : public FgExecutor {
 
     void Execute(const FgContext &fg) override;
 
-    static Ren::Vec2i sample_pos(int frame_index);
+    static Ren::Vec2u sample_pos(int frame_index);
 
   private:
     PrimDraw &prim_draw_;

@@ -1,154 +1,154 @@
 const float MAX_DIST = 3.402823466e+30f;
 
 // Resolution of frustum item grid
-const int ITEM_GRID_RES_X = 16;
-const int ITEM_GRID_RES_Y = 8;
-const int ITEM_GRID_RES_Z = 24;
+const uint ITEM_GRID_RES_X = 16;
+const uint ITEM_GRID_RES_Y = 8;
+const uint ITEM_GRID_RES_Z = 24;
 
-const int ITEM_CELLS_COUNT = (ITEM_GRID_RES_X * ITEM_GRID_RES_Y * ITEM_GRID_RES_Z);
+const uint ITEM_CELLS_COUNT = (ITEM_GRID_RES_X * ITEM_GRID_RES_Y * ITEM_GRID_RES_Z);
 
-const int MAX_LIGHTS_PER_CELL = 255;
-const int MAX_DECALS_PER_CELL = 255;
-const int MAX_PROBES_PER_CELL = 8;
-const int MAX_ELLIPSES_PER_CELL = 16;
-const int MAX_ITEMS_PER_CELL = 255;
+const uint MAX_LIGHTS_PER_CELL = 255;
+const uint MAX_DECALS_PER_CELL = 255;
+const uint MAX_PROBES_PER_CELL = 8;
+const uint MAX_ELLIPSES_PER_CELL = 16;
+const uint MAX_ITEMS_PER_CELL = 255;
 
 // Attribute location
-const int VTX_POS_LOC = 0;
-const int VTX_NOR_LOC = 1;
-const int VTX_TAN_LOC = 2;
-const int VTX_UV1_LOC = 3;
-const int VTX_AUX_LOC = 4;
-const int VTX_PRE_LOC = 5; // vertex position in previous frame
+const uint VTX_POS_LOC = 0;
+const uint VTX_NOR_LOC = 1;
+const uint VTX_TAN_LOC = 2;
+const uint VTX_UV1_LOC = 3;
+const uint VTX_AUX_LOC = 4;
+const uint VTX_PRE_LOC = 5; // vertex position in previous frame
 
 // Binding slots
-const int BIND_MAT_TEX0 = 0;
-const int BIND_MAT_TEX1 = 1;
-const int BIND_MAT_TEX2 = 2;
-const int BIND_MAT_TEX3 = 3;
-const int BIND_MAT_TEX4 = 4;
-const int BIND_MAT_TEX5 = 5;
-const int BIND_SHAD_TEX = 6;
-const int BIND_SSAO_TEX_SLOT = 7;
-const int BIND_BRDF_LUT = 8;
-const int BIND_LIGHT_BUF = 9;
-const int BIND_DECAL_BUF = 10;
-const int BIND_CELLS_BUF = 11;
-const int BIND_ITEMS_BUF = 12;
-const int BIND_INST_BUF = 13;
-const int BIND_INST_NDX_BUF = 14;
-const int BIND_MATERIALS_BUF = 15;
-const int BIND_DECAL_TEX = 16;
-const int BIND_LMAP_SH = 17;
-const int BIND_ENV_TEX = 21;
-const int BIND_NOISE_TEX = 22;
+const uint BIND_MAT_TEX0 = 0;
+const uint BIND_MAT_TEX1 = 1;
+const uint BIND_MAT_TEX2 = 2;
+const uint BIND_MAT_TEX3 = 3;
+const uint BIND_MAT_TEX4 = 4;
+const uint BIND_MAT_TEX5 = 5;
+const uint BIND_SHAD_TEX = 6;
+const uint BIND_SSAO_TEX_SLOT = 7;
+const uint BIND_BRDF_LUT = 8;
+const uint BIND_LIGHT_BUF = 9;
+const uint BIND_DECAL_BUF = 10;
+const uint BIND_CELLS_BUF = 11;
+const uint BIND_ITEMS_BUF = 12;
+const uint BIND_INST_BUF = 13;
+const uint BIND_INST_NDX_BUF = 14;
+const uint BIND_MATERIALS_BUF = 15;
+const uint BIND_DECAL_TEX = 16;
+const uint BIND_LMAP_SH = 17;
+const uint BIND_ENV_TEX = 21;
+const uint BIND_NOISE_TEX = 22;
 
-const int BIND_SET_SCENETEXTURES = 1;
-const int BIND_BINDLESS_TEX = 0;   // shares slot with material slot 0
-const int BIND_SCENE_SAMPLERS = 1; // shares slot with material slot 1
+const uint BIND_SET_SCENETEXTURES = 1;
+const uint BIND_BINDLESS_TEX = 0;   // shares slot with material slot 0
+const uint BIND_SCENE_SAMPLERS = 1; // shares slot with material slot 1
 
-const int BIND_BASE0_TEX = 0;
-const int BIND_BASE1_TEX = 1;
-const int BIND_BASE2_TEX = 2;
+const uint BIND_BASE0_TEX = 0;
+const uint BIND_BASE1_TEX = 1;
+const uint BIND_BASE2_TEX = 2;
 
-const int REN_U_BASE_INSTANCE_LOC = 2;
+const uint REN_U_BASE_INSTANCE_LOC = 2;
 
-const int BIND_UB_SHARED_DATA_BUF = 23;
-const int BIND_PUSH_CONSTANT_BUF = 24;
+const uint BIND_UB_SHARED_DATA_BUF = 23;
+const uint BIND_PUSH_CONSTANT_BUF = 24;
 
 // Shader output location
-const int LOC_OUT_COLOR = 0;
-const int LOC_OUT_NORM = 1;
-const int LOC_OUT_SPEC = 2;
-const int LOC_OUT_VELO = 3;
-const int LOC_OUT_ALBEDO = 0;
+const uint LOC_OUT_COLOR = 0;
+const uint LOC_OUT_NORM = 1;
+const uint LOC_OUT_SPEC = 2;
+const uint LOC_OUT_VELO = 3;
+const uint LOC_OUT_ALBEDO = 0;
 
 // Ray type
-const int RAY_TYPE_CAMERA = 0;
-const int RAY_TYPE_DIFFUSE = 1;
-const int RAY_TYPE_SPECULAR = 2;
-const int RAY_TYPE_REFRACTION = 3;
-const int RAY_TYPE_SHADOW = 4;
-const int RAY_TYPE_VOLUME = 5;
+const uint RAY_TYPE_CAMERA = 0;
+const uint RAY_TYPE_DIFFUSE = 1;
+const uint RAY_TYPE_SPECULAR = 2;
+const uint RAY_TYPE_REFRACTION = 3;
+const uint RAY_TYPE_SHADOW = 4;
+const uint RAY_TYPE_VOLUME = 5;
 
 // Light
-const int LIGHT_TYPE_SPHERE = 0;
-const int LIGHT_TYPE_RECT = 1;
-const int LIGHT_TYPE_DISK = 2;
-const int LIGHT_TYPE_LINE = 3;
-const int LIGHT_TYPE_TRI = 4;
+const uint LIGHT_TYPE_SPHERE = 0;
+const uint LIGHT_TYPE_RECT = 1;
+const uint LIGHT_TYPE_DISK = 2;
+const uint LIGHT_TYPE_LINE = 3;
+const uint LIGHT_TYPE_TRI = 4;
 
-const int LIGHT_TYPE_BITS = 0x7;
-const int LIGHT_PORTAL_BIT = (1 << 3);
-const int LIGHT_DIFFUSE_BIT = (1 << 4);
-const int LIGHT_SPECULAR_BIT = (1 << 5);
-const int LIGHT_VOLUME_BIT = (1 << 6);
-const int LIGHT_DOUBLESIDED_BIT = (1 << 7);
+const uint LIGHT_TYPE_BITS = 0x7;
+const uint LIGHT_PORTAL_BIT = (1 << 3);
+const uint LIGHT_DIFFUSE_BIT = (1 << 4);
+const uint LIGHT_SPECULAR_BIT = (1 << 5);
+const uint LIGHT_VOLUME_BIT = (1 << 6);
+const uint LIGHT_DOUBLESIDED_BIT = (1 << 7);
 
 // Stencil
-const int STENCIL_DYNAMIC_BIT = (1 << 0);
-const int STENCIL_EMISSIVE_BIT = (1 << 1);
-const int STENCIL_TRANSPARENT_BIT = (1 << 2);
+const uint STENCIL_DYNAMIC_BIT = (1 << 0);
+const uint STENCIL_EMISSIVE_BIT = (1 << 1);
+const uint STENCIL_TRANSPARENT_BIT = (1 << 2);
 
 // Shadow resolution
-const int SHADOWMAP_RES_PC = 8192;
-const int SHADOWMAP_RES_ANDROID = 4096;
+const uint SHADOWMAP_RES_PC = 8192;
+const uint SHADOWMAP_RES_ANDROID = 4096;
 
-const int SHADOWMAP_RES = SHADOWMAP_RES_PC;
+const uint SHADOWMAP_RES = SHADOWMAP_RES_PC;
 
 // Shadow cascades definition
 const float SHADOWMAP_CASCADE0_DIST = 10.0f;
 const float SHADOWMAP_CASCADE1_DIST = 24.0f;
 const float SHADOWMAP_CASCADE2_DIST = 48.0f;
-const int SHADOWMAP_CASCADE_SOFT = 0;
+const uint SHADOWMAP_CASCADE_SOFT = 0;
 
-const int MAX_OBJ_COUNT = 4194304;
-const int MAX_TEX_COUNT = 262144;
+const uint MAX_OBJ_COUNT = 4194304;
+const uint MAX_TEX_COUNT = 262144;
 
-const int MAX_TEX_PER_MATERIAL = 6;
-const int MAT_TEX_BASECOLOR = 0;
-const int MAT_TEX_NORMALMAP = 1;
-const int MAT_TEX_ROUGHNESS = 2;
-const int MAT_TEX_METALLIC = 3;
-const int MAT_TEX_ALPHA = 4;
-const int MAT_TEX_EMISSION = 5;
-const int MAX_MATERIALS_COUNT = 262144;
+const uint MAX_TEX_PER_MATERIAL = 6;
+const uint MAT_TEX_BASECOLOR = 0;
+const uint MAT_TEX_NORMALMAP = 1;
+const uint MAT_TEX_ROUGHNESS = 2;
+const uint MAT_TEX_METALLIC = 3;
+const uint MAT_TEX_ALPHA = 4;
+const uint MAT_TEX_EMISSION = 5;
+const uint MAX_MATERIALS_COUNT = 262144;
 
-const int MAX_INSTANCES_TOTAL = 262144;
-const int MAX_SHADOWMAPS_TOTAL = 64;
-const int MAX_PROBES_TOTAL = 32;
-const int MAX_ELLIPSES_TOTAL = 64;
-const int MAX_PORTALS_TOTAL = 64;
-const int MAX_SKIN_XFORMS_TOTAL = 65536 / 4;
-const int MAX_SKIN_REGIONS_TOTAL = 262144 / 4;
-const int MAX_SKIN_VERTICES_TOTAL = 1048576 / 4;
-const int MAX_SHAPE_KEYS_TOTAL = 1024;
+const uint MAX_INSTANCES_TOTAL = 262144;
+const uint MAX_SHADOWMAPS_TOTAL = 64;
+const uint MAX_PROBES_TOTAL = 32;
+const uint MAX_ELLIPSES_TOTAL = 64;
+const uint MAX_PORTALS_TOTAL = 64;
+const uint MAX_SKIN_XFORMS_TOTAL = 65536 / 4;
+const uint MAX_SKIN_REGIONS_TOTAL = 262144 / 4;
+const uint MAX_SKIN_VERTICES_TOTAL = 1048576 / 4;
+const uint MAX_SHAPE_KEYS_TOTAL = 1024;
 
-const int MAX_SHADOW_BATCHES = 262144;
-const int MAX_MAIN_BATCHES = 262144;
+const uint MAX_SHADOW_BATCHES = 262144;
+const uint MAX_MAIN_BATCHES = 262144;
 
-const int MAX_LIGHTS_TOTAL = 4096;
-const int MAX_DECALS_TOTAL = 4096;
-const int MAX_ITEMS_TOTAL = int(1u << 16u);
+const uint MAX_LIGHTS_TOTAL = 4096;
+const uint MAX_DECALS_TOTAL = 4096;
+const uint MAX_ITEMS_TOTAL = (1u << 16u);
 
-const int MAX_RT_GEO_INSTANCES = 32768;
-const int MAX_RT_OBJ_INSTANCES_GI = 2048;
-const int MAX_RT_OBJ_INSTANCES_TOTAL = 4096;
-const int MAX_RT_TLAS_NODES = 8192; // (4096 + 2048 + 1024 + ...)
+const uint MAX_RT_GEO_INSTANCES = 32768;
+const uint MAX_RT_OBJ_INSTANCES_GI = 2048;
+const uint MAX_RT_OBJ_INSTANCES_TOTAL = 4096;
+const uint MAX_RT_TLAS_NODES = 8192; // (4096 + 2048 + 1024 + ...)
 
-const int DECALS_BUF_STRIDE = 7;
-const int BVH2_NODE_BUF_STRIDE = 4;
-const int SWRT_MESH_INSTANCE_BUF_STRIDE = 7;
-const int HWRT_MESH_INSTANCE_BUF_STRIDE = 4;
+const uint DECALS_BUF_STRIDE = 7;
+const uint BVH2_NODE_BUF_STRIDE = 4;
+const uint SWRT_MESH_INSTANCE_BUF_STRIDE = 7;
+const uint HWRT_MESH_INSTANCE_BUF_STRIDE = 4;
 
-const int PROBE_VOLUME_RES_X = 32;
-const int PROBE_VOLUME_RES_Y = 16;
-const int PROBE_VOLUME_RES_Z = 32;
-const int PROBE_VOLUMES_COUNT = 6;
-const int PROBE_TOTAL_RAYS_COUNT = 128;
-const int PROBE_FIXED_RAYS_COUNT = 32;
-const int PROBE_IRRADIANCE_RES = 6;
-const int PROBE_DISTANCE_RES = 8;
+const uint PROBE_VOLUME_RES_X = 32;
+const uint PROBE_VOLUME_RES_Y = 16;
+const uint PROBE_VOLUME_RES_Z = 32;
+const uint PROBE_VOLUMES_COUNT = 6;
+const uint PROBE_TOTAL_RAYS_COUNT = 128;
+const uint PROBE_FIXED_RAYS_COUNT = 32;
+const uint PROBE_IRRADIANCE_RES = 6;
+const uint PROBE_DISTANCE_RES = 8;
 const float PROBE_RADIANCE_EXP = 5;
 
 const float PROBE_STATE_INACTIVE = 0;

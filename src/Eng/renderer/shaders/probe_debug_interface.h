@@ -6,18 +6,18 @@
 INTERFACE_START(ProbeDebug)
 
 struct Params {
-    int volume_index;
-    int _pad0;
-    int _pad1;
-    int _pad2;
+    uint volume_index;
+    uint _pad0;
+    uint _pad1;
+    uint _pad2;
     vec4 grid_origin;
     ivec4 grid_scroll;
     ivec4 grid_scroll_diff;
     vec4 grid_spacing;
 };
 
-const int IRRADIANCE_TEX_SLOT = 0;
-const int OFFSET_TEX_SLOT = 1;
+const uint IRRADIANCE_TEX_SLOT = 0;
+const uint OFFSET_TEX_SLOT = 1;
 
 INTERFACE_END
 

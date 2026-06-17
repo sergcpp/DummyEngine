@@ -74,13 +74,13 @@ layout(location = 0) out vec4 g_out_color;
 void main() {
     const float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
     const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
+    const uint slice = clamp(uint(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
-    const ivec2 icoord = ivec2(gl_FragCoord.xy);
-    const vec2 norm_uvs = (vec2(icoord) + 0.5) * g_shrd_data.ren_res.zw;
+    const uvec2 ucoord = uvec2(gl_FragCoord.xy);
+    const vec2 norm_uvs = (vec2(ucoord) + 0.5) * g_shrd_data.fren_res.zw;
 
-    const int cell_index = GetCellIndex(icoord.x, icoord.y, slice, g_shrd_data.ren_res.xy);
-    const uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+    const uint cell_index = GetCellIndex(ucoord.x, ucoord.y, slice, g_shrd_data.uren_res.xy);
+    const uvec2 cell_data = texelFetch(g_cells_buf, int(cell_index)).xy;
     const uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
                                           bitfieldExtract(cell_data.x, 24, 8));
     const uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
@@ -167,7 +167,7 @@ void main() {
     vec3 artificial_light = vec3(0.0);
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         const uint item_data = texelFetch(g_items_buf, int(i)).x;
-        const int li = int(bitfieldExtract(item_data, 0, 12));
+        const uint li = bitfieldExtract(item_data, 0, 12);
 
         const _light_item_t litem = FetchLightItem(g_lights_buf, li);
         const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
@@ -249,7 +249,7 @@ void main() {
 
     vec3 gi_color = vec3(0.0);
 #ifdef GI_CACHE
-    for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+    for (uint i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
         if (weight > 0.0) {
             if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0) {
@@ -286,7 +286,7 @@ void main() {
         const float eta = 1.0 / ior;//gl_FrontFacing ? (1.0 / ior) : (ior / 1.0);
         fresnel = fresnel_dielectric_cos(dot(I, N), 1.0 / eta);
 
-        const float back_depth = texelFetch(g_back_depth_tex, icoord, 0).x;
+        const float back_depth = texelFetch(g_back_depth_tex, ivec2(ucoord), 0).x;
         const float back_lin_depth = LinearizeDepth(back_depth, g_shrd_data.clip_info);
 
         const vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(N, 0.0)).xyz);
@@ -306,8 +306,8 @@ void main() {
     }
 
 #ifdef SPECULAR
-    vec4 refl = SampleCatmulRom4x4_5Tap(g_specular_tex, norm_uvs + 0.5 / vec2(g_shrd_data.ires_and_ifres.xy),
-                                        vec4(0.5 * vec2(g_shrd_data.ires_and_ifres.xy), 2.0 / vec2(g_shrd_data.ires_and_ifres.xy)));
+    vec4 refl = SampleCatmulRom4x4_5Tap(g_specular_tex, norm_uvs + 0.5 * g_shrd_data.fren_res.zw,
+                                        vec4(0.5 * g_shrd_data.fren_res.xy, 2.0 * g_shrd_data.fren_res.zw));
     refl.xyz /= g_shrd_data.cam_pos_and_exp.w;
     refl.xyz /= max(refl.w, 0.001);
     if ((lobe_masks.bits & (LOBE_SPECULAR_BIT | LOBE_REFRACTION_BIT)) != 0) {

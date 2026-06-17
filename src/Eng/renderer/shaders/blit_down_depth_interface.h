@@ -11,7 +11,7 @@ struct Params {
     float linearize;
 };
 
-const int DEPTH_TEX_SLOT = 0;
+const uint DEPTH_TEX_SLOT = 0;
 
 INTERFACE_END
 

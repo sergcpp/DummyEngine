@@ -394,11 +394,22 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
                 shrd_data.env_col[3] = 0.0f;
             }
 
-            // render resolution and full resolution
-            shrd_data.ren_res = Ren::Vec4f{float(view_state_.ren_res[0]), float(view_state_.ren_res[1]),
-                                           1.0f / float(view_state_.ren_res[0]), 1.0f / float(view_state_.ren_res[1])};
-            shrd_data.ires_and_ifres = Ren::Vec4i{view_state_.ren_res[0], view_state_.ren_res[1],
-                                                  view_state_.out_res[0], view_state_.out_res[1]};
+            // render resolution
+            shrd_data.uren_res = Ren::Vec4u{view_state_.ren_res[0], view_state_.ren_res[1], 0u, 0u};
+            // fixed point reciprocals
+            shrd_data.uren_res[2] =
+                uint32_t(((uint64_t(1) << 32u) + shrd_data.uren_res[0] - 1u) / shrd_data.uren_res[0]);
+            shrd_data.uren_res[3] =
+                uint32_t(((uint64_t(1) << 32u) + shrd_data.uren_res[1] - 1u) / shrd_data.uren_res[1]);
+            shrd_data.fren_res = Ren::Vec4f{float(view_state_.ren_res[0]), float(view_state_.ren_res[1]),
+                                            1.0f / float(view_state_.ren_res[0]), 1.0f / float(view_state_.ren_res[1])};
+            // output resolution
+            shrd_data.uout_res = Ren::Vec4u{view_state_.out_res[0], view_state_.out_res[1], 0u, 0u};
+            shrd_data.uout_res[2] =
+                uint32_t(((uint64_t(1) << 32u) + shrd_data.uout_res[0] - 1u) / shrd_data.uout_res[0]);
+            shrd_data.uout_res[3] =
+                uint32_t(((uint64_t(1) << 32u) + shrd_data.uout_res[1] - 1u) / shrd_data.uout_res[1]);
+
             { // main cam
                 const float near = p_list_->draw_cam.near(), far = p_list_->draw_cam.far();
                 const float time_s = 0.001f * float(Sys::GetTimeMs());
@@ -495,7 +506,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             memcpy(&shrd_data.ellipsoids[0], p_list_->ellipsoids.data(),
                    sizeof(ellipse_item_t) * p_list_->ellipsoids.size());
 
-            const int portals_count = std::min(int(p_list_->portals.size()), MAX_PORTALS_TOTAL);
+            const uint32_t portals_count = std::min(uint32_t(p_list_->portals.size()), MAX_PORTALS_TOTAL);
             memcpy(&shrd_data.portals[0], p_list_->portals.data(), portals_count * sizeof(uint32_t));
             if (portals_count < MAX_PORTALS_TOTAL) {
                 shrd_data.portals[portals_count] = 0xffffffff;

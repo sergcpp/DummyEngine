@@ -24,15 +24,15 @@ namespace ExShadowDepthInternal {
 void _adjust_bias_and_viewport(const Ren::ApiContext &api, VkCommandBuffer cmd_buf, const Eng::shadow_list_t &sh_list) {
     const VkViewport viewport = {
         float(sh_list.shadow_map_pos[0]),
-        float((Eng::SHADOWMAP_RES / 2) - sh_list.shadow_map_pos[1] - sh_list.shadow_map_size[1]),
+        float(int(Eng::SHADOWMAP_RES / 2) - sh_list.shadow_map_pos[1] - sh_list.shadow_map_size[1]),
         float(sh_list.shadow_map_size[0]),
         float(sh_list.shadow_map_size[1]),
         0.0f,
         1.0f};
     api.vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
-    const VkRect2D scissor = {{sh_list.scissor_test_pos[0],
-                               (Eng::SHADOWMAP_RES / 2) - sh_list.scissor_test_pos[1] - sh_list.scissor_test_size[1]},
+    const VkRect2D scissor = {{sh_list.scissor_test_pos[0], int(Eng::SHADOWMAP_RES / 2) - sh_list.scissor_test_pos[1] -
+                                                                sh_list.scissor_test_size[1]},
                               {uint32_t(sh_list.scissor_test_size[0]), uint32_t(sh_list.scissor_test_size[1])}};
     api.vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
@@ -46,7 +46,7 @@ void _clear_region(const Ren::ApiContext &api, VkCommandBuffer cmd_buf, const En
 
     VkClearRect clear_rect = {};
     clear_rect.rect.offset = {sh_list.scissor_test_pos[0],
-                              (Eng::SHADOWMAP_RES / 2) - sh_list.scissor_test_pos[1] - sh_list.scissor_test_size[1]};
+                              int(Eng::SHADOWMAP_RES / 2) - sh_list.scissor_test_pos[1] - sh_list.scissor_test_size[1]};
     clear_rect.rect.extent = {uint32_t(sh_list.scissor_test_size[0]), uint32_t(sh_list.scissor_test_size[1])};
     clear_rect.baseArrayLayer = 0;
     clear_rect.layerCount = 1;

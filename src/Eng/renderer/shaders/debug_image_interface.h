@@ -11,12 +11,12 @@ struct Params {
     uint _unused;
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 8;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 8;
 
-const int INPUT_TEX_SLOT = 1;
+const uint INPUT_TEX_SLOT = 1;
 
-const int OUT_IMG_SLOT = 0;
+const uint OUT_IMG_SLOT = 0;
 
 INTERFACE_END
 

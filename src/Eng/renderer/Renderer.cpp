@@ -619,7 +619,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_exec_dr_str);
 
-    const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
+    const uint32_t cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
 
     if (!cur_scr_w || !cur_scr_h) {
@@ -718,7 +718,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         list.render_settings.taa_mode != taa_mode_ || cur_dof_enabled != dof_enabled_ || cached_rp_index_ != 0) {
         rendertarget_changed = true;
 
-        view_state_.out_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
+        view_state_.out_res = Ren::Vec2u{cur_scr_w, cur_scr_h};
         taa_mode_ = list.render_settings.taa_mode;
         dof_enabled_ = cur_dof_enabled;
         accumulated_frames_ = 0;
@@ -2088,7 +2088,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
                                       const Ren::eFormat format, const float gamma, const float min_exposure,
                                       const float max_exposure, const Ren::ImageHandle target, const bool compressed,
                                       const bool blit_to_backbuffer) {
-    const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
+    const uint32_t cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
 
     if (!cur_scr_w || !cur_scr_h) {
@@ -2106,7 +2106,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
     bool resolution_changed = false;
     if (cur_scr_w != view_state_.out_res[0] || cur_scr_h != view_state_.out_res[1]) {
         resolution_changed = true;
-        view_state_.out_res = view_state_.ren_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
+        view_state_.out_res = view_state_.ren_res = Ren::Vec2u{cur_scr_w, cur_scr_h};
     }
     view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
 
@@ -2269,7 +2269,7 @@ void Eng::Renderer::BlitImageTonemap(const Ren::ImageHandle result, const int w,
                                      const float gamma, const float min_exposure, const float max_exposure,
                                      const Ren::ImageHandle target, const bool compressed,
                                      const bool blit_to_backbuffer) {
-    const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
+    const uint32_t cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
 
     if (!cur_scr_w || !cur_scr_h) {
@@ -2287,7 +2287,7 @@ void Eng::Renderer::BlitImageTonemap(const Ren::ImageHandle result, const int w,
     bool resolution_changed = false;
     if (cur_scr_w != view_state_.out_res[0] || cur_scr_h != view_state_.out_res[1]) {
         resolution_changed = true;
-        view_state_.out_res = view_state_.ren_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
+        view_state_.out_res = view_state_.ren_res = Ren::Vec2u{cur_scr_w, cur_scr_h};
     }
     view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
 

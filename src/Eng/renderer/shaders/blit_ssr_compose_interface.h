@@ -9,12 +9,12 @@ struct Params {
     vec4 transform;
 };
 
-const int ALBEDO_TEX_SLOT = 0;
-const int SPEC_TEX_SLOT = 1;
-const int DEPTH_TEX_SLOT = 2;
-const int NORM_TEX_SLOT = 3;
-const int REFL_TEX_SLOT = 4;
-const int LTC_LUTS_TEX_SLOT = 5;
+const uint ALBEDO_TEX_SLOT = 0;
+const uint SPEC_TEX_SLOT = 1;
+const uint DEPTH_TEX_SLOT = 2;
+const uint NORM_TEX_SLOT = 3;
+const uint REFL_TEX_SLOT = 4;
+const uint LTC_LUTS_TEX_SLOT = 5;
 
 INTERFACE_END
 

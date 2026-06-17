@@ -138,7 +138,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 scr
     const f16vec3 center_normal_vs = normalize((g_shrd_data.view_from_world * vec4(center_normal_ws, 0.0)).xyz);
 
     vec3 motion_vector = texelFetch(g_velocity_tex, dispatch_thread_id, 0).xyz;
-    motion_vector.xy *= g_shrd_data.ren_res.zw;
+    motion_vector.xy *= g_shrd_data.fren_res.zw;
     const vec2 surf_repr_uv = center_uv - motion_vector.xy;
 
     const f16vec4 surf_history = textureLod(g_gi_hist_tex, surf_repr_uv, 0.0);

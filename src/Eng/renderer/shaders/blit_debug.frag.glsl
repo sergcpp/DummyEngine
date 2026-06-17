@@ -10,12 +10,12 @@ layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
     layout(offset = 16) vec4 g_clip_info;
-                        ivec2 g_res;
+                        uvec2 g_res;
                         float g_mode;
 };
 #else
 layout(location = 17) uniform vec4 g_clip_info;
-layout(location = 15) uniform ivec2 g_res;
+layout(location = 15) uniform uvec2 g_res;
 layout(location = 16) uniform float g_mode;
 #endif
 
@@ -28,12 +28,12 @@ void main() {
     depth = g_clip_info[0] / (depth * (g_clip_info[1] - g_clip_info[2]) + g_clip_info[2]);
 
     float k = log2(depth / g_clip_info[1]) / g_clip_info[3];
-    int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
+    uint slice = clamp(uint(k * float(ITEM_GRID_RES_Z)), 0u, ITEM_GRID_RES_Z - 1u);
 
-    int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / g_res.y) * ITEM_GRID_RES_X + (ix * ITEM_GRID_RES_X / g_res.x);
+    uint ix = uint(gl_FragCoord.x), iy = uint(gl_FragCoord.y);
+    uint cell_index = GetCellIndex(ix, iy, slice, g_res);
 
-    uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+    uvec2 cell_data = texelFetch(g_cells_buf, int(cell_index)).xy;
     uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
@@ -43,9 +43,9 @@ void main() {
         g_out_color = vec4(heatmap(float(dcount_and_pcount.x) * (1.0 / 8.0)), 0.85);
     }
 
-    int xy_cell = (iy * ITEM_GRID_RES_Y / g_res.y) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / g_res.x;
-    int xy_cell_right = (iy * ITEM_GRID_RES_Y / g_res.y) * ITEM_GRID_RES_X + (ix + 1) * ITEM_GRID_RES_X / g_res.x;
-    int xy_cell_up = ((iy + 1) * ITEM_GRID_RES_Y / g_res.y) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / g_res.x;
+    uint xy_cell = (iy * ITEM_GRID_RES_Y / g_res.y) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / g_res.x;
+    uint xy_cell_right = (iy * ITEM_GRID_RES_Y / g_res.y) * ITEM_GRID_RES_X + (ix + 1) * ITEM_GRID_RES_X / g_res.x;
+    uint xy_cell_up = ((iy + 1) * ITEM_GRID_RES_Y / g_res.y) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / g_res.x;
 
     // mark cell border
     if (xy_cell_right != xy_cell || xy_cell_up != xy_cell) {

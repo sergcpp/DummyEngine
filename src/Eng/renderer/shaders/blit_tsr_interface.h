@@ -17,12 +17,12 @@ struct Params {
     float downscale_factor;
 };
 
-const int CURR_NEAREST_TEX_SLOT = 0;
-const int CURR_LINEAR_TEX_SLOT = 1;
-const int HIST_TEX_SLOT = 2;
-const int DILATED_DEPTH_TEX_SLOT = 4;
-const int DILATED_VELOCITY_TEX_SLOT = 5;
-const int DISOCCLUSION_MASK_TEX_SLOT = 6;
+const uint CURR_NEAREST_TEX_SLOT = 0;
+const uint CURR_LINEAR_TEX_SLOT = 1;
+const uint HIST_TEX_SLOT = 2;
+const uint DILATED_DEPTH_TEX_SLOT = 4;
+const uint DILATED_VELOCITY_TEX_SLOT = 5;
+const uint DISOCCLUSION_MASK_TEX_SLOT = 6;
 
 INTERFACE_END
 

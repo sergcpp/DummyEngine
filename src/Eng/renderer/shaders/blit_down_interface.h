@@ -10,7 +10,7 @@ struct Params {
     vec4 resolution;
 };
 
-const int SRC_TEX_SLOT = 0;
+const uint SRC_TEX_SLOT = 0;
 
 INTERFACE_END
 

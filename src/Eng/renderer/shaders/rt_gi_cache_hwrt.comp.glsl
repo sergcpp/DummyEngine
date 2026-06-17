@@ -107,20 +107,20 @@ vec3 LightVisibility(const _light_item_t litem, const vec3 P) {
 }
 
 void main() {
-    const int ray_index = int(gl_GlobalInvocationID.x);
-    const int probe_plane_index = int(gl_GlobalInvocationID.y);
-    const int plane_index = int(gl_GlobalInvocationID.z);
+    const uint ray_index = gl_GlobalInvocationID.x;
+    const uint probe_plane_index = gl_GlobalInvocationID.y;
+    const uint plane_index = gl_GlobalInvocationID.z;
 
-    int probe_index = (plane_index * PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z) + probe_plane_index;
+    uint probe_index = (plane_index * PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z) + probe_plane_index;
 
-    const ivec3 probe_coords = get_probe_coords(probe_index);
+    const uvec3 probe_coords = get_probe_coords(probe_index);
     probe_index = get_scrolling_probe_index(probe_coords, g_params.grid_scroll.xyz);
 
-    const ivec3 tex_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
-    const bool is_inactive = ray_index >= PROBE_FIXED_RAYS_COUNT && texelFetch(g_offset_tex, tex_coords, 0).w < 0.5;
+    const uvec3 tex_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
+    const bool is_inactive = ray_index >= PROBE_FIXED_RAYS_COUNT && texelFetch(g_offset_tex, ivec3(tex_coords), 0).w < 0.5;
 #ifdef PARTIAL
-    const ivec3 oct_index = get_probe_coords(probe_index) & 1;
-    const bool is_wrong_oct = (oct_index.x | (oct_index.y << 1) | (oct_index.z << 2)) != g_params.oct_index;
+    const uvec3 oct_index = get_probe_coords(probe_index) & 1u;
+    const bool is_wrong_oct = (oct_index.x | (oct_index.y << 1u) | (oct_index.z << 2u)) != g_params.oct_index;
 #else
     const bool is_wrong_oct = false;
 #endif
@@ -131,7 +131,7 @@ void main() {
 
     const vec3 probe_pos = get_probe_pos_ws(g_params.volume_index, probe_coords, g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz, g_offset_tex);
     const vec3 probe_ray_dir = get_probe_ray_dir(ray_index, g_params.quat_rot);
-    const ivec3 output_coords = get_ray_data_coords(ray_index, probe_index);
+    const uvec3 output_coords = get_ray_data_coords(ray_index, probe_index);
 
     rayQueryEXT rq;
 
@@ -145,7 +145,7 @@ void main() {
         float pdf_factor;
         const int li = PickLightSource(probe_pos, g_light_nodes_buf, g_params.stoch_lights_count, light_pick_rand, pdf_factor);
         if (li != -1) {
-            const _light_item_t litem = FetchLightItem(g_stoch_lights_buf, li);
+            const _light_item_t litem = FetchLightItem(g_stoch_lights_buf, uint(li));
             const bool is_doublesided = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DOUBLESIDED_BIT) != 0;
 
             const vec3 p1 = litem.pos_and_radius.xyz,
@@ -227,8 +227,8 @@ void main() {
             }
         }
 
-        imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 1 * PROBE_VOLUME_RES_Y), vec4(compress_hdr(out_color, g_shrd_data.cam_pos_and_exp.w), 0));
-        imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES_Y), vec4(out_dir, 0));
+        imageStore(g_out_ray_data_img, ivec3(output_coords + uvec3(0, 0, 1 * PROBE_VOLUME_RES_Y)), vec4(compress_hdr(out_color, g_shrd_data.cam_pos_and_exp.w), 0));
+        imageStore(g_out_ray_data_img, ivec3(output_coords + uvec3(0, 0, 2 * PROBE_VOLUME_RES_Y)), vec4(out_dir, 0));
     }
 #endif
 
@@ -467,22 +467,22 @@ void main() {
 
         const float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
         const float k = log2(lin_depth / g_shrd_data.rt_clip_info[1]) / g_shrd_data.rt_clip_info[3];
-        const int tile_x = clamp(int(projected_p.x * ITEM_GRID_RES_X), 0, ITEM_GRID_RES_X - 1),
-                  tile_y = clamp(int(projected_p.y * ITEM_GRID_RES_Y), 0, ITEM_GRID_RES_Y - 1),
-                  tile_z = clamp(int(k * ITEM_GRID_RES_Z), 0, ITEM_GRID_RES_Z - 1);
+        const uint tile_x = clamp(uint(projected_p.x * ITEM_GRID_RES_X), 0u, ITEM_GRID_RES_X - 1u),
+                   tile_y = clamp(uint(projected_p.y * ITEM_GRID_RES_Y), 0u, ITEM_GRID_RES_Y - 1u),
+                   tile_z = clamp(uint(k * ITEM_GRID_RES_Z), 0u, ITEM_GRID_RES_Z - 1u);
 
-        const int cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
+        const uint cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
 #if !defined(NO_SUBGROUP)
         [[dont_flatten]] if (subgroupAllEqual(cell_index)) {
-            const int s_first_cell_index = subgroupBroadcastFirst(cell_index);
-            const uvec2 s_cell_data = texelFetch(g_cells_buf, s_first_cell_index).xy;
+            const uint s_first_cell_index = subgroupBroadcastFirst(cell_index);
+            const uvec2 s_cell_data = texelFetch(g_cells_buf, int(s_first_cell_index)).xy;
             const uvec2 s_offset_and_lcount = uvec2(bitfieldExtract(s_cell_data.x, 0, 24), bitfieldExtract(s_cell_data.x, 24, 8));
             const uvec2 s_dcount_and_pcount = uvec2(bitfieldExtract(s_cell_data.y, 0, 8), bitfieldExtract(s_cell_data.y, 8, 8));
             for (uint i = s_offset_and_lcount.x; i < s_offset_and_lcount.x + s_offset_and_lcount.y; ++i) {
                 const uint s_item_data = texelFetch(g_items_buf, int(i)).x;
-                const int s_li = int(bitfieldExtract(s_item_data, 0, 12));
+                const uint s_li = bitfieldExtract(s_item_data, 0, 12);
 
-                const _light_item_t litem = g_lights[subgroupBroadcastFirst(s_li)];
+                const _light_item_t litem = g_lights[s_li];
 
                 const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
 
@@ -500,13 +500,13 @@ void main() {
         } else
 #endif // !defined(NO_SUBGROUP)
         {
-            const uvec2 v_cell_data = texelFetch(g_cells_buf, cell_index).xy;
+            const uvec2 v_cell_data = texelFetch(g_cells_buf, int(cell_index)).xy;
             const uvec2 v_offset_and_lcount = uvec2(bitfieldExtract(v_cell_data.x, 0, 24), bitfieldExtract(v_cell_data.x, 24, 8));
             const uvec2 v_dcount_and_pcount = uvec2(bitfieldExtract(v_cell_data.y, 0, 8), bitfieldExtract(v_cell_data.y, 8, 8));
             for (uint i = v_offset_and_lcount.x; i < v_offset_and_lcount.x + v_offset_and_lcount.y; ) {
                 const uint v_item_data = texelFetch(g_items_buf, int(i)).x;
-                const int v_li = int(bitfieldExtract(v_item_data, 0, 12));
-                const int s_li = subgroupMin(v_li);
+                const uint v_li = bitfieldExtract(v_item_data, 0, 12);
+                const uint s_li = subgroupMin(v_li);
                 [[flatten]] if (s_li == v_li) {
                     ++i;
                     const _light_item_t litem = g_lights[s_li];
@@ -553,7 +553,7 @@ void main() {
         final_distance = backfacing ? -hit_t : hit_t;
         final_total += light_total;
 
-        for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+        for (uint i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
             // NOTE: We use previous state of probes here
             const float weight = get_volume_blend_weight(P, g_shrd_data.prev_probe_volumes[i].scroll.xyz, g_shrd_data.prev_probe_volumes[i].origin.xyz, g_shrd_data.prev_probe_volumes[i].spacing.xyz);
             if (weight > 0.0) {
@@ -578,5 +578,5 @@ void main() {
     }
 
     final_total = compress_hdr(final_total, g_shrd_data.cam_pos_and_exp.w);
-    imageStore(g_out_ray_data_img, output_coords, vec4(final_total, final_distance));
+    imageStore(g_out_ray_data_img, ivec3(output_coords), vec4(final_total, final_distance));
 }

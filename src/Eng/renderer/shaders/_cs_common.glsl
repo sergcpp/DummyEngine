@@ -3,13 +3,16 @@
 
 #include "_common.glsl"
 
+uint GetCellIndex(const uint ux, const uint uy, const uint slice, const uvec2 res) {
+    uint ret = slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y;
 #if defined(VULKAN)
-#define GetCellIndex(ix, iy, slice, res) \
-    (slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + ((int(res.y) - 1 - iy) * ITEM_GRID_RES_Y / int(res.y)) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / int(res.x))
+    ret += ((res.y - 1u - uy) * ITEM_GRID_RES_Y / res.y) * ITEM_GRID_RES_X;
 #else
-#define GetCellIndex(ix, iy, slice, res) \
-    (slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / int(res.y)) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / int(res.x))
+    ret += (uy * ITEM_GRID_RES_Y / res.y) * ITEM_GRID_RES_X;
 #endif
+    ret += ux * ITEM_GRID_RES_X / res.x;
+    return ret;
+}
 
 // Rounds value to the nearest multiple of 8
 uvec2 RoundUp8(uvec2 value) {

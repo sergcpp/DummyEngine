@@ -33,7 +33,7 @@ void Eng::ExVolVoxelize::Execute_HWRT(const FgContext &fg) {
                                      {Ren::eBindTarget::ImageRW, Fog::OUT_FR_SCATTER_IMG_SLOT, out_scatter}};
 
     const Ren::ImageCold &img_cold = fg.storages().images[out_emission].second;
-    const auto froxel_res = Ren::Vec4i{img_cold.params.w, img_cold.params.h, img_cold.params.d, 0};
+    const auto froxel_res = Ren::Vec4u{img_cold.params.w, img_cold.params.h, img_cold.params.d, 0};
 
     const Ren::Vec3u grp_count = Ren::Vec3u(Ren::DivCeil(froxel_res[0], Fog::GRP_SIZE_2D_X),
                                             Ren::DivCeil(froxel_res[1], Fog::GRP_SIZE_2D_Y), 1u);

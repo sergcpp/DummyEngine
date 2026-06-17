@@ -30,14 +30,14 @@ layout (early_fragment_tests) in;
 
 void main() {
     // https://on-demand.gputechconf.com/gtc/2014/presentations/S4385-order-independent-transparency-opengl.pdf
-    int frag_index = int(gl_FragCoord.y) * g_shrd_data.ires_and_ifres.x + int(gl_FragCoord.x);
+    uint frag_index = uint(gl_FragCoord.y) * g_shrd_data.uren_res.x + uint(gl_FragCoord.x);
     uint ztest = floatBitsToUint(gl_FragCoord.z);
     for (int i = 0; i < OIT_LAYERS_COUNT; ++i) {
-        const uint zold = imageAtomicMax(g_out_depth, frag_index, ztest);
+        const uint zold = imageAtomicMax(g_out_depth, int(frag_index), ztest);
         if (zold == 0u || zold == ztest) {
             break;
         }
         ztest = min(zold, ztest);
-        frag_index += g_shrd_data.ires_and_ifres.x * g_shrd_data.ires_and_ifres.y;
+        frag_index += g_shrd_data.uren_res.x * g_shrd_data.uren_res.y;
     }
 }

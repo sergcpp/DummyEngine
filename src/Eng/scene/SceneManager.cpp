@@ -839,7 +839,7 @@ void Eng::SceneManager::ReleaseEnvMap(const bool immediately) {
 
 void Eng::SceneManager::AllocGICache() {
     float probe_volume_spacing = 0.5f;
-    for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+    for (uint32_t i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         probe_volume_t &volume = scene_data_.persistent_data->probe_volumes.emplace_back();
         volume.origin = volume.prev_origin = Ren::Vec3f{0.0f};
         volume.spacing = volume.prev_spacing = Ren::Vec3f{probe_volume_spacing};

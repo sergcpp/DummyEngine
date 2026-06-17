@@ -125,7 +125,7 @@ vec3 ShadeHitPoint(const vec2 uv, const vec4 norm_rough, const vec3 hit_point_vs
 
     const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
-    for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+    for (uint i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
         if (weight > 0.0) {
             if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
@@ -157,7 +157,7 @@ void main() {
     UnpackRayCoords(packed_coords, ray_coords, copy_horizontal, copy_vertical, copy_diagonal);
 
     const ivec2 pix_uvs = ivec2(ray_coords);
-    const vec2 norm_uvs = (vec2(pix_uvs) + 0.5) * g_shrd_data.ren_res.zw;
+    const vec2 norm_uvs = (vec2(pix_uvs) + 0.5) * g_shrd_data.fren_res.zw;
 
     vec4 norm_rough = UnpackNormalAndRoughness(texelFetch(g_normal_tex, pix_uvs, 0).x);
     const float roughness = norm_rough.w * norm_rough.w;
@@ -187,13 +187,13 @@ void main() {
     const vec3 refl_ray_ws = UnpackUnitVector(oct_dir);
     const vec3 refl_ray_vs = normalize((g_shrd_data.view_from_world * vec4(refl_ray_ws, 0.0)).xyz);
 
-    int frag_index = int(layer_index) * g_shrd_data.ires_and_ifres.x * g_shrd_data.ires_and_ifres.y;
-    frag_index += int(ray_coords.y) * g_shrd_data.ires_and_ifres.x + int(ray_coords.x);
-    const float depth = uintBitsToFloat(texelFetch(g_oit_depth_buf, frag_index).x);
+    uint frag_index = layer_index * g_shrd_data.uren_res.x * g_shrd_data.uren_res.y;
+    frag_index += ray_coords.y * g_shrd_data.uren_res.x + ray_coords.x;
+    const float depth = uintBitsToFloat(texelFetch(g_oit_depth_buf, int(frag_index)).x);
     const float roughness = 0.0;
 
     const ivec2 pix_uvs = ivec2(ray_coords);
-    const vec2 norm_uvs = (vec2(ray_coords) + 0.5) * g_shrd_data.ren_res.zw;
+    const vec2 norm_uvs = (vec2(ray_coords) + 0.5) * g_shrd_data.fren_res.zw;
     const vec3 ray_origin_ss = vec3(norm_uvs, depth);
     const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy - 1.0, ray_origin_ss.z, 1.0);
     const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);

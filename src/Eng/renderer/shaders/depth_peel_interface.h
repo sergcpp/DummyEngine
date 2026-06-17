@@ -5,7 +5,7 @@
 
 INTERFACE_START(DepthPeel)
 
-const int OUT_IMG_BUF_SLOT = 0;
+const uint OUT_IMG_BUF_SLOT = 0;
 
 INTERFACE_END
 

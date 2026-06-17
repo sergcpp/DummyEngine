@@ -30,6 +30,12 @@
 
 #define length2(x) dot(x, x)
 
+uint fast_div(const uint x, const uint magic) {
+	uint msb, lsb;
+	umulExtended(x, magic, msb, lsb);
+	return msb;
+}
+
 // SmoothStep
 // REQUIREMENT: a < b
 #define _SmoothStep01( x ) ( x * x * ( 3.0 - 2.0 * x ) )
@@ -420,8 +426,9 @@ struct shared_data_t {
     shadow_map_region_t shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     vec4 sun_dir, sun_col, sun_col_point, sun_col_point_sh, env_col, taa_info, frustum_info;
     vec4 clip_info, rt_clip_info, cam_pos_and_exp;
-    vec4 ren_res, transp_params_and_time;
-    ivec4 ires_and_ifres;
+    uvec4 uren_res;
+    vec4 fren_res, transp_params_and_time;
+    uvec4 uout_res;
     vec4 wind_scroll, wind_scroll_prev;
     uvec4 item_counts;
     vec4 ambient_hack;

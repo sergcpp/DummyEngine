@@ -54,11 +54,13 @@ void Eng::ExDepthHierarchy::Execute(const FgContext &fg) {
         fg.log()->Error("Failed to initialize temp upload buffer");
         return;
     }
-    SCOPE_EXIT({ Buffer_Destroy(api, temp_stage_buffer_main, temp_stage_buffer_cold); }) {
+    SCOPE_EXIT({ Buffer_Destroy(api, temp_stage_buffer_main, temp_stage_buffer_cold); })
+    
+    { // Update parameters
         DepthHierarchy::Params *stage_data =
             reinterpret_cast<DepthHierarchy::Params *>(Buffer_Map(api, temp_stage_buffer_main, temp_stage_buffer_cold));
         stage_data->depth_size =
-            Ren::Vec4i{view_state_->ren_res[0], view_state_->ren_res[1], output_cold.params.mip_count, grp_x * grp_y};
+            Ren::Vec4u{view_state_->ren_res[0], view_state_->ren_res[1], output_cold.params.mip_count, grp_x * grp_y};
         stage_data->clip_info = view_state_->clip_info;
 
         Buffer_Unmap(api, temp_stage_buffer_main, temp_stage_buffer_cold);

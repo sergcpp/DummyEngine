@@ -51,12 +51,12 @@ layout(location = LOC_OUT_SPEC) out vec4 g_out_specular;
 void main() {
     float lin_depth = g_shrd_data.clip_info[0] / (gl_FragCoord.z * (g_shrd_data.clip_info[1] - g_shrd_data.clip_info[2]) + g_shrd_data.clip_info[2]);
     float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
+    uint slice = clamp(uint(k * float(ITEM_GRID_RES_Z)), 0u, ITEM_GRID_RES_Z - 1);
 
-    int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / int(g_shrd_data.ren_res.y)) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / int(g_shrd_data.ren_res.x);
+    uint ix = uint(gl_FragCoord.x), iy = uint(gl_FragCoord.y);
+    uint cell_index = slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / g_shrd_data.uren_res.y) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / g_shrd_data.uren_res.x;
 
-    uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+    uvec2 cell_data = texelFetch(g_cells_buf, int(cell_index)).xy;
     uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
@@ -98,11 +98,11 @@ void main() {
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         uint item_data = texelFetch(g_items_buf, int(i)).x;
-        int li = int(bitfieldExtract(item_data, 0, 12));
+        uint li = bitfieldExtract(item_data, 0, 12);
 
-        vec4 pos_and_radius = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 0);
-        vec4 col_and_index = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 1);
-        vec4 dir_and_spot = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 2);
+        vec4 pos_and_radius = texelFetch(g_lights_buf, int(li * LIGHTS_BUF_STRIDE + 0));
+        vec4 col_and_index = texelFetch(g_lights_buf, int(li * LIGHTS_BUF_STRIDE + 1));
+        vec4 dir_and_spot = texelFetch(g_lights_buf, int(li * LIGHTS_BUF_STRIDE + 2));
 
         vec3 L = pos_and_radius.xyz - g_vtx_pos;
         float dist = length(L);
@@ -159,7 +159,7 @@ void main() {
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
         uint item_data = texelFetch(g_items_buf, int(i)).x;
-        int pi = int(bitfieldExtract(item_data, 24, 8));
+        uint pi = bitfieldExtract(item_data, 24, 8);
 
         float dist = distance(g_shrd_data.probes[pi].pos_and_radius.xyz, g_vtx_pos);
         float fade = 1.0 - smoothstep(0.9, 1.0, dist / g_shrd_data.probes[pi].pos_and_radius.w);
@@ -200,7 +200,7 @@ void main() {
 
     vec3 sun_diffuse = textureBindless(g_sss_tex, vec2(N_dot_L * 0.5 + 0.5, curvature)).xyz;
 
-    vec2 ao_uvs = (vec2(ix, iy) + 0.5) * g_shrd_data.ren_res.zw;
+    vec2 ao_uvs = (vec2(ix, iy) + 0.5) * g_shrd_data.fren_res.zw;
     float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).x;
     vec3 base_color = albedo_color * (g_shrd_data.sun_col.xyz * sun_diffuse * visibility + ambient_occlusion * indirect_col + additional_light);
 

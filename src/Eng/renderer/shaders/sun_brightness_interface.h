@@ -5,17 +5,17 @@
 
 INTERFACE_START(SunBrightness)
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 8;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 8;
 
-const int TRANSMITTANCE_LUT_SLOT = 1;
-const int MULTISCATTER_LUT_SLOT = 2;
-const int MOON_TEX_SLOT = 3;
-const int WEATHER_TEX_SLOT = 4;
-const int CIRRUS_TEX_SLOT = 5;
-const int NOISE3D_TEX_SLOT = 6;
+const uint TRANSMITTANCE_LUT_SLOT = 1;
+const uint MULTISCATTER_LUT_SLOT = 2;
+const uint MOON_TEX_SLOT = 3;
+const uint WEATHER_TEX_SLOT = 4;
+const uint CIRRUS_TEX_SLOT = 5;
+const uint NOISE3D_TEX_SLOT = 6;
 
-const int OUT_BUF_SLOT = 0;
+const uint OUT_BUF_SLOT = 0;
 
 INTERFACE_END
 

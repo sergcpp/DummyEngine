@@ -12,19 +12,19 @@ struct Params {
     vec4 softness_factor;
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 8;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 8;
 
-const int DEPTH_TEX_SLOT = 1;
-const int DEPTH_LIN_TEX_SLOT = 2;
-const int ALBEDO_TEX_SLOT = 3;
-const int NORM_TEX_SLOT = 4;
-const int SHADOW_DEPTH_TEX_SLOT = 5;
-const int SHADOW_DEPTH_TEX_VAL_SLOT = 6;
-const int SHADOW_COLOR_TEX_SLOT = 7;
-const int RT_SHADOW_TEX_SLOT = 8;
+const uint DEPTH_TEX_SLOT = 1;
+const uint DEPTH_LIN_TEX_SLOT = 2;
+const uint ALBEDO_TEX_SLOT = 3;
+const uint NORM_TEX_SLOT = 4;
+const uint SHADOW_DEPTH_TEX_SLOT = 5;
+const uint SHADOW_DEPTH_TEX_VAL_SLOT = 6;
+const uint SHADOW_COLOR_TEX_SLOT = 7;
+const uint RT_SHADOW_TEX_SLOT = 8;
 
-const int OUT_SHADOW_IMG_SLOT = 0;
+const uint OUT_SHADOW_IMG_SLOT = 0;
 
 INTERFACE_END
 

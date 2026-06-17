@@ -6,17 +6,17 @@
 INTERFACE_START(OITDebug)
 
 struct Params {
-    ivec2 img_size;
-    ivec2 _pad0;
-    int layer_index;
+    uvec2 img_size;
+    uvec2 _pad0;
+    uint layer_index;
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 8;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 8;
 
-const int OIT_DEPTH_BUF_SLOT = 1;
+const uint OIT_DEPTH_BUF_SLOT = 1;
 
-const int OUT_IMG_SLOT = 0;
+const uint OUT_IMG_SLOT = 0;
 
 INTERFACE_END
 

@@ -77,17 +77,17 @@ vec3 LightVisibility(const _light_item_t litem, const vec3 P) {
 layout (local_size_x = GRP_SIZE_3D_X, local_size_y = GRP_SIZE_3D_Y, local_size_z = GRP_SIZE_3D_Z) in;
 
 void main() {
-    const ivec3 icoord = ivec3(gl_GlobalInvocationID.xyz) + g_params.thread_offset;
-    if (any(greaterThanEqual(icoord, g_params.froxel_res.xyz))) {
+    const uvec3 ucoord = gl_GlobalInvocationID.xyz + g_params.thread_offset;
+    if (any(greaterThanEqual(ucoord, g_params.froxel_res.xyz))) {
         return;
     }
 
-    const vec2 norm_uvs = (vec2(icoord.xy) + 0.5) / g_params.froxel_res.xy;
+    const vec2 norm_uvs = (vec2(ucoord.xy) + 0.5) / g_params.froxel_res.xy;
 
     const uint px_hash = hash((gl_GlobalInvocationID.x << 16) | gl_GlobalInvocationID.y);
-    const float offset_rand = textureLod(g_stbn_tex, vec3((vec2(icoord.xy) + 0.5) / 64.0, float(g_params.frame_index % 64)), 0.0).x;
+    const float offset_rand = textureLod(g_stbn_tex, vec3((vec2(ucoord.xy) + 0.5) / 64.0, float(g_params.frame_index % 64)), 0.0).x;
 
-    const vec3 pos_uvw = froxel_to_uvw(icoord, offset_rand, g_params.froxel_res.xyz);
+    const vec3 pos_uvw = froxel_to_uvw(ucoord, offset_rand, g_params.froxel_res.xyz);
     const vec4 pos_cs = vec4(2.0 * pos_uvw.xy - 1.0, pos_uvw.z, 1.0);
     const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
@@ -96,23 +96,23 @@ void main() {
 
     vec3 light_total = vec3(0.0);
 
-    vec4 emission_density = imageLoad(g_out_fr_emission_img, icoord);
-    vec4 scatter_absorption = imageLoad(g_out_fr_scatter_img, icoord);
+    vec4 emission_density = imageLoad(g_out_fr_emission_img, ivec3(ucoord));
+    vec4 scatter_absorption = imageLoad(g_out_fr_scatter_img, ivec3(ucoord));
 
     if (emission_density.w > 0.0) {
         // Artificial lights
         const float lin_depth = LinearizeDepth(pos_uvw.z, g_shrd_data.clip_info);
         const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-        const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
-        const int cell_index = GetCellIndex(icoord.x, icoord.y, slice, g_params.froxel_res.xy);
+        const uint slice = clamp(uint(k * float(ITEM_GRID_RES_Z)), 0u, ITEM_GRID_RES_Z - 1u);
+        const uint cell_index = GetCellIndex(ucoord.x, ucoord.y, slice, g_params.froxel_res.xy);
     #if !defined(NO_SUBGROUP)
         [[dont_flatten]] if (subgroupAllEqual(cell_index)) {
-            const int s_first_cell_index = subgroupBroadcastFirst(cell_index);
-            const uvec2 s_cell_data = texelFetch(g_cells_buf, s_first_cell_index).xy;
+            const uint s_first_cell_index = subgroupBroadcastFirst(cell_index);
+            const uvec2 s_cell_data = texelFetch(g_cells_buf, int(s_first_cell_index)).xy;
             const uvec2 s_offset_and_lcount = uvec2(bitfieldExtract(s_cell_data.x, 0, 24), bitfieldExtract(s_cell_data.x, 24, 8));
             for (uint i = s_offset_and_lcount.x; i < s_offset_and_lcount.x + s_offset_and_lcount.y; ++i) {
                 const uint s_item_data = texelFetch(g_items_buf, int(i)).x;
-                const int s_li = int(bitfieldExtract(s_item_data, 0, 12));
+                const uint s_li = bitfieldExtract(s_item_data, 0, 12);
 
                 const _light_item_t litem = FetchLightItem(g_lights_buf, s_li);
                 const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
@@ -134,12 +134,12 @@ void main() {
         } else
     #endif // !defined(NO_SUBGROUP)
         {
-            const uvec2 v_cell_data = texelFetch(g_cells_buf, cell_index).xy;
+            const uvec2 v_cell_data = texelFetch(g_cells_buf, int(cell_index)).xy;
             const uvec2 v_offset_and_lcount = uvec2(bitfieldExtract(v_cell_data.x, 0, 24), bitfieldExtract(v_cell_data.x, 24, 8));
             for (uint i = v_offset_and_lcount.x; i < v_offset_and_lcount.x + v_offset_and_lcount.y; ) {
                 const uint v_item_data = texelFetch(g_items_buf, int(i)).x;
-                const int v_li = int(bitfieldExtract(v_item_data, 0, 12));
-                const int s_li = subgroupMin(v_li);
+                const uint v_li = bitfieldExtract(v_item_data, 0, 12);
+                const uint s_li = subgroupMin(v_li);
                 [[flatten]] if (s_li == v_li) {
                     ++i;
                     const _light_item_t litem = FetchLightItem(g_lights_buf, s_li);
@@ -198,7 +198,7 @@ void main() {
         }
 
     #ifdef GI_CACHE
-        for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+        for (uint i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
             const float weight = get_volume_blend_weight(pos_ws, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
             if (weight > 0.0 || i == PROBE_VOLUMES_COUNT - 1) {
                 const vec3 avg_radiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, pos_ws, vec3(0.0), view_ray_ws,
@@ -226,7 +226,7 @@ void main() {
 #endif
 
     { // history accumulation
-        const vec3 pos_uvw_no_offset = froxel_to_uvw(icoord, 0.5, g_params.froxel_res.xyz);
+        const vec3 pos_uvw_no_offset = froxel_to_uvw(ucoord, 0.5, g_params.froxel_res.xyz);
         const vec4 pos_cs_no_offset = vec4(2.0 * pos_uvw_no_offset.xy - 1.0, pos_uvw_no_offset.z, 1.0);
         const vec3 pos_ws_no_offset = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs_no_offset);
 
@@ -264,6 +264,6 @@ void main() {
         }
     }
 
-    imageStore(g_out_fr_emission_img, icoord, emission_density);
-    imageStore(g_out_fr_scatter_img, icoord, scatter_absorption);
+    imageStore(g_out_fr_emission_img, ivec3(ucoord), emission_density);
+    imageStore(g_out_fr_scatter_img, ivec3(ucoord), scatter_absorption);
 }

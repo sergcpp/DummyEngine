@@ -942,8 +942,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         }
         { // 8x8 average reflections texture
             FgImgDesc desc;
-            desc.w = Ren::DivCeil(view_state_.ren_res[0], 8);
-            desc.h = Ren::DivCeil(view_state_.ren_res[1], 8);
+            desc.w = Ren::DivCeil(view_state_.ren_res[0], 8u);
+            desc.h = Ren::DivCeil(view_state_.ren_res[1], 8u);
             desc.format = Ren::eFormat::RGBA16F;
             desc.sampling.filter = Ren::eFilter::Bilinear;
             desc.sampling.wrap = Ren::eWrap::ClampToEdge;

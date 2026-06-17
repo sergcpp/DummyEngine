@@ -10,8 +10,8 @@ struct Params {
     vec4 froxel_res;
 };
 
-const int DEPTH_TEX_SLOT = 0;
-const int FROXELS_TEX_SLOT = 1;
+const uint DEPTH_TEX_SLOT = 0;
+const uint FROXELS_TEX_SLOT = 1;
 
 INTERFACE_END
 

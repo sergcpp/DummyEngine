@@ -13,19 +13,19 @@ struct Params {
     uint tile_count;
 };
 
-const int GRP_SIZE_X = 8;
-const int GRP_SIZE_Y = 8;
+const uint GRP_SIZE_X = 8;
+const uint GRP_SIZE_Y = 8;
 
-const int DEPTH_TEX_SLOT = 2;
-const int SPEC_TEX_SLOT = 3;
-const int VARIANCE_TEX_SLOT = 4;
-const int RAY_COUNTER_SLOT = 5;
-const int RAY_LIST_SLOT = 6;
-const int TILE_LIST_SLOT = 7;
-const int BN_PMJ_SEQ_BUF_SLOT = 8;
+const uint DEPTH_TEX_SLOT = 2;
+const uint SPEC_TEX_SLOT = 3;
+const uint VARIANCE_TEX_SLOT = 4;
+const uint RAY_COUNTER_SLOT = 5;
+const uint RAY_LIST_SLOT = 6;
+const uint TILE_LIST_SLOT = 7;
+const uint BN_PMJ_SEQ_BUF_SLOT = 8;
 
-const int OUT_GI_IMG_SLOT = 0;
-const int OUT_NOISE_IMG_SLOT = 1;
+const uint OUT_GI_IMG_SLOT = 0;
+const uint OUT_NOISE_IMG_SLOT = 1;
 
 INTERFACE_END
 

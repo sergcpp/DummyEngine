@@ -608,7 +608,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             }
 
             const Ren::ImageCold &img_cold = fg.storages().images[out_emission].second;
-            const auto froxel_res = Ren::Vec4i{img_cold.params.w, img_cold.params.h, img_cold.params.d, 0};
+            const auto froxel_res = Ren::Vec4u{img_cold.params.w, img_cold.params.h, img_cold.params.d, 0};
 
             const Ren::Vec3u grp_count = Ren::Vec3u(Ren::DivCeil(froxel_res[0], Fog::GRP_SIZE_3D_X) + 1,
                                                     Ren::DivCeil(froxel_res[1], Fog::GRP_SIZE_3D_Y) + 1,
@@ -676,7 +676,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
                                              {Trg::ImageRW, Fog::OUT_FR_FINAL_IMG_SLOT, output}};
 
             const Ren::ImageCold &img_cold = fg.storages().images[output].second;
-            const auto froxel_res = Ren::Vec4i{img_cold.params.w, img_cold.params.h, img_cold.params.d, 0};
+            const auto froxel_res = Ren::Vec4u{img_cold.params.w, img_cold.params.h, img_cold.params.d, 0};
 
             const Ren::Vec3u grp_count = Ren::Vec3u(Ren::DivCeil(froxel_res[0], Fog::GRP_SIZE_2D_X),
                                                     Ren::DivCeil(froxel_res[1], Fog::GRP_SIZE_2D_Y), 1);

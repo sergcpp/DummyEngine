@@ -86,8 +86,8 @@ void Eng::ExSampleLights::Execute_SWRT(const FgContext &fg) {
         {Ren::eBindTarget::ImageRW, SampleLights::OUT_DIFFUSE_IMG_SLOT, out_diffuse},
         {Ren::eBindTarget::ImageRW, SampleLights::OUT_SPECULAR_IMG_SLOT, out_specular}};
 
-    const Ren::Vec3u grp_count = Ren::Vec3u(Ren::DivCeil(view_state_->ren_res[0], SampleLights::GRP_SIZE_X),
-                                            Ren::DivCeil(view_state_->ren_res[1], SampleLights::GRP_SIZE_Y), 1u);
+    const auto grp_count = Ren::Vec3u(Ren::DivCeil(view_state_->ren_res[0], SampleLights::GRP_SIZE_X),
+                                      Ren::DivCeil(view_state_->ren_res[1], SampleLights::GRP_SIZE_Y), 1u);
 
     // TODO: Avoid accessing cold data
     const Ren::BufferCold &lights_cold = fg.storages().buffers[lights].second;

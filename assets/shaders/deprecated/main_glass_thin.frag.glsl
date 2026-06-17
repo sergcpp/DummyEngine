@@ -59,12 +59,12 @@ void main() {
     float fresnel = saturate(R0 + (1.0 - R0) * factor);
 
     float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
+    uint slice = clamp(uint(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
-    int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.ren_res.xy);
+    uint ix = uint(gl_FragCoord.x), iy = uint(gl_FragCoord.y);
+    uint cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.uren_res.xy);
 
-    uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+    uvec2 cell_data = texelFetch(g_cells_buf, int(cell_index)).xy;
     uint offset = bitfieldExtract(cell_data.x, 0, 24);
     uint pcount = bitfieldExtract(cell_data.y, 8, 8);
 

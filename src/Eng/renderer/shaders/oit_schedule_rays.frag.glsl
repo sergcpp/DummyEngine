@@ -70,24 +70,24 @@ void main() {
     const float specular = g_mat_params0.z;
     const float transmission = g_mat_params2.y;
     if ((specular > 0.0 || transmission > 0.0) && alpha > 0.0 && all(equal((ivec2(gl_FragCoord.xy) % 2), ivec2(0)))) {
-        int frag_index = int(gl_FragCoord.y) * g_shrd_data.ires_and_ifres.x + int(gl_FragCoord.x);
+        uint frag_index = uint(gl_FragCoord.y) * g_shrd_data.uren_res.x + uint(gl_FragCoord.x);
         const uint ztest = floatBitsToUint(gl_FragCoord.z);
         int layer_index = -1;
         for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
-            const uint zval = texelFetch(g_oit_depth_buf, frag_index).x;
+            const uint zval = texelFetch(g_oit_depth_buf, int(frag_index)).x;
             if (zval == ztest) {
                 layer_index = i;
                 break;
             }
-            frag_index += g_shrd_data.ires_and_ifres.x * g_shrd_data.ires_and_ifres.y;
+            frag_index += g_shrd_data.uren_res.x * g_shrd_data.uren_res.y;
         }
         if (layer_index != -1) {
-            const int frag_lo_x = (int(gl_FragCoord.x) / 2), frag_lo_y = (int(gl_FragCoord.y) / 2);
-            int frag_lo_index = frag_lo_y * ((((g_shrd_data.ires_and_ifres.x + 1) / 2) + 31) / 32) + ((frag_lo_x + 31) / 32);
-            frag_lo_index += layer_index * ((((g_shrd_data.ires_and_ifres.x + 1) / 2) + 31) / 32) * ((g_shrd_data.ires_and_ifres.y + 1) / 2);
+            const uint frag_lo_x = (uint(gl_FragCoord.x) / 2), frag_lo_y = (uint(gl_FragCoord.y) / 2);
+            uint frag_lo_index = frag_lo_y * ((((g_shrd_data.uren_res.x + 1) / 2) + 31) / 32) + ((frag_lo_x + 31) / 32);
+            frag_lo_index += layer_index * ((((g_shrd_data.uren_res.x + 1) / 2) + 31) / 32) * ((g_shrd_data.uren_res.y + 1) / 2);
 
             // Ensure exactly one invocation per pixel
-            const uint new_mask = 1u << (frag_lo_x % 32);
+            const uint new_mask = 1u << (frag_lo_x % 32u);
             const uint old_mask = atomicOr(g_ray_bitmask[frag_lo_index], new_mask);
             if ((old_mask & new_mask) == 0) {
                 const vec3 ray_dir = reflect(I, N);

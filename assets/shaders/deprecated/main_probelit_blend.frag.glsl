@@ -50,12 +50,12 @@ layout(location = LOC_OUT_SPEC) out vec4 g_out_specular;
 void main() {
     float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
     float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
+    uint slice = clamp(uint(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
-    int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.ren_res.xy);
+    uint ix = uint(gl_FragCoord.x), iy = uint(gl_FragCoord.y);
+    uint cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.uren_res.xy);
 
-    uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+    uvec2 cell_data = texelFetch(g_cells_buf, int(cell_index)).xy;
     uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
                                     bitfieldExtract(cell_data.x, 24, 8));
     uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
@@ -80,11 +80,11 @@ void main() {
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         uint item_data = texelFetch(g_items_buf, int(i)).x;
-        int li = int(bitfieldExtract(item_data, 0, 12));
+        uint li = bitfieldExtract(item_data, 0, 12);
 
-        vec4 pos_and_radius = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 0);
-        vec4 col_and_index = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 1);
-        vec4 dir_and_spot = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 2);
+        vec4 pos_and_radius = texelFetch(g_lights_buf, int(li * LIGHTS_BUF_STRIDE + 0));
+        vec4 col_and_index = texelFetch(g_lights_buf, int(li * LIGHTS_BUF_STRIDE + 1));
+        vec4 dir_and_spot = texelFetch(g_lights_buf, int(li * LIGHTS_BUF_STRIDE + 2));
 
         vec3 L = pos_and_radius.xyz - g_vtx_pos;
         float dist = length(L);
@@ -161,7 +161,7 @@ void main() {
         visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
     }
 
-    vec2 ao_uvs = (vec2(ix, iy) + 0.5) * g_shrd_data.ren_res.zw;
+    vec2 ao_uvs = (vec2(ix, iy) + 0.5) * g_shrd_data.fren_res.zw;
     float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).x;
     vec3 diffuse_color = base_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                        ambient_occlusion * ambient_occlusion * indirect_col +
