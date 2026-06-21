@@ -27,7 +27,7 @@ void test_volumetrics(Sys::ThreadPool &threads) {
     run_image_test(ren_ctx, threads, "vol_global_mesh_lights", 27.60, Full_Ultra);
 
     // sun
-    run_image_test(ren_ctx, threads, "vol_global_sun", 31.90, Full);
+    run_image_test(ren_ctx, threads, "vol_global_sun", 31.85, Full);
     run_image_test(ren_ctx, threads, "vol_global_sun", 31.90, Full_Ultra);
 
     // absorption

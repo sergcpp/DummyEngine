@@ -5,6 +5,7 @@
 
 #include <array>
 #include <bitset>
+#include <complex>
 #include <fstream>
 #include <memory>
 #include <random>
@@ -146,6 +147,27 @@ void splat_pixel_proximity(const int ox, const int oy, const int oz,
         }
     }
 }
+
+void dft_2d(const float data[TileRes][TileRes], std::complex<float> output[TileRes][TileRes]) {
+    for (int v = 0; v < TileRes; ++v) {
+        for (int u = 0; u < TileRes; ++u) {
+            std::complex<float> sum = {};
+
+            for (int y = 0; y < TileRes; ++y) {
+                for (int x = 0; x < TileRes; ++x) {
+
+                    const float angle = -2.0f * Ren::Pi<float>() * (float(u) * x / TileRes + float(v) * y / TileRes);
+                    const float shift = ((x + y) % 2 == 0) ? 1.0f : -1.0f;
+
+                    sum += std::complex<float>{data[y][x] * shift, 0.0f} *
+                           std::complex<float>{std::cos(angle), std::sin(angle)};
+                }
+            }
+
+            output[v][u] = sum;
+        }
+    }
+}
 } // namespace STBN
 
 void WriteDDS(const float data[], int w, int h, int d, const char *name);
@@ -172,6 +194,7 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN(const unsigned int seed
         float debug_values2[SampleCount][TileRes / 2][TileRes / 2] = {};
         float debug_values3[SampleCount][(TileRes + 2) / 3][(TileRes + 2) / 3] = {};
         float debug_values4[SampleCount][TileRes / 4][TileRes / 4] = {};
+        float debug_values5[TileRes][SampleCount][TileRes] = {};
     };
     auto data = std::make_unique<bn_data_t>();
 
@@ -196,6 +219,40 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN(const unsigned int seed
     }
 
     char name_buf[128];
+
+    auto debug_dft = [&]() {
+        float min_val = FLT_MAX, max_val = 0.0f;
+        for (int z = 0; z < SampleCount; ++z) {
+            float temp[TileRes][TileRes];
+            for (int y = 0; y < TileRes; ++y) {
+                for (int x = 0; x < TileRes; ++x) {
+                    temp[y][x] = data->noise[z][y][x];
+                }
+            }
+
+            std::complex<float> dft_output[TileRes][TileRes];
+            dft_2d(temp, dft_output);
+
+            for (int y = 0; y < TileRes; ++y) {
+                for (int x = 0; x < TileRes; ++x) {
+                    data->debug_values[z][y][x] = std::abs(dft_output[y][x]);
+                    min_val = std::min(min_val, data->debug_values[z][y][x]);
+                    max_val = std::max(max_val, data->debug_values[z][y][x]);
+                }
+            }
+        }
+
+        for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
+            const auto [x, y, z] = xyz_from_index(j);
+
+            float &e = data->debug_values[z][y][x];
+            // e = (e - min_val) / (max_val - min_val);
+            e /= max_val;
+        }
+
+        snprintf(name_buf, sizeof(name_buf), "debug_dft_%i.dds", SampleCount);
+        WriteDDS(&data->debug_values[0][0][0], TileRes, TileRes, SampleCount, name_buf);
+    };
 
     { // Debug energy values
         float min_value = FLT_MAX, max_value = 0.0f;
@@ -312,25 +369,19 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN(const unsigned int seed
     }
 
     { // Debug noise values
-        float min_value = FLT_MAX, max_value = 0.0f;
-        for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
-            const auto [x, y, z] = xyz_from_index(j);
-
-            float &e = data->debug_values[z][y][x];
-            e = data->noise[z][y][x];
-            min_value = std::min(min_value, e);
-            max_value = std::max(max_value, e);
-        }
-        // normalize values (for easier debugging)
-        for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
-            const auto [x, y, z] = xyz_from_index(j);
-
-            float &e = data->debug_values[z][y][x];
-            e = (e - min_value) / (max_value - min_value);
-        }
-
         snprintf(name_buf, sizeof(name_buf), "debug_noise_%i.dds", SampleCount);
-        WriteDDS(&data->debug_values[0][0][0], TileRes, TileRes, SampleCount, name_buf);
+        WriteDDS(&data->noise[0][0][0], TileRes, TileRes, SampleCount, name_buf);
+
+        for (int z = 0; z < SampleCount; ++z) {
+            for (int y = 0; y < TileRes; ++y) {
+                for (int x = 0; x < TileRes; ++x) {
+                    data->debug_values5[y][z][x] = data->noise[z][y][x];
+                }
+            }
+        }
+
+        snprintf(name_buf, sizeof(name_buf), "debug_noise_XZY_%i.dds", SampleCount);
+        WriteDDS(&data->debug_values5[0][0][0], TileRes, SampleCount, TileRes, name_buf);
 
         for (int i = 0; i < 4; ++i) {
             for (int z = 0; z < SampleCount; ++z) {
@@ -368,6 +419,8 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN(const unsigned int seed
             WriteDDS(&data->debug_values4[0][0][0], TileRes / 4, TileRes / 4, SampleCount, name_buf);
         }
     }
+
+    debug_dft();
 
     { // dump C array
         if (strided_access) {
@@ -411,12 +464,15 @@ template <int Log2SampleCount> void Eng::Generate2D_STBN(unsigned int seed) {
 
         // temp data
         float debug_values[SampleCount][TileRes][TileRes] = {};
+        float debug_values2[TileRes][TileRes] = {};
     };
     auto data = std::make_unique<bn_data_t>();
 
     std::mt19937 gen(seed);
     std::uniform_int_distribution<int> uniform_index(0, SampleCount * TileRes * TileRes - 1);
     std::uniform_real_distribution<float> uniform_unorm_float(0.0f, 1.0f);
+
+    char name_buf[128];
 
     // Generate initial samples
     for (int z = 0; z < SampleCount; ++z) {
@@ -426,6 +482,39 @@ template <int Log2SampleCount> void Eng::Generate2D_STBN(unsigned int seed) {
             }
         }
     }
+
+    auto debug_dft = [&]() {
+        float min_val = FLT_MAX, max_val = 0.0f;
+        for (int z = 0; z < SampleCount; ++z) {
+            for (int y = 0; y < TileRes; ++y) {
+                for (int x = 0; x < TileRes; ++x) {
+                    data->debug_values2[y][x] = data->samples[z][y][x][0];
+                }
+            }
+
+            std::complex<float> dft_output[TileRes][TileRes];
+            dft_2d(data->debug_values2, dft_output);
+
+            for (int y = 0; y < TileRes; ++y) {
+                for (int x = 0; x < TileRes; ++x) {
+                    data->debug_values[z][y][x] = std::abs(dft_output[y][x]);
+                    min_val = std::min(min_val, data->debug_values[z][y][x]);
+                    max_val = std::max(max_val, data->debug_values[z][y][x]);
+                }
+            }
+        }
+
+        for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
+            const auto [x, y, z] = xyz_from_index(j);
+
+            float &e = data->debug_values[z][y][x];
+            // e = (e - min_val) / (max_val - min_val);
+            e /= max_val;
+        }
+
+        snprintf(name_buf, sizeof(name_buf), "debug_dft_%i.dds", SampleCount);
+        WriteDDS(&data->debug_values[0][0][0], TileRes, TileRes, SampleCount, name_buf);
+    };
 
     float best_total_proximity = 0.0f;
     for (int z = 0; z < SampleCount; ++z) {
@@ -437,11 +526,11 @@ template <int Log2SampleCount> void Eng::Generate2D_STBN(unsigned int seed) {
         }
     }
 
-    char name_buf[128];
-
     for (int iter = 0; iter < MaxSwappingIterations; ++iter) {
-        if ((iter % 1000) == 0) {
+        if ((iter % 10000) == 0) {
             printf("Swapping Iteration %i (%f)\n", iter, best_total_proximity);
+
+            debug_dft();
 
             float min_proximity = FLT_MAX, max_proximity = 0.0f;
             for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
@@ -471,19 +560,19 @@ template <int Log2SampleCount> void Eng::Generate2D_STBN(unsigned int seed) {
         const auto [ox1, oy1, oz1] = xyz_from_index(index1);
         const auto [ox2, oy2, oz2] = xyz_from_index(index2);
 
-        // Substract swapped pixels contribution
+        // Subtract swapped pixels contribution
         splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz1, data->samples, data->proximity);
         splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz2, data->samples, data->proximity);
 
         std::swap(data->samples[oz1][oy1][ox1], data->samples[oz2][oy2][ox2]);
 
-        // Recalc proximity of changed pixels
-        data->proximity[oz1][oy1][ox1] = calc_pixel_proximity<SampleCount>(ox1, oy1, oz1, data->samples);
-        data->proximity[oz2][oy2][ox2] = calc_pixel_proximity<SampleCount>(ox2, oy2, oz2, data->samples);
-
         // Add swapped pixels contribution
         splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz1, data->samples, data->proximity);
         splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz2, data->samples, data->proximity);
+
+        // Recalc proximity of changed pixels
+        data->proximity[oz1][oy1][ox1] = calc_pixel_proximity<SampleCount>(ox1, oy1, oz1, data->samples);
+        data->proximity[oz2][oy2][ox2] = calc_pixel_proximity<SampleCount>(ox2, oy2, oz2, data->samples);
 
         float total_proximity = 0.0f;
         for (int z = 0; z < SampleCount; ++z) {
@@ -504,11 +593,11 @@ template <int Log2SampleCount> void Eng::Generate2D_STBN(unsigned int seed) {
 
             std::swap(data->samples[oz1][oy1][ox1], data->samples[oz2][oy2][ox2]);
 
-            data->proximity[oz1][oy1][ox1] = calc_pixel_proximity<SampleCount>(ox1, oy1, oz1, data->samples);
-            data->proximity[oz2][oy2][ox2] = calc_pixel_proximity<SampleCount>(ox2, oy2, oz2, data->samples);
-
             splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz1, data->samples, data->proximity);
             splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz2, data->samples, data->proximity);
+
+            data->proximity[oz1][oy1][ox1] = calc_pixel_proximity<SampleCount>(ox1, oy1, oz1, data->samples);
+            data->proximity[oz2][oy2][ox2] = calc_pixel_proximity<SampleCount>(ox2, oy2, oz2, data->samples);
         }
     }
 

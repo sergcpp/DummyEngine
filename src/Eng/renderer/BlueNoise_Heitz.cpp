@@ -358,7 +358,7 @@ template <int Log2SampleCount> void Eng::Generate1D_BlueNoiseTiles_StepFunction(
             const auto [ox1, oy1] = xy_from_index(index1);
             const auto [ox2, oy2] = xy_from_index(index2);
 
-            // Substract swapped pixels contribution
+            // Subtract swapped pixels contribution
             splat_pixel_proximity<false>(ox1, oy1, data->errors, data->proximity);
             splat_pixel_proximity<false>(ox2, oy2, data->errors, data->proximity);
 
@@ -427,7 +427,7 @@ template <int Log2SampleCount> void Eng::Generate1D_BlueNoiseTiles_StepFunction(
                     WriteTGA(&data->debug_errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
                 }
             } else {
-                // Substract swapped pixels contribution
+                // Subtract swapped pixels contribution
                 splat_pixel_proximity<false>(ox1, oy1, data->errors, data->proximity);
                 splat_pixel_proximity<false>(ox2, oy2, data->errors, data->proximity);
 
@@ -512,7 +512,7 @@ template <int Log2SampleCount> void Eng::Generate1D_BlueNoiseTiles_StepFunction(
                 const int index = uniform_index(gen);
                 const auto [px, py] = xy_from_index(index);
 
-                // Substract swapped pixel contribution
+                // Subtract swapped pixel contribution
                 splat_pixel_proximity<false>(px, py, data->errors_first, data->errors_last, data->proximity);
 
                 data->sorting_keys[py][px] ^= subset_sample_count;
@@ -578,7 +578,7 @@ template <int Log2SampleCount> void Eng::Generate1D_BlueNoiseTiles_StepFunction(
                         WriteTGA(&data->debug_errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
                     }
                 } else {
-                    // Substract swapped pixel contribution
+                    // Subtract swapped pixel contribution
                     splat_pixel_proximity<false>(px, py, data->errors_first, data->errors_last, data->proximity);
 
                     // Discard this iteration (swap values back)
@@ -781,7 +781,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
             const int oy1 = index1 / TileRes, ox1 = index1 % TileRes;
             const int oy2 = index2 / TileRes, ox2 = index2 % TileRes;
 
-            // Substract swapped pixels contribution
+            // Subtract swapped pixels contribution
             splat_pixel_proximity<false>(ox1, oy1, data->errors, data->proximity);
             splat_pixel_proximity<false>(ox2, oy2, data->errors, data->proximity);
 
@@ -789,13 +789,13 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
             std::swap(data->samples[oy1][ox1], data->samples[oy2][ox2]);
             std::swap(data->errors[oy1][ox1], data->errors[oy2][ox2]);
 
-            // Recalc proximity of changed pixels
-            data->proximity[oy1][ox1] = calc_pixel_proximity(ox1, oy1, data->errors);
-            data->proximity[oy2][ox2] = calc_pixel_proximity(ox2, oy2, data->errors);
-
             // Add swapped pixels contribution
             splat_pixel_proximity<true>(ox1, oy1, data->errors, data->proximity);
             splat_pixel_proximity<true>(ox2, oy2, data->errors, data->proximity);
+
+            // Recalc proximity of changed pixels
+            data->proximity[oy1][ox1] = calc_pixel_proximity(ox1, oy1, data->errors);
+            data->proximity[oy2][ox2] = calc_pixel_proximity(ox2, oy2, data->errors);
 
             float total_proximity = 0.0f;
             for (int y = 0; y < TileRes; ++y) {
@@ -850,7 +850,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
                     WriteTGA(&data->debug_errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
                 }
             } else {
-                // Substract swapped pixels contribution
+                // Subtract swapped pixels contribution
                 splat_pixel_proximity<false>(ox1, oy1, data->errors, data->proximity);
                 splat_pixel_proximity<false>(ox2, oy2, data->errors, data->proximity);
 
@@ -859,13 +859,13 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
                 std::swap(data->samples[oy1][ox1], data->samples[oy2][ox2]);
                 std::swap(data->errors[oy1][ox1], data->errors[oy2][ox2]);
 
-                // Recalc proximity of changed pixels
-                data->proximity[oy1][ox1] = calc_pixel_proximity(ox1, oy1, data->errors);
-                data->proximity[oy2][ox2] = calc_pixel_proximity(ox2, oy2, data->errors);
-
                 // Add swapped pixels contribution
                 splat_pixel_proximity<true>(ox1, oy1, data->errors, data->proximity);
                 splat_pixel_proximity<true>(ox2, oy2, data->errors, data->proximity);
+
+                // Recalc proximity of changed pixels
+                data->proximity[oy1][ox1] = calc_pixel_proximity(ox1, oy1, data->errors);
+                data->proximity[oy2][ox2] = calc_pixel_proximity(ox2, oy2, data->errors);
             }
         }
     }
@@ -936,17 +936,17 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
                 const int index = uniform_index(gen);
                 const int py = index / TileRes, px = index % TileRes;
 
-                // Substract swapped pixel contribution
+                // Subtract swapped pixel contribution
                 splat_pixel_proximity<false>(px, py, data->errors_first, data->errors_last, data->proximity);
 
                 data->sorting_keys[py][px] ^= subset_sample_count;
                 std::swap(data->errors_first[py][px], data->errors_last[py][px]);
 
-                // Recalc proximity of changed pixel
-                data->proximity[py][px] = calc_pixel_proximity(px, py, data->errors_first, data->errors_last);
-
                 // Add swapped pixel contribution
                 splat_pixel_proximity<true>(px, py, data->errors_first, data->errors_last, data->proximity);
+
+                // Recalc proximity of changed pixel
+                data->proximity[py][px] = calc_pixel_proximity(px, py, data->errors_first, data->errors_last);
 
                 float total_proximity = 0.0f;
                 for (int y = 0; y < TileRes; ++y) {
@@ -1002,18 +1002,18 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
                         WriteTGA(&data->debug_errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
                     }
                 } else {
-                    // Substract swapped pixel contribution
+                    // Subtract swapped pixel contribution
                     splat_pixel_proximity<false>(px, py, data->errors_first, data->errors_last, data->proximity);
 
                     // Discard this iteration (swap values back)
                     data->sorting_keys[py][px] ^= subset_sample_count;
                     std::swap(data->errors_first[py][px], data->errors_last[py][px]);
 
-                    // Recalc proximity of changed pixel
-                    data->proximity[py][px] = calc_pixel_proximity(px, py, data->errors_first, data->errors_last);
-
                     // Add swapped pixel contribution
                     splat_pixel_proximity<true>(px, py, data->errors_first, data->errors_last, data->proximity);
+
+                    // Recalc proximity of changed pixel
+                    data->proximity[py][px] = calc_pixel_proximity(px, py, data->errors_first, data->errors_last);
                 }
             }
 

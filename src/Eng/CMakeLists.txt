@@ -55,6 +55,8 @@ set(INPUT_SOURCE_FILES input/InputManager.h
 
 set(RENDERER_SOURCES    renderer/BlueNoise_Heitz.h
                         renderer/BlueNoise_Heitz.cpp
+                        renderer/BlueNoise_Ours.h
+                        renderer/BlueNoise_Ours.cpp
                         renderer/BlueNoise_Wolfe.h
                         renderer/BlueNoise_Wolfe.cpp
                         renderer/CDFUtils.h

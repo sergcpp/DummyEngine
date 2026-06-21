@@ -94,8 +94,8 @@ extern const int TaaSampleCountStatic = 64;
 #include "precomputed/__pmj02_samples.inl"
 
 // 1D blue noise, used for volumetrics
-namespace stbn_1D_64spp {
-#include "precomputed/__stbn_sampler_1D_64spp.inl"
+namespace tcbn_1D_64spp {
+#include "precomputed/__tcbn_sampler_1D_64spp.inl"
 }
 
 // 2D blue noise, used for GI
@@ -294,16 +294,16 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
     { // STBN 1D sampler
         Ren::ImgParams p;
-        p.w = stbn_1D_64spp::w;
-        p.h = stbn_1D_64spp::h;
-        p.d = stbn_1D_64spp::d;
+        p.w = tcbn_1D_64spp::w;
+        p.h = tcbn_1D_64spp::h;
+        p.d = tcbn_1D_64spp::d;
         p.format = Ren::eFormat::R8;
         p.flags = Ren::eImgFlags::Array;
         p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
         p.sampling.filter = Ren::eFilter::Nearest;
 
-        stbn_1D_64spp_ = ctx_.CreateImage(Ren::String{"STBN 1D 64spp"},
-                                          {(const uint8_t *)&stbn_1D_64spp::stbn_samples[0], p.w * p.h * p.d}, p,
+        stbn_1D_64spp_ = ctx_.CreateImage(Ren::String{"TCBN 1D 64spp"},
+                                          {(const uint8_t *)&tcbn_1D_64spp::tcbn_samples[0], p.w * p.h * p.d}, p,
                                           ctx_.default_mem_allocs());
         assert(stbn_1D_64spp_);
     }
@@ -487,8 +487,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
              Ren::eStoreOp::Store},
 #endif
             {Ren::eFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
-             Ren::eStoreOp::Store}
-        };
+             Ren::eStoreOp::Store}};
 
         // color_rts[2].flags = Ren::eImgFlags::SRGB;
 
