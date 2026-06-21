@@ -337,7 +337,7 @@ void main() {
         occlusion *= saturate(10.0 * (MAX_TRACE_DIST - distance(hit_point, pos_vs)));
         // fix shadow terminator
         occlusion *= saturate(abs(8.0 * dot(N, normalize(brightest_light_pos - P))));
-        // substract occluded portion of light
+        // subtract occluded portion of light
         artificial_light -= occlusion * brightest_light_contribution;
     }
 #endif
