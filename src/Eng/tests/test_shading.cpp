@@ -33,23 +33,23 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(ren_ctx, threads, "complex_mat2_emissive", 17.35, Full_Ultra);
     run_image_test(ren_ctx, threads, "complex_mat2_dyn",
                    std::vector<double>{24.00, 24.00, 23.90, 23.85, 23.80, 23.70, 23.65, 23.60, 23.50, 23.35, //
-                                       23.15, 23.10, 23.00, 22.90, 22.80, 22.85, 22.95, 23.00, 23.00, 23.10,
+                                       23.15, 23.10, 23.00, 22.90, 22.80, 22.85, 22.95, 23.00, 23.00, 23.05,
                                        23.15, 23.30, 23.30, 23.40, 23.35, 23.60, 23.65, 23.85, 24.05, 24.10,
                                        24.20, 24.20, 24.35},
                    MedDiffGI);
     run_image_test(ren_ctx, threads, "complex_mat2_dyn",
                    std::vector<double>{23.25, 23.30, 23.25, 23.25, 23.25, 23.25, 23.25, 23.25, 23.20, 23.10, //
                                        23.00, 22.95, 22.90, 22.80, 22.70, 22.75, 22.80, 22.90, 22.85, 22.95,
-                                       22.95, 23.20, 23.20, 23.35, 23.25, 23.35, 23.55, 23.75, 23.95, 24.00,
+                                       22.95, 23.20, 23.20, 23.30, 23.25, 23.35, 23.55, 23.75, 23.95, 24.00,
                                        24.10, 24.10, 24.30},
                    Full);
     run_image_test(ren_ctx, threads, "complex_mat2_dyn",
                    std::vector<double>{24.25, 24.25, 24.15, 24.10, 24.00, 23.90, 23.85, 23.85, 23.80, 23.70, //
-                                       23.60, 23.55, 23.50, 23.40, 23.30, 23.35, 23.40, 23.40, 23.25, 23.30,
+                                       23.60, 23.55, 23.50, 23.40, 23.30, 23.35, 23.40, 23.35, 23.25, 23.30,
                                        23.30, 23.55, 23.50, 23.60, 23.50, 23.60, 23.80, 24.00, 24.20, 24.25,
                                        24.35, 24.35, 24.55},
                    Full_Ultra);
-    run_image_test(ren_ctx, threads, "complex_mat2_far_away", 24.85, MedDiffGI);
+    run_image_test(ren_ctx, threads, "complex_mat2_far_away", 24.80, MedDiffGI);
     run_image_test(ren_ctx, threads, "complex_mat2_far_away", 24.75, Full);
     run_image_test(ren_ctx, threads, "complex_mat2_far_away", 27.10, Full_Ultra);
     run_image_test(ren_ctx, threads, "complex_mat2_spot_light", 27.00, MedDiffGI);
@@ -59,15 +59,15 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(ren_ctx, threads, "complex_mat2_sun_light", 22.45, Full_Ultra);
     run_image_test(ren_ctx, threads, "complex_mat2_sun_light_dyn",
                    std::vector<double>{33.40, 33.70, 33.80, 33.70, 33.55, 33.15, 32.65, 32.05, 31.30, 30.35, //
-                                       28.95, 27.85, 26.75, 25.15, 23.70, 22.25, 20.20, 21.90, 23.10, 24.15,
+                                       28.95, 27.85, 26.75, 25.15, 23.70, 22.25, 20.20, 21.85, 23.10, 24.15,
                                        25.20, 25.95, 25.60, 26.95, 26.55, 27.75, 28.20, 27.80, 29.20, 29.35,
                                        29.35, 30.10, 30.50},
                    Full);
     run_image_test(ren_ctx, threads, "complex_mat2_sun_light_dyn",
                    std::vector<double>{33.50, 33.80, 33.55, 33.45, 33.70, 33.50, 32.95, 31.90, 31.45, 30.40, //
                                        29.35, 28.15, 26.95, 25.70, 24.05, 22.60, 20.80, 22.05, 23.25, 24.25,
-                                       25.10, 26.10, 25.50, 27.10, 26.70, 27.95, 28.35, 27.90, 29.40, 29.50,
-                                       29.55, 30.25, 30.75},
+                                       25.10, 26.10, 26.00, 27.10, 26.70, 27.95, 28.35, 27.90, 29.40, 29.50,
+                                       29.55, 30.25, 30.70},
                    Full_Ultra);
     run_image_test(ren_ctx, threads, "complex_mat2_moon_light", 23.45, MedDiffGI);
     run_image_test(ren_ctx, threads, "complex_mat2_moon_light", 23.25, Full);

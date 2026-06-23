@@ -79,7 +79,7 @@ void evaluate_integrals(const float samples[], const uint32_t sample_count, cons
         result /= sample_count;
 
         const float integral = test_function_1D_integral(0.0f, point);
-        out_errors[j] = std::abs(result - integral);
+        out_errors[j] = (integral - result);
     }
 }
 
@@ -99,7 +99,7 @@ void evaluate_integrals(const heavyside_func_t functions[], const Ren::Vec2f sam
         }
         result /= sample_count;
 
-        out_errors[j] = std::abs(result - f.integral_val);
+        out_errors[j] = (f.integral_val - result);
     }
 }
 

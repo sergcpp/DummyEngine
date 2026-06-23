@@ -23,7 +23,7 @@ void test_volumetrics(Sys::ThreadPool &threads) {
     run_image_test(ren_ctx, threads, "vol_global4", 28.50, Full_Ultra);
 
     // mesh lights
-    run_image_test(ren_ctx, threads, "vol_global_mesh_lights", 29.65, Full);
+    run_image_test(ren_ctx, threads, "vol_global_mesh_lights", 29.60, Full);
     run_image_test(ren_ctx, threads, "vol_global_mesh_lights", 29.60, Full_Ultra);
 
     // sun
