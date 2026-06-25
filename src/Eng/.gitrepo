@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = refactor_26_05
-	commit = 8c719727ed4c74b6945f2d08d4487f6a9319d387
+	branch = update_24_06
+	commit = 868d214c2a54d6a993c5236f5543284f998b844d
 	method = merge
-	cmdver = 0.4.9
-	parent = 23ad26318f879e5b8ff3a6e59182755a072cf9ee
+	cmdver = 0.4.6
+	parent = 33cd8d6bb122079b950d2f994fe54dc85b269033
