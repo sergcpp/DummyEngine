@@ -151,6 +151,7 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
                 if ((func->attributes & eFunctionAttribute::Prototype) && call->func) {
                     continue;
                 }
+
                 if (func->parameters.size() == call->parameters.size()) {
                     bool args_match = true;
                     for (int i = 0; i < int(func->parameters.size()); ++i) {
@@ -1392,6 +1393,30 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
     } else if (expression->type == eExprType::Sequence) {
         return expression;
     } else if (expression->type == eExprType::ConstructorCall) {
+        auto *expr = static_cast<ast_constructor_call *>(expression);
+        if (expr->type->builtin) {
+            auto *builtin = static_cast<ast_builtin *>(expr->type);
+            if (builtin->type == eKeyword::K_float) {
+                if (expr->parameters.size() != 1) {
+                    fatal("single argument expected");
+                }
+                auto *param = Evaluate(expr->parameters[0]);
+                switch (param->type) {
+                case eExprType::IntConstant:
+                    return ast_->make<ast_float_constant>(float(IVAL(param)));
+                case eExprType::UIntConstant:
+                    return ast_->make<ast_float_constant>(float(UVAL(param)));
+                case eExprType::HalfConstant:
+                    return ast_->make<ast_float_constant>(float(HVAL(param)));
+                case eExprType::FloatConstant:
+                    return param;
+                case eExprType::DoubleConstant:
+                    return ast_->make<ast_float_constant>(float(DVAL(param)));
+                default:
+                    break;
+                }
+            }
+        }
         return expression;
     } else if (expression->type == eExprType::ArraySpecifier) {
         auto *arr_specifier = static_cast<ast_array_specifier *>(expression);
@@ -3367,10 +3392,14 @@ const ast_type *to_vector_type(const TrUnit *tu, const ast_type *_scalar_type, i
 
 bool is_integer_type(const eKeyword type) {
     switch (type) {
+    case eKeyword::K_int8_t:
+    case eKeyword::K_uint8_t:
     case eKeyword::K_int16_t:
     case eKeyword::K_uint16_t:
     case eKeyword::K_int:
     case eKeyword::K_uint:
+    case eKeyword::K_int32_t:
+    case eKeyword::K_uint32_t:
     case eKeyword::K_int64_t:
     case eKeyword::K_uint64_t:
         return true;
@@ -3386,20 +3415,47 @@ bool is_integer_type(const ast_type *_type) {
     return is_integer_type(static_cast<const ast_builtin *>(_type)->type);
 }
 
+bool is_unsigned_type(const eKeyword type) {
+    switch (type) {
+    case eKeyword::K_uint8_t:
+    case eKeyword::K_uint16_t:
+    case eKeyword::K_uint:
+    case eKeyword::K_uint32_t:
+    case eKeyword::K_uint64_t:
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool is_unsigned_type(const ast_type *_type) {
     if (!_type->builtin) {
         return false;
     }
-    return static_cast<const ast_builtin *>(_type)->type == eKeyword::K_uint;
+    return is_unsigned_type(static_cast<const ast_builtin *>(_type)->type);
 }
 
 bool is_float_type(const eKeyword type) {
     switch (type) {
+    case eKeyword::K_float16_t:
     case eKeyword::K_float:
+    case eKeyword::K_float32_t:
     case eKeyword::K_double:
+    case eKeyword::K_float64_t:
         return true;
     default:
         return false;
+    }
+}
+
+int float_precision_rank(const eKeyword type) {
+    switch (type) {
+    case eKeyword::K_float16_t: return 0;
+    case eKeyword::K_float:
+    case eKeyword::K_float32_t: return 1;
+    case eKeyword::K_double:
+    case eKeyword::K_float64_t: return 2;
+    default:                    return -1;
     }
 }
 
@@ -3650,25 +3706,35 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
             return op1_type;
         }
 
-        if (is_integer_type(to_scalar_type(tu, op1_type)) && is_integer_type(to_scalar_type(tu, op2_type))) {
-            if (get_vector_size(op1_type) > get_vector_size(op2_type)) {
-                return op1_type;
-            } else if (get_vector_size(op2_type) > get_vector_size(op1_type)) {
-                return op2_type;
-            } else {
-                if (is_unsigned_type(to_scalar_type(tu, op1_type)) && !is_unsigned_type(to_scalar_type(tu, op2_type))) {
-                    return op1_type;
-                } else {
-                    return op2_type;
-                }
-            }
-        } else if (is_integer_type(to_scalar_type(tu, op1_type)) && is_float_type(to_scalar_type(tu, op2_type))) {
-            return op2_type;
-        } else if (is_float_type(to_scalar_type(tu, op1_type)) && is_integer_type(to_scalar_type(tu, op2_type))) {
-            return op1_type;
-        }
+        const ast_type *scalar1 = to_scalar_type(tu, op1_type);
+        const ast_type *scalar2 = to_scalar_type(tu, op2_type);
+        const bool flt1 = is_float_type(scalar1), flt2 = is_float_type(scalar2);
+        const bool int1 = is_integer_type(scalar1), int2 = is_integer_type(scalar2);
 
-        if (operation->oper == eOperator::multiply && is_matrix_type(op1_type) && get_vector_size(op2_type) > 1) {
+        if ((flt1 || int1) && (flt2 || int2)) {
+            // float beats integer
+            if (flt1 != flt2) {
+                return flt1 ? op1_type : op2_type;
+            }
+
+            // larger vector wins
+            const int size1 = get_vector_size(op1_type), size2 = get_vector_size(op2_type);
+            if (size1 != size2) {
+                return size1 > size2 ? op1_type : op2_type;
+            }
+
+            // same vector size, both float: higher precision wins
+            if (flt1) {
+                const eKeyword kw1 = static_cast<const ast_builtin *>(scalar1)->type;
+                const eKeyword kw2 = static_cast<const ast_builtin *>(scalar2)->type;
+                return float_precision_rank(kw1) >= float_precision_rank(kw2) ? op1_type : op2_type;
+            }
+
+            // same vector size, both integer: unsigned beats signed
+            if (is_unsigned_type(scalar1) && !is_unsigned_type(scalar2)) {
+                return op1_type;
+            }
+            return op2_type;
         }
 
         // return Write_Operation(static_cast<const ast_operation_expression *>(expression), out_stream);
