@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = update_24_06
-	commit = 868d214c2a54d6a993c5236f5543284f998b844d
+	branch = deferred_gi_cache
+	commit = ee3262bc303d84f152a479481d6fb95945f6943d
 	method = merge
 	cmdver = 0.4.6
-	parent = 33cd8d6bb122079b950d2f994fe54dc85b269033
+	parent = d3a909d31a619c829e4a3682977754673122ac27
