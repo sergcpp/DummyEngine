@@ -252,6 +252,8 @@ void main() {
         }
     }
 
+    out_color = compress_hdr(out_color, g_shrd_data.cam_pos_and_exp.w);
+
     const vec4 sh1_r = out_color.x * vec4(0.488603 * out_dir, 0.282095);
     const vec4 sh1_g = out_color.y * vec4(0.488603 * out_dir, 0.282095);
     const vec4 sh1_b = out_color.z * vec4(0.488603 * out_dir, 0.282095);
@@ -262,20 +264,31 @@ void main() {
 
     groupMemoryBarrier(); barrier();
 
+    for (uint stride = (GRP_SIZE2_X / 2); stride > 0; stride /= 2) {
+        if (gl_LocalInvocationIndex < stride) {
+            vec4 r = unpackHalf4x16(g_sh1_r[gl_LocalInvocationIndex]);
+            vec4 g = unpackHalf4x16(g_sh1_g[gl_LocalInvocationIndex]);
+            vec4 b = unpackHalf4x16(g_sh1_b[gl_LocalInvocationIndex]);
+
+            r += unpackHalf4x16(g_sh1_r[gl_LocalInvocationIndex + stride]);
+            g += unpackHalf4x16(g_sh1_g[gl_LocalInvocationIndex + stride]);
+            b += unpackHalf4x16(g_sh1_b[gl_LocalInvocationIndex + stride]);
+
+            g_sh1_r[gl_LocalInvocationIndex] = packHalf4x16(0.5 * r);
+            g_sh1_g[gl_LocalInvocationIndex] = packHalf4x16(0.5 * g);
+            g_sh1_b[gl_LocalInvocationIndex] = packHalf4x16(0.5 * b);
+        }
+        groupMemoryBarrier(); barrier();
+    }
+
     if (gl_LocalInvocationIndex == 0) {
         vec4 out_sh1_r = unpackHalf4x16(g_sh1_r[0]);
         vec4 out_sh1_g = unpackHalf4x16(g_sh1_g[0]);
         vec4 out_sh1_b = unpackHalf4x16(g_sh1_b[0]);
 
-        for (int i = 1; i < GRP_SIZE2_X; ++i) {
-            out_sh1_r += unpackHalf4x16(g_sh1_r[i]);
-            out_sh1_g += unpackHalf4x16(g_sh1_g[i]);
-            out_sh1_b += unpackHalf4x16(g_sh1_b[i]);
-        }
-
         // Pre-scale for cosine convolution
         // NOTE: PI multiplier is applied at the end of irradiance evaluation
-        const vec4 k = vec4(2.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0, 1.0) / GRP_SIZE2_X;
+        const vec4 k = vec4(2.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0, 1.0);
 
         out_sh1_r *= k;
         out_sh1_g *= k;

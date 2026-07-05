@@ -119,7 +119,7 @@ void main() {
         const vec3 direct_irradiance = vec3(max(dot(sh1_r, vec4(probe_ray_dir, 1.0)), 0.0),
                                             max(dot(sh1_g, vec4(probe_ray_dir, 1.0)), 0.0),
                                             max(dot(sh1_b, vec4(probe_ray_dir, 1.0)), 0.0));
-        result.xyz += direct_irradiance;
+        result.xyz += (direct_irradiance / g_params.pre_exposure);
 #endif
 
         const vec4 probe_mean = imageLoad(g_out_img, ivec3(output_coords));
