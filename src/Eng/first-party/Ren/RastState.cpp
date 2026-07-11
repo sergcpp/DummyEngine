@@ -14,6 +14,12 @@ static const std::string_view g_compare_op_names[] = {
 };
 #undef X
 
+#define X(_0, _1, _2) #_0,
+static const std::string_view g_blend_op_names[] = {
+#include "BlendOp.inl"
+};
+#undef X
+
 static const std::string_view g_blend_factor_names[] = {
     "Zero",             // Zero
     "One",              // One
@@ -80,7 +86,18 @@ Ren::eCompareOp Ren::CompareOp(std::string_view name) {
     return eCompareOp::Always;
 }
 
-std::string_view Ren::BlendFactorName(const eBlendFactor op) { return g_blend_factor_names[uint8_t(op)]; }
+std::string_view Ren::BlendOpName(const eBlendOp op) { return g_blend_op_names[uint8_t(op)]; }
+
+Ren::eBlendOp Ren::BlendOp(std::string_view name) {
+    for (int i = 0; i < int(eBlendOp::_Count); ++i) {
+        if (name == g_blend_op_names[i]) {
+            return eBlendOp(i);
+        }
+    }
+    return eBlendOp::Add;
+}
+
+std::string_view Ren::BlendFactorName(const eBlendFactor f) { return g_blend_factor_names[uint8_t(f)]; }
 
 Ren::eBlendFactor Ren::BlendFactor(std::string_view name) {
     for (int i = 0; i < int(eBlendFactor::_Count); ++i) {

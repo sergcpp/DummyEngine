@@ -47,11 +47,17 @@ Ren::BlendState Eng::ParseBlendState(const Sys::JsObjectP &js_blend_state) {
     if (const size_t enabled_ndx = js_blend_state.IndexOf("enabled"); enabled_ndx < js_blend_state.Size()) {
         ret.enabled = uint8_t(js_blend_state[enabled_ndx].second.as_lit().val == Sys::JsLiteralType::True);
     }
+    if (const size_t color_op_ndx = js_blend_state.IndexOf("color_op"); color_op_ndx < js_blend_state.Size()) {
+        ret.color_op = uint8_t(Ren::BlendOp(js_blend_state[color_op_ndx].second.as_str().val));
+    }
     if (const size_t src_color_ndx = js_blend_state.IndexOf("src_color"); src_color_ndx < js_blend_state.Size()) {
         ret.src_color = uint8_t(Ren::BlendFactor(js_blend_state[src_color_ndx].second.as_str().val));
     }
     if (const size_t dst_color_ndx = js_blend_state.IndexOf("dst_color"); dst_color_ndx < js_blend_state.Size()) {
         ret.dst_color = uint8_t(Ren::BlendFactor(js_blend_state[dst_color_ndx].second.as_str().val));
+    }
+    if (const size_t alpha_op_ndx = js_blend_state.IndexOf("alpha_op"); alpha_op_ndx < js_blend_state.Size()) {
+        ret.alpha_op = uint8_t(Ren::BlendOp(js_blend_state[alpha_op_ndx].second.as_str().val));
     }
     if (const size_t src_alpha_ndx = js_blend_state.IndexOf("src_alpha"); src_alpha_ndx < js_blend_state.Size()) {
         ret.src_alpha = uint8_t(Ren::BlendFactor(js_blend_state[src_alpha_ndx].second.as_str().val));

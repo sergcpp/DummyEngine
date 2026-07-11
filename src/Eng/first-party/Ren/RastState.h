@@ -42,7 +42,10 @@ eCullFace CullFace(std::string_view name);
 std::string_view CompareOpName(eCompareOp op);
 eCompareOp CompareOp(std::string_view name);
 
-std::string_view BlendFactorName(eBlendFactor op);
+std::string_view BlendOpName(eBlendOp op);
+eBlendOp BlendOp(std::string_view name);
+
+std::string_view BlendFactorName(eBlendFactor f);
 eBlendFactor BlendFactor(std::string_view name);
 
 std::string_view StencilOpName(eStencilOp op);
