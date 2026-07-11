@@ -11,7 +11,7 @@ class ExVolVoxelize final : public FgExecutor {
   public:
     struct Args {
         FgBufROHandle shared_data;
-        FgImgROHandle stbn;
+        FgImgROHandle tcbn;
         FgBufROHandle geo_data;
         FgBufROHandle materials;
         FgBufROHandle tlas_buf;

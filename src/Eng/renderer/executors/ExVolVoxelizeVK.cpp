@@ -11,7 +11,7 @@
 
 void Eng::ExVolVoxelize::Execute_HWRT(const FgContext &fg) {
     const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(args_->shared_data);
-    const Ren::ImageROHandle stbn = fg.AccessROImage(args_->stbn);
+    const Ren::ImageROHandle tcbn = fg.AccessROImage(args_->tcbn);
 
     const Ren::BufferROHandle geo_data = fg.AccessROBuffer(args_->geo_data);
     const Ren::BufferROHandle materials = fg.AccessROBuffer(args_->materials);
@@ -25,7 +25,7 @@ void Eng::ExVolVoxelize::Execute_HWRT(const FgContext &fg) {
     }
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
-                                     {Ren::eBindTarget::TexSampled, Fog::STBN_TEX_SLOT, stbn},
+                                     {Ren::eBindTarget::TexSampled, Fog::TCBN_TEX_SLOT, tcbn},
                                      {Ren::eBindTarget::SBufRO, Fog::GEO_DATA_BUF_SLOT, geo_data},
                                      {Ren::eBindTarget::SBufRO, Fog::MATERIAL_BUF_SLOT, materials},
                                      {Ren::eBindTarget::AccStruct, Fog::TLAS_SLOT, args_->tlas},

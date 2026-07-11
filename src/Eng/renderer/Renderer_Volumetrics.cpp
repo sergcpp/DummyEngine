@@ -484,7 +484,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
 
         auto *data = fg_builder_.AllocTempData<ExVolVoxelize::Args>();
         data->shared_data = voxelize.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
-        data->stbn = voxelize.AddTextureInput(frame_textures.stbn_1D_64spp, Stg::ComputeShader);
+        data->tcbn = voxelize.AddTextureInput(frame_textures.tcbn_1D_64spp, Stg::ComputeShader);
 
         data->geo_data = voxelize.AddStorageReadonlyInput(rt_geo_instances_res, Stg::ComputeShader);
         data->materials = voxelize.AddStorageReadonlyInput(common_buffers.materials, Stg::ComputeShader);
@@ -525,7 +525,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
 
         struct PassData {
             FgBufROHandle shared_data;
-            FgImgROHandle stbn;
+            FgImgROHandle tcbn;
             FgImgROHandle shadow_depth, shadow_color;
             FgImgROHandle fr_emission, fr_scatter;
             FgBufROHandle cells, items, lights, decals;
@@ -536,7 +536,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
 
         auto *data = fg_builder_.AllocTempData<PassData>();
         data->shared_data = scatter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
-        data->stbn = scatter.AddTextureInput(frame_textures.stbn_1D_64spp, Stg::ComputeShader);
+        data->tcbn = scatter.AddTextureInput(frame_textures.tcbn_1D_64spp, Stg::ComputeShader);
         data->shadow_depth = scatter.AddTextureInput(frame_textures.shadow_depth, Stg::ComputeShader);
         data->shadow_color = scatter.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
 
@@ -561,7 +561,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
         scatter.set_execute_cb([data, this, AllCascades](const FgContext &fg) {
             const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
 
-            const Ren::ImageROHandle stbn = fg.AccessROImage(data->stbn);
+            const Ren::ImageROHandle tcbn = fg.AccessROImage(data->tcbn);
             const Ren::ImageROHandle shadow_depth = fg.AccessROImage(data->shadow_depth);
             const Ren::ImageROHandle shadow_color = fg.AccessROImage(data->shadow_color);
 
@@ -589,7 +589,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             }
 
             Ren::SmallVector<Ren::Binding, 16> bindings = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
-                                                           {Trg::TexSampled, Fog::STBN_TEX_SLOT, stbn},
+                                                           {Trg::TexSampled, Fog::TCBN_TEX_SLOT, tcbn},
                                                            {Trg::TexSampled, Fog::SHADOW_DEPTH_TEX_SLOT, shadow_depth},
                                                            {Trg::TexSampled, Fog::SHADOW_COLOR_TEX_SLOT, shadow_color},
                                                            {Trg::TexSampled, Fog::FR_EMISSION_TEX_SLOT, fr_emission},

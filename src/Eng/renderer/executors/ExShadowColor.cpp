@@ -54,7 +54,7 @@ void Eng::ExShadowColor::LazyInit(const FgContext &fg, const Ren::ImageRWHandle 
             bindless ? "internal/shadow_color@ALPHATEST.frag.glsl"
                      : "internal/shadow_color@ALPHATEST;NO_BINDLESS.frag.glsl");
 
-        const Ren::RenderPassHandle rp_depth_only = sh.FindOrCreateRenderPass(depth_target, color_targets);
+        const Ren::RenderPassHandle rp_depth_color = sh.FindOrCreateRenderPass(depth_target, color_targets);
 
         { // solid/alpha-tested
             Ren::RastState rast_state;
@@ -74,25 +74,25 @@ void Eng::ExShadowColor::LazyInit(const FgContext &fg, const Ren::ImageRWHandle 
             rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
             rast_state.scissor.enabled = true;
 
-            pi_solid_[2] = sh.FindOrCreatePipeline(rast_state, shadow_solid_prog, vi_depth_pass, rp_depth_only, 0);
-            pi_alpha_[2] = sh.FindOrCreatePipeline(rast_state, shadow_alpha_prog, vi_depth_pass, rp_depth_only, 0);
+            pi_solid_[2] = sh.FindOrCreatePipeline(rast_state, shadow_solid_prog, vi_depth_pass, rp_depth_color, 0);
+            pi_alpha_[2] = sh.FindOrCreatePipeline(rast_state, shadow_alpha_prog, vi_depth_pass, rp_depth_color, 0);
 
             // pi_vege_solid_ =
-            //     sh.FindOrCreatePipeline(rast_state, shadow_vege_solid_prog, vi_depth_pass_vege_solid, rp_depth_only,
+            //     sh.FindOrCreatePipeline(rast_state, shadow_vege_solid_prog, vi_depth_pass_vege_solid, rp_depth_color,
             //     0);
             // pi_vege_alpha_ =
-            //     sh.FindOrCreatePipeline(rast_state, shadow_vege_alpha_prog, vi_depth_pass_vege_alpha, rp_depth_only,
+            //     sh.FindOrCreatePipeline(rast_state, shadow_vege_alpha_prog, vi_depth_pass_vege_alpha, rp_depth_color,
             //     0);
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
 
-            pi_solid_[0] = sh.FindOrCreatePipeline(rast_state, shadow_solid_prog, vi_depth_pass, rp_depth_only, 0);
-            pi_alpha_[0] = sh.FindOrCreatePipeline(rast_state, shadow_alpha_prog, vi_depth_pass, rp_depth_only, 0);
+            pi_solid_[0] = sh.FindOrCreatePipeline(rast_state, shadow_solid_prog, vi_depth_pass, rp_depth_color, 0);
+            pi_alpha_[0] = sh.FindOrCreatePipeline(rast_state, shadow_alpha_prog, vi_depth_pass, rp_depth_color, 0);
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-            pi_solid_[1] = sh.FindOrCreatePipeline(rast_state, shadow_solid_prog, vi_depth_pass, rp_depth_only, 0);
-            pi_alpha_[1] = sh.FindOrCreatePipeline(rast_state, shadow_alpha_prog, vi_depth_pass, rp_depth_only, 0);
+            pi_solid_[1] = sh.FindOrCreatePipeline(rast_state, shadow_solid_prog, vi_depth_pass, rp_depth_color, 0);
+            pi_alpha_[1] = sh.FindOrCreatePipeline(rast_state, shadow_alpha_prog, vi_depth_pass, rp_depth_color, 0);
         }
         initialized_ = true;
     }

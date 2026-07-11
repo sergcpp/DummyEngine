@@ -292,7 +292,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         "assets/textures/skin_diffusion.uncompressed.png");
     }*/
 
-    { // STBN 1D sampler
+    { // TCBN 1D sampler
         Ren::ImgParams p;
         p.w = tcbn_1D_64spp::w;
         p.h = tcbn_1D_64spp::h;
@@ -302,10 +302,10 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
         p.sampling.filter = Ren::eFilter::Nearest;
 
-        stbn_1D_64spp_ = ctx_.CreateImage(Ren::String{"TCBN 1D 64spp"},
+        tcbn_1D_64spp_ = ctx_.CreateImage(Ren::String{"TCBN 1D 64spp"},
                                           {(const uint8_t *)&tcbn_1D_64spp::tcbn_samples[0], p.w * p.h * p.d}, p,
                                           ctx_.default_mem_allocs());
-        assert(stbn_1D_64spp_);
+        assert(tcbn_1D_64spp_);
     }
 
     { // PMJ 2D blue-noise sampler
@@ -588,7 +588,7 @@ Eng::Renderer::~Renderer() {
                                                   dummy_white_,
                                                   brdf_lut_,
                                                   ltc_luts_,
-                                                  stbn_1D_64spp_,
+                                                  tcbn_1D_64spp_,
                                                   cone_rt_lut_,
                                                   tonemap_lut_,
                                                   sky_transmittance_lut_,
@@ -885,7 +885,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.ltc_luts = fg_builder_.ImportResource(ltc_luts_);
             frame_textures.brdf_lut = fg_builder_.ImportResource(brdf_lut_);
             frame_textures.cone_rt_lut = fg_builder_.ImportResource(cone_rt_lut_);
-            frame_textures.stbn_1D_64spp = fg_builder_.ImportResource(stbn_1D_64spp_);
+            frame_textures.tcbn_1D_64spp = fg_builder_.ImportResource(tcbn_1D_64spp_);
             if (tonemap_lut_) {
                 frame_textures.tonemap_lut = fg_builder_.ImportResource(tonemap_lut_);
             }

@@ -563,6 +563,15 @@
     },
     {
         "type" : "compute",
+        "shaders" : [ "internal/rt_specular_hwrt@LAYERED.comp.glsl" ],
+        "subgroup_size" : 32,
+        "features" : {
+            "subgroup" : true,
+            "hwrt" : true
+        }
+    },
+    {
+        "type" : "compute",
         "shaders" : [ "internal/rt_specular_swrt@FIRST.comp.glsl" ],
         "features" : {
             "subgroup" : true,
@@ -575,6 +584,15 @@
         "shaders" : [ "internal/rt_specular_swrt@FIRST;NO_SUBGROUP.comp.glsl" ],
         "features" : {
             "subgroup" : false,
+            "hwrt" : false,
+            "swrt" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/rt_specular_swrt@LAYERED.comp.glsl" ],
+        "features" : {
+            "subgroup" : true,
             "hwrt" : false,
             "swrt" : true
         }
@@ -633,6 +651,72 @@
         }
     },
     {
+        "type" : "compute",
+        "shaders" : [ "internal/sample_lights.comp.glsl" ],
+        "features" : {
+            "subgroup" : true,
+            "hwrt" : false,
+            "swrt" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/sample_lights@HWRT.comp.glsl" ],
+        "features" : {
+            "subgroup" : true,
+            "hwrt" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/sample_lights_probe@MIS.comp.glsl" ],
+        "features" : {
+            "subgroup" : true,
+            "hwrt" : false,
+            "swrt" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/sample_lights_probe@MIS;PARTIAL.comp.glsl" ],
+        "features" : {
+            "subgroup" : true,
+            "hwrt" : false,
+            "swrt" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/sample_lights_probe@MIS;HWRT.comp.glsl" ],
+        "features" : {
+            "subgroup" : true,
+            "hwrt" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/sample_lights_probe@MIS;PARTIAL;HWRT.comp.glsl" ],
+        "features" : {
+            "subgroup" : true,
+            "hwrt" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/vol_voxelize.comp.glsl" ],
+        "features" : {
+            "hwrt" : false,
+            "swrt" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/vol_voxelize@HWRT.comp.glsl" ],
+        "features" : {
+            "hwrt" : true
+        }
+    },
+    {
         "type" : "graphics",
         "shaders" : [ "internal/shadow_depth.vert.glsl", "internal/shadow_depth.frag.glsl" ],
         "rast_state" : {
@@ -1635,6 +1719,372 @@
         },
         "features" : {
             "bindless" : false
+        }
+    },
+    {
+        "type" : "graphics",
+        "shaders" : [ "internal/shadow_color.vert.glsl", "internal/shadow_color.frag.glsl" ],
+        "rast_state" : {
+            "poly" : {
+                "cull" : "None",
+                "depth_bias_mode" : "Dynamic"
+            },
+            "blend" : {
+                "enabled" : true,
+                "color_op" : "Add",
+                "src_color" : "Zero",
+                "dst_color" : "SrcColor",
+                "alpha_op" : "Max",
+                "src_alpha" : "One",
+                "dst_alpha" : "One"
+            },
+            "depth" : {
+                "write_enabled" : false,
+                "test_enabled" : true,
+                "compare_op" : "Greater"
+            },
+            "scissor" : {
+                "enabled" : true
+            }
+        },
+        "vertex_input" : [
+            {
+                "buf" : 0,
+                "loc" : 0,
+                "size" : 3,
+                "type" : "Float32",
+                "stride" : 16,
+                "base_offset" : 0,
+                "rel_offset" : 0
+            },
+            {
+                "buf" : 0,
+                "loc" : 3,
+                "size" : 2,
+                "type" : "Float16",
+                "stride" : 16,
+                "base_offset" : 0,
+                "rel_offset" : 12
+            }
+        ],
+        "render_pass" : {
+            "depth" : {
+                "format" : "D16",
+                "load" : "Load",
+                "store" : "Store"
+            },
+            "color" : [
+                {
+                    "format" : "RGB565",
+                    "load" : "Load",
+                    "store" : "Store"
+                }
+            ]
+        }
+    },
+    {
+        "type" : "graphics",
+        "shaders" : [ "internal/shadow_color.vert.glsl", "internal/shadow_color@ALPHATEST.frag.glsl" ],
+        "rast_state" : {
+            "poly" : {
+                "cull" : "None",
+                "depth_bias_mode" : "Dynamic"
+            },
+            "blend" : {
+                "enabled" : true,
+                "color_op" : "Add",
+                "src_color" : "Zero",
+                "dst_color" : "SrcColor",
+                "alpha_op" : "Max",
+                "src_alpha" : "One",
+                "dst_alpha" : "One"
+            },
+            "depth" : {
+                "write_enabled" : false,
+                "test_enabled" : true,
+                "compare_op" : "Greater"
+            },
+            "scissor" : {
+                "enabled" : true
+            }
+        },
+        "vertex_input" : [
+            {
+                "buf" : 0,
+                "loc" : 0,
+                "size" : 3,
+                "type" : "Float32",
+                "stride" : 16,
+                "base_offset" : 0,
+                "rel_offset" : 0
+            },
+            {
+                "buf" : 0,
+                "loc" : 3,
+                "size" : 2,
+                "type" : "Float16",
+                "stride" : 16,
+                "base_offset" : 0,
+                "rel_offset" : 12
+            }
+        ],
+        "render_pass" : {
+            "depth" : {
+                "format" : "D16",
+                "load" : "Load",
+                "store" : "Store"
+            },
+            "color" : [
+                {
+                    "format" : "RGB565",
+                    "load" : "Load",
+                    "store" : "Store"
+                }
+            ]
+        }
+    },
+    {
+        "type" : "graphics",
+        "shaders" : [ "internal/shadow_color.vert.glsl", "internal/shadow_color.frag.glsl" ],
+        "rast_state" : {
+            "poly" : {
+                "cull" : "Front",
+                "depth_bias_mode" : "Dynamic"
+            },
+            "blend" : {
+                "enabled" : true,
+                "color_op" : "Add",
+                "src_color" : "Zero",
+                "dst_color" : "SrcColor",
+                "alpha_op" : "Max",
+                "src_alpha" : "One",
+                "dst_alpha" : "One"
+            },
+            "depth" : {
+                "write_enabled" : false,
+                "test_enabled" : true,
+                "compare_op" : "Greater"
+            },
+            "scissor" : {
+                "enabled" : true
+            }
+        },
+        "vertex_input" : [
+            {
+                "buf" : 0,
+                "loc" : 0,
+                "size" : 3,
+                "type" : "Float32",
+                "stride" : 16,
+                "base_offset" : 0,
+                "rel_offset" : 0
+            },
+            {
+                "buf" : 0,
+                "loc" : 3,
+                "size" : 2,
+                "type" : "Float16",
+                "stride" : 16,
+                "base_offset" : 0,
+                "rel_offset" : 12
+            }
+        ],
+        "render_pass" : {
+            "depth" : {
+                "format" : "D16",
+                "load" : "Load",
+                "store" : "Store"
+            },
+            "color" : [
+                {
+                    "format" : "RGB565",
+                    "load" : "Load",
+                    "store" : "Store"
+                }
+            ]
+        }
+    },
+    {
+        "type" : "graphics",
+        "shaders" : [ "internal/shadow_color.vert.glsl", "internal/shadow_color@ALPHATEST.frag.glsl" ],
+        "rast_state" : {
+            "poly" : {
+                "cull" : "Front",
+                "depth_bias_mode" : "Dynamic"
+            },
+            "blend" : {
+                "enabled" : true,
+                "color_op" : "Add",
+                "src_color" : "Zero",
+                "dst_color" : "SrcColor",
+                "alpha_op" : "Max",
+                "src_alpha" : "One",
+                "dst_alpha" : "One"
+            },
+            "depth" : {
+                "write_enabled" : false,
+                "test_enabled" : true,
+                "compare_op" : "Greater"
+            },
+            "scissor" : {
+                "enabled" : true
+            }
+        },
+        "vertex_input" : [
+            {
+                "buf" : 0,
+                "loc" : 0,
+                "size" : 3,
+                "type" : "Float32",
+                "stride" : 16,
+                "base_offset" : 0,
+                "rel_offset" : 0
+            },
+            {
+                "buf" : 0,
+                "loc" : 3,
+                "size" : 2,
+                "type" : "Float16",
+                "stride" : 16,
+                "base_offset" : 0,
+                "rel_offset" : 12
+            }
+        ],
+        "render_pass" : {
+            "depth" : {
+                "format" : "D16",
+                "load" : "Load",
+                "store" : "Store"
+            },
+            "color" : [
+                {
+                    "format" : "RGB565",
+                    "load" : "Load",
+                    "store" : "Store"
+                }
+            ]
+        }
+    },
+    {
+        "type" : "graphics",
+        "shaders" : [ "internal/shadow_color.vert.glsl", "internal/shadow_color.frag.glsl" ],
+        "rast_state" : {
+            "poly" : {
+                "cull" : "Back",
+                "depth_bias_mode" : "Dynamic"
+            },
+            "blend" : {
+                "enabled" : true,
+                "color_op" : "Add",
+                "src_color" : "Zero",
+                "dst_color" : "SrcColor",
+                "alpha_op" : "Max",
+                "src_alpha" : "One",
+                "dst_alpha" : "One"
+            },
+            "depth" : {
+                "write_enabled" : false,
+                "test_enabled" : true,
+                "compare_op" : "Greater"
+            },
+            "scissor" : {
+                "enabled" : true
+            }
+        },
+        "vertex_input" : [
+            {
+                "buf" : 0,
+                "loc" : 0,
+                "size" : 3,
+                "type" : "Float32",
+                "stride" : 16,
+                "base_offset" : 0,
+                "rel_offset" : 0
+            },
+            {
+                "buf" : 0,
+                "loc" : 3,
+                "size" : 2,
+                "type" : "Float16",
+                "stride" : 16,
+                "base_offset" : 0,
+                "rel_offset" : 12
+            }
+        ],
+        "render_pass" : {
+            "depth" : {
+                "format" : "D16",
+                "load" : "Load",
+                "store" : "Store"
+            },
+            "color" : [
+                {
+                    "format" : "RGB565",
+                    "load" : "Load",
+                    "store" : "Store"
+                }
+            ]
+        }
+    },
+    {
+        "type" : "graphics",
+        "shaders" : [ "internal/shadow_color.vert.glsl", "internal/shadow_color@ALPHATEST.frag.glsl" ],
+        "rast_state" : {
+            "poly" : {
+                "cull" : "Back",
+                "depth_bias_mode" : "Dynamic"
+            },
+            "blend" : {
+                "enabled" : true,
+                "color_op" : "Add",
+                "src_color" : "Zero",
+                "dst_color" : "SrcColor",
+                "alpha_op" : "Max",
+                "src_alpha" : "One",
+                "dst_alpha" : "One"
+            },
+            "depth" : {
+                "write_enabled" : false,
+                "test_enabled" : true,
+                "compare_op" : "Greater"
+            },
+            "scissor" : {
+                "enabled" : true
+            }
+        },
+        "vertex_input" : [
+            {
+                "buf" : 0,
+                "loc" : 0,
+                "size" : 3,
+                "type" : "Float32",
+                "stride" : 16,
+                "base_offset" : 0,
+                "rel_offset" : 0
+            },
+            {
+                "buf" : 0,
+                "loc" : 3,
+                "size" : 2,
+                "type" : "Float16",
+                "stride" : 16,
+                "base_offset" : 0,
+                "rel_offset" : 12
+            }
+        ],
+        "render_pass" : {
+            "depth" : {
+                "format" : "D16",
+                "load" : "Load",
+                "store" : "Store"
+            },
+            "color" : [
+                {
+                    "format" : "RGB565",
+                    "load" : "Load",
+                    "store" : "Store"
+                }
+            ]
         }
     },
     {
