@@ -885,6 +885,14 @@ void Eng::SceneManager::AllocGICache() {
         scene_data_.persistent_data->probe_offset = ren_ctx_.CreateImage(Ren::String{"Probe Volume Offset"}, {}, p,
                                                                          scene_data_.persistent_data->mem_allocs.get());
     }
+    { // 4mb + 8mb
+        scene_data_.persistent_data->spatial_cache_entries = ren_ctx_.CreateBuffer(
+            Ren::String{"Spatial Cache Entries"}, Ren::eBufType::Storage,
+            sizeof(uint32_t) * HASH_GRID_CACHE_ENTRIES_COUNT, 1, scene_data_.persistent_data->mem_allocs.get());
+        scene_data_.persistent_data->spatial_cache_voxels = ren_ctx_.CreateBuffer(
+            Ren::String{"Spatial Cache Voxels"}, Ren::eBufType::Storage,
+            sizeof(Ren::Vec2u) * HASH_GRID_CACHE_ENTRIES_COUNT, 1, scene_data_.persistent_data->mem_allocs.get());
+    }
 
     ClearGICache();
 }
@@ -898,6 +906,12 @@ void Eng::SceneManager::ReleaseGICache(const bool immediately) {
     scene_data_.persistent_data->probe_distance = {};
     scene_data_.persistent_data->probe_offset = {};
     scene_data_.persistent_data->probe_volumes.clear();
+
+    ren_ctx_.ReleaseBuffer(scene_data_.persistent_data->spatial_cache_entries, immediately);
+    ren_ctx_.ReleaseBuffer(scene_data_.persistent_data->spatial_cache_voxels, immediately);
+
+    scene_data_.persistent_data->spatial_cache_entries = {};
+    scene_data_.persistent_data->spatial_cache_voxels = {};
 }
 
 void Eng::SceneManager::Alloc_TLAS() {
@@ -2101,7 +2115,8 @@ void Eng::SceneManager::UpdateInstanceBufferRange(const uint32_t obj_beg, const 
 
 void Eng::SceneManager::ClearGICache(Ren::CommandBuffer _cmd_buf) {
     if (!scene_data_.persistent_data->probe_irradiance || !scene_data_.persistent_data->probe_distance ||
-        !scene_data_.persistent_data->probe_offset) {
+        !scene_data_.persistent_data->probe_offset || !scene_data_.persistent_data->spatial_cache_entries ||
+        !scene_data_.persistent_data->spatial_cache_voxels) {
         return;
     }
 
@@ -2110,14 +2125,20 @@ void Eng::SceneManager::ClearGICache(Ren::CommandBuffer _cmd_buf) {
         cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
     }
 
-    const Ren::TransitionInfo transitions[] = {{scene_data_.persistent_data->probe_irradiance, Ren::eResState::CopyDst},
-                                               {scene_data_.persistent_data->probe_distance, Ren::eResState::CopyDst},
-                                               {scene_data_.persistent_data->probe_offset, Ren::eResState::CopyDst}};
+    const Ren::TransitionInfo transitions[] = {
+        {scene_data_.persistent_data->probe_irradiance, Ren::eResState::CopyDst},
+        {scene_data_.persistent_data->probe_distance, Ren::eResState::CopyDst},
+        {scene_data_.persistent_data->probe_offset, Ren::eResState::CopyDst},
+        {scene_data_.persistent_data->spatial_cache_entries, Ren::eResState::CopyDst},
+        {scene_data_.persistent_data->spatial_cache_voxels, Ren::eResState::CopyDst}};
     TransitionResourceStates(ren_ctx_.api(), ren_ctx_.storages(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
     ren_ctx_.CmdClearImage(scene_data_.persistent_data->probe_irradiance, {}, cmd_buf);
     ren_ctx_.CmdClearImage(scene_data_.persistent_data->probe_distance, {}, cmd_buf);
     ren_ctx_.CmdClearImage(scene_data_.persistent_data->probe_offset, {}, cmd_buf);
+
+    ren_ctx_.CmdClearBuffer(scene_data_.persistent_data->spatial_cache_entries, 0, cmd_buf);
+    ren_ctx_.CmdClearBuffer(scene_data_.persistent_data->spatial_cache_voxels, 0, cmd_buf);
 
     if (!_cmd_buf) {
         ren_ctx_.EndTempSingleTimeCommands(cmd_buf);

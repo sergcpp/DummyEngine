@@ -487,7 +487,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
              Ren::eStoreOp::Store},
 #endif
             {Ren::eFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
-             Ren::eStoreOp::Store}};
+             Ren::eStoreOp::Store}
+        };
 
         // color_rts[2].flags = Ren::eImgFlags::SRGB;
 
@@ -866,6 +867,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 common_buffers.stoch_lights = fg_builder_.ImportResource(persistent_data.stoch_lights);
                 common_buffers.stoch_lights_nodes = fg_builder_.ImportResource(persistent_data.stoch_lights_nodes);
             }
+
+            common_buffers.spatial_cache_entries = fg_builder_.ImportResource(persistent_data.spatial_cache_entries);
+            common_buffers.spatial_cache_voxels = fg_builder_.ImportResource(persistent_data.spatial_cache_voxels);
         }
 
         auto &frame_textures = *fg_builder_.AllocTempData<FrameTextures>();
@@ -1394,9 +1398,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             }
 
             // GI cache
-            AddGICachePasses(common_buffers, persistent_data, acc_structs, bindless_tex,
-                             rt_geo_instances_res[int(eTLASIndex::Main)], rt_obj_instances_res[int(eTLASIndex::Main)],
-                             frame_textures);
+            AddGICachePasses(persistent_data, acc_structs, bindless_tex, rt_geo_instances_res[int(eTLASIndex::Main)],
+                             rt_obj_instances_res[int(eTLASIndex::Main)], common_buffers, frame_textures);
 
             // GI
             AddDiffusePasses(list.render_settings.debug_denoise == eDebugDenoise::GI, common_buffers, acc_structs,
@@ -1531,6 +1534,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             data->irradiance = debug_rt.AddTextureInput(frame_textures.gi_cache_irradiance, stage);
             data->distance = debug_rt.AddTextureInput(frame_textures.gi_cache_distance, stage);
             data->offset = debug_rt.AddTextureInput(frame_textures.gi_cache_offset, stage);
+
+            data->cache_entries = debug_rt.AddStorageReadonlyInput(common_buffers.spatial_cache_entries, stage);
+            data->cache_voxels = debug_rt.AddStorageReadonlyInput(common_buffers.spatial_cache_voxels, stage);
 
             frame_textures.color = data->output = debug_rt.AddStorageImageOutput(frame_textures.color, stage);
 

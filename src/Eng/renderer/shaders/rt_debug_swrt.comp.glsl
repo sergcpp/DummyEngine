@@ -13,10 +13,9 @@
 #include "texturing_common.glsl"
 #include "principled_common.glsl"
 #include "gi_cache_common.glsl"
+#include "rad_cache_common.glsl"
 
 #include "rt_debug_interface.h"
-
-#pragma multi_compile _ GI_CACHE
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -56,13 +55,38 @@ layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 
-#ifdef GI_CACHE
-    layout(binding = IRRADIANCE_TEX_SLOT) uniform sampler2DArray g_irradiance_tex;
-    layout(binding = DISTANCE_TEX_SLOT) uniform sampler2DArray g_distance_tex;
-    layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
-#endif
+layout(binding = IRRADIANCE_TEX_SLOT) uniform sampler2DArray g_irradiance_tex;
+layout(binding = DISTANCE_TEX_SLOT) uniform sampler2DArray g_distance_tex;
+layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
+
+layout(std430, binding = CACHE_ENTRIES_BUF_SLOT) readonly buffer CacheEntries {
+    uint g_cache_entries[];
+};
+
+layout(std430, binding = CACHE_VOXELS_BUF_SLOT) readonly buffer CacheVoxels {
+    uint g_cache_voxels[];
+};
 
 layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2D g_out_image;
+
+bool hash_map_find(const uint hash_key, inout uint cache_entry, out uint bucket_offset) {
+    const uint base_slot = hash_map_base_slot(hash_key);
+    for (bucket_offset = 0; bucket_offset < HASH_GRID_HASH_MAP_BUCKET_SIZE; ++bucket_offset) {
+        const uint stored_hash_key = g_cache_entries[base_slot + bucket_offset];
+        if (stored_hash_key == hash_key) {
+            cache_entry = base_slot + bucket_offset;
+            return true;
+        }
+    }
+    return false;
+}
+
+uint find_entry(const vec3 p, const bool backfacing, const vec3 cam_pos) {
+    const uint hash_key = compute_hash(p, backfacing, cam_pos);
+    uint cache_entry = HASH_GRID_INVALID_CACHE_ENTRY, collisions_count;
+    hash_map_find(hash_key, cache_entry, collisions_count);
+    return cache_entry;
+}
 
 layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
@@ -397,25 +421,34 @@ void main() {
             }
         }
 
-#ifdef GI_CACHE
-        for (uint i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
-            const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
-            if (weight > 0.0) {
-                if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0) {
-                    vec3 irradiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(-I, g_shrd_data.probe_volumes[i].spacing.xyz, 0.5 * inter.tmax), N,
-                                                            g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, true);
-                    light_total += lobe_masks.diffuse_mul * (1.0 / M_PI) * base_color * irradiance;
+        if (SHADING_MODE == 1) {
+            for (uint i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+                const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+                if (weight > 0.0) {
+                    if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0) {
+                        vec3 irradiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(-I, g_shrd_data.probe_volumes[i].spacing.xyz, 0.5 * inter.tmax), N,
+                                                                g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, true);
+                        light_total += lobe_masks.diffuse_mul * (1.0 / M_PI) * base_color * irradiance;
+                    }
+                    if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
+                        const vec3 refl_dir = reflect(-I, N);
+                        vec3 avg_radiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(-I, g_shrd_data.probe_volumes[i].spacing.xyz, 0.5 * inter.tmax), refl_dir,
+                                                                g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, true);
+                        light_total += avg_radiance * (1.0 / M_PI) * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y);
+                    }
+                    break;
                 }
-                if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
-                    const vec3 refl_dir = reflect(-I, N);
-                    vec3 avg_radiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(-I, g_shrd_data.probe_volumes[i].spacing.xyz, 0.5 * inter.tmax), refl_dir,
-                                                              g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, true);
-                    light_total += avg_radiance * (1.0 / M_PI) * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y);
-                }
-                break;
+            }
+        } else if (SHADING_MODE == 2) {
+            light_total = vec3(0.0);
+
+            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_and_exp.xyz);
+            if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
+                light_total = vec3(
+                    unpackHalf2x16(g_cache_voxels[2 * cache_entry + 0]),
+                    unpackHalf2x16(g_cache_voxels[2 * cache_entry + 1]).x) * RAD_CACHE_RADIANCE_COMPRESSION;
             }
         }
-#endif
 
         final_color = light_total;
     }

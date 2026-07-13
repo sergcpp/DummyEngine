@@ -116,4 +116,9 @@ void Eng::PersistentGpuData::Release() {
 
     probe_irradiance = probe_distance = probe_offset = {};
     probe_volumes.clear();
+
+    ctx.ReleaseBuffer(spatial_cache_entries, true /* immediately */);
+    ctx.ReleaseBuffer(spatial_cache_voxels, true /* immediately */);
+
+    spatial_cache_entries = spatial_cache_voxels = {};
 }

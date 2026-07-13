@@ -28,6 +28,9 @@ class ExDebugRT final : public FgExecutor {
         FgImgROHandle distance;
         FgImgROHandle offset;
 
+        FgBufROHandle cache_entries;
+        FgBufROHandle cache_voxels;
+
         Ren::AccStructROHandle tlas;
         uint32_t cull_mask = 0xffffffff;
 

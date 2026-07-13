@@ -24,6 +24,11 @@ struct RayPayload {
 const uint GRP_SIZE_X = 8;
 const uint GRP_SIZE_Y = 8;
 
+const uint SHADING_MODE = 2;
+// 0 - direct light only
+// 1 - direct + irradiance probes
+// 2 - radiance cache
+
 const uint TLAS_SLOT = 1;
 const uint ENV_TEX_SLOT = 2;
 const uint GEO_DATA_BUF_SLOT = 3;
@@ -44,6 +49,8 @@ const uint SHADOW_COLOR_TEX_SLOT = 17;
 const uint LTC_LUTS_TEX_SLOT = 18;
 const uint CELLS_BUF_SLOT = 19;
 const uint ITEMS_BUF_SLOT = 20;
+const uint CACHE_ENTRIES_BUF_SLOT = 21;
+const uint CACHE_VOXELS_BUF_SLOT = 22;
 
 const uint OUT_IMG_SLOT = 0;
 

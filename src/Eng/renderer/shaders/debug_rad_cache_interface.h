@@ -14,8 +14,11 @@ struct Params {
 const uint GRP_SIZE_X = 8;
 const uint GRP_SIZE_Y = 8;
 
-const uint DEPTH_TEX_SLOT = 1;
-const uint NORM_TEX_SLOT = 2;
+const uint CACHE_ENTRIES_BUF_SLOT = 1;
+const uint CACHE_VOXELS_BUF_SLOT = 2;
+
+const uint DEPTH_TEX_SLOT = 3;
+const uint NORM_TEX_SLOT = 4;
 
 const uint OUT_IMG_SLOT = 0;
 

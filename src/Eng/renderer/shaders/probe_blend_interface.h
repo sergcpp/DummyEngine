@@ -17,9 +17,15 @@ struct Params {
     vec4 quat_rot;
 };
 
-const uint RAY_DATA_TEX_SLOT = 1;
-const uint OFFSET_TEX_SLOT = 2;
-const uint DIRECT_LIGHT_BUF_SLOT = 3;
+const uint RAY_HITS_STRIDE = 4;
+
+const uint OFFSET_TEX_SLOT = 1;
+const uint DIRECT_LIGHT_BUF_SLOT = 2;
+const uint RAY_HITS_BUF_SLOT = 3;
+const uint CACHE_ENTRIES_BUF_SLOT = 4;
+const uint CACHE_VOXELS_BUF_SLOT = 5;
+const uint LIGHTS_BUF_SLOT = 6;
+const uint ENV_TEX_SLOT = 7;
 
 const uint OUT_IMG_SLOT = 0;
 

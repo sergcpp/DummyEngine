@@ -224,6 +224,8 @@ class Context {
                         int layer_count);
 
     void CmdClearImage(ImageHandle handle, const ClearColor &col, CommandBuffer cmd_buf);
+    void CmdClearBuffer(BufferHandle handle, uint32_t data, CommandBuffer cmd_buf);
+
     void CmdCopyImageToBuffer(ImageROHandle img, BufferRWHandle buf, CommandBuffer cmd_buf, uint32_t data_off);
     void CmdCopyImageToImage(CommandBuffer cmd_buf, ImageROHandle src, uint32_t src_level, const Vec3i &src_offset,
                              ImageRWHandle dst, uint32_t dst_level, const Vec3i &dst_offset, uint32_t dst_face,

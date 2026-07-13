@@ -184,6 +184,24 @@ const float SKY_SUN_BLEND_VAL = 0.000005f;
 // Autoexposure
 const int EXPOSURE_HISTOGRAM_RES = 64;
 
+// Spatial hashing
+const uint HASH_GRID_CACHE_ENTRIES_COUNT = (1u << 20);
+const uint HASH_GRID_POSITION_BIT_NUM = 9u;
+const uint HASH_GRID_POSITION_BIT_MASK = (1u << HASH_GRID_POSITION_BIT_NUM) - 1;
+const uint HASH_GRID_LEVEL_BIT_NUM = 4u;
+const uint HASH_GRID_LEVEL_BIT_MASK = (1u << HASH_GRID_LEVEL_BIT_NUM) - 1;
+const uint HASH_GRID_HASH_MAP_BUCKET_SIZE = 16u;
+const uint HASH_GRID_INVALID_CACHE_ENTRY = 0xFFFFFFFFu;
+const uint HASH_GRID_LEVEL_BIAS = 0u; // positive bias adds extra levels with content magnification
+const uint HASH_GRID_INVALID_HASH_KEY = 0u;
+const float HASH_GRID_POSITION_BIAS = 0.0001f;
+
+// Radiance caching
+const float RAD_CACHE_RADIANCE_COMPRESSION = 64.0f;
+const float RAD_CACHE_GRID_LOG_BASE = 2.0f;
+const int RAD_CACHE_STALE_FRAME_COUNT_MAX = 128;
+const float RAD_CACHE_GRID_SCALE = 30.0f;
+
 #define USE_OCT_PACKED_NORMALS 1
 
 #define FLT_EPS 0.0000001

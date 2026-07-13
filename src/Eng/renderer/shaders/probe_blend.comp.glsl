@@ -1,7 +1,9 @@
 #version 430 core
 
 #include "_cs_common.glsl"
+#include "principled_common.glsl"
 #include "gi_cache_common.glsl"
+#include "rad_cache_common.glsl"
 
 #include "probe_blend_interface.h"
 
@@ -23,7 +25,30 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = RAY_DATA_TEX_SLOT) uniform sampler2DArray g_ray_data;
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
+    shared_data_t g_shrd_data;
+};
+
+layout(std430, binding = RAY_HITS_BUF_SLOT) readonly buffer RayHitsList {
+    uint g_ray_hits[];
+};
+
+layout(std430, binding = CACHE_ENTRIES_BUF_SLOT) readonly buffer CacheEntries {
+    uint g_cache_entries[];
+};
+
+layout(std430, binding = CACHE_VOXELS_BUF_SLOT) readonly buffer CacheVoxels {
+    uint g_cache_voxels[];
+};
+
+#if defined(IRRADIANCE)
+layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
+    _light_item_t g_lights[];
+};
+
+layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
+#endif
+
 layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
 
 #if defined(STOCH_LIGHTS)
@@ -34,17 +59,38 @@ layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
 
 layout(binding = OUT_IMG_SLOT, rgba16f) uniform coherent image2DArray g_out_img;
 
+bool hash_map_find(const uint hash_key, inout uint cache_entry, out uint bucket_offset) {
+    const uint base_slot = hash_map_base_slot(hash_key);
+    for (bucket_offset = 0; bucket_offset < HASH_GRID_HASH_MAP_BUCKET_SIZE; ++bucket_offset) {
+        const uint stored_hash_key = g_cache_entries[base_slot + bucket_offset];
+        if (stored_hash_key == hash_key) {
+            cache_entry = base_slot + bucket_offset;
+            return true;
+        }
+    }
+    return false;
+}
+
+uint find_entry(const vec3 p, const bool backfacing, const vec3 cam_pos) {
+    const uint hash_key = compute_hash(p, backfacing, cam_pos);
+    uint cache_entry = HASH_GRID_INVALID_CACHE_ENTRY, collisions_count;
+    hash_map_find(hash_key, cache_entry, collisions_count);
+    return cache_entry;
+}
+
 layout (local_size_x = TEXEL_RES, local_size_y = TEXEL_RES, local_size_z = 1) in;
 
 void main() {
-    const uint probe_index = get_probe_index(gl_GlobalInvocationID, TEXEL_RES);
+    uint probe_index = get_probe_index(gl_GlobalInvocationID, TEXEL_RES);
     const bool is_scrolling_plane_probe = IsScrollingPlaneProbe(probe_index, g_params.grid_scroll.xyz, g_params.grid_scroll_diff.xyz);
 
     const uvec3 tex_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
-    const bool is_inactive = texelFetch(g_offset_tex, ivec3(tex_coords), 0).w < 0.5;
+    const vec4 offset = texelFetch(g_offset_tex, ivec3(tex_coords), 0);
+    const bool is_inactive = offset.w < 0.5;
 
+    const uvec3 probe_coords = get_probe_coords(probe_index);
 #ifdef PARTIAL
-    const uvec3 oct_index = get_probe_coords(probe_index) & 1u;
+    const uvec3 oct_index = probe_coords & 1u;
     const bool is_wrong_oct = (oct_index.x | (oct_index.y << 1u) | (oct_index.z << 2u)) != g_params.oct_index;
 #else
     const bool is_wrong_oct = false;
@@ -62,6 +108,11 @@ void main() {
         const uvec3 thread_coords = uvec3(gl_WorkGroupID.xy * (TEXEL_RES - 2),
                                           gl_GlobalInvocationID.z) + gl_LocalInvocationID - uvec3(1, 1, 0);
 
+        const uvec3 noscroll_probe_coords = uvec3((ivec3(probe_coords) - g_params.grid_scroll.xyz +
+                                                   ivec3(PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z)) %
+                                                   ivec3(PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z));
+        const vec3 probe_pos = get_probe_pos_ws(noscroll_probe_coords, g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz) + offset.xyz;
+
         const vec2 probe_oct_uv = get_normalized_oct_coords(thread_coords.xy, TEXEL_RES);
         const vec3 probe_ray_dir = get_oct_dir(probe_oct_uv);
 
@@ -69,19 +120,79 @@ void main() {
         float total_weight = 0.0;
         int backfaces = 0;
 
-        for (uint i = PROBE_FIXED_RAYS_COUNT; i < PROBE_TOTAL_RAYS_COUNT; ++i) {
-            const vec3 ray_dir = get_probe_ray_dir(i, g_params.quat_rot);
+        uint read_offset = (PROBE_TOTAL_RAYS_COUNT * probe_index + PROBE_FIXED_RAYS_COUNT) * RAY_HITS_STRIDE;
+        for (uint ray_index = PROBE_FIXED_RAYS_COUNT; ray_index < PROBE_TOTAL_RAYS_COUNT; ++ray_index) {
+            const vec3 ray_dir = get_probe_ray_dir(ray_index, g_params.quat_rot);
+
+            const uint hit_data0 = g_ray_hits[read_offset + 0];
+            const uint hit_data2 = g_ray_hits[read_offset + 2];
+
+            const uvec3 ray_data_coords = get_ray_data_coords(ray_index, probe_index);
 
             float weight = saturate(dot(probe_ray_dir, ray_dir));
 
-            const uvec3 ray_data_coords = get_ray_data_coords(i, probe_index);
+            vec4 ray_data = vec4(0.0, 0.0, 0.0, 1e27);
+            if (hit_data2 == 0xffffffffu) {
+#if defined(IRRADIANCE)
+                vec3 throughput = UnpackRGB565(hit_data0);
 
-            vec4 ray_data = texelFetch(g_ray_data, ivec3(ray_data_coords), 0);
+                // Check portal lights intersection
+                for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
+                    const _light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
+
+                    const vec3 light_pos = litem.pos_and_radius.xyz;
+                    vec3 light_u = litem.u_and_reg.xyz, light_v = litem.v_and_blend.xyz;
+                    const vec3 light_forward = normalize(cross(light_u, light_v));
+
+                    const float plane_dist = dot(light_forward, light_pos);
+                    const float cos_theta = dot(ray_dir, light_forward);
+                    const float t = (plane_dist - dot(light_forward, probe_pos)) / min(cos_theta, -FLT_EPS);
+
+                    if (cos_theta < 0.0 && t > 0.0) {
+                        light_u /= dot(light_u, light_u);
+                        light_v /= dot(light_v, light_v);
+
+                        const vec3 p = probe_pos + ray_dir * t;
+                        const vec3 vi = p - light_pos;
+                        const float a1 = dot(light_u, vi);
+                        if (a1 >= -1.0 && a1 <= 1.0) {
+                            const float a2 = dot(light_v, vi);
+                            if (a2 >= -1.0 && a2 <= 1.0) {
+                                throughput = vec3(0.0);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                const vec3 rotated_dir = rotate_xz(ray_dir, g_shrd_data.env_col.w);
+                const float env_mip_count = g_shrd_data.ambient_hack.w;
+
+                ray_data.xyz = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, env_mip_count - 4.0).xyz;
+#endif
+            } else {
+                ray_data.w = uintBitsToFloat(g_ray_hits[read_offset + 1]);
+                const bool backfacing = (ray_data.w < 0.0);
+                ray_data.w = abs(ray_data.w);
 
 #if defined(IRRADIANCE)
-            ray_data.xyz = (ray_data.xyz / g_params.pre_exposure);
+                const vec3 throughput = UnpackRGB565(hit_data0 & 0xffffu);
 
-            if (ray_data.a < 0.0) {
+                const vec3 P = probe_pos + ray_dir * ray_data.w;
+                const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_and_exp.xyz);
+                if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
+                    ray_data.xyz = throughput * vec3(
+                        unpackHalf2x16(g_cache_voxels[2 * cache_entry + 0]),
+                        unpackHalf2x16(g_cache_voxels[2 * cache_entry + 1]).x) * RAD_CACHE_RADIANCE_COMPRESSION;
+                } else {
+                    // Ignore missing data (to not make the result darker)
+                    weight = 0.0;
+                }
+#endif
+            }
+
+#if defined(IRRADIANCE)
+            if (ray_data.w < 0.0) {
                 ++backfaces;
                 if (!is_scrolling_plane_probe && backfaces > 24) {
                     return;
@@ -93,17 +204,15 @@ void main() {
 
 #elif defined(DISTANCE)
             const float max_ray_distance = length(g_params.grid_spacing) * 1.5;
-            float ray_distance = min(abs(ray_data.a), max_ray_distance);
-            if (ray_data.a < 0.0) {
-                // add thickness to backfacing surfaces
-                //ray_distance = max(0.0, ray_distance - 0.25 * max_ray_distance);
-            }
+            float ray_distance = min(abs(ray_data.w), max_ray_distance);
             const float ray_distance_sqr = sqr(ray_distance);
 
             weight = pow(weight, 50.0);
             result += weight * vec4(ray_distance, ray_distance_sqr, ray_distance * ray_distance_sqr, sqr(ray_distance_sqr));
             total_weight += weight;
 #endif
+
+            read_offset += RAY_HITS_STRIDE;
         }
 
         float epsilon = float(PROBE_TOTAL_RAYS_COUNT - PROBE_FIXED_RAYS_COUNT);

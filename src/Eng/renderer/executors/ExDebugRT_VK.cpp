@@ -22,12 +22,12 @@ void Eng::ExDebugRT::Execute_HWRT(const FgContext &fg) {
     const Ren::BufferROHandle cells = fg.AccessROBuffer(args_->cells);
     const Ren::BufferROHandle items = fg.AccessROBuffer(args_->items);
 
-    Ren::ImageROHandle irr, dist, off;
-    if (args_->irradiance) {
-        irr = fg.AccessROImage(args_->irradiance);
-        dist = fg.AccessROImage(args_->distance);
-        off = fg.AccessROImage(args_->offset);
-    }
+    const Ren::ImageROHandle irr = fg.AccessROImage(args_->irradiance);
+    const Ren::ImageROHandle dist = fg.AccessROImage(args_->distance);
+    const Ren::ImageROHandle off = fg.AccessROImage(args_->offset);
+
+    const Ren::BufferROHandle cache_entries = fg.AccessROBuffer(args_->cache_entries);
+    const Ren::BufferROHandle cache_voxels = fg.AccessROBuffer(args_->cache_voxels);
 
     const Ren::ImageRWHandle output = fg.AccessRWImage(args_->output);
 
@@ -36,27 +36,26 @@ void Eng::ExDebugRT::Execute_HWRT(const FgContext &fg) {
 
     VkCommandBuffer cmd_buf = fg.cmd_buf();
 
-    Ren::SmallVector<Ren::Binding, 24> bindings = {
-        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
-        {Ren::eBindTarget::AccStruct, RTDebug::TLAS_SLOT, args_->tlas},
-        {Ren::eBindTarget::TexSampled, RTDebug::ENV_TEX_SLOT, env},
-        {Ren::eBindTarget::SBufRO, RTDebug::GEO_DATA_BUF_SLOT, geo_data},
-        {Ren::eBindTarget::SBufRO, RTDebug::MATERIAL_BUF_SLOT, materials},
-        {Ren::eBindTarget::SBufRO, RTDebug::VTX_BUF1_SLOT, vtx_buf1},
-        {Ren::eBindTarget::SBufRO, RTDebug::VTX_BUF2_SLOT, vtx_buf2},
-        {Ren::eBindTarget::SBufRO, RTDebug::NDX_BUF_SLOT, ndx_buf},
-        {Ren::eBindTarget::SBufRO, RTDebug::LIGHTS_BUF_SLOT, lights},
-        {Ren::eBindTarget::UTBuf, RTDebug::CELLS_BUF_SLOT, cells},
-        {Ren::eBindTarget::UTBuf, RTDebug::ITEMS_BUF_SLOT, items},
-        {Ren::eBindTarget::TexSampled, RTDebug::SHADOW_DEPTH_TEX_SLOT, shadow_depth},
-        {Ren::eBindTarget::TexSampled, RTDebug::SHADOW_COLOR_TEX_SLOT, shadow_color},
-        {Ren::eBindTarget::TexSampled, RTDebug::LTC_LUTS_TEX_SLOT, ltc_luts},
-        {Ren::eBindTarget::ImageRW, RTDebug::OUT_IMG_SLOT, output}};
-    if (irr) {
-        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTDebug::IRRADIANCE_TEX_SLOT, irr);
-        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTDebug::DISTANCE_TEX_SLOT, dist);
-        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTDebug::OFFSET_TEX_SLOT, off);
-    }
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
+                                     {Ren::eBindTarget::AccStruct, RTDebug::TLAS_SLOT, args_->tlas},
+                                     {Ren::eBindTarget::TexSampled, RTDebug::ENV_TEX_SLOT, env},
+                                     {Ren::eBindTarget::SBufRO, RTDebug::GEO_DATA_BUF_SLOT, geo_data},
+                                     {Ren::eBindTarget::SBufRO, RTDebug::MATERIAL_BUF_SLOT, materials},
+                                     {Ren::eBindTarget::SBufRO, RTDebug::VTX_BUF1_SLOT, vtx_buf1},
+                                     {Ren::eBindTarget::SBufRO, RTDebug::VTX_BUF2_SLOT, vtx_buf2},
+                                     {Ren::eBindTarget::SBufRO, RTDebug::NDX_BUF_SLOT, ndx_buf},
+                                     {Ren::eBindTarget::SBufRO, RTDebug::LIGHTS_BUF_SLOT, lights},
+                                     {Ren::eBindTarget::UTBuf, RTDebug::CELLS_BUF_SLOT, cells},
+                                     {Ren::eBindTarget::UTBuf, RTDebug::ITEMS_BUF_SLOT, items},
+                                     {Ren::eBindTarget::TexSampled, RTDebug::SHADOW_DEPTH_TEX_SLOT, shadow_depth},
+                                     {Ren::eBindTarget::TexSampled, RTDebug::SHADOW_COLOR_TEX_SLOT, shadow_color},
+                                     {Ren::eBindTarget::TexSampled, RTDebug::LTC_LUTS_TEX_SLOT, ltc_luts},
+                                     {Ren::eBindTarget::TexSampled, RTDebug::IRRADIANCE_TEX_SLOT, irr},
+                                     {Ren::eBindTarget::TexSampled, RTDebug::DISTANCE_TEX_SLOT, dist},
+                                     {Ren::eBindTarget::TexSampled, RTDebug::OFFSET_TEX_SLOT, off},
+                                     {Ren::eBindTarget::SBufRO, RTDebug::CACHE_ENTRIES_BUF_SLOT, cache_entries},
+                                     {Ren::eBindTarget::SBufRO, RTDebug::CACHE_VOXELS_BUF_SLOT, cache_voxels},
+                                     {Ren::eBindTarget::ImageRW, RTDebug::OUT_IMG_SLOT, output}};
 
     const auto &[pi_main, pi_cold] = storages.pipelines[pi_debug_];
     const Ren::ProgramMain &pr = storages.programs[pi_main.prog].first;

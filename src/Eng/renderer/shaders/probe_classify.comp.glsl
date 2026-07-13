@@ -20,7 +20,9 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = RAY_DATA_TEX_SLOT) uniform sampler2DArray g_ray_data;
+layout(std430, binding = RAY_HITS_BUF_SLOT) readonly buffer RayHitsList {
+    uint g_ray_hits[];
+};
 
 layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2DArray g_out_img;
 
@@ -55,16 +57,17 @@ void main() {
     uint backface_count = 0, outdoor_count = 0;
     float hit_distances[PROBE_FIXED_RAYS_COUNT];
 
-    for (uint i = 0; i < PROBE_FIXED_RAYS_COUNT; ++i) {
-        const uvec3 ray_data_coords = get_ray_data_coords(i, probe_index);
-
-        hit_distances[i] = texelFetch(g_ray_data, ivec3(ray_data_coords), 0).w;
-        if (hit_distances[i] < 0.0) {
+    uint read_offset = PROBE_TOTAL_RAYS_COUNT * probe_index * RAY_HITS_STRIDE;
+    for (uint ray_index = 0; ray_index < PROBE_FIXED_RAYS_COUNT; ++ray_index) {
+        hit_distances[ray_index] = uintBitsToFloat(g_ray_hits[read_offset + 1]);
+        if (hit_distances[ray_index] < 0.0) {
             ++backface_count;
         }
-        if (hit_distances[i] > 100.0) {
+        if (hit_distances[ray_index] > 100.0) {
             ++outdoor_count;
         }
+
+        read_offset += RAY_HITS_STRIDE;
     }
 
     const vec3 probe_pos = get_probe_pos_ws(probe_coords, g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz) + offset.xyz;

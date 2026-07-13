@@ -1,4 +1,4 @@
-#version 460
+#version 430 core
 #extension GL_EXT_control_flow_attributes : require
 #if !defined(VULKAN)
 #extension GL_ARB_bindless_texture : enable
@@ -21,6 +21,7 @@
 #include "rt_diffuse_common.glsl"
 #include "gi_cache_common.glsl"
 #include "light_bvh_common.glsl"
+
 #include "rt_gi_cache_interface.h"
 
 #pragma multi_compile _ STOCH_LIGHTS_MIS
@@ -78,7 +79,21 @@ layout(binding = IRRADIANCE_TEX_SLOT) uniform sampler2DArray g_irradiance_tex;
 layout(binding = DISTANCE_TEX_SLOT) uniform sampler2DArray g_distance_tex;
 layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
 
-layout(binding = OUT_RAY_DATA_IMG_SLOT, rgba16f) uniform restrict writeonly image2DArray g_out_ray_data_img;
+layout(std430, binding = RAY_COUNTER_BUF_SLOT) readonly buffer RayCounter {
+    uint g_ray_counter[];
+};
+
+layout(std430, binding = RAY_IDS_BUF_SLOT) readonly buffer RayIDs {
+    uint g_ray_ids[];
+};
+
+layout(std430, binding = ACTIVE_ENTRIES_BUF_SLOT) readonly buffer ActiveEntries {
+    uint g_active_entries[];
+};
+
+layout(std430, binding = INOUT_VOXELS_BUF_SLOT) buffer InOutVoxels {
+    uint g_inout_voxels[];
+};
 
 vec3 LightVisibility(const _light_item_t litem, const vec3 P) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
@@ -105,27 +120,19 @@ vec3 LightVisibility(const _light_item_t litem, const vec3 P) {
 layout (local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    const uint ray_index = gl_GlobalInvocationID.x;
-    const uint probe_plane_index = gl_GlobalInvocationID.y;
-    const uint plane_index = gl_GlobalInvocationID.z;
-
-    uint probe_index = (plane_index * PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z) + probe_plane_index;
-
-    const uvec3 probe_coords = get_probe_coords(probe_index);
-    probe_index = get_scrolling_probe_index(probe_coords, g_params.grid_scroll.xyz);
-
-    const uvec3 tex_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
-    const bool is_inactive = ray_index >= PROBE_FIXED_RAYS_COUNT && texelFetch(g_offset_tex, ivec3(tex_coords), 0).w < 0.5;
-#ifdef PARTIAL
-    const uvec3 oct_index = get_probe_coords(probe_index) & 1u;
-    const bool is_wrong_oct = (oct_index.x | (oct_index.y << 1u) | (oct_index.z << 2u)) != g_params.oct_index;
-#else
-    const bool is_wrong_oct = false;
-#endif
-
-    if (!IsScrollingPlaneProbe(probe_index, g_params.grid_scroll.xyz, g_params.grid_scroll_diff.xyz) && (is_inactive || is_wrong_oct)) {
+    const uint index = gl_GlobalInvocationID.x;
+    if (index >= g_ray_counter[1]) {
         return;
     }
+
+    const uint cache_entry = g_active_entries[index];
+    const uint ray_id = g_ray_ids[cache_entry] & 0x00ffffffu;
+
+    const uint ray_index = (ray_id % PROBE_TOTAL_RAYS_COUNT);
+    const uint noscroll_probe_index = (ray_id / PROBE_TOTAL_RAYS_COUNT);
+
+    const uvec3 probe_coords = get_probe_coords(noscroll_probe_index);
+    const uint probe_index = get_scrolling_probe_index(probe_coords, g_params.grid_scroll.xyz);
 
     const vec3 probe_pos = get_probe_pos_ws(g_params.volume_index, probe_coords, g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz, g_offset_tex);
     const vec3 probe_ray_dir = get_probe_ray_dir(ray_index, g_params.quat_rot);
@@ -135,44 +142,10 @@ void main() {
     const uint hit_data0 = g_ray_hits[read_offset + 0];
     const uint hit_data2 = g_ray_hits[read_offset + 2];
 
-    vec4 out_color = vec4(0.0);
+    vec3 out_color = vec3(0.0);
     if (hit_data2 == 0xffffffffu) {
-        vec3 throughput = UnpackRGB565(hit_data0);
-
-        // Check portal lights intersection
-        for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
-            const _light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
-
-            const vec3 light_pos = litem.pos_and_radius.xyz;
-            vec3 light_u = litem.u_and_reg.xyz, light_v = litem.v_and_blend.xyz;
-            const vec3 light_forward = normalize(cross(light_u, light_v));
-
-            const float plane_dist = dot(light_forward, light_pos);
-            const float cos_theta = dot(probe_ray_dir, light_forward);
-            const float t = (plane_dist - dot(light_forward, probe_pos)) / min(cos_theta, -FLT_EPS);
-
-            if (cos_theta < 0.0 && t > 0.0) {
-                light_u /= dot(light_u, light_u);
-                light_v /= dot(light_v, light_v);
-
-                const vec3 p = probe_pos + probe_ray_dir * t;
-                const vec3 vi = p - light_pos;
-                const float a1 = dot(light_u, vi);
-                if (a1 >= -1.0 && a1 <= 1.0) {
-                    const float a2 = dot(light_v, vi);
-                    if (a2 >= -1.0 && a2 <= 1.0) {
-                        throughput = vec3(0.0);
-                        break;
-                    }
-                }
-            }
-        }
-
-        const vec3 rotated_dir = rotate_xz(probe_ray_dir, g_shrd_data.env_col.w);
-        const float env_mip_count = g_shrd_data.ambient_hack.w;
-
-        out_color.xyz = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, env_mip_count - 4.0).xyz;
-        out_color.w = 1e27;
+        // TODO: Separate shader invocations (only hits update the cache)!!!
+        return;
     } else {
         const uint obj_index = hit_data0 >> 16u;
         const vec2 inter_uv = unpackUnorm2x16(g_ray_hits[read_offset + 3]);
@@ -442,10 +415,24 @@ void main() {
             }
         }
 
-        out_color.xyz = throughput * light_total;
-        out_color.w = backfacing ? -hit_t : hit_t;
+        out_color = light_total;
     }
 
-    out_color.xyz = compress_hdr(out_color.xyz, g_shrd_data.cam_pos_and_exp.w);
-    imageStore(g_out_ray_data_img, ivec3(output_coords), out_color);
+    out_color /= RAD_CACHE_RADIANCE_COMPRESSION;
+
+#if 1
+    g_inout_voxels[2 * cache_entry + 0] = packHalf2x16(out_color.xy);
+    const float frame_index = unpackHalf2x16(g_inout_voxels[2 * cache_entry + 1]).y;
+    g_inout_voxels[2 * cache_entry + 1] = packHalf2x16(vec2(out_color.z, frame_index));
+#else
+    // Soft accumulation
+    const vec3 prev_color = vec3(uintBitsToFloat(g_inout_voxels[4 * cache_entry + 0]),
+                                 uintBitsToFloat(g_inout_voxels[4 * cache_entry + 1]),
+                                 uintBitsToFloat(g_inout_voxels[4 * cache_entry + 2]));
+    const float k = 0.75 * float(hsum(prev_color) > 0.0001);
+
+    g_inout_voxels[4 * cache_entry + 0] = floatBitsToUint(k * prev_color.x + (1.0 - k) * out_color.x);
+    g_inout_voxels[4 * cache_entry + 1] = floatBitsToUint(k * prev_color.y + (1.0 - k) * out_color.y);
+    g_inout_voxels[4 * cache_entry + 2] = floatBitsToUint(k * prev_color.z + (1.0 - k) * out_color.z);
+#endif
 }

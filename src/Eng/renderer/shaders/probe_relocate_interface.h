@@ -17,9 +17,11 @@ struct Params {
     vec4 quat_rot;
 };
 
+const uint RAY_HITS_STRIDE = 4;
+
 const uint GRP_SIZE_X = 32;
 
-const uint RAY_DATA_TEX_SLOT = 1;
+const uint RAY_HITS_BUF_SLOT = 1;
 
 const uint OUT_IMG_SLOT = 0;
 

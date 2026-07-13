@@ -101,6 +101,13 @@ void Eng::Renderer::InitPipelines() {
     pi_tile_clear_[3] = sh_.FindOrCreatePipeline("internal/tile_clear@AVERAGE;VARIANCE.comp.glsl");
 
     // GI Cache
+    pi_spatial_cache_resolve_ =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_spatial_cache_resolve.comp.glsl"));
+    pi_spatial_cache_update_[0] =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_spatial_cache_update.comp.glsl"));
+    pi_spatial_cache_update_[1] =
+        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_spatial_cache_update@PARTIAL.comp.glsl"));
+    pi_cache_write_indirect_ = sh_.FindOrCreatePipeline("internal/rt_gi_cache_write_indirect_args.comp.glsl");
     pi_cache_shade_[0][0] = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_shade.comp.glsl"));
     pi_cache_shade_[0][1] = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_shade@PARTIAL.comp.glsl"));
     pi_cache_shade_[1][0] =
@@ -1009,7 +1016,7 @@ Eng::Renderer::AddDisocclusionPasses(const FgImgROHandle depth, const FgImgROHan
             uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.ren_res);
 
             DispatchCompute(fg.cmd_buf(), pi_reconstruct_depth_, fg.storages(), grp_count, bindings, &uniform_params,
-                            sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                            sizeof(uniform_params), fg.descr_alloc(), fg.log());
         });
     }
     FgImgRWHandle disocclusion_mask;
@@ -1070,7 +1077,7 @@ Eng::Renderer::AddDisocclusionPasses(const FgImgROHandle depth, const FgImgROHan
             uniform_params.frustum_info = view_state_.frustum_info;
 
             DispatchCompute(fg.cmd_buf(), pi_prepare_disocclusion_, fg.storages(), grp_count, bindings, &uniform_params,
-                            sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                            sizeof(uniform_params), fg.descr_alloc(), fg.log());
         });
     }
 
@@ -1209,7 +1216,7 @@ Eng::FgImgRWHandle Eng::Renderer::AddMotionBlurPasses(FgImgROHandle input, Frame
             uniform_params.img_size = Ren::Vec2u{img_cold.params.w, img_cold.params.h};
 
             DispatchCompute(fg.cmd_buf(), pi_motion_blur_classify_[0], fg.storages(), grp_count, bindings,
-                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                            &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
         });
     }
     { // Vertical pass
@@ -1251,7 +1258,7 @@ Eng::FgImgRWHandle Eng::Renderer::AddMotionBlurPasses(FgImgROHandle input, Frame
             uniform_params.img_size = in_res;
 
             DispatchCompute(fg.cmd_buf(), pi_motion_blur_classify_[1], fg.storages(), grp_count, bindings,
-                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                            &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
         });
     }
     { // Dilation pass
@@ -1295,7 +1302,7 @@ Eng::FgImgRWHandle Eng::Renderer::AddMotionBlurPasses(FgImgROHandle input, Frame
             uniform_params.img_size = res;
 
             DispatchCompute(fg.cmd_buf(), pi_motion_blur_dilate_, fg.storages(), grp_count, bindings, &uniform_params,
-                            sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                            sizeof(uniform_params), fg.descr_alloc(), fg.log());
         });
     }
     FgImgRWHandle output;
@@ -1352,7 +1359,7 @@ Eng::FgImgRWHandle Eng::Renderer::AddMotionBlurPasses(FgImgROHandle input, Frame
             uniform_params.clip_info = view_state_.clip_info;
 
             DispatchCompute(fg.cmd_buf(), pi_motion_blur_filter_, fg.storages(), grp_count, bindings, &uniform_params,
-                            sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                            sizeof(uniform_params), fg.descr_alloc(), fg.log());
         });
     }
     return output;
@@ -1443,7 +1450,7 @@ Eng::FgImgRWHandle Eng::Renderer::AddDebugVelocityPass(const FgImgROHandle veloc
         uniform_params.img_size = Ren::Vec2u{view_state_.out_res};
 
         DispatchCompute(fg.cmd_buf(), pi_debug_velocity_, fg.storages(), grp_count, bindings, &uniform_params,
-                        sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                        sizeof(uniform_params), fg.descr_alloc(), fg.log());
     });
 
     return output;
@@ -1500,7 +1507,7 @@ Eng::FgImgRWHandle Eng::Renderer::AddDebugGBufferPass(const FrameTextures &frame
         uniform_params.img_size[1] = view_state_.out_res[1];
 
         DispatchCompute(fg.cmd_buf(), pi_debug_gbuffer_[pi_index], fg.storages(), grp_count, bindings, &uniform_params,
-                        sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                        sizeof(uniform_params), fg.descr_alloc(), fg.log());
     });
 
     return output;
@@ -1515,12 +1522,18 @@ Eng::FgImgRWHandle Eng::Renderer::AddDebugRadCachePass(const FrameTextures &fram
 
     struct PassData {
         FgBufROHandle shared_data;
+        FgBufROHandle cache_entries;
+        FgBufROHandle cache_voxels;
         FgImgROHandle depth, normal;
         FgImgRWHandle output;
     };
 
     auto *data = fg_builder_.AllocTempData<PassData>();
     data->shared_data = debug_rad_cache.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+    data->cache_entries =
+        debug_rad_cache.AddStorageReadonlyInput(common_buffers.spatial_cache_entries, Stg::ComputeShader);
+    data->cache_voxels =
+        debug_rad_cache.AddStorageReadonlyInput(common_buffers.spatial_cache_voxels, Stg::ComputeShader);
 
     data->depth = debug_rad_cache.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
     data->normal = debug_rad_cache.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
@@ -1541,6 +1554,8 @@ Eng::FgImgRWHandle Eng::Renderer::AddDebugRadCachePass(const FrameTextures &fram
         using namespace DebugRadCache;
 
         const Ren::BufferROHandle unif_shared_data = fg.AccessROBuffer(data->shared_data);
+        const Ren::BufferROHandle cache_entries = fg.AccessROBuffer(data->cache_entries);
+        const Ren::BufferROHandle cache_voxels = fg.AccessROBuffer(data->cache_voxels);
 
         const Ren::ImageROHandle depth = fg.AccessROImage(data->depth);
         const Ren::ImageROHandle normal = fg.AccessROImage(data->normal);
@@ -1548,6 +1563,8 @@ Eng::FgImgRWHandle Eng::Renderer::AddDebugRadCachePass(const FrameTextures &fram
         const Ren::ImageRWHandle out_color = fg.AccessRWImage(data->output);
 
         const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_shared_data},
+                                         {Trg::SBufRO, CACHE_ENTRIES_BUF_SLOT, cache_entries},
+                                         {Trg::SBufRO, CACHE_VOXELS_BUF_SLOT, cache_voxels},
                                          {Trg::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},
                                          {Trg::TexSampled, NORM_TEX_SLOT, normal},
                                          {Trg::ImageRW, OUT_IMG_SLOT, out_color}};
@@ -1603,7 +1620,7 @@ Eng::FgImgRWHandle Eng::Renderer::AddDebugImagePass(const FgImgROHandle img, con
         uniform_params.channel = channel;
 
         DispatchCompute(fg.cmd_buf(), pi_debug_image_, fg.storages(), grp_count, bindings, &uniform_params,
-                        sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                        sizeof(uniform_params), fg.descr_alloc(), fg.log());
     });
 
     return output;

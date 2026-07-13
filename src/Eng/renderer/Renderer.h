@@ -191,8 +191,8 @@ class Renderer {
         pi_specular_stabilization_;
     Ren::PipelineHandle pi_tile_clear_[4];
     // GI Cache
-    Ren::PipelineHandle pi_cache_shade_[2][2], pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[5],
-        pi_probe_sample_;
+    Ren::PipelineHandle pi_spatial_cache_resolve_, pi_spatial_cache_update_[2], pi_cache_write_indirect_,
+        pi_cache_shade_[2][2], pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[5], pi_probe_sample_;
     // GTAO
     Ren::PipelineHandle pi_gtao_main_[2], pi_gtao_filter_[2], pi_gtao_accumulate_[2];
     // Diffuse GI
@@ -237,6 +237,9 @@ class Renderer {
         FgBufROHandle materials;
 
         FgBufROHandle stoch_lights, stoch_lights_nodes;
+
+        FgBufRWHandle spatial_cache_entries;
+        FgBufRWHandle spatial_cache_voxels;
     };
 
     struct AccelerationStructures {
@@ -324,9 +327,9 @@ class Renderer {
     FgImgRWHandle AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgImgROHandle depth);
 
     // GI Cache
-    void AddGICachePasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                          const AccelerationStructures &acc_structs, const BindlessTextureData &bindless,
-                          FgBufROHandle rt_geo_instances_res, FgBufROHandle rt_obj_instances_res,
+    void AddGICachePasses(const PersistentGpuData &persistent_data, const AccelerationStructures &acc_structs,
+                          const BindlessTextureData &bindless, FgBufROHandle rt_geo_instances_res,
+                          FgBufROHandle rt_obj_instances_res, CommonBuffers &common_buffers,
                           FrameTextures &frame_textures);
 
     // GI Diffuse

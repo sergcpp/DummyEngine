@@ -16,7 +16,9 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = RAY_DATA_TEX_SLOT) uniform sampler2DArray g_ray_data;
+layout(std430, binding = RAY_HITS_BUF_SLOT) readonly buffer RayHitsList {
+    uint g_ray_hits[];
+};
 
 layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2DArray g_out_img;
 
@@ -51,26 +53,27 @@ void main() {
     float closest_back_dist = 1e27, closest_front_dist = 1e27, farthest_front_dist = 0.0;
     float backface_count = 0.0;
 
-    for (uint i = 0; i < PROBE_FIXED_RAYS_COUNT; ++i) {
-        const uvec3 ray_data_coords = get_ray_data_coords(i, probe_index);
-
-        float hit_dist = texelFetch(g_ray_data, ivec3(ray_data_coords), 0).w;
+    uint read_offset = PROBE_TOTAL_RAYS_COUNT * probe_index * RAY_HITS_STRIDE;
+    for (uint ray_index = 0; ray_index < PROBE_FIXED_RAYS_COUNT; ++ray_index) {
+        float hit_dist = uintBitsToFloat(g_ray_hits[read_offset + 1]);
         if (hit_dist < 0.0) {
             backface_count += 1.0;
             hit_dist = -5.0 * hit_dist;
             if (hit_dist < closest_back_dist) {
                 closest_back_dist = hit_dist;
-                closest_back_index = int(i);
+                closest_back_index = int(ray_index);
             }
         } else {
             if (hit_dist < closest_front_dist) {
                 closest_front_dist = hit_dist;
-                closest_front_index = int(i);
+                closest_front_index = int(ray_index);
             } else if (hit_dist > farthest_front_dist) {
                 farthest_front_dist = hit_dist;
-                farthest_front_index = int(i);
+                farthest_front_index = int(ray_index);
             }
         }
+
+        read_offset += RAY_HITS_STRIDE;
     }
 
     const float MinFrontDistance = 1.0 * length(g_params.grid_spacing.xyz);

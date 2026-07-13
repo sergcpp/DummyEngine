@@ -256,10 +256,15 @@ struct PersistentGpuData {
     std::vector<Ren::AccStructHandle> rt_blases;
     Ren::AccStructHandle rt_tlases[3];
 
+    // Irradiance cache
     Ren::ImageHandle probe_irradiance;
     Ren::ImageHandle probe_distance;
     Ren::ImageHandle probe_offset;
     std::vector<probe_volume_t> probe_volumes;
+
+    // Radiance cache
+    Ren::BufferHandle spatial_cache_entries;
+    Ren::BufferHandle spatial_cache_voxels;
 
     PersistentGpuData(Ren::Context &ctx);
     ~PersistentGpuData();

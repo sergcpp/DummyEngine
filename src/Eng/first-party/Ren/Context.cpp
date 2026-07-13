@@ -463,6 +463,11 @@ void Ren::Context::CmdClearImage(const ImageHandle handle, const ClearColor &col
     Image_CmdClear(*api_, img_main, img_cold, col, cmd_buf);
 }
 
+void Ren::Context::CmdClearBuffer(const BufferHandle handle, const uint32_t data, const CommandBuffer cmd_buf) {
+    const auto &[buf_main, buf_cold] = buffers_[handle];
+    Buffer_Fill(*api_, buf_main, 0, buf_cold.size, data, cmd_buf);
+}
+
 void Ren::Context::CmdCopyImageToBuffer(const ImageROHandle img, const BufferRWHandle buf, const CommandBuffer cmd_buf,
                                         const uint32_t data_off) {
     const auto &[img_main, img_cold] = images_[img];

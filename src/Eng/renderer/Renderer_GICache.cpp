@@ -10,10 +10,10 @@
 #include "shaders/probe_relocate_interface.h"
 #include "shaders/rt_gi_cache_interface.h"
 
-void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+void Eng::Renderer::AddGICachePasses(const PersistentGpuData &persistent_data,
                                      const AccelerationStructures &acc_structs, const BindlessTextureData &bindless,
                                      const FgBufROHandle rt_geo_instances_res, const FgBufROHandle rt_obj_instances_res,
-                                     FrameTextures &frame_textures) {
+                                     CommonBuffers &common_buffers, FrameTextures &frame_textures) {
     using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
@@ -66,7 +66,220 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
         return;
     }
 
-    FgImgRWHandle ray_data;
+    FgBufRWHandle ray_counter, ray_ids;
+
+    { // Prepare atomic counter and ray length texture
+        auto &gi_cache_prepare = fg_builder_.AddNode("RT GI CACHE PREPARE");
+
+        struct PassData {
+            FgBufRWHandle ray_counter;
+            FgBufRWHandle ray_ids;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+
+        { // ray counter
+            FgBufDesc desc = {};
+            desc.type = Ren::eBufType::Storage;
+            desc.size = 2 * sizeof(uint32_t);
+
+            ray_counter = data->ray_counter = gi_cache_prepare.AddTransferOutput("RT GI Cache Ray Counter", desc);
+        }
+        { // ray data
+            FgBufDesc desc = {};
+            desc.type = Ren::eBufType::Storage;
+            desc.size = HASH_GRID_CACHE_ENTRIES_COUNT * sizeof(uint32_t);
+
+            ray_ids = data->ray_ids = gi_cache_prepare.AddTransferOutput("RT GI Cache Ray IDs", desc);
+        }
+
+        gi_cache_prepare.set_execute_cb([data](const FgContext &fg) {
+            const Ren::BufferHandle ray_counter = fg.AccessRWBuffer(data->ray_counter);
+            const Ren::BufferHandle ray_ids = fg.AccessRWBuffer(data->ray_ids);
+            { // ray counter
+                const auto &[buf_main, buf_cold] = fg.storages().buffers[ray_counter];
+                Buffer_Fill(fg.ren_ctx().api(), buf_main, 0, buf_cold.size, 0, fg.cmd_buf());
+            }
+            { // ray data
+                const auto &[buf_main, buf_cold] = fg.storages().buffers[ray_ids];
+                Buffer_Fill(fg.ren_ctx().api(), buf_main, 0, buf_cold.size, 0xffffffffu, fg.cmd_buf());
+            }
+        });
+    }
+
+    FgBufRWHandle active_entries;
+
+    { // Update radiance cache
+        auto &rt_gi_rad_cache_update = fg_builder_.AddNode("RT GI RAD CACHE UPDATE");
+
+        struct PassData {
+            FgBufROHandle shared_data;
+            FgBufROHandle ray_hits;
+            FgImgROHandle offset;
+
+            FgBufRWHandle inout_ray_counter;
+            FgBufRWHandle inout_cache_entries;
+            FgBufRWHandle inout_cache_voxels;
+            FgBufRWHandle inout_ray_ids;
+            FgBufRWHandle out_active_entries;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+        data->shared_data =
+            rt_gi_rad_cache_update.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+        data->ray_hits = rt_gi_rad_cache_update.AddStorageReadonlyInput(ray_hits, Stg::ComputeShader);
+        data->offset = rt_gi_rad_cache_update.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
+
+        ray_counter = data->inout_ray_counter =
+            rt_gi_rad_cache_update.AddStorageOutput(ray_counter, Stg::ComputeShader);
+        ray_ids = data->inout_ray_ids = rt_gi_rad_cache_update.AddStorageOutput(ray_ids, Stg::ComputeShader);
+        common_buffers.spatial_cache_entries = data->inout_cache_entries =
+            rt_gi_rad_cache_update.AddStorageOutput(common_buffers.spatial_cache_entries, Stg::ComputeShader);
+        common_buffers.spatial_cache_voxels = data->inout_cache_voxels =
+            rt_gi_rad_cache_update.AddStorageOutput(common_buffers.spatial_cache_voxels, Stg::ComputeShader);
+
+        { // active entries
+            FgBufDesc desc = {};
+            desc.type = Ren::eBufType::Storage;
+            desc.size = sizeof(uint32_t) * std::min(HASH_GRID_CACHE_ENTRIES_COUNT,
+                                                    (PROBE_TOTAL_RAYS_COUNT - PROBE_FIXED_RAYS_COUNT) *
+                                                        PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z);
+            active_entries = data->out_active_entries =
+                rt_gi_rad_cache_update.AddTransferOutput("RT GI Cache Active Entries", desc);
+        }
+
+        rt_gi_rad_cache_update.set_execute_cb([this, data, &persistent_data](const FgContext &fg) {
+            const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
+            const Ren::BufferROHandle ray_hits = fg.AccessROBuffer(data->ray_hits);
+            const Ren::ImageROHandle offset = fg.AccessROImage(data->offset);
+
+            const Ren::BufferRWHandle inout_ray_counter = fg.AccessRWBuffer(data->inout_ray_counter);
+            const Ren::BufferRWHandle inout_ray_ids = fg.AccessRWBuffer(data->inout_ray_ids);
+            const Ren::BufferRWHandle inout_cache_entries = fg.AccessRWBuffer(data->inout_cache_entries);
+            const Ren::BufferRWHandle inout_cache_voxels = fg.AccessRWBuffer(data->inout_cache_voxels);
+            const Ren::BufferRWHandle out_active_entries = fg.AccessRWBuffer(data->out_active_entries);
+
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
+                                             {Trg::SBufRO, RTGICache::RAY_HITS_BUF_SLOT, ray_hits},
+                                             {Trg::TexSampled, RTGICache::OFFSET_TEX_SLOT, offset},
+                                             {Trg::SBufRW, RTGICache::INOUT_ENTRIES_BUF_SLOT, inout_cache_entries},
+                                             {Trg::SBufRW, RTGICache::INOUT_VOXELS_BUF_SLOT, inout_cache_voxels},
+                                             {Trg::SBufRW, RTGICache::RAY_COUNTER_BUF_SLOT, inout_ray_counter},
+                                             {Trg::SBufRW, RTGICache::INOUT_RAY_IDS_BUF_SLOT, inout_ray_ids},
+                                             {Trg::SBufRW, RTGICache::OUT_ACTIVE_BUF_SLOT, out_active_entries}};
+
+            const int volume_to_update = p_list_->volume_to_update;
+            const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
+            const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
+            const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
+            const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
+            const Ren::Vec3i &grid_scroll_diff = persistent_data.probe_volumes[volume_to_update].scroll_diff;
+
+            RTGICache::Params uniform_params = {};
+            uniform_params.volume_index = volume_to_update;
+            uniform_params.oct_index = (persistent_data.probe_volumes[volume_to_update].updates_count - 1) % 8;
+            uniform_params.grid_origin = Ren::Vec4f{grid_origin, 0.0f};
+            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll, 0};
+            uniform_params.grid_scroll_diff = Ren::Vec4i{grid_scroll_diff, 0};
+            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing, 0.0f};
+            uniform_params.quat_rot = view_state_.probe_ray_rotator;
+            uniform_params.pass_hash = view_state_.frame_index;
+
+            const auto grp_count = Ren::Vec3u{(PROBE_TOTAL_RAYS_COUNT / RTGICache::GRP_SIZE_X),
+                                              PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y};
+
+            DispatchCompute(fg.cmd_buf(), pi_spatial_cache_update_[partial], fg.storages(), grp_count, bindings,
+                            &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
+        });
+    }
+
+    { // Resolve radiance cache
+        auto &rt_gi_rad_cache_resolve = fg_builder_.AddNode("RT GI RAD CACHE UPDATE");
+
+        struct PassData {
+            FgBufROHandle shared_data;
+
+            FgBufRWHandle inout_cache_entries;
+            FgBufRWHandle inout_cache_voxels;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+        data->shared_data =
+            rt_gi_rad_cache_resolve.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+
+        common_buffers.spatial_cache_entries = data->inout_cache_entries =
+            rt_gi_rad_cache_resolve.AddStorageOutput(common_buffers.spatial_cache_entries, Stg::ComputeShader);
+        common_buffers.spatial_cache_voxels = data->inout_cache_voxels =
+            rt_gi_rad_cache_resolve.AddStorageOutput(common_buffers.spatial_cache_voxels, Stg::ComputeShader);
+
+        rt_gi_rad_cache_resolve.set_execute_cb([this, data, &persistent_data](const FgContext &fg) {
+            const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
+
+            const Ren::BufferRWHandle inout_cache_entries = fg.AccessRWBuffer(data->inout_cache_entries);
+            const Ren::BufferRWHandle inout_cache_voxels = fg.AccessRWBuffer(data->inout_cache_voxels);
+
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
+                                             {Trg::SBufRW, RTGICache::INOUT_ENTRIES_BUF_SLOT, inout_cache_entries},
+                                             {Trg::SBufRW, RTGICache::INOUT_VOXELS_BUF_SLOT, inout_cache_voxels}};
+
+            const int volume_to_update = p_list_->volume_to_update;
+            const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
+            const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
+            const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
+            const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
+            const Ren::Vec3i &grid_scroll_diff = persistent_data.probe_volumes[volume_to_update].scroll_diff;
+
+            RTGICache::Params uniform_params = {};
+            uniform_params.volume_index = volume_to_update;
+            uniform_params.oct_index = (persistent_data.probe_volumes[volume_to_update].updates_count - 1) % 8;
+            uniform_params.grid_origin = Ren::Vec4f{grid_origin, 0.0f};
+            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll, 0};
+            uniform_params.grid_scroll_diff = Ren::Vec4i{grid_scroll_diff, 0};
+            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing, 0.0f};
+            uniform_params.quat_rot = view_state_.probe_ray_rotator;
+            uniform_params.pass_hash = view_state_.frame_index;
+
+            static_assert((HASH_GRID_CACHE_ENTRIES_COUNT % RTGICache::GRP_SIZE_X) == 0);
+            const auto grp_count = Ren::Vec3u{HASH_GRID_CACHE_ENTRIES_COUNT / RTGICache::GRP_SIZE_X, 1u, 1u};
+
+            DispatchCompute(fg.cmd_buf(), pi_spatial_cache_resolve_, fg.storages(), grp_count, bindings,
+                            &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
+        });
+    }
+
+    FgBufRWHandle indir_disp;
+
+    { // Write indirect arguments
+        auto &write_indir = fg_builder_.AddNode("RT GI CACHE INDIR ARGS");
+
+        struct PassData {
+            FgBufRWHandle ray_counter;
+            FgBufRWHandle indir_disp;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+        ray_counter = data->ray_counter = write_indir.AddStorageOutput(ray_counter, Stg::ComputeShader);
+
+        { // Indirect arguments
+            FgBufDesc desc = {};
+            desc.type = Ren::eBufType::Indirect;
+            desc.size = 3 * sizeof(Ren::DispatchIndirectCommand);
+
+            indir_disp = data->indir_disp =
+                write_indir.AddStorageOutput("GI Cache Intersect Args", desc, Stg::ComputeShader);
+        }
+
+        write_indir.set_execute_cb([this, data](const FgContext &fg) {
+            const Ren::BufferHandle ray_counter = fg.AccessRWBuffer(data->ray_counter);
+            const Ren::BufferHandle indir_args = fg.AccessRWBuffer(data->indir_disp);
+
+            const Ren::Binding bindings[] = {{Trg::SBufRW, RTGICache::RAY_COUNTER_BUF_SLOT, ray_counter},
+                                             {Trg::SBufRW, RTGICache::OUT_INDIR_ARGS_BUF_SLOT, indir_args}};
+
+            DispatchCompute(fg.cmd_buf(), pi_cache_write_indirect_, fg.storages(), Ren::Vec3u{1u, 1u, 1u}, bindings,
+                            nullptr, 0, fg.descr_alloc(), fg.log());
+        });
+    }
 
     { // Shade hit points
         auto &rt_gi_cache_shade = fg_builder_.AddNode("RT GI CACHE SHADE");
@@ -92,8 +305,12 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
             FgImgROHandle offset;
 
             FgBufROHandle ray_hits;
+            FgBufROHandle ray_counter;
+            FgBufROHandle ray_ids;
+            FgBufROHandle active_entries;
+            FgBufROHandle indir_args;
 
-            FgImgRWHandle out_ray_data;
+            FgBufRWHandle inout_cache_voxels;
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
@@ -125,19 +342,13 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
         data->offset = rt_gi_cache_shade.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
 
         data->ray_hits = rt_gi_cache_shade.AddStorageReadonlyInput(ray_hits, Stg::ComputeShader);
+        data->ray_counter = rt_gi_cache_shade.AddStorageReadonlyInput(ray_counter, Stg::ComputeShader);
+        data->ray_ids = rt_gi_cache_shade.AddStorageReadonlyInput(ray_ids, Stg::ComputeShader);
+        data->active_entries = rt_gi_cache_shade.AddStorageReadonlyInput(active_entries, Stg::ComputeShader);
+        data->indir_args = rt_gi_cache_shade.AddIndirectBufferInput(indir_disp);
 
-        { // ~16.0mb
-            FgImgDesc desc;
-            desc.w = PROBE_TOTAL_RAYS_COUNT;
-            desc.h = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z;
-            desc.d = PROBE_VOLUME_RES_Y;
-            desc.format = Ren::eFormat::RGBA16F;
-            desc.flags = Ren::eImgFlags::Array;
-            desc.usage = Ren::Bitmask(Ren::eImgUsage::Storage) | Ren::eImgUsage::Sampled | Ren::eImgUsage::Transfer;
-
-            ray_data = data->out_ray_data =
-                rt_gi_cache_shade.AddStorageImageOutput("Probe Volume RayData", desc, Stg::ComputeShader);
-        }
+        common_buffers.spatial_cache_voxels = data->inout_cache_voxels =
+            rt_gi_cache_shade.AddStorageOutput(common_buffers.spatial_cache_voxels, Stg::ComputeShader);
 
         rt_gi_cache_shade.set_execute_cb([this, &bindless, data, &persistent_data](const FgContext &fg) {
             const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
@@ -157,6 +368,10 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
             const Ren::ImageROHandle dist = fg.AccessROImage(data->distance);
             const Ren::ImageROHandle off = fg.AccessROImage(data->offset);
             const Ren::BufferROHandle ray_hits = fg.AccessROBuffer(data->ray_hits);
+            const Ren::BufferROHandle ray_counter = fg.AccessROBuffer(data->ray_counter);
+            const Ren::BufferROHandle ray_ids = fg.AccessROBuffer(data->ray_ids);
+            const Ren::BufferROHandle active_entries = fg.AccessROBuffer(data->active_entries);
+            const Ren::BufferROHandle indir_args = fg.AccessROBuffer(data->indir_args);
 
             Ren::BufferROHandle stoch_lights = {}, light_nodes = {};
             if (data->stoch_lights) {
@@ -164,7 +379,7 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
                 light_nodes = fg.AccessROBuffer(data->light_nodes);
             }
 
-            const Ren::ImageRWHandle out_ray_data = fg.AccessRWImage(data->out_ray_data);
+            const Ren::BufferRWHandle inout_cache_voxels = fg.AccessRWBuffer(data->inout_cache_voxels);
 
             Ren::SmallVector<Ren::Binding, 24> bindings = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
@@ -185,7 +400,10 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
                 {Trg::TexSampled, RTGICache::DISTANCE_TEX_SLOT, dist},
                 {Trg::TexSampled, RTGICache::OFFSET_TEX_SLOT, off},
                 {Trg::SBufRO, RTGICache::RAY_HITS_BUF_SLOT, ray_hits},
-                {Trg::ImageRW, RTGICache::OUT_RAY_DATA_IMG_SLOT, out_ray_data}};
+                {Trg::SBufRO, RTGICache::RAY_COUNTER_BUF_SLOT, ray_counter},
+                {Trg::SBufRO, RTGICache::RAY_IDS_BUF_SLOT, ray_ids},
+                {Trg::SBufRO, RTGICache::ACTIVE_ENTRIES_BUF_SLOT, active_entries},
+                {Trg::SBufRW, RTGICache::INOUT_VOXELS_BUF_SLOT, inout_cache_voxels}};
             if (stoch_lights) {
                 bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::STOCH_LIGHTS_BUF_SLOT, stoch_lights);
                 bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::LIGHT_NODES_BUF_SLOT, light_nodes);
@@ -208,11 +426,9 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
             uniform_params.pass_hash = ctx_.capabilities.hwrt ? 1 : 0;
 
-            const auto grp_count = Ren::Vec3u{(PROBE_TOTAL_RAYS_COUNT / RTGICache::GRP_SIZE_X),
-                                              PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y};
-
-            DispatchCompute(fg.cmd_buf(), pi_cache_shade_[bool(stoch_lights)][partial], fg.storages(), grp_count,
-                            bindings, &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            DispatchComputeIndirect(fg.cmd_buf(), pi_cache_shade_[bool(stoch_lights)][partial], fg.storages(),
+                                    indir_args, 0, bindings, &uniform_params, sizeof(uniform_params), fg.descr_alloc(),
+                                    ctx_.log());
         });
     }
 
@@ -267,29 +483,51 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
         auto &probe_blend = fg_builder_.AddNode("PROBE BLEND IRR");
 
         struct PassData {
-            FgImgROHandle ray_data;
+            FgBufROHandle shared_data;
             FgImgROHandle offset;
+            FgImgROHandle env;
+            FgBufROHandle lights;
+            FgBufROHandle ray_hits;
+            FgBufROHandle cache_entries;
+            FgBufROHandle cache_voxels;
             FgBufROHandle direct_light;
             FgImgRWHandle output;
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
-        data->ray_data = probe_blend.AddTextureInput(ray_data, Stg::ComputeShader);
+        data->shared_data = probe_blend.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+        data->lights = probe_blend.AddStorageReadonlyInput(common_buffers.lights, Stg::ComputeShader);
+        data->env = probe_blend.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
         data->offset = probe_blend.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
+        data->ray_hits = probe_blend.AddStorageReadonlyInput(ray_hits, Stg::ComputeShader);
+        data->cache_entries =
+            probe_blend.AddStorageReadonlyInput(common_buffers.spatial_cache_entries, Stg::ComputeShader);
+        data->cache_voxels =
+            probe_blend.AddStorageReadonlyInput(common_buffers.spatial_cache_voxels, Stg::ComputeShader);
         data->direct_light = probe_blend.AddStorageReadonlyInput(direct_light_data, Stg::ComputeShader);
         frame_textures.gi_cache_irradiance = data->output =
             probe_blend.AddStorageImageOutput(frame_textures.gi_cache_irradiance, Stg::ComputeShader);
 
         probe_blend.set_execute_cb([this, data, &persistent_data](const FgContext &fg) {
-            const Ren::ImageROHandle ray_data = fg.AccessROImage(data->ray_data);
+            const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
             const Ren::ImageROHandle offset = fg.AccessROImage(data->offset);
+            const Ren::ImageROHandle env = fg.AccessROImage(data->env);
+            const Ren::BufferROHandle lights = fg.AccessROBuffer(data->lights);
+            const Ren::BufferROHandle ray_hits = fg.AccessROBuffer(data->ray_hits);
+            const Ren::BufferROHandle cache_entries = fg.AccessROBuffer(data->cache_entries);
+            const Ren::BufferROHandle cache_voxels = fg.AccessROBuffer(data->cache_voxels);
             const Ren::BufferROHandle direct_light = fg.AccessROBuffer(data->direct_light);
 
             const Ren::ImageRWHandle out_irr = fg.AccessRWImage(data->output);
 
             Ren::SmallVector<Ren::Binding, 8> bindings = {
-                {Trg::TexSampled, ProbeBlend::RAY_DATA_TEX_SLOT, ray_data},
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
                 {Trg::TexSampled, ProbeBlend::OFFSET_TEX_SLOT, offset},
+                {Trg::TexSampled, ProbeBlend::ENV_TEX_SLOT, env},
+                {Trg::SBufRO, ProbeBlend::LIGHTS_BUF_SLOT, lights},
+                {Trg::SBufRO, ProbeBlend::RAY_HITS_BUF_SLOT, ray_hits},
+                {Trg::SBufRO, ProbeBlend::CACHE_ENTRIES_BUF_SLOT, cache_entries},
+                {Trg::SBufRO, ProbeBlend::CACHE_VOXELS_BUF_SLOT, cache_voxels},
                 {Trg::ImageRW, ProbeBlend::OUT_IMG_SLOT, out_irr}};
             if (persistent_data.stoch_lights) {
                 bindings.emplace_back(Trg::SBufRO, ProbeBlend::DIRECT_LIGHT_BUF_SLOT, direct_light);
@@ -314,7 +552,7 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
 
             DispatchCompute(fg.cmd_buf(), pi_probe_blend_[bool(persistent_data.stoch_lights)][partial], fg.storages(),
                             Ren::Vec3u{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y}, bindings,
-                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                            &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
         });
     }
 
@@ -322,26 +560,40 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
         auto &probe_blend = fg_builder_.AddNode("PROBE BLEND DIST");
 
         struct PassData {
-            FgImgROHandle ray_data;
+            FgBufROHandle shared_data;
             FgImgROHandle offset;
+            FgBufROHandle ray_hits;
+            FgBufROHandle cache_entries;
+            FgBufROHandle cache_voxels;
             FgImgRWHandle output;
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
-        data->ray_data = probe_blend.AddTextureInput(ray_data, Stg::ComputeShader);
+        data->shared_data = probe_blend.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         data->offset = probe_blend.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
+        data->ray_hits = probe_blend.AddStorageReadonlyInput(ray_hits, Stg::ComputeShader);
+        data->cache_entries =
+            probe_blend.AddStorageReadonlyInput(common_buffers.spatial_cache_entries, Stg::ComputeShader);
+        data->cache_voxels =
+            probe_blend.AddStorageReadonlyInput(common_buffers.spatial_cache_voxels, Stg::ComputeShader);
 
         frame_textures.gi_cache_distance = data->output =
             probe_blend.AddStorageImageOutput(frame_textures.gi_cache_distance, Stg::ComputeShader);
 
         probe_blend.set_execute_cb([this, data, &persistent_data](const FgContext &fg) {
-            const Ren::ImageROHandle ray_data = fg.AccessROImage(data->ray_data);
+            const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
             const Ren::ImageROHandle offset = fg.AccessROImage(data->offset);
+            const Ren::BufferROHandle ray_hits = fg.AccessROBuffer(data->ray_hits);
+            const Ren::BufferROHandle cache_entries = fg.AccessROBuffer(data->cache_entries);
+            const Ren::BufferROHandle cache_voxels = fg.AccessROBuffer(data->cache_voxels);
 
             const Ren::ImageRWHandle out_dist = fg.AccessRWImage(data->output);
 
-            const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeBlend::RAY_DATA_TEX_SLOT, ray_data},
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
                                              {Trg::TexSampled, ProbeBlend::OFFSET_TEX_SLOT, offset},
+                                             {Trg::SBufRO, ProbeBlend::RAY_HITS_BUF_SLOT, ray_hits},
+                                             {Trg::SBufRO, ProbeBlend::CACHE_ENTRIES_BUF_SLOT, cache_entries},
+                                             {Trg::SBufRO, ProbeBlend::CACHE_VOXELS_BUF_SLOT, cache_voxels},
                                              {Trg::ImageRW, ProbeBlend::OUT_IMG_SLOT, out_dist}};
 
             const int volume_to_update = p_list_->volume_to_update;
@@ -362,7 +614,7 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
 
             DispatchCompute(fg.cmd_buf(), pi_probe_blend_[2][partial], fg.storages(),
                             Ren::Vec3u{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y}, bindings,
-                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                            &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
         });
     }
 
@@ -370,22 +622,22 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
         auto &probe_relocate = fg_builder_.AddNode("PROBE RELOCATE");
 
         struct PassData {
-            FgImgROHandle ray_data;
+            FgBufROHandle ray_hits;
             FgImgRWHandle output;
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
-        data->ray_data = probe_relocate.AddTextureInput(ray_data, Stg::ComputeShader);
+        data->ray_hits = probe_relocate.AddStorageReadonlyInput(ray_hits, Stg::ComputeShader);
 
         frame_textures.gi_cache_offset = data->output =
             probe_relocate.AddStorageImageOutput(frame_textures.gi_cache_offset, Stg::ComputeShader);
 
         probe_relocate.set_execute_cb([this, data, &persistent_data](const FgContext &fg) {
-            const Ren::ImageROHandle ray_data = fg.AccessROImage(data->ray_data);
+            const Ren::BufferROHandle ray_hits = fg.AccessROBuffer(data->ray_hits);
 
             const Ren::ImageRWHandle out_dist = fg.AccessRWImage(data->output);
 
-            const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeRelocate::RAY_DATA_TEX_SLOT, ray_data},
+            const Ren::Binding bindings[] = {{Trg::SBufRO, ProbeRelocate::RAY_HITS_BUF_SLOT, ray_hits},
                                              {Trg::ImageRW, ProbeRelocate::OUT_IMG_SLOT, out_dist}};
 
             const int volume_to_update = p_list_->volume_to_update;
@@ -411,7 +663,7 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
             const int pi_index =
                 persistent_data.probe_volumes[volume_to_update].reset_relocation ? 2 : (partial ? 1 : 0);
             DispatchCompute(fg.cmd_buf(), pi_probe_relocate_[pi_index], fg.storages(), grp_count, bindings,
-                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                            &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
             persistent_data.probe_volumes[volume_to_update].reset_relocation = false;
         });
     }
@@ -421,25 +673,25 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
 
         struct PassData {
             FgBufROHandle shared_data;
-            FgImgROHandle ray_data;
+            FgBufROHandle ray_hits;
             FgImgRWHandle output;
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
         data->shared_data = probe_classify.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
-        data->ray_data = probe_classify.AddTextureInput(ray_data, Stg::ComputeShader);
+        data->ray_hits = probe_classify.AddStorageReadonlyInput(ray_hits, Stg::ComputeShader);
 
         frame_textures.gi_cache_offset = data->output =
             probe_classify.AddStorageImageOutput(frame_textures.gi_cache_offset, Stg::ComputeShader);
 
         probe_classify.set_execute_cb([this, data, &persistent_data](const FgContext &fg) {
             const Ren::BufferROHandle shared_data = fg.AccessROBuffer(data->shared_data);
-            const Ren::ImageROHandle ray_data = fg.AccessROImage(data->ray_data);
+            const Ren::BufferROHandle ray_hits = fg.AccessROBuffer(data->ray_hits);
 
             const Ren::ImageRWHandle out_dist = fg.AccessRWImage(data->output);
 
             const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, shared_data},
-                                             {Trg::TexSampled, ProbeClassify::RAY_DATA_TEX_SLOT, ray_data},
+                                             {Trg::SBufRO, ProbeClassify::RAY_HITS_BUF_SLOT, ray_hits},
                                              {Trg::ImageRW, ProbeClassify::OUT_IMG_SLOT, out_dist}};
 
             const int volume_to_update = p_list_->volume_to_update;
@@ -474,7 +726,7 @@ void Eng::Renderer::AddGICachePasses(const CommonBuffers &common_buffers, const 
             }
 
             DispatchCompute(fg.cmd_buf(), pi_probe_classify_[pi_index], fg.storages(), grp_count, bindings,
-                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                            &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
             persistent_data.probe_volumes[volume_to_update].reset_classification = false;
         });
     }
