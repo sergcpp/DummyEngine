@@ -108,7 +108,7 @@ struct FgAllocRes {
     Ren::Bitmask<Ren::eStage> used_in_stages, aliased_in_stages;
     Ren::SmallVector<fg_node_slot_t, 32> written_in_nodes;
     mutable Ren::SmallVector<fg_node_slot_t, 32> read_in_nodes;
-    Ren::SmallVector<FgResRef, 32> overlaps_with; // used in case of memory-level aliasing
+    Ren::SmallVector<FgResHandle, 32> overlaps_with; // used in case of memory-level aliasing
     fg_node_range_t lifetime;
 };
 

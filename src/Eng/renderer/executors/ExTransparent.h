@@ -25,7 +25,7 @@ class ExTransparent final : public FgExecutor {
         FgBufROHandle lights;
         FgBufROHandle decals;
         FgBufROHandle materials;
-        FgResRef lm_tex[4];
+        FgImgROHandle lm_tex[4];
         FgImgROHandle brdf_lut;
         FgImgROHandle noise;
         FgImgROHandle cone_rt_lut;

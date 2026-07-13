@@ -1570,7 +1570,7 @@ void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
         const auto &[buf_main, buf_cold] = storages.buffers[fgbuf_main->handle];
         if (buf_main.resource_state == Ren::eResState::Undefined ||
             buf_main.resource_state == Ren::eResState::Discarded) {
-            for (const FgResRef other : fgbuf_cold->overlaps_with) {
+            for (const FgResHandle other : fgbuf_cold->overlaps_with) {
                 if (other.type == eFgResType::Buffer) {
                     const auto &[other_main, other_cold] = buffers_.GetUnsafe(other.index);
                     src_stages |= other_cold.used_in_stages;
@@ -1612,7 +1612,7 @@ void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
         const auto &[img_main, img_cold] = storages.images[fgimg_main->handle_to_use];
         if (img_main.resource_state == Ren::eResState::Undefined ||
             img_main.resource_state == Ren::eResState::Discarded) {
-            for (const FgResRef other : fgimg_cold->overlaps_with) {
+            for (const FgResHandle other : fgimg_cold->overlaps_with) {
                 if (other.type == eFgResType::Buffer) {
                     const auto &[other_main, other_cold] = buffers_.GetUnsafe(other.index);
                     src_stages |= other_cold.used_in_stages;

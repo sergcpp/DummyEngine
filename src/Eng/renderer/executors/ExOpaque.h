@@ -25,7 +25,7 @@ class ExOpaque final : public FgExecutor {
         FgBufROHandle lights;
         FgBufROHandle decals;
         FgImgROHandle shadow_depth;
-        FgResRef lm_tex[4];
+        FgImgROHandle lm_tex[4];
         FgImgROHandle ssao;
         FgImgROHandle brdf_lut;
         FgImgROHandle noise;

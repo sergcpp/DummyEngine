@@ -45,19 +45,19 @@ struct FgResource {
 };
 static_assert(sizeof(FgResource) == 16);
 
-struct FgResRef {
+struct FgResHandle {
     eFgResType type = eFgResType::Undefined;
     uint8_t _pad[1] = {};
     uint16_t index = 0xffffu;
 
     operator bool() const { return type != eFgResType::Undefined; }
 
-    FgResRef() = default;
-    FgResRef(const FgResource &res) : type(res.type), index(res.opaque_handle.index) {
+    FgResHandle() = default;
+    FgResHandle(const FgResource &res) : type(res.type), index(res.opaque_handle.index) {
         assert(res.opaque_handle.index < 0xffffu);
     }
 
-    bool operator<(const FgResRef rhs) const {
+    bool operator<(const FgResHandle rhs) const {
         if (type < rhs.type) {
             return true;
         } else if (type == rhs.type) {
@@ -66,5 +66,5 @@ struct FgResRef {
         return false;
     }
 };
-static_assert(sizeof(FgResRef) == 4);
+static_assert(sizeof(FgResHandle) == 4);
 } // namespace Eng

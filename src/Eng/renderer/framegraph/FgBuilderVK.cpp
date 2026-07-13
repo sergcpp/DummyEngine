@@ -20,7 +20,7 @@ VkImageUsageFlags to_vk_image_usage(Bitmask<eImgUsage> usage, eFormat format);
 namespace FgBuilderInternal {
 extern const bool EnableResourceAliasing;
 
-void insert_sorted(Ren::SmallVectorImpl<Eng::FgResRef> &vec, const Eng::FgResRef val) {
+void insert_sorted(Ren::SmallVectorImpl<Eng::FgResHandle> &vec, const Eng::FgResHandle val) {
     const auto it = std::lower_bound(std::begin(vec), std::end(vec), val);
     if (it == std::end(vec) || val < (*it)) {
         vec.insert(it, val);
@@ -223,16 +223,19 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
         }
 
         // sort by lifetime length
-        std::sort(begin(resources_by_memory_type[i]), end(resources_by_memory_type[i]),
-                  [&](const int lhs, const int rhs) {
-                      return (all_resources[lhs].lifetime[0][1] - all_resources[lhs].lifetime[0][0]) +
-                                 (all_resources[lhs].lifetime[1][1] - all_resources[lhs].lifetime[1][0]) >
-                             (all_resources[rhs].lifetime[0][1] - all_resources[rhs].lifetime[0][0]) +
-                                 (all_resources[rhs].lifetime[1][1] - all_resources[rhs].lifetime[1][0]);
-                  });
+        std::sort(
+            begin(resources_by_memory_type[i]), end(resources_by_memory_type[i]), [&](const int lhs, const int rhs) {
+                const uint32_t lhs_lifetime = (all_resources[lhs].lifetime[0][1] - all_resources[lhs].lifetime[0][0]) +
+                                              (all_resources[lhs].lifetime[1][1] - all_resources[lhs].lifetime[1][0]);
+                const uint32_t rhs_lifetime = (all_resources[rhs].lifetime[0][1] - all_resources[rhs].lifetime[0][0]) +
+                                              (all_resources[rhs].lifetime[1][1] - all_resources[rhs].lifetime[1][0]);
+                return lhs_lifetime > rhs_lifetime;
+            });
 
         const int NodesCount = int(reordered_nodes_.size());
         std::vector<uint32_t> heap_tops(2 * NodesCount, 0);
+        uint32_t total_heap_size = 0;
+
         for (const int res_index : resources_by_memory_type[i]) {
             resource_t &res = all_resources[res_index];
 
@@ -255,11 +258,7 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             for (int j = NodesCount + res.lifetime[1][0]; j < NodesCount + res.lifetime[1][1]; ++j) {
                 heap_tops[j] = heap_top;
             }
-        }
-
-        uint32_t total_heap_size = 0;
-        for (const uint32_t ht : heap_tops) {
-            total_heap_size = std::max(total_heap_size, ht);
+            total_heap_size = std::max(total_heap_size, heap_top);
         }
 
         VkMemoryAllocateInfo mem_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
@@ -364,7 +363,7 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
     //
     struct region_t {
         uint32_t offset, size;
-        FgResRef res;
+        FgResHandle res;
         bool barrier_placed = false;
     };
     std::vector<region_t> deactivated_regions;
