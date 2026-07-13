@@ -222,43 +222,64 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             continue;
         }
 
-        // sort by lifetime length
-        std::sort(
-            begin(resources_by_memory_type[i]), end(resources_by_memory_type[i]), [&](const int lhs, const int rhs) {
-                const uint32_t lhs_lifetime = (all_resources[lhs].lifetime[0][1] - all_resources[lhs].lifetime[0][0]) +
-                                              (all_resources[lhs].lifetime[1][1] - all_resources[lhs].lifetime[1][0]);
-                const uint32_t rhs_lifetime = (all_resources[rhs].lifetime[0][1] - all_resources[rhs].lifetime[0][0]) +
-                                              (all_resources[rhs].lifetime[1][1] - all_resources[rhs].lifetime[1][0]);
-                return lhs_lifetime > rhs_lifetime;
-            });
-
         const int NodesCount = int(reordered_nodes_.size());
         std::vector<uint32_t> heap_tops(2 * NodesCount, 0);
         uint32_t total_heap_size = 0;
 
-        for (const int res_index : resources_by_memory_type[i]) {
-            resource_t &res = all_resources[res_index];
+        for (int j = 0; j < int(resources_by_memory_type[i].size()); ++j) {
+            int next_index = -1;
+            float min_cost = FLT_MAX;
+            for (const int res_index : resources_by_memory_type[i]) {
+                const resource_t &res = all_resources[res_index];
+                if (res.mem_offset != 0xffffffff) {
+                    continue;
+                }
 
-            uint32_t heap_top = 0;
+                uint32_t lowest_offset = 0;
+                for (int j = res.lifetime[0][0]; j < res.lifetime[0][1]; ++j) {
+                    lowest_offset = std::max(lowest_offset, heap_tops[j]);
+                }
+                for (int j = NodesCount + res.lifetime[1][0]; j < NodesCount + res.lifetime[1][1]; ++j) {
+                    lowest_offset = std::max(lowest_offset, heap_tops[j]);
+                }
+
+                // round to required alignment
+                lowest_offset = res.mem_alignment * ((lowest_offset + res.mem_alignment - 1) / res.mem_alignment);
+
+                const uint32_t heap_top = lowest_offset + res.mem_size;
+                const uint32_t lifetime =
+                    (res.lifetime[0][1] - res.lifetime[0][0]) + (res.lifetime[1][1] - res.lifetime[1][0]);
+                const float cost = float(heap_top) / lifetime;
+
+                if (cost < min_cost) {
+                    min_cost = cost;
+                    next_index = res_index;
+                }
+            }
+
+            resource_t &res = all_resources[next_index];
+
+            uint32_t lowest_offset = 0;
             for (int j = res.lifetime[0][0]; j < res.lifetime[0][1]; ++j) {
-                heap_top = std::max(heap_top, heap_tops[j]);
+                lowest_offset = std::max(lowest_offset, heap_tops[j]);
             }
             for (int j = NodesCount + res.lifetime[1][0]; j < NodesCount + res.lifetime[1][1]; ++j) {
-                heap_top = std::max(heap_top, heap_tops[j]);
+                lowest_offset = std::max(lowest_offset, heap_tops[j]);
             }
 
-            // round current top up to required alignment
-            heap_top = res.mem_alignment * ((heap_top + res.mem_alignment - 1) / res.mem_alignment);
-            res.mem_offset = heap_top;
-            heap_top += res.mem_size;
+            // round to required alignment
+            lowest_offset = res.mem_alignment * ((lowest_offset + res.mem_alignment - 1) / res.mem_alignment);
+            res.mem_offset = lowest_offset;
 
-            for (int j = res.lifetime[0][0]; j < res.lifetime[0][1]; ++j) {
-                heap_tops[j] = heap_top;
-            }
-            for (int j = NodesCount + res.lifetime[1][0]; j < NodesCount + res.lifetime[1][1]; ++j) {
-                heap_tops[j] = heap_top;
-            }
+            const uint32_t heap_top = lowest_offset + res.mem_size;
             total_heap_size = std::max(total_heap_size, heap_top);
+
+            for (int j = res.lifetime[0][0]; j < res.lifetime[0][1]; ++j) {
+                heap_tops[j] = heap_top;
+            }
+            for (int j = NodesCount + res.lifetime[1][0]; j < NodesCount + res.lifetime[1][1]; ++j) {
+                heap_tops[j] = heap_top;
+            }
         }
 
         VkMemoryAllocateInfo mem_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
