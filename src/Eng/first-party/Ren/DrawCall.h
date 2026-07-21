@@ -46,24 +46,40 @@ struct OpaqueHandle {
     };
     const SamplerROHandle sampler = {};
     int view_index = 0;
+#ifndef NDEBUG
     bool readonly = false;
+#endif
 
-    OpaqueHandle(const BufferROHandle _buf, const int _view_index = 0)
-        : buf(_buf), view_index(_view_index), readonly(true) {}
+    OpaqueHandle(const BufferROHandle _buf, const int _view_index = 0) : buf(_buf), view_index(_view_index) {
+#ifndef NDEBUG
+        readonly = true;
+#endif
+    }
     OpaqueHandle(const BufferRWHandle _buf, const int _view_index = 0) : buf(_buf), view_index(_view_index) {}
 
-    OpaqueHandle(const ImageROHandle _img, const int _view_index = 0)
-        : img(_img), view_index(_view_index), readonly(true) {}
+    OpaqueHandle(const ImageROHandle _img, const int _view_index = 0) : img(_img), view_index(_view_index) {
+#ifndef NDEBUG
+        readonly = true;
+#endif
+    }
     OpaqueHandle(const ImageRWHandle _img, const int _view_index = 0) : img(_img), view_index(_view_index) {}
     OpaqueHandle(const ImageROHandle _img, const SamplerROHandle _sampler, const int _view_index = 0)
-        : img(_img), sampler(_sampler), view_index(_view_index), readonly(true) {}
+        : img(_img), sampler(_sampler), view_index(_view_index) {
+#ifndef NDEBUG
+        readonly = true;
+#endif
+    }
     OpaqueHandle(const ImageRWHandle _img, const SamplerROHandle _sampler, const int _view_index = 0)
         : img(_img), sampler(_sampler), view_index(_view_index) {}
 
     OpaqueHandle(const SamplerROHandle _sampler) : ptr(nullptr), sampler(_sampler) {}
     OpaqueHandle(const BindlessDescriptors &_bindless) : bindless(&_bindless) {}
 #if defined(REN_VK_BACKEND)
-    OpaqueHandle(const AccStructROHandle _acc_struct) : acc_struct(_acc_struct), readonly(true) {}
+    OpaqueHandle(const AccStructROHandle _acc_struct) : acc_struct(_acc_struct) {
+#ifndef NDEBUG
+        readonly = true;
+#endif
+    }
 #endif
 };
 
@@ -80,7 +96,11 @@ struct Binding {
     Binding(const eBindTarget _trg, const int _loc, const size_t _offset, const size_t _size, OpaqueHandle _handle)
         : trg(_trg), loc(_loc), offset(uint16_t(_offset)), size(uint16_t(_size)), handle(_handle) {}
 };
-static_assert(sizeof(Binding) == sizeof(void *) + sizeof(void *) + 8 + 8);
+#ifndef NDEBUG
+static_assert(sizeof(Binding) == 8 + sizeof(void *) + 8 + 8);
+#else
+static_assert(sizeof(Binding) == 8 + sizeof(void *) + 8);
+#endif
 
 #if defined(REN_VK_BACKEND)
 [[nodiscard]] VkDescriptorSet PrepareDescriptorSet(const ApiContext &api, const StoragesRef &storages,
