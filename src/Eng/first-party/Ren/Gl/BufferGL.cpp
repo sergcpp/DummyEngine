@@ -243,7 +243,7 @@ bool Ren::Buffer_FreeSubRegion(BufferCold &buf_cold, SubAllocation alloc) {
 void Ren::Buffer_Fill(const ApiContext &, BufferMain &buf_main, const uint32_t dst_offset, const uint32_t size,
                       const uint32_t data, CommandBuffer) {
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(buf_main.buf));
-    glClearBufferSubData(GL_COPY_WRITE_BUFFER, GL_R32UI, GLintptr(dst_offset), GLsizeiptr(size), GL_RED,
+    glClearBufferSubData(GL_COPY_WRITE_BUFFER, GL_R32UI, GLintptr(dst_offset), GLsizeiptr(size), GL_RED_INTEGER,
                          GL_UNSIGNED_INT, &data);
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
