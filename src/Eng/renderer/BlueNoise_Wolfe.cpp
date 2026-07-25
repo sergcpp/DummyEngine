@@ -195,6 +195,8 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN(const unsigned int seed
         float debug_values3[SampleCount][(TileRes + 2) / 3][(TileRes + 2) / 3] = {};
         float debug_values4[SampleCount][TileRes / 4][TileRes / 4] = {};
         float debug_values5[TileRes][SampleCount][TileRes] = {};
+        float debug_values6[TileRes][TileRes] = {};
+        std::complex<float> debug_dft[TileRes][TileRes] = {};
     };
     auto data = std::make_unique<bn_data_t>();
 
@@ -223,19 +225,17 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN(const unsigned int seed
     auto debug_dft = [&]() {
         float min_val = FLT_MAX, max_val = 0.0f;
         for (int z = 0; z < SampleCount; ++z) {
-            float temp[TileRes][TileRes];
             for (int y = 0; y < TileRes; ++y) {
                 for (int x = 0; x < TileRes; ++x) {
-                    temp[y][x] = data->noise[z][y][x];
+                    data->debug_values6[y][x] = data->noise[z][y][x];
                 }
             }
 
-            std::complex<float> dft_output[TileRes][TileRes];
-            dft_2d(temp, dft_output);
+            dft_2d(data->debug_values6, data->debug_dft);
 
             for (int y = 0; y < TileRes; ++y) {
                 for (int x = 0; x < TileRes; ++x) {
-                    data->debug_values[z][y][x] = std::abs(dft_output[y][x]);
+                    data->debug_values[z][y][x] = std::abs(data->debug_dft[y][x]);
                     min_val = std::min(min_val, data->debug_values[z][y][x]);
                     max_val = std::max(max_val, data->debug_values[z][y][x]);
                 }
@@ -465,6 +465,7 @@ template <int Log2SampleCount> void Eng::Generate2D_STBN(unsigned int seed) {
         // temp data
         float debug_values[SampleCount][TileRes][TileRes] = {};
         float debug_values2[TileRes][TileRes] = {};
+        std::complex<float> debug_dft[TileRes][TileRes] = {};
     };
     auto data = std::make_unique<bn_data_t>();
 
@@ -492,12 +493,11 @@ template <int Log2SampleCount> void Eng::Generate2D_STBN(unsigned int seed) {
                 }
             }
 
-            std::complex<float> dft_output[TileRes][TileRes];
-            dft_2d(data->debug_values2, dft_output);
+            dft_2d(data->debug_values2, data->debug_dft);
 
             for (int y = 0; y < TileRes; ++y) {
                 for (int x = 0; x < TileRes; ++x) {
-                    data->debug_values[z][y][x] = std::abs(dft_output[y][x]);
+                    data->debug_values[z][y][x] = std::abs(data->debug_dft[y][x]);
                     min_val = std::min(min_val, data->debug_values[z][y][x]);
                     max_val = std::max(max_val, data->debug_values[z][y][x]);
                 }

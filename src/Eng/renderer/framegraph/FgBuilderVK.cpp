@@ -236,11 +236,11 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
                 }
 
                 uint32_t lowest_offset = 0;
-                for (int j = res.lifetime[0][0]; j < res.lifetime[0][1]; ++j) {
-                    lowest_offset = std::max(lowest_offset, heap_tops[j]);
+                for (int k = res.lifetime[0][0]; k < res.lifetime[0][1]; ++k) {
+                    lowest_offset = std::max(lowest_offset, heap_tops[k]);
                 }
-                for (int j = NodesCount + res.lifetime[1][0]; j < NodesCount + res.lifetime[1][1]; ++j) {
-                    lowest_offset = std::max(lowest_offset, heap_tops[j]);
+                for (int k = NodesCount + res.lifetime[1][0]; k < NodesCount + res.lifetime[1][1]; ++k) {
+                    lowest_offset = std::max(lowest_offset, heap_tops[k]);
                 }
 
                 // round to required alignment
@@ -260,11 +260,11 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             resource_t &res = all_resources[next_index];
 
             uint32_t lowest_offset = 0;
-            for (int j = res.lifetime[0][0]; j < res.lifetime[0][1]; ++j) {
-                lowest_offset = std::max(lowest_offset, heap_tops[j]);
+            for (int k = res.lifetime[0][0]; k < res.lifetime[0][1]; ++k) {
+                lowest_offset = std::max(lowest_offset, heap_tops[k]);
             }
-            for (int j = NodesCount + res.lifetime[1][0]; j < NodesCount + res.lifetime[1][1]; ++j) {
-                lowest_offset = std::max(lowest_offset, heap_tops[j]);
+            for (int k = NodesCount + res.lifetime[1][0]; k < NodesCount + res.lifetime[1][1]; ++k) {
+                lowest_offset = std::max(lowest_offset, heap_tops[k]);
             }
 
             // round to required alignment
@@ -274,11 +274,11 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             const uint32_t heap_top = lowest_offset + res.mem_size;
             total_heap_size = std::max(total_heap_size, heap_top);
 
-            for (int j = res.lifetime[0][0]; j < res.lifetime[0][1]; ++j) {
-                heap_tops[j] = heap_top;
+            for (int k = res.lifetime[0][0]; k < res.lifetime[0][1]; ++k) {
+                heap_tops[k] = heap_top;
             }
-            for (int j = NodesCount + res.lifetime[1][0]; j < NodesCount + res.lifetime[1][1]; ++j) {
-                heap_tops[j] = heap_top;
+            for (int k = NodesCount + res.lifetime[1][0]; k < NodesCount + res.lifetime[1][1]; ++k) {
+                heap_tops[k] = heap_top;
             }
         }
 
