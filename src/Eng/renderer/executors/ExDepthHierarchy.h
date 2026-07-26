@@ -21,7 +21,7 @@ class ExDepthHierarchy final : public FgExecutor {
                      FgBufRWHandle atomic_counter, FgImgRWHandle output);
 
     static const int MipCount = 7;
-    // TODO: check if it is actually makes sense to use padding
+    // TODO: check if it actually makes sense to use padding
     static const int TileSize = 1 << (MipCount - 1);
 
     void Execute(const FgContext &fg) override;

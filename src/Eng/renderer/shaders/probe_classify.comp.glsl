@@ -116,10 +116,10 @@ void main() {
                                                            g_params.vol_bbox_max.xyz + g_params.grid_spacing.xyz);
         if (is_inside_volume) {
             bool is_inside_frustum = true;
-            for (int i = 0; i < 6; ++i) {
-                const float dist = dot(probe_pos, g_shrd_data.frustum_planes[i].xyz) + g_shrd_data.frustum_planes[i].w;
-                is_inside_frustum = is_inside_frustum && (dist > -g_params.grid_spacing.w);
-            }
+            // for (int i = 0; i < 6; ++i) {
+            //     const float dist = dot(probe_pos, g_shrd_data.frustum_planes[i].xyz) + g_shrd_data.frustum_planes[i].w;
+            //     is_inside_frustum = is_inside_frustum && (dist > -g_params.grid_spacing.w);
+            // }
             if (is_inside_frustum) {
                 offset.w = (outdoor_count > (PROBE_FIXED_RAYS_COUNT - backface_count) / 3) ? PROBE_STATE_ACTIVE_OUTDOOR : PROBE_STATE_ACTIVE;
             }
