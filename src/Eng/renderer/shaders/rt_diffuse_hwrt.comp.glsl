@@ -10,6 +10,7 @@
 #include "rt_common.glsl"
 #include "texturing_common.glsl"
 #include "rt_diffuse_common.glsl"
+#include "rad_cache_common.glsl"
 
 #include "rt_diffuse_interface.h"
 
@@ -55,9 +56,38 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
 
 layout(binding = TCBN_TEX_SLOT) uniform sampler2DArray g_tcbn_tex;
 
-layout(std430, binding = OUT_RAY_HITS_BUF_SLOT) writeonly buffer RayHitsList {
-    uint g_ray_hits[];
+layout(std430, binding = CACHE_ENTRIES_BUF_SLOT) readonly buffer CacheEntries {
+    uint g_cache_entries[];
 };
+
+layout(std430, binding = CACHE_VOXELS_BUF_SLOT) readonly buffer CacheVoxels {
+    uint g_cache_voxels[];
+};
+
+layout(binding = OUT_GI_IMG_SLOT, rgba16f) uniform image2D g_out_color_img;
+
+layout(std430, binding = OUT_RAY_HITS_BUF_SLOT) writeonly buffer OutRayHitsList {
+    uint g_out_ray_hits[];
+};
+
+bool hash_map_find(const uint hash_key, inout uint cache_entry, out uint bucket_offset) {
+    const uint base_slot = hash_map_base_slot(hash_key);
+    for (bucket_offset = 0; bucket_offset < HASH_GRID_HASH_MAP_BUCKET_SIZE; ++bucket_offset) {
+        const uint stored_hash_key = g_cache_entries[base_slot + bucket_offset];
+        if (stored_hash_key == hash_key) {
+            cache_entry = base_slot + bucket_offset;
+            return true;
+        }
+    }
+    return false;
+}
+
+uint find_entry(const vec3 p, const bool backfacing, const vec3 cam_pos) {
+    const uint hash_key = compute_hash(p, backfacing, cam_pos);
+    uint cache_entry = HASH_GRID_INVALID_CACHE_ENTRY, collisions_count;
+    hash_map_find(hash_key, cache_entry, collisions_count);
+    return cache_entry;
+}
 
 layout (local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
@@ -161,6 +191,56 @@ void main() {
     }
 
     const bool is_hit = rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT;
+    if (is_hit) {
+        const float hit_t = rayQueryGetIntersectionTEXT(rq, true);
+        const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, true);
+        const vec3 P = ray_origin_ws + hit_t * gi_ray_ws;
+
+        const uint grid_level = calc_grid_level(P, g_shrd_data.cam_pos_and_exp.xyz);
+        const float voxel_size = calc_voxel_size(grid_level);
+
+#if defined(SECOND)
+        const bool use_cache = (0.5 * first_hit_t + hit_t) > voxel_size;
+#else
+        const bool use_cache = 0.5 * hit_t > voxel_size;
+#endif
+        if (use_cache) {
+            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_and_exp.xyz);
+            if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
+                vec4 out_color = vec4(0.0);
+
+                out_color.xyz = vec3(
+                    unpackHalf2x16(g_cache_voxels[2 * cache_entry + 0]),
+                    unpackHalf2x16(g_cache_voxels[2 * cache_entry + 1]).x);
+
+                const bool is_emissive = any(lessThan(out_color.xyz, vec3(0.0)));
+                if (!is_emissive) {
+                    out_color.xyz *= throughput * RAD_CACHE_RADIANCE_COMPRESSION;
+                    out_color.xyz = compress_hdr(out_color.xyz, g_shrd_data.cam_pos_and_exp.w);
+#if defined(SECOND)
+                    const vec4 old_color = imageLoad(g_out_color_img, icoord);
+                    out_color.xyz += old_color.xyz;
+                    out_color.w = old_color.w;
+#else
+                    out_color.w = NormalizeHitDist(hit_t, view_z, 1.0);
+#endif
+                    imageStore(g_out_color_img, icoord, out_color);
+
+                    const ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
+                    if (copy_horizontal) {
+                        imageStore(g_out_color_img, ivec2(copy_target.x, icoord.y), out_color);
+                    }
+                    if (copy_vertical) {
+                        imageStore(g_out_color_img, ivec2(icoord.x, copy_target.y), out_color);
+                    }
+                    if (copy_diagonal) {
+                        imageStore(g_out_color_img, copy_target, out_color);
+                    }
+                    return;
+                }
+            }
+        }
+    }
 
 #if !defined(NO_SUBGROUP)
     const uvec4 miss_ballot = subgroupBallot(!is_hit);
@@ -198,11 +278,11 @@ void main() {
 
         // Append at the end of buffer
     #if defined(FIRST)
-        g_ray_hits[out_offset + 0] = packed_coords;
+        g_out_ray_hits[out_offset + 0] = packed_coords;
     #elif defined(SECOND)
-        g_ray_hits[out_offset + 0] = ray_index;
+        g_out_ray_hits[out_offset + 0] = ray_index;
     #endif
-        g_ray_hits[out_offset + 1] = PackRGB565(throughput);
+        g_out_ray_hits[out_offset + 1] = PackRGB565(throughput);
     } else {
         const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, true);
         const int instance_index = rayQueryGetIntersectionInstanceIdEXT(rq, true);
@@ -213,13 +293,13 @@ void main() {
         const uint packed_throughput = PackRGB565(throughput);
 
     #if defined(FIRST)
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 0] = packed_coords;
+        g_out_ray_hits[out_index * RAY_HITS_STRIDE + 0] = packed_coords;
     #elif defined(SECOND)
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 0] = ray_index;
+        g_out_ray_hits[out_index * RAY_HITS_STRIDE + 0] = ray_index;
     #endif
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 1] = (uint(instance_index) << 16u) | packed_throughput;
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 2] = floatBitsToUint(backfacing ? -hit_t : hit_t);
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 3] = (uint(prim_id) << 8u) | (geo_index & 0xffu);
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 4] = packUnorm2x16(bary_coord);
+        g_out_ray_hits[out_index * RAY_HITS_STRIDE + 1] = (uint(instance_index) << 16u) | packed_throughput;
+        g_out_ray_hits[out_index * RAY_HITS_STRIDE + 2] = floatBitsToUint(backfacing ? -hit_t : hit_t);
+        g_out_ray_hits[out_index * RAY_HITS_STRIDE + 3] = (uint(prim_id) << 8u) | (geo_index & 0xffu);
+        g_out_ray_hits[out_index * RAY_HITS_STRIDE + 4] = packUnorm2x16(bary_coord);
     }
 }

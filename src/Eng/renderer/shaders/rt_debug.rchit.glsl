@@ -300,9 +300,9 @@ void main() {
 
         const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_and_exp.xyz);
         if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
-            light_total = vec3(
+            light_total = abs(vec3(
                 unpackHalf2x16(g_cache_voxels[2 * cache_entry + 0]),
-                unpackHalf2x16(g_cache_voxels[2 * cache_entry + 1]).x) * RAD_CACHE_RADIANCE_COMPRESSION;
+                unpackHalf2x16(g_cache_voxels[2 * cache_entry + 1]).x)) * RAD_CACHE_RADIANCE_COMPRESSION;
         }
     }
 

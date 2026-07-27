@@ -205,7 +205,7 @@ const float HASH_GRID_POSITION_BIAS = 0.0001f;
 // Radiance caching
 const float RAD_CACHE_RADIANCE_COMPRESSION = 64.0f;
 const float RAD_CACHE_GRID_LOG_BASE = 2.0f;
-const int RAD_CACHE_STALE_FRAME_COUNT_MAX = 128;
+const uint RAD_CACHE_STALE_FRAME_COUNT_MAX = 128;
 const float RAD_CACHE_GRID_SCALE = 30.0f;
 
 #define USE_OCT_PACKED_NORMALS 1

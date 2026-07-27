@@ -33,15 +33,11 @@ layout(binding = OUT_GI_IMG_SLOT, rgba16f) uniform image2D g_out_color_img;
 layout(std430, binding = OUT_RAY_LIST_SLOT) writeonly buffer OutRayList {
     uint g_out_ray_list[];
 };
-layout(std430, binding = INOUT_RAY_COUNTER_SLOT) coherent buffer RayCounter {
+layout(std430, binding = INOUT_RAY_COUNTER_SLOT) buffer RayCounter {
     uint g_inout_ray_counter[];
 };
 
 #include "ss_trace_hierarchical.glsl.inl"
-
-void StoreRay(const uint ray_index, const uvec2 ray_coord, const bool copy_horizontal, const bool copy_vertical, const bool copy_diagonal) {
-    g_out_ray_list[ray_index] = PackRay(ray_coord, copy_horizontal, copy_vertical, copy_diagonal); // Store out pixel to trace
-}
 
 layout(local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
@@ -109,30 +105,27 @@ void main() {
         base_ray_index = subgroupBroadcastFirst(base_ray_index);
         if (needs_ray) {
             const uint ray_index = base_ray_index + local_ray_index_in_wave;
-            StoreRay(ray_index, pix_uvs, copy_horizontal, copy_vertical, copy_diagonal);
+            g_out_ray_list[ray_index] = PackRay(pix_uvs, copy_horizontal, copy_vertical, copy_diagonal);
         }
 #else
         if (needs_ray) {
             const uint ray_index = atomicAdd(g_inout_ray_counter[6], 1);
-            StoreRay(ray_index, pix_uvs, copy_horizontal, copy_vertical, copy_diagonal);
+            g_out_ray_list[ray_index] = PackRay(pix_uvs, copy_horizontal, copy_vertical, copy_diagonal);
         }
 #endif
     }
 
     imageStore(g_out_color_img, pix_uvs, out_color);
 
-    ivec2 copy_target = pix_uvs ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
+    const ivec2 copy_target = pix_uvs ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
     if (copy_horizontal) {
-        ivec2 copy_coords = ivec2(copy_target.x, pix_uvs.y);
-        imageStore(g_out_color_img, copy_coords, out_color);
+        imageStore(g_out_color_img, ivec2(copy_target.x, pix_uvs.y), out_color);
     }
     if (copy_vertical) {
-        ivec2 copy_coords = ivec2(pix_uvs.x, copy_target.y);
-        imageStore(g_out_color_img, copy_coords, out_color);
+        imageStore(g_out_color_img, ivec2(pix_uvs.x, copy_target.y), out_color);
     }
     if (copy_diagonal) {
-        ivec2 copy_coords = copy_target;
-        imageStore(g_out_color_img, copy_coords, out_color);
+        imageStore(g_out_color_img, copy_target, out_color);
     }
 }
 

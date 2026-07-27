@@ -31,8 +31,9 @@ void main() {
         return;
     }
 
-    const uint cached_frame = uint(unpackHalf2x16(g_inout_voxels[2 * cache_entry + 1]).y);
-    if (g_params.pass_hash - cached_frame > RAD_CACHE_STALE_FRAME_COUNT_MAX) {
+    const uint cached_frame = (g_inout_voxels[2 * cache_entry + 1] >> 16u);
+    const uint frame_diff = (g_params.pass_hash - cached_frame) & 0xffffu;
+    if (frame_diff > RAD_CACHE_STALE_FRAME_COUNT_MAX) {
         g_inout_voxels[2 * cache_entry + 0] = 0;
         g_inout_voxels[2 * cache_entry + 1] = 0;
         g_inout_entries[cache_entry] = HASH_GRID_INVALID_HASH_KEY;

@@ -194,7 +194,7 @@ void Eng::Renderer::AddGICachePasses(const PersistentGpuData &persistent_data,
     }
 
     { // Resolve radiance cache
-        auto &rt_gi_rad_cache_resolve = fg_builder_.AddNode("RT GI RAD CACHE UPDATE");
+        auto &rt_gi_rad_cache_resolve = fg_builder_.AddNode("RT GI RAD CACHE RESOLVE");
 
         struct PassData {
             FgBufROHandle shared_data;

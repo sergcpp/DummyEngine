@@ -22,6 +22,9 @@ class ExRTDiffuse final : public FgExecutor {
         FgBufROHandle indir_args;
         FgBufROHandle tlas_buf; // fake read for now
 
+        FgBufROHandle cache_entries;
+        FgBufROHandle cache_voxels;
+
         Ren::AccStructROHandle tlas;
 
         struct {
@@ -33,6 +36,7 @@ class ExRTDiffuse final : public FgExecutor {
 
         bool second_bounce = false;
 
+        FgImgRWHandle out_color;
         FgBufRWHandle inout_ray_counter;
         FgBufRWHandle out_ray_hits;
     };

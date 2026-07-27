@@ -63,7 +63,10 @@ void Eng::ExRTDiffuse::Execute_SWRT(const FgContext &fg) {
     const Ren::BufferROHandle rt_tlas = fg.AccessROBuffer(args_->tlas_buf);
     const Ren::BufferROHandle prim_ndx = fg.AccessROBuffer(args_->swrt.prim_ndx);
     const Ren::BufferROHandle mesh_instances = fg.AccessROBuffer(args_->swrt.mesh_instances);
+    const Ren::BufferROHandle cache_entries = fg.AccessROBuffer(args_->cache_entries);
+    const Ren::BufferROHandle cache_voxels = fg.AccessROBuffer(args_->cache_voxels);
 
+    const Ren::ImageRWHandle out_color = fg.AccessRWImage(args_->out_color);
     const Ren::BufferHandle inout_ray_counter = fg.AccessRWBuffer(args_->inout_ray_counter);
     const Ren::BufferHandle out_ray_hits = fg.AccessRWBuffer(args_->out_ray_hits);
 
@@ -82,6 +85,9 @@ void Eng::ExRTDiffuse::Execute_SWRT(const FgContext &fg) {
         {Ren::eBindTarget::SBufRO, RTDiffuse::MATERIAL_BUF_SLOT, materials},
         {Ren::eBindTarget::UTBuf, RTDiffuse::VTX_BUF1_SLOT, vtx_buf1},
         {Ren::eBindTarget::UTBuf, RTDiffuse::NDX_BUF_SLOT, ndx_buf},
+        {Ren::eBindTarget::SBufRO, RTDiffuse::CACHE_ENTRIES_BUF_SLOT, cache_entries},
+        {Ren::eBindTarget::SBufRO, RTDiffuse::CACHE_VOXELS_BUF_SLOT, cache_voxels},
+        {Ren::eBindTarget::ImageRW, RTDiffuse::OUT_GI_IMG_SLOT, out_color},
         {Ren::eBindTarget::SBufRW, RTDiffuse::RAY_COUNTER_SLOT, inout_ray_counter},
         {Ren::eBindTarget::SBufRW, RTDiffuse::OUT_RAY_HITS_BUF_SLOT, out_ray_hits}};
 

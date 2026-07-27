@@ -262,7 +262,8 @@ void main() {
             emission_color = mat.params[3].yzw;
 #endif
         }
-        if (max_component(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7) {
+        const bool has_emissive = max_component(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7;
+        if (has_emissive) {
             const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_stoch_lights_buf, g_params.stoch_lights_count, uint(tri_index), probe_pos);
 
             const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
@@ -416,14 +417,19 @@ void main() {
         }
 
         out_color = light_total;
+#ifdef STOCH_LIGHTS_MIS
+        if (has_emissive) {
+            out_color = -out_color;
+        }
+#endif // STOCH_LIGHTS_MIS
     }
 
     out_color /= RAD_CACHE_RADIANCE_COMPRESSION;
 
 #if 1
     g_inout_voxels[2 * cache_entry + 0] = packHalf2x16(out_color.xy);
-    const float frame_index = unpackHalf2x16(g_inout_voxels[2 * cache_entry + 1]).y;
-    g_inout_voxels[2 * cache_entry + 1] = packHalf2x16(vec2(out_color.z, frame_index));
+    const uint frame_index = (g_inout_voxels[2 * cache_entry + 1] >> 16u);
+    g_inout_voxels[2 * cache_entry + 1] = packHalf2x16(vec2(out_color.z, 0.0)) | (frame_index << 16u);
 #else
     // Soft accumulation
     const vec3 prev_color = vec3(uintBitsToFloat(g_inout_voxels[4 * cache_entry + 0]),

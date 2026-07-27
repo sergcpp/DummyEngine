@@ -48,10 +48,6 @@ uint GetBitMaskFromPixelPosition(uvec2 pixel_pos) {
     return (1u << lane_index);
 }
 
-void StoreRay(uint ray_index, uvec2 ray_coord, bool copy_horizontal, bool copy_vertical, bool copy_diagonal) {
-    g_ray_list[ray_index] = PackRay(ray_coord, copy_horizontal, copy_vertical, copy_diagonal); // Store out pixel to trace
-}
-
 shared uint g_tile_count;
 shared uint g_shared_bits[2];
 
@@ -137,7 +133,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen
     base_ray_index = subgroupBroadcastFirst(base_ray_index);
     if (needs_ray) {
         const uint ray_index = base_ray_index + local_ray_index_in_wave;
-        StoreRay(ray_index, dispatch_thread_id, copy_horizontal, copy_vertical, copy_diagonal);
+        g_ray_list[ray_index] = PackRay(dispatch_thread_id, copy_horizontal, copy_vertical, copy_diagonal);
     }
 #else
     // Fallback using shared memory
@@ -161,7 +157,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen
 
     if (needs_ray) {
         const uint ray_index = atomicAdd(g_ray_counter[0], 1);
-        StoreRay(ray_index, dispatch_thread_id, copy_horizontal, copy_vertical, copy_diagonal);
+        g_ray_list[ray_index] = PackRay(dispatch_thread_id, copy_horizontal, copy_vertical, copy_diagonal);
     }
 #endif
 

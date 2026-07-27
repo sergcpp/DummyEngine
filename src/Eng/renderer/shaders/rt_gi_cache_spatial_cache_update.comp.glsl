@@ -115,9 +115,9 @@ void main() {
 
     const uint cache_entry = insert_entry(P, backfacing, g_shrd_data.cam_pos_and_exp.xyz);
     if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
-        const uint frame_new = packHalf2x16(vec2(0.0, float(g_params.pass_hash)));
+        const uint frame_new = g_params.pass_hash << 16u;
         const uint frame_old = atomicExchange(g_inout_voxels[2 * cache_entry + 1], frame_new);
-        if (unpackHalf2x16(frame_old).y != float(g_params.pass_hash)) {
+        if ((frame_old >> 16u) != (g_params.pass_hash & 0xffffu)) {
             const uint out_index = atomicAdd(g_inout_ray_counter[0], 1);
             g_out_active[out_index] = cache_entry;
         }

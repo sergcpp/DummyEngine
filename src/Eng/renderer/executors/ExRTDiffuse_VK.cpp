@@ -10,18 +10,21 @@
 #include "../shaders/rt_diffuse_interface.h"
 
 void Eng::ExRTDiffuse::Execute_HWRT(const FgContext &fg) {
+    const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(args_->shared_data);
     const Ren::BufferROHandle geo_data = fg.AccessROBuffer(args_->geo_data);
     const Ren::BufferROHandle materials = fg.AccessROBuffer(args_->materials);
     const Ren::BufferROHandle vtx_buf1 = fg.AccessROBuffer(args_->vtx_buf1);
     const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
-    const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(args_->shared_data);
     const Ren::ImageROHandle tcbn = fg.AccessROImage(args_->tcbn);
     const Ren::ImageROHandle depth = fg.AccessROImage(args_->depth);
     const Ren::ImageROHandle normal = fg.AccessROImage(args_->normal);
     const Ren::BufferROHandle ray_list = fg.AccessROBuffer(args_->ray_list);
     const Ren::BufferROHandle indir_args = fg.AccessROBuffer(args_->indir_args);
     [[maybe_unused]] const Ren::BufferROHandle rt_tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
+    const Ren::BufferROHandle cache_entries = fg.AccessROBuffer(args_->cache_entries);
+    const Ren::BufferROHandle cache_voxels = fg.AccessROBuffer(args_->cache_voxels);
 
+    const Ren::ImageRWHandle out_color = fg.AccessRWImage(args_->out_color);
     const Ren::BufferRWHandle inout_ray_counter = fg.AccessRWBuffer(args_->inout_ray_counter);
     const Ren::BufferRWHandle out_ray_hits = fg.AccessRWBuffer(args_->out_ray_hits);
 
@@ -40,6 +43,9 @@ void Eng::ExRTDiffuse::Execute_HWRT(const FgContext &fg) {
                                      {Ren::eBindTarget::SBufRO, RTDiffuse::MATERIAL_BUF_SLOT, materials},
                                      {Ren::eBindTarget::SBufRO, RTDiffuse::VTX_BUF1_SLOT, vtx_buf1},
                                      {Ren::eBindTarget::SBufRO, RTDiffuse::NDX_BUF_SLOT, ndx_buf},
+                                     {Ren::eBindTarget::SBufRO, RTDiffuse::CACHE_ENTRIES_BUF_SLOT, cache_entries},
+                                     {Ren::eBindTarget::SBufRO, RTDiffuse::CACHE_VOXELS_BUF_SLOT, cache_voxels},
+                                     {Ren::eBindTarget::ImageRW, RTDiffuse::OUT_GI_IMG_SLOT, out_color},
                                      {Ren::eBindTarget::SBufRW, RTDiffuse::RAY_COUNTER_SLOT, inout_ray_counter},
                                      {Ren::eBindTarget::SBufRW, RTDiffuse::OUT_RAY_HITS_BUF_SLOT, out_ray_hits}};
 

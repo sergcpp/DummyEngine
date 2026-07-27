@@ -558,18 +558,15 @@ void main() {
     } else
 #endif // HIT_FIRST
     {
-        ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
+        const ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
         if (copy_horizontal) {
-            ivec2 copy_coords = ivec2(copy_target.x, icoord.y);
-            imageStore(g_out_color_img, copy_coords, vec4(final_color, norm_first_ray_len));
+            imageStore(g_out_color_img, ivec2(copy_target.x, icoord.y), vec4(final_color, norm_first_ray_len));
         }
         if (copy_vertical) {
-            ivec2 copy_coords = ivec2(icoord.x, copy_target.y);
-            imageStore(g_out_color_img, copy_coords, vec4(final_color, norm_first_ray_len));
+            imageStore(g_out_color_img, ivec2(icoord.x, copy_target.y), vec4(final_color, norm_first_ray_len));
         }
         if (copy_diagonal) {
-            ivec2 copy_coords = copy_target;
-            imageStore(g_out_color_img, copy_coords, vec4(final_color, norm_first_ray_len));
+            imageStore(g_out_color_img, copy_target, vec4(final_color, norm_first_ray_len));
         }
     }
 }
