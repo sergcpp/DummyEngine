@@ -36,7 +36,7 @@ void Eng::ExRTShadows::Execute_SWRT(const FgContext &fg) {
     const Ren::BufferROHandle vtx_buf1 = fg.AccessROBuffer(args_->vtx_buf1);
     const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
     const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(args_->shared_data);
-    const Ren::ImageROHandle noise = fg.AccessROImage(args_->noise);
+    const Ren::ImageROHandle tcbn = fg.AccessROImage(args_->tcbn);
     const Ren::ImageROHandle depth = fg.AccessROImage(args_->depth);
     const Ren::ImageROHandle normal = fg.AccessROImage(args_->normal);
     const Ren::BufferROHandle rt_blas_buf = fg.AccessROBuffer(args_->swrt.blas_buf);
@@ -51,7 +51,7 @@ void Eng::ExRTShadows::Execute_SWRT(const FgContext &fg) {
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
         {Ren::eBindTarget::BindlessDescriptors, BIND_BINDLESS_TEX, bindless_tex_->rt_inline_textures},
-        {Ren::eBindTarget::TexSampled, RTShadows::NOISE_TEX_SLOT, noise},
+        {Ren::eBindTarget::TexSampled, RTShadows::TCBN_TEX_SLOT, tcbn},
         {Ren::eBindTarget::TexSampled, RTShadows::DEPTH_TEX_SLOT, {depth, 1}},
         {Ren::eBindTarget::TexSampled, RTShadows::NORM_TEX_SLOT, normal},
         {Ren::eBindTarget::SBufRO, RTShadows::GEO_DATA_BUF_SLOT, geo_data},
@@ -68,6 +68,7 @@ void Eng::ExRTShadows::Execute_SWRT(const FgContext &fg) {
     RTShadows::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
+    uniform_params.frame_index = (view_state_->frame_index % 256);
 
     DispatchComputeIndirect(fg.cmd_buf(), pi_rt_shadows_, fg.storages(), indir_args, 0, bindings, &uniform_params,
                             sizeof(uniform_params), fg.descr_alloc(), fg.log());

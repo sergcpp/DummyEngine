@@ -58,7 +58,6 @@ Eng::FgImgRWHandle Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &com
 
     FgBufRWHandle tile_list;
     FgImgRWHandle ray_hits;
-    FgImgROHandle noise;
 
     { // Classify tiles
         auto &sh_classify = fg_builder_.AddNode("RT SH CLASSIFY");
@@ -67,11 +66,9 @@ Eng::FgImgRWHandle Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &com
             FgImgROHandle depth;
             FgImgROHandle normal;
             FgBufROHandle shared_data;
-            FgBufROHandle bn_pmj_seq;
             FgBufRWHandle tile_counter;
             FgBufRWHandle tile_list;
             FgImgRWHandle out_ray_hits;
-            FgImgRWHandle out_noise;
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
@@ -79,7 +76,6 @@ Eng::FgImgRWHandle Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &com
         data->normal = sh_classify.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->shared_data = sh_classify.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         indir_args = data->tile_counter = sh_classify.AddStorageOutput(indir_args, Stg::ComputeShader);
-        data->bn_pmj_seq = sh_classify.AddStorageReadonlyInput(common_buffers.bn_pmj_2D_64spp_seq, Stg::ComputeShader);
 
         { // tile list
             FgBufDesc desc = {};
@@ -97,34 +93,22 @@ Eng::FgImgRWHandle Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &com
             desc.sampling.wrap = Ren::eWrap::ClampToEdge;
             ray_hits = data->out_ray_hits = sh_classify.AddStorageImageOutput("SH Ray Hits", desc, Stg::ComputeShader);
         }
-        { // blue noise texture
-            FgImgDesc desc;
-            desc.w = desc.h = 128;
-            desc.format = Ren::eFormat::RG8;
-            desc.sampling.filter = Ren::eFilter::Nearest;
-            desc.sampling.wrap = Ren::eWrap::Repeat;
-            noise = data->out_noise = sh_classify.AddStorageImageOutput("SH BN Tex", desc, Stg::ComputeShader);
-        }
 
         sh_classify.set_execute_cb([this, data](const FgContext &fg) {
             const Ren::ImageROHandle depth = fg.AccessROImage(data->depth);
             const Ren::ImageROHandle norm = fg.AccessROImage(data->normal);
             const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
-            const Ren::BufferROHandle bn_pmj_seq = fg.AccessROBuffer(data->bn_pmj_seq);
 
             const Ren::BufferRWHandle tile_counter = fg.AccessRWBuffer(data->tile_counter);
             const Ren::BufferRWHandle tile_list = fg.AccessRWBuffer(data->tile_list);
             const Ren::ImageRWHandle ray_hits = fg.AccessRWImage(data->out_ray_hits);
-            const Ren::ImageRWHandle noise = fg.AccessRWImage(data->out_noise);
 
             const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
                                              {Trg::TexSampled, RTShadowClassify::DEPTH_TEX_SLOT, {depth, 1}},
                                              {Trg::TexSampled, RTShadowClassify::NORM_TEX_SLOT, norm},
                                              {Trg::SBufRW, RTShadowClassify::TILE_COUNTER_SLOT, tile_counter},
                                              {Trg::SBufRW, RTShadowClassify::TILE_LIST_SLOT, tile_list},
-                                             {Trg::UTBuf, RTShadowClassify::BN_PMJ_SEQ_BUF_SLOT, bn_pmj_seq},
-                                             {Trg::ImageRW, RTShadowClassify::OUT_RAY_HITS_IMG_SLOT, ray_hits},
-                                             {Trg::ImageRW, RTShadowClassify::OUT_NOISE_IMG_SLOT, noise}};
+                                             {Trg::ImageRW, RTShadowClassify::OUT_RAY_HITS_IMG_SLOT, ray_hits}};
 
             const auto grp_count = Ren::Vec3u{
                 (view_state_.ren_res[0] + RTShadowClassify::GRP_SIZE_X - 1u) / RTShadowClassify::GRP_SIZE_X,
@@ -150,7 +134,7 @@ Eng::FgImgRWHandle Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &com
         data->vtx_buf1 = rt_shadows.AddStorageReadonlyInput(common_buffers.vertex_buf1, stage);
         data->ndx_buf = rt_shadows.AddStorageReadonlyInput(common_buffers.indices_buf, stage);
         data->shared_data = rt_shadows.AddUniformBufferInput(common_buffers.shared_data, stage);
-        data->noise = rt_shadows.AddTextureInput(noise, stage);
+        data->tcbn = rt_shadows.AddTextureInput(frame_textures.tcbn_2D_64spp, stage);
         data->depth = rt_shadows.AddTextureInput(frame_textures.depth, stage);
         data->normal = rt_shadows.AddTextureInput(frame_textures.normal, stage);
         data->tlas_buf = rt_shadows.AddStorageReadonlyInput(acc_structs.rt_tlas_buf[int(eTLASIndex::Shadow)], stage);

@@ -8,7 +8,6 @@
 
 #include "_cs_common.glsl"
 #include "rt_diffuse_common.glsl"
-#include "bn_pmj_2D_64spp.glsl"
 #include "rt_diffuse_classify_interface.h"
 
 #pragma multi_compile _ NO_SUBGROUP
@@ -31,10 +30,7 @@ layout(std430, binding = TILE_LIST_SLOT) restrict writeonly buffer TileList {
     uint g_tile_list[];
 };
 
-layout(binding = BN_PMJ_SEQ_BUF_SLOT) uniform usamplerBuffer g_bn_pmj_seq;
-
 layout(binding = OUT_GI_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_gi_img;
-layout(binding = OUT_NOISE_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_noise_img;
 
 bool IsBaseRay(uvec2 dispatch_thread_id, const uint samples_per_quad) {
     dispatch_thread_id.x = dispatch_thread_id.x ^ ((g_params.frame_index >> 0u) & 1u);
@@ -185,17 +181,9 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen
     }
 }
 
-vec4 SampleRandomVector2D(const uvec2 pixel) {
-    return vec4(Sample2D_BN_PMJ_64SPP(g_bn_pmj_seq, pixel, 2u, g_params.frame_index % 64u),
-                Sample2D_BN_PMJ_64SPP(g_bn_pmj_seq, pixel, 3u, g_params.frame_index % 64u));
-}
-
 layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
-    if (gl_GlobalInvocationID.x < 128u && gl_GlobalInvocationID.y < 128u) {
-        imageStore(g_noise_img, ivec2(gl_GlobalInvocationID.xy), SampleRandomVector2D(gl_GlobalInvocationID.xy));
-    }
     const uvec2 group_id = gl_WorkGroupID.xy;
     const uint group_index = gl_LocalInvocationIndex;
     const uvec2 group_thread_id = RemapLane8x8(group_index);

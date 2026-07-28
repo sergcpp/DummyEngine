@@ -15,7 +15,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     shared_data_t g_shrd_data;
 };
 
-layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
+layout(binding = TCBN_TEX_SLOT) uniform sampler2DArray g_tcbn_tex;
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 
@@ -75,7 +75,7 @@ void main() {
         const vec4 ray_origin_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
         const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
 
-        const vec2 u = texelFetch(g_noise_tex, icoord % 128, 0).xy;
+        const vec2 u = texelFetch(g_tcbn_tex, ivec3(icoord + ivec2(39, 39) * DIM_SHADOW, g_params.frame_index) % 64, 0).xy;
         const vec3 shadow_ray_ws = MapToCone(u, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w);
 
         vec4 ray_origin_ws = g_shrd_data.world_from_view * vec4(ray_origin_vs, 1.0);

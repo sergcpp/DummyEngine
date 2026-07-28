@@ -7,6 +7,8 @@ INTERFACE_START(RTSpecularTraceSS)
 
 struct Params {
     uvec4 resolution;
+    uint frame_index;
+    uint _pad[3];
 };
 
 const uint GRP_SIZE_X = 64;
@@ -21,7 +23,7 @@ const uint IRRADIANCE_TEX_SLOT = 10;
 const uint DISTANCE_TEX_SLOT = 11;
 const uint OFFSET_TEX_SLOT = 12;
 const uint IN_RAY_LIST_SLOT = 13;
-const uint NOISE_TEX_SLOT = 14;
+const uint TCBN_TEX_SLOT = 14;
 const uint OIT_DEPTH_BUF_SLOT = 14;
 
 const uint OUT_REFL_IMG_SLOT = 0;

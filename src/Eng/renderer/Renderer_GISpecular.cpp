@@ -65,7 +65,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
     const int tile_count = ((view_state_.ren_res[0] + 7) / 8) * ((view_state_.ren_res[1] + 7) / 8);
 
     FgBufRWHandle ray_list, tile_list;
-    FgImgRWHandle refl, noise;
+    FgImgRWHandle refl;
 
     { // Classify pixel quads
         auto &spec_classify = fg_builder_.AddNode("SPEC CLASSIFY");
@@ -75,11 +75,10 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgImgROHandle specular;
             FgImgROHandle normal;
             FgImgROHandle variance_history;
-            FgBufROHandle bn_pmj_seq;
             FgBufRWHandle ray_counter;
             FgBufRWHandle ray_list;
             FgBufRWHandle tile_list;
-            FgImgRWHandle out_refl, out_noise;
+            FgImgRWHandle out_refl;
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
@@ -87,8 +86,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->specular = spec_classify.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
         data->normal = spec_classify.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->variance_history = spec_classify.AddHistoryTextureInput(SPECULAR_VARIANCE_TEX, Stg::ComputeShader);
-        data->bn_pmj_seq =
-            spec_classify.AddStorageReadonlyInput(common_buffers.bn_pmj_2D_64spp_seq, Stg::ComputeShader);
         ray_counter = data->ray_counter = spec_classify.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // packed ray list
@@ -114,14 +111,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             desc.sampling.wrap = Ren::eWrap::ClampToEdge;
             refl = data->out_refl = spec_classify.AddStorageImageOutput("Spec Temp 2", desc, Stg::ComputeShader);
         }
-        { // blue noise texture
-            FgImgDesc desc;
-            desc.w = desc.h = 128;
-            desc.format = Ren::eFormat::RGBA8;
-            desc.sampling.filter = Ren::eFilter::Nearest;
-            desc.sampling.wrap = Ren::eWrap::Repeat;
-            noise = data->out_noise = spec_classify.AddStorageImageOutput("BN Tex", desc, Stg::ComputeShader);
-        }
 
         spec_classify.set_execute_cb([this, data, tile_count, SamplesPerQuad](const FgContext &fg) {
             using namespace RTSpecularClassifyTiles;
@@ -130,21 +119,18 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             const Ren::ImageROHandle spec = fg.AccessROImage(data->specular);
             const Ren::ImageROHandle norm = fg.AccessROImage(data->normal);
             const Ren::ImageROHandle variance = fg.AccessROImage(data->variance_history);
-            const Ren::BufferROHandle bn_pmj_seq = fg.AccessROBuffer(data->bn_pmj_seq);
 
             const Ren::BufferHandle ray_counter = fg.AccessRWBuffer(data->ray_counter);
             const Ren::BufferHandle ray_list = fg.AccessRWBuffer(data->ray_list);
             const Ren::BufferHandle tile_list = fg.AccessRWBuffer(data->tile_list);
 
             const Ren::ImageRWHandle refl = fg.AccessRWImage(data->out_refl);
-            const Ren::ImageRWHandle noise = fg.AccessRWImage(data->out_noise);
 
             const Ren::Binding bindings[] = {
                 {Trg::TexSampled, DEPTH_TEX_SLOT, {depth, 1}}, {Trg::TexSampled, SPEC_TEX_SLOT, spec},
                 {Trg::TexSampled, NORM_TEX_SLOT, norm},        {Trg::TexSampled, VARIANCE_TEX_SLOT, variance},
                 {Trg::SBufRW, RAY_COUNTER_SLOT, ray_counter},  {Trg::SBufRW, RAY_LIST_SLOT, ray_list},
-                {Trg::SBufRW, TILE_LIST_SLOT, tile_list},      {Trg::UTBuf, BN_PMJ_SEQ_BUF_SLOT, bn_pmj_seq},
-                {Trg::ImageRW, OUT_REFL_IMG_SLOT, refl},       {Trg::ImageRW, OUT_NOISE_IMG_SLOT, noise}};
+                {Trg::SBufRW, TILE_LIST_SLOT, tile_list},      {Trg::ImageRW, OUT_REFL_IMG_SLOT, refl}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
                                                     (view_state_.ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
@@ -202,8 +188,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         auto &spec_trace_ss = fg_builder_.AddNode("SPEC TRACE SS");
 
         struct PassData {
-            FgImgROHandle noise;
             FgBufROHandle shared_data;
+            FgImgROHandle tcbn;
             FgImgROHandle color, normal;
             FgImgROHandle depth_hierarchy;
 
@@ -218,8 +204,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
-        data->noise = spec_trace_ss.AddTextureInput(noise, Stg::ComputeShader);
         data->shared_data = spec_trace_ss.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+        data->tcbn = spec_trace_ss.AddTextureInput(frame_textures.tcbn_2D_64spp, Stg::ComputeShader);
         data->color = spec_trace_ss.AddTextureInput(frame_textures.color, Stg::ComputeShader);
         data->normal = spec_trace_ss.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->depth_hierarchy = spec_trace_ss.AddTextureInput(depth_hierarchy, Stg::ComputeShader);
@@ -249,8 +235,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         spec_trace_ss.set_execute_cb([this, data](const FgContext &fg) {
             using namespace RTSpecularTraceSS;
 
-            const Ren::ImageROHandle noise = fg.AccessROImage(data->noise);
             const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
+            const Ren::ImageROHandle tcbn = fg.AccessROImage(data->tcbn);
             const Ren::ImageROHandle color = fg.AccessROImage(data->color);
             const Ren::ImageROHandle normal = fg.AccessROImage(data->normal);
             const Ren::ImageROHandle depth_hierarchy = fg.AccessROImage(data->depth_hierarchy);
@@ -278,7 +264,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                                            {Trg::TexSampled, DEPTH_TEX_SLOT, depth_hierarchy},
                                                            {Trg::TexSampled, COLOR_TEX_SLOT, color},
                                                            {Trg::TexSampled, NORM_TEX_SLOT, normal},
-                                                           {Trg::TexSampled, NOISE_TEX_SLOT, noise},
+                                                           {Trg::TexSampled, TCBN_TEX_SLOT, tcbn},
                                                            {Trg::SBufRO, IN_RAY_LIST_SLOT, in_ray_list},
                                                            {Trg::ImageRW, OUT_REFL_IMG_SLOT, out_refl},
                                                            {Trg::SBufRW, INOUT_RAY_COUNTER_SLOT, inout_ray_counter},
@@ -295,6 +281,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             Params uniform_params;
             uniform_params.resolution = Ren::Vec4u(view_state_.ren_res[0], view_state_.ren_res[1], 0, 0);
+            uniform_params.frame_index = (view_state_.frame_index % 256);
 
             DispatchComputeIndirect(fg.cmd_buf(), pi_specular_trace_ss_[0][bool(irr)], fg.storages(), indir_args, 0,
                                     bindings, &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
@@ -357,7 +344,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             data->vtx_buf2 = rt_spec.AddStorageReadonlyInput(common_buffers.vertex_buf2, stage);
             data->ndx_buf = rt_spec.AddStorageReadonlyInput(common_buffers.indices_buf, stage);
             data->shared_data = rt_spec.AddUniformBufferInput(common_buffers.shared_data, stage);
-            data->noise = rt_spec.AddTextureInput(noise, stage);
+            data->tcbn = rt_spec.AddTextureInput(frame_textures.tcbn_2D_64spp, stage);
             data->depth = rt_spec.AddTextureInput(frame_textures.depth, stage);
             data->normal = rt_spec.AddTextureInput(frame_textures.normal, stage);
             if (ray_rt_list) {
@@ -463,8 +450,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             auto &spec_shade = fg_builder_.AddNode(two_bounces ? "SPEC SHADE 1ST" : "SPEC SHADE");
 
             struct PassData {
-                FgImgROHandle noise;
                 FgBufROHandle shared_data;
+                FgImgROHandle tcbn;
                 FgImgROHandle depth, normal;
                 FgImgROHandle env;
                 FgBufROHandle mesh_instances;
@@ -492,8 +479,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             };
 
             auto *data = fg_builder_.AllocTempData<PassData>();
-            data->noise = spec_shade.AddTextureInput(noise, Stg::ComputeShader);
             data->shared_data = spec_shade.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+            data->tcbn = spec_shade.AddTextureInput(frame_textures.tcbn_2D_64spp, Stg::ComputeShader);
             data->depth = spec_shade.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->normal = spec_shade.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
             data->env = spec_shade.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
@@ -540,8 +527,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             spec_shade.set_execute_cb([this, &bindless, two_bounces, data](const FgContext &fg) {
                 using namespace RTSpecular;
 
-                const Ren::ImageROHandle noise = fg.AccessROImage(data->noise);
                 const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
+                const Ren::ImageROHandle tcbn = fg.AccessROImage(data->tcbn);
                 const Ren::ImageROHandle depth = fg.AccessROImage(data->depth);
                 const Ren::ImageROHandle normal = fg.AccessROImage(data->normal);
                 const Ren::ImageROHandle env = fg.AccessROImage(data->env);
@@ -584,7 +571,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     {Trg::BindlessDescriptors, BIND_BINDLESS_TEX, bindless.rt_inline_textures},
                     {Trg::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},
                     {Trg::TexSampled, NORM_TEX_SLOT, normal},
-                    {Trg::TexSampled, NOISE_TEX_SLOT, noise},
+                    {Trg::TexSampled, TCBN_TEX_SLOT, tcbn},
                     {Trg::TexSampled, ENV_TEX_SLOT, env},
                     {Trg::UTBuf, MESH_INSTANCES_BUF_SLOT, mesh_instances},
                     {Trg::SBufRO, GEO_DATA_BUF_SLOT, geo_data},
@@ -608,6 +595,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 // uniform_params.frame_index = view_state_.frame_index;
                 uniform_params.lights_count = view_state_.stochastic_lights_count;
                 uniform_params.is_hwrt = ctx_.capabilities.hwrt ? 1 : 0;
+                uniform_params.frame_index = (view_state_.frame_index % 256);
 
                 // Shade misses
                 DispatchComputeIndirect(fg.cmd_buf(), pi_specular_shade_[0], fg.storages(), indir_args, 0, bindings,
@@ -683,13 +671,13 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                 const auto stage = Stg::ComputeShader;
 
+                data->shared_data = rt_spec.AddUniformBufferInput(common_buffers.shared_data, stage);
                 data->geo_data = rt_spec.AddStorageReadonlyInput(rt_geo_instances_res, stage);
                 data->materials = rt_spec.AddStorageReadonlyInput(common_buffers.materials, stage);
                 data->vtx_buf1 = rt_spec.AddStorageReadonlyInput(common_buffers.vertex_buf1, stage);
                 data->vtx_buf2 = rt_spec.AddStorageReadonlyInput(common_buffers.vertex_buf2, stage);
                 data->ndx_buf = rt_spec.AddStorageReadonlyInput(common_buffers.indices_buf, stage);
-                data->shared_data = rt_spec.AddUniformBufferInput(common_buffers.shared_data, stage);
-                data->noise = rt_spec.AddTextureInput(noise, stage);
+                data->tcbn = rt_spec.AddTextureInput(frame_textures.tcbn_2D_64spp, stage);
                 data->depth = rt_spec.AddTextureInput(frame_textures.depth, stage);
                 data->normal = rt_spec.AddTextureInput(frame_textures.normal, stage);
                 data->ray_list = rt_spec.AddStorageReadonlyInput(secondary_ray_list, stage);
@@ -758,8 +746,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 auto &spec_shade = fg_builder_.AddNode("SPEC SHADE 2ND");
 
                 struct PassData {
-                    FgImgROHandle noise;
                     FgBufROHandle shared_data;
+                    FgImgROHandle tcbn;
                     FgImgROHandle depth, normal;
                     FgImgROHandle env;
                     FgBufROHandle mesh_instances;
@@ -783,8 +771,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 };
 
                 auto *data = fg_builder_.AllocTempData<PassData>();
-                data->noise = spec_shade.AddTextureInput(noise, Stg::ComputeShader);
                 data->shared_data = spec_shade.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+                data->tcbn = spec_shade.AddTextureInput(frame_textures.tcbn_2D_64spp, Stg::ComputeShader);
                 data->depth = spec_shade.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
                 data->normal = spec_shade.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
                 data->env = spec_shade.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
@@ -816,8 +804,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 spec_shade.set_execute_cb([this, &bindless, data](const FgContext &fg) {
                     using namespace RTSpecular;
 
-                    const Ren::ImageROHandle noise = fg.AccessROImage(data->noise);
                     const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
+                    const Ren::ImageROHandle tcbn = fg.AccessROImage(data->tcbn);
                     const Ren::ImageROHandle depth = fg.AccessROImage(data->depth);
                     const Ren::ImageROHandle normal = fg.AccessROImage(data->normal);
                     const Ren::ImageROHandle env = fg.AccessROImage(data->env);
@@ -850,7 +838,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                         {Trg::BindlessDescriptors, BIND_BINDLESS_TEX, bindless.rt_inline_textures},
                         {Trg::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},
                         {Trg::TexSampled, NORM_TEX_SLOT, normal},
-                        {Trg::TexSampled, NOISE_TEX_SLOT, noise},
+                        {Trg::TexSampled, TCBN_TEX_SLOT, tcbn},
                         {Trg::TexSampled, ENV_TEX_SLOT, env},
                         {Trg::UTBuf, MESH_INSTANCES_BUF_SLOT, mesh_instances},
                         {Trg::SBufRO, GEO_DATA_BUF_SLOT, geo_data},
@@ -875,6 +863,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     // uniform_params.frame_index = view_state_.frame_index;
                     uniform_params.lights_count = view_state_.stochastic_lights_count;
                     uniform_params.is_hwrt = ctx_.capabilities.hwrt ? 1 : 0;
+                    uniform_params.frame_index = (view_state_.frame_index % 256);
 
                     // Shade misses
                     DispatchComputeIndirect(fg.cmd_buf(), pi_specular_shade_[1], fg.storages(), indir_args, 0, bindings,

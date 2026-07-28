@@ -15,18 +15,23 @@ namespace Eng::BNInternal {
 namespace TCBN {
 static const int TileRes = 64;
 
-static const float GaussOmegaI = 7.22f; // 3.6f;
+static const float GaussOmegaI = 2.1f; // 3.6f; // 7.22f;
 
 // false value preserve histogram in each Z plane (keeps stratification)
 static const bool AllowZSwaps = false;
 
 static const int XYRadius = 8;
-static const int BaseSwappingIterations = 100000;
+static const int BaseSwappingIterations = 1000000;
 
 static const float EMA_Alpha = 0.08f;
-static const float HistoryRejection = 0.05f;
+static const int Linear_FramesLimit = 32;
+static const float HistoryRejection = 0.01f; // 0.05f;
 
-static const int TestFunctionsCount = 256;
+// static const int TestFunctionsCountCbrt = 1;
+// static const int TestFunctionsCount = TestFunctionsCountCbrt * TestFunctionsCountCbrt * TestFunctionsCountCbrt;
+
+static const int TestFunctionsCountSqrt = 256;
+static const int TestFunctionsCount = TestFunctionsCountSqrt * TestFunctionsCountSqrt;
 
 template <int SampleCount, bool Sign>
 Ren::Vec2i splat_pixel_energy(const int ox, const int oy, const int oz,
@@ -97,6 +102,13 @@ float truncated_ema(const float alpha, const int i, const int j, const int m) {
     return 0.0f;
 }
 
+float truncated_linear(const int i, const int j, const int m) {
+    if (i < j + m) {
+        return 1.0f / std::min(m, Linear_FramesLimit);
+    }
+    return 0.0f;
+}
+
 float test_function_1D(float x, float min, float max) {
     if (x > min && x < max) {
         return 1.0f;
@@ -107,14 +119,14 @@ float test_function_1D_integral(float min, float max) { return max - min; }
 
 template <int SampleCount>
 float calc_pixel_proximity(const int ox, const int oy, const int oz,
-                           const std::vector<float> errors[SampleCount][TileRes][TileRes],
+                           const uint16_t sample_index[SampleCount][TileRes][TileRes], float *const errors_lut[65536],
                            const float xy_filter[XYRadius + 1][XYRadius + 1], const float z_filter[SampleCount]) {
-    const std::vector<float> &oerr = errors[oz][oy][ox];
+    const float *oerr_lut = errors_lut[sample_index[oz][oy][ox]];
 
     double total_error = 0.0;
+
     for (int z = 0; z < SampleCount; ++z) {
         const float proximity_z = z_filter[(SampleCount + z - oz) % SampleCount];
-
         for (int y = oy - XYRadius; y <= oy + XYRadius; ++y) {
             const int wrapped_y = (y + TileRes) % TileRes;
             const int dy = std::abs(y - oy);
@@ -128,15 +140,11 @@ float calc_pixel_proximity(const int ox, const int oy, const int oz,
                 if ((wrapped_x == ox && wrapped_y == oy) || z == oz) {
                     proximity = xy_filter[dy][dx] * proximity_z;
                 }
-
-                float error = 0.0f;
-                for (int i = 0; i < TestFunctionsCount && proximity > 0.0f; ++i) {
-                    const float diff = oerr[i] - errors[z][wrapped_y][wrapped_x][i];
-                    error += diff * diff;
+                if (proximity < 0.000001f) {
+                    continue;
                 }
-                error *= (proximity / TestFunctionsCount);
 
-                total_error += error;
+                total_error += proximity * oerr_lut[sample_index[z][wrapped_y][wrapped_x]];
             }
         }
     }
@@ -145,14 +153,12 @@ float calc_pixel_proximity(const int ox, const int oy, const int oz,
 
 template <int SampleCount, bool Sign>
 void splat_pixel_proximity(const int ox, const int oy, const int oz,
-                           const std::vector<float> errors[SampleCount][TileRes][TileRes],
-                           float energy[SampleCount][TileRes][TileRes],
+                           const uint16_t sample_index[SampleCount][TileRes][TileRes], float *const errors_lut[65536],
+                           float energy[SampleCount][TileRes][TileRes], bool dirty_lines[SampleCount][TileRes],
                            const float xy_filter[XYRadius + 1][XYRadius + 1], const float z_filter[SampleCount]) {
-    const std::vector<float> &oerr = errors[oz][oy][ox];
+    const float *oerr_lut = errors_lut[sample_index[oz][oy][ox]];
     for (int z = 0; z < SampleCount; ++z) {
         const float proximity_z = z_filter[(SampleCount - z + oz) % SampleCount];
-
-        // const int dz = std::abs(z - oz);
         for (int y = oy - XYRadius; y <= oy + XYRadius; ++y) {
             const int wrapped_y = (y + TileRes) % TileRes;
             const int dy = std::abs(y - oy);
@@ -167,49 +173,64 @@ void splat_pixel_proximity(const int ox, const int oy, const int oz,
                 if ((wrapped_x == ox && wrapped_y == oy) || z == oz) {
                     proximity = xy_filter[dy][dx] * proximity_z;
                 }
-
-                float error = 0.0f;
-                for (int i = 0; i < TestFunctionsCount && proximity > 0.0f; ++i) {
-                    const float diff = oerr[i] - errors[z][wrapped_y][wrapped_x][i];
-                    error += diff * diff;
+                if (proximity < 0.000001f) {
+                    continue;
                 }
-                error *= (proximity / TestFunctionsCount);
+
+                const float error = oerr_lut[sample_index[z][wrapped_y][wrapped_x]];
 
                 if constexpr (Sign) {
-                    energy[z][wrapped_y][wrapped_x] += error;
+                    energy[z][wrapped_y][wrapped_x] += proximity * error;
                 } else {
-                    energy[z][wrapped_y][wrapped_x] -= error;
+                    energy[z][wrapped_y][wrapped_x] -= proximity * error;
                 }
+                dirty_lines[z][wrapped_y] = true;
             }
         }
     }
 }
 
+float test_function_2D(const Ren::Vec2f x, const Ren::Vec2f o, const float angle) {
+    const Ren::Vec2f normal(std::cos(angle), std::sin(angle));
+    const float d = Dot(x - o, normal);
+    return float(d >= 0.0f);
+}
+
+float test_function_2D(const Ren::Vec2f x, const Ren::Vec2f o, const Ren::Vec2f normal) {
+    const float d = Dot(x - o, normal);
+    return float(d >= 0.0f);
+}
+
+struct heavyside_func_t {
+    Ren::Vec2f o, n;
+    float integral_val;
+};
+
 template <int SampleCount>
 float calc_pixel_proximity(const int ox, const int oy, const int oz,
-                           const std::vector<Ren::Vec2f> values[TileRes][TileRes]) {
-    const Ren::Vec2f oval = values[oy][ox][oz];
+                           const Ren::Vec2f values[SampleCount][TileRes][TileRes],
+                           const float xy_filter[XYRadius + 1][XYRadius + 1], const float z_filter[SampleCount]) {
+    const Ren::Vec2f oval = values[oz][oy][ox];
 
     double total_proximity = 0.0;
-    for (int z = oz - XYRadius; z <= oz + XYRadius; ++z) {
-        const int wrapped_z = (z + SampleCount) % SampleCount;
-        const int dz = std::abs(z - oz);
+    for (int z = 0; z < SampleCount; ++z) {
+        const float proximity_z = z_filter[(SampleCount + z - oz) % SampleCount];
         for (int y = oy - XYRadius; y <= oy + XYRadius; ++y) {
             const int wrapped_y = (y + TileRes) % TileRes;
             const int dy = std::abs(y - oy);
             for (int x = ox - XYRadius; x <= ox + XYRadius; ++x) {
                 const int wrapped_x = (x + TileRes) % TileRes;
                 const int dx = std::abs(x - ox);
-                if (wrapped_x == ox && wrapped_y == oy && wrapped_z == oz) {
+                if (wrapped_x == ox && wrapped_y == oy && z == oz) {
                     continue;
                 }
+
                 float proximity = 0.0f;
-                if ((wrapped_x == ox && wrapped_y == oy) || wrapped_z == oz) {
-                    proximity += (dx * dx + dy * dy + dz * dz) / GaussOmegaI;
-                    // calc distance ^ (2.0 / 3.0)
-                    proximity += cbrtf(Ren::Distance2(values[wrapped_y][wrapped_x][wrapped_z], oval));
-                    proximity = std::exp(-proximity);
+                if ((wrapped_x == ox && wrapped_y == oy) || z == oz) {
+                    proximity = xy_filter[dy][dx] * proximity_z;
                 }
+                proximity *= Ren::Distance2(oval, values[z][wrapped_y][wrapped_x]);
+
                 total_proximity += proximity;
             }
         }
@@ -219,33 +240,32 @@ float calc_pixel_proximity(const int ox, const int oy, const int oz,
 
 template <int SampleCount, bool Sign>
 void splat_pixel_proximity(const int ox, const int oy, const int oz,
-                           const std::vector<Ren::Vec2f> values[TileRes][TileRes],
-                           float energy[SampleCount][TileRes][TileRes]) {
-    const Ren::Vec2f oval = values[oy][ox][oz];
-    for (int z = oz - XYRadius; z <= oz + XYRadius; ++z) {
-        const int wrapped_z = (z + SampleCount) % SampleCount;
-        const int dz = std::abs(z - oz);
+                           const Ren::Vec2f values[SampleCount][TileRes][TileRes],
+                           float energy[SampleCount][TileRes][TileRes],
+                           const float xy_filter[XYRadius + 1][XYRadius + 1], const float z_filter[SampleCount]) {
+    const Ren::Vec2f oval = values[oz][oy][ox];
+    for (int z = 0; z < SampleCount; ++z) {
+        const float proximity_z = z_filter[(SampleCount - z + oz) % SampleCount];
         for (int y = oy - XYRadius; y <= oy + XYRadius; ++y) {
             const int wrapped_y = (y + TileRes) % TileRes;
             const int dy = std::abs(y - oy);
             for (int x = ox - XYRadius; x <= ox + XYRadius; ++x) {
                 const int wrapped_x = (x + TileRes) % TileRes;
                 const int dx = std::abs(x - ox);
-                if (wrapped_x == ox && wrapped_y == oy && wrapped_z == oz) {
+                if (wrapped_x == ox && wrapped_y == oy && z == oz) {
                     continue;
                 }
 
                 float proximity = 0.0f;
-                if ((wrapped_x == ox && wrapped_y == oy) || wrapped_z == oz) {
-                    proximity += (dx * dx + dy * dy + dz * dz) / GaussOmegaI;
-                    // calc distance ^ (2.0 / 3.0)
-                    proximity += cbrtf(Ren::Distance2(values[wrapped_y][wrapped_x][wrapped_z], oval));
-                    proximity = std::exp(-proximity);
+                if ((wrapped_x == ox && wrapped_y == oy) || z == oz) {
+                    proximity = xy_filter[dy][dx] * proximity_z;
                 }
+                proximity *= Ren::Distance2(oval, values[z][wrapped_y][wrapped_x]);
+
                 if constexpr (Sign) {
-                    energy[wrapped_z][wrapped_y][wrapped_x] += proximity;
+                    energy[z][wrapped_y][wrapped_x] += proximity;
                 } else {
-                    energy[wrapped_z][wrapped_y][wrapped_x] -= proximity;
+                    energy[z][wrapped_y][wrapped_x] -= proximity;
                 }
             }
         }
@@ -644,7 +664,7 @@ void Eng::Generate1D_TCBN_Swap(const unsigned int seed) {
         for (int iter = 0; iter < IterationsCount; ++iter) {
             // Generate history length based on the rejection probability
             int history_len = 0;
-            while (history_len++ < SampleCount) {
+            while (++history_len < SampleCount) {
                 const float u = uniform_unorm_float(gen);
                 if (u < HistoryRejection) {
                     break;
@@ -803,7 +823,7 @@ void Eng::Generate1D_TCBN_Swap(const unsigned int seed) {
         for (int y = 0; y < TileRes; ++y) {
             for (int x = 0; x < TileRes; ++x) {
                 data->proximity[z][y][x] =
-                    calc_pixel_proximity<SampleCount>(x, y, z, data->errors, data->xy_filter, data->z_filter);
+                    calc_pixel_proximity<SampleCount>(x, y, z, nullptr, nullptr, data->xy_filter, data->z_filter);
                 best_total_proximity += data->proximity[z][y][x];
             }
         }
@@ -906,25 +926,25 @@ void Eng::Generate1D_TCBN_Swap(const unsigned int seed) {
         assert(oz2 == oz1);
 
         // Subtract swapped pixels contribution
-        splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz1, data->errors, data->proximity, data->xy_filter,
-                                                  data->z_filter);
-        splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz2, data->errors, data->proximity, data->xy_filter,
-                                                  data->z_filter);
+        splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz1, nullptr, nullptr, data->proximity, nullptr,
+                                                  data->xy_filter, data->z_filter);
+        splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz2, nullptr, nullptr, data->proximity, nullptr,
+                                                  data->xy_filter, data->z_filter);
 
         std::swap(data->samples[oz1][oy1][ox1], data->samples[oz2][oy2][ox2]);
         std::swap(data->errors[oz1][oy1][ox1], data->errors[oz2][oy2][ox2]);
 
         // Add swapped pixels contribution
-        splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz1, data->errors, data->proximity, data->xy_filter,
-                                                 data->z_filter);
-        splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz2, data->errors, data->proximity, data->xy_filter,
-                                                 data->z_filter);
+        splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz1, nullptr, nullptr, data->proximity, nullptr,
+                                                 data->xy_filter, data->z_filter);
+        splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz2, nullptr, nullptr, data->proximity, nullptr,
+                                                 data->xy_filter, data->z_filter);
 
         // Recalc proximity of changed pixels
         data->proximity[oz1][oy1][ox1] =
-            calc_pixel_proximity<SampleCount>(ox1, oy1, oz1, data->errors, data->xy_filter, data->z_filter);
+            calc_pixel_proximity<SampleCount>(ox1, oy1, oz1, nullptr, nullptr, data->xy_filter, data->z_filter);
         data->proximity[oz2][oy2][ox2] =
-            calc_pixel_proximity<SampleCount>(ox2, oy2, oz2, data->errors, data->xy_filter, data->z_filter);
+            calc_pixel_proximity<SampleCount>(ox2, oy2, oz2, nullptr, nullptr, data->xy_filter, data->z_filter);
 
         float total_proximity = 0.0f;
         for (int z = 0; z < SampleCount; ++z) {
@@ -940,23 +960,23 @@ void Eng::Generate1D_TCBN_Swap(const unsigned int seed) {
             best_total_proximity = total_proximity;
         } else {
             // Revert swap
-            splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz1, data->errors, data->proximity, data->xy_filter,
-                                                      data->z_filter);
-            splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz2, data->errors, data->proximity, data->xy_filter,
-                                                      data->z_filter);
+            splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz1, nullptr, nullptr, data->proximity, nullptr,
+                                                      data->xy_filter, data->z_filter);
+            splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz2, nullptr, nullptr, data->proximity, nullptr,
+                                                      data->xy_filter, data->z_filter);
 
             std::swap(data->samples[oz1][oy1][ox1], data->samples[oz2][oy2][ox2]);
             std::swap(data->errors[oz1][oy1][ox1], data->errors[oz2][oy2][ox2]);
 
-            splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz1, data->errors, data->proximity, data->xy_filter,
-                                                     data->z_filter);
-            splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz2, data->errors, data->proximity, data->xy_filter,
-                                                     data->z_filter);
+            splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz1, nullptr, nullptr, data->proximity, nullptr,
+                                                     data->xy_filter, data->z_filter);
+            splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz2, nullptr, nullptr, data->proximity, nullptr,
+                                                     data->xy_filter, data->z_filter);
 
             data->proximity[oz1][oy1][ox1] =
-                calc_pixel_proximity<SampleCount>(ox1, oy1, oz1, data->errors, data->xy_filter, data->z_filter);
+                calc_pixel_proximity<SampleCount>(ox1, oy1, oz1, nullptr, nullptr, data->xy_filter, data->z_filter);
             data->proximity[oz2][oy2][ox2] =
-                calc_pixel_proximity<SampleCount>(ox2, oy2, oz2, data->errors, data->xy_filter, data->z_filter);
+                calc_pixel_proximity<SampleCount>(ox2, oy2, oz2, nullptr, nullptr, data->xy_filter, data->z_filter);
         }
     }
 
@@ -987,17 +1007,32 @@ void Eng::Generate1D_TCBN_Swap(const unsigned int seed) {
     }
 }
 
-template <int Log2SampleCount> void Eng::Generate2D_TCBN(const unsigned int seed) {
+template <int Log2SampleCount, Eng::eSpatialFilter sf, Eng::eTemporalFilter tf>
+void Eng::Generate2D_TCBN(const unsigned int seed) {
     using namespace BNInternal;
     using namespace TCBN;
 
     static const int SampleCount = (1 << Log2SampleCount);
     static const int SampleCountSqrt = (1 << (Log2SampleCount / 2));
+    static const int TotalCount = SampleCount * TileRes * TileRes;
 
     // Dynamic allocation is used to avoid stack overflow
     struct bn_data_t {
-        std::vector<Ren::Vec2f> samples[TileRes][TileRes];
+        Ren::Vec2f samples[SampleCount][TileRes][TileRes];
+
         float proximity[SampleCount][TileRes][TileRes] = {};
+        double proximity_lines[SampleCount][TileRes] = {};
+        bool dirty_lines[SampleCount][TileRes] = {};
+        std::vector<float> errors[SampleCount][TileRes][TileRes];
+
+        std::vector<float> errors_q[65536];
+        std::vector<float> errors_lut_data;
+        float *errors_lut[65536];
+        uint16_t sample_index[SampleCount][TileRes][TileRes];
+
+        // filter LUTs
+        float xy_filter[XYRadius + 1][XYRadius + 1] = {};
+        float z_filter[SampleCount] = {};
 
         // temp data
         float debug_values[SampleCount][TileRes][TileRes] = {};
@@ -1008,37 +1043,61 @@ template <int Log2SampleCount> void Eng::Generate2D_TCBN(const unsigned int seed
     auto data = std::make_unique<bn_data_t>();
 
     std::mt19937 gen(seed);
-    std::uniform_int_distribution<int> uniform_index(0, SampleCount * TileRes * TileRes - 1);
+    std::uniform_int_distribution<int> uniform_index(0, TotalCount - 1);
     std::uniform_real_distribution<float> uniform_unorm_float(0.0f, 1.0f);
 
     char name_buf[128];
 
-    // Generate initial samples
-#if 0   // z tratification
-    for (int y = 0; y < TileRes; ++y) {
-        for (int x = 0; x < TileRes; ++x) {
-            for (int z = 0; z < SampleCount; ++z) {
-                const float off_x = float(z % SampleCountSqrt);
-                const float off_y = float(z / SampleCountSqrt);
-
-                data->samples[y][x].emplace_back(
-                    Ren::Vec2f(off_x + uniform_unorm_float(gen), off_y + uniform_unorm_float(gen)) /
-                    float(SampleCountSqrt));
+    // Init spatial filter
+    if constexpr (sf == eSpatialFilter::Gauss) {
+        for (int dy = 0; dy <= XYRadius; ++dy) {
+            for (int dx = 0; dx <= XYRadius; ++dx) {
+                data->xy_filter[dy][dx] = std::exp(-(dx * dx + dy * dy) / GaussOmegaI);
             }
-            // Randomize the initial order
-            std::shuffle(std::begin(data->samples[y][x]), std::end(data->samples[y][x]), gen);
         }
     }
-#elif 1 // xyz stratification
+
+    // Init temporal filter
+    if constexpr (tf == eTemporalFilter::Gauss) {
+    } else if constexpr (tf == eTemporalFilter::TruncatedEMA || tf == eTemporalFilter::TruncatedLinear) {
+        // Stochastically sample the EMA filter.
+        // This totally can be solved analytically, but I'm too lazy to do it.
+        const int IterationsCount = 1000000;
+        for (int iter = 0; iter < IterationsCount; ++iter) {
+            // Generate history length based on the rejection probability
+            int history_len = 0;
+            while (++history_len < SampleCount) {
+                const float u = uniform_unorm_float(gen);
+                if (u < HistoryRejection) {
+                    break;
+                }
+            }
+            for (int i = 0; i < SampleCount; ++i) {
+                if constexpr (tf == eTemporalFilter::TruncatedEMA) {
+                    data->z_filter[i] += truncated_ema(EMA_Alpha, 0, std::max(-i, i - SampleCount), history_len);
+                } else if constexpr (tf == eTemporalFilter::TruncatedLinear) {
+                    data->z_filter[i] += truncated_linear(0, std::max(-i, i - SampleCount), history_len);
+                }
+            }
+        }
+        // Normalize
+        for (int i = SampleCount - 1; i >= 0; --i) {
+            data->z_filter[i] /= data->z_filter[0];
+        }
+    }
+
+    // Generate initial samples
     for (int z = 0; z < SampleCount; ++z) {
         for (int y = 0; y < TileRes; ++y) {
             for (int x = 0; x < TileRes; ++x) {
                 const int k = TileRes / SampleCountSqrt;
-                const float off_x = float((x + k * (z % SampleCountSqrt)) % TileRes);
-                const float off_y = float((y + k * (z / SampleCountSqrt)) % TileRes);
+                // NOTE: Slightly shift towards center to avoid numerical issues in validation (doesn't matter)
+                const float off_x = 0.0001f + float((x + k * (z % SampleCountSqrt)) % TileRes);
+                const float off_y = 0.0001f + float((y + k * (z / SampleCountSqrt)) % TileRes);
 
-                data->samples[y][x].emplace_back(
-                    Ren::Vec2f(off_x + uniform_unorm_float(gen), off_y + uniform_unorm_float(gen)) / float(TileRes));
+                data->samples[z][y][x] =
+                    Ren::Vec2f(off_x + 0.9998f * uniform_unorm_float(gen), off_y + 0.9998f * uniform_unorm_float(gen)) /
+                    float(TileRes);
             }
         }
     }
@@ -1050,47 +1109,305 @@ template <int Log2SampleCount> void Eng::Generate2D_TCBN(const unsigned int seed
         while (slice_order[i] != i) {
             for (int y = 0; y < TileRes; ++y) {
                 for (int x = 0; x < TileRes; ++x) {
-                    std::swap(data->samples[y][x][i], data->samples[y][x][slice_order[i]]);
+                    std::swap(data->samples[i][y][x], data->samples[slice_order[i]][y][x]);
                 }
             }
             std::swap(slice_order[i], slice_order[slice_order[i]]);
         }
     }
-    // Randomize sequences order
-    std::shuffle(&data->samples[0][0], &data->samples[0][0] + TileRes * TileRes, gen);
-#endif
 
-    auto validate_stratification = [&]() {
+    auto validate_stratification = [&](const bool validate_z) {
         for (int z = 0; z < SampleCount; ++z) {
             bool xy_strata[TileRes][TileRes] = {};
             for (int y = 0; y < TileRes; ++y) {
                 for (int x = 0; x < TileRes; ++x) {
-                    const auto s = Ren::Vec2i(data->samples[y][x][z] * TileRes);
+                    const auto s = Ren::Vec2i(data->samples[z][y][x] * TileRes);
 
                     assert(xy_strata[s[1]][s[0]] == false);
                     xy_strata[s[1]][s[0]] = true;
                 }
             }
         }
-        /*for (int y = 0; y < TileRes; ++y) {
+        // Stratification by z is only valid for initial state (before swaps)
+        if (!validate_z) {
+            return;
+        }
+        for (int y = 0; y < TileRes; ++y) {
             for (int x = 0; x < TileRes; ++x) {
                 bool z_strata[SampleCountSqrt][SampleCountSqrt] = {};
                 for (int z = 0; z < SampleCount; ++z) {
-                    const auto s = Ren::Vec2i(data->samples[y][x][z] * SampleCountSqrt);
+                    const auto s = Ren::Vec2i(data->samples[z][y][x] * SampleCountSqrt);
 
                     assert(z_strata[s[1]][s[0]] == false);
                     z_strata[s[1]][s[0]] = true;
                 }
             }
-        }*/
+        }
     };
+    validate_stratification(true);
+
+    // Randomize sequences order
+    for (int z = 0; z < SampleCount; ++z) {
+        std::vector<Ren::Vec2i> seq_order(TileRes * TileRes);
+        for (int y = 0; y < TileRes; ++y) {
+            for (int x = 0; x < TileRes; ++x) {
+                seq_order[y * TileRes + x] = Ren::Vec2i{x, y};
+            }
+        }
+        std::shuffle(std::begin(seq_order), std::end(seq_order), gen);
+        for (int y = 0; y < TileRes; ++y) {
+            for (int x = 0; x < TileRes; ++x) {
+                while (seq_order[y * TileRes + x] != Ren::Vec2i{x, y}) {
+                    const Ren::Vec2i s = seq_order[y * TileRes + x];
+
+                    std::swap(data->samples[z][y][x], data->samples[z][s[1]][s[0]]);
+                    std::swap(seq_order[y * TileRes + x], seq_order[s[1] * TileRes + s[0]]);
+                }
+            }
+        }
+    }
+
+    std::vector<heavyside_func_t> functions;
+
+    {                                 // Generate randomly oriented heavysides
+        std::mt19937 temp_gen(45678); // fixed seed for reproduceability
+        functions.reserve(TestFunctionsCount);
+        /*for (int i = 0; i < TestFunctionsCountCbrt; ++i) {
+            for (int j = 0; j < TestFunctionsCountCbrt; ++j) {
+                for (int k = 0; k < TestFunctionsCountCbrt; ++k) {
+                    heavyside_func_t &f = functions.emplace_back();
+                    f.o = Ren::Vec2f((i + uniform_unorm_float(temp_gen)) / TestFunctionsCountCbrt,
+                                     (j + uniform_unorm_float(temp_gen)) / TestFunctionsCountCbrt);
+                    const float angle = Ren::Pi<float>() * (k + uniform_unorm_float(temp_gen)) / TestFunctionsCountCbrt;
+                    f.n = Ren::Vec2f(std::cos(angle), std::sin(angle));
+
+                    double integral_val = 0.0;
+                    for (int y = 0; y < 256; ++y) {
+                        const float fy = float(y) / 255.0f;
+                        for (int x = 0; x < 256; ++x) {
+                            const float fx = float(x) / 255.0f;
+                            integral_val += test_function_2D(Ren::Vec2f(fx, fy), f.o, f.n);
+                        }
+                    }
+                    f.integral_val = float(integral_val / (256 * 256));
+                }
+            }
+        }*/
+
+#if 1
+        static const int LutResolution = 4096;
+        std::vector<float> theta_lut, cdf;
+
+        float accum = 0.0f;
+        for (int i = 0; i < LutResolution; ++i) {
+            const float theta = 2.0f * Ren::Pi<float>() * i / (LutResolution - 1);
+
+            const Ren::Vec2f n(cos(theta), sin(theta));
+
+            const float d_min = std::min(0.0f, n[0]) + std::min(0.0f, n[1]);
+            const float d_max = std::max(0.0f, n[0]) + std::max(0.0f, n[1]);
+
+            accum += d_max - d_min;
+
+            theta_lut.push_back(theta);
+            cdf.push_back(accum);
+        }
+
+        for (float &x : cdf) {
+            x /= accum;
+        }
+
+        auto sample_theta = [&](const float u) {
+            const auto it = std::lower_bound(cdf.begin(), cdf.end(), u);
+
+            const int idx = int(it - cdf.begin());
+            if (idx == 0) {
+                return theta_lut[0];
+            }
+
+            const float c0 = cdf[idx - 1];
+            const float c1 = cdf[idx];
+
+            const float t = (u - c0) / (c1 - c0);
+
+            return Ren::Mix(theta_lut[idx - 1], theta_lut[idx], t);
+        };
+
+        for (int i = 0; i < TestFunctionsCountSqrt; ++i) {
+            const float angle = sample_theta((i + uniform_unorm_float(temp_gen)) / TestFunctionsCountSqrt);
+            const Ren::Vec2f n = Ren::Vec2f(std::cos(angle), std::sin(angle));
+
+            for (int j = 0; j < TestFunctionsCountSqrt; ++j) {
+                heavyside_func_t &f = functions.emplace_back();
+                f.n = n;
+
+                const float d_min = std::min(0.0f, f.n[0]) + std::min(0.0f, f.n[1]);
+                const float d_max = std::max(0.0f, f.n[0]) + std::max(0.0f, f.n[1]);
+
+                const float d = Ren::Mix(d_min, d_max, (j + uniform_unorm_float(temp_gen)) / TestFunctionsCountSqrt);
+                f.o = d * f.n;
+
+                double integral_val = 0.0;
+                for (int y = 0; y < 256; ++y) {
+                    const float fy = float(y) / 255.0f;
+                    for (int x = 0; x < 256; ++x) {
+                        const float fx = float(x) / 255.0f;
+                        integral_val += test_function_2D(Ren::Vec2f(fx, fy), f.o, f.n);
+                    }
+                }
+                f.integral_val = float(integral_val / (256 * 256));
+            }
+        }
+#else
+        for (int i = 0; i < TestFunctionsCountSqrt; ++i) {
+            for (int j = 0; j < TestFunctionsCountSqrt; ++j) {
+                heavyside_func_t &f = functions.emplace_back();
+
+                const float angle =
+                    2.0f * Ren::Pi<float>() * (i + uniform_unorm_float(temp_gen)) / TestFunctionsCountSqrt;
+                f.n = Ren::Vec2f(std::cos(angle), std::sin(angle));
+
+                const float d_min = std::min(0.0f, f.n[0]) + std::min(0.0f, f.n[1]);
+                const float d_max = std::max(0.0f, f.n[0]) + std::max(0.0f, f.n[1]);
+
+                const float d = Ren::Mix(d_min, d_max, (j + uniform_unorm_float(temp_gen)) / TestFunctionsCountSqrt);
+                f.o = d * f.n;
+
+                double integral_val = 0.0;
+                for (int y = 0; y < 256; ++y) {
+                    const float fy = float(y) / 255.0f;
+                    for (int x = 0; x < 256; ++x) {
+                        const float fx = float(x) / 255.0f;
+                        integral_val += test_function_2D(Ren::Vec2f(fx, fy), f.o, f.n);
+                    }
+                }
+                f.integral_val = float(integral_val / (256 * 256));
+            }
+        }
+#endif
+
+        /*for (int i = 0; i < TestFunctionsCount; ++i) {
+            heavyside_func_t &f = functions.emplace_back();
+            f.o = Ren::Vec2f(uniform_unorm_float(temp_gen), uniform_unorm_float(temp_gen));
+            const float angle = 1.0f * Ren::Pi<float>() * uniform_unorm_float(temp_gen);
+            f.n = Ren::Vec2f(std::cos(angle), std::sin(angle));
+
+            //// TEST
+            f.o = Ren::Vec2f{0.5f, 0.5f};
+            f.n = Ren::Vec2f(std::cos(0.25f), std::sin(0.25f));
+
+            double integral_val = 0.0;
+            for (int y = 0; y < 256; ++y) {
+                const float fy = float(y) / 255.0f;
+                for (int x = 0; x < 256; ++x) {
+                    const float fx = float(x) / 255.0f;
+                    integral_val += test_function_2D(Ren::Vec2f(fx, fy), f.o, f.n);
+                }
+            }
+            f.integral_val = float(integral_val / (256 * 256));
+        }*/
+    }
+
+    { // load checkpoint (if exists)
+        snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/tcbn_samples_2D_%ispp.bin", SampleCount);
+        std::ifstream in_file(name_buf, std::ios::binary);
+        if (in_file.good()) {
+            in_file >> gen;
+            in_file.read((char *)data->samples, sizeof(data->samples));
+            validate_stratification(false);
+        }
+    }
+
+    // Sample test functions
+    /*for (int z = 0; z < SampleCount; ++z) {
+        for (int y = 0; y < TileRes; ++y) {
+            for (int x = 0; x < TileRes; ++x) {
+                data->errors[z][y][x].resize(TestFunctionsCount);
+                for (uint32_t j = 0; j < TestFunctionsCount; ++j) {
+                    const heavyside_func_t &f = functions[j];
+                    data->errors[z][y][x][j] = (f.integral_val - test_function_2D(data->samples[z][y][x], f.o, f.n));
+                }
+            }
+        }
+    }*/
+
+    // Prepare Errors LUT
+    data->errors_lut_data.resize(size_t(65536) * 65536, 0.0f);
+    for (int i = 0; i < 65536; ++i) {
+        data->errors_lut[i] = &data->errors_lut_data[size_t(i) * 65536];
+    }
+    for (int i = 0; i < TotalCount; ++i) {
+        const auto [ox, oy, oz] = xyz_from_index(i);
+
+        const Ren::Vec2f u = data->samples[oz][oy][ox];
+
+        const uint16_t ux = (uint16_t)std::clamp(uint32_t(u[0] * 255.0f), 0u, 255u);
+        const uint16_t uy = (uint16_t)std::clamp(uint32_t(u[1] * 255.0f), 0u, 255u);
+
+        data->sample_index[oz][oy][ox] = (uy << 8u) | ux;
+    }
+    { // load or create
+        snprintf(name_buf, sizeof(name_buf), "errors_lut_2D_%i.bin", TestFunctionsCount);
+        std::ifstream in_file(name_buf, std::ios::binary);
+        if (in_file.good()) {
+            in_file.read((char *)data->errors_lut_data.data(), sizeof(float) * 65536 * 65536);
+        } else {
+#pragma omp parallel for
+            for (int i = 0; i < 65536; ++i) {
+                const auto u = Ren::Vec2f{float(i & 0xff) / 255.0f, float(i >> 8u) / 255.0f};
+
+                data->errors_q[i].resize(TestFunctionsCount);
+                for (uint32_t j = 0; j < TestFunctionsCount; ++j) {
+                    const heavyside_func_t &f = functions[j];
+                    data->errors_q[i][j] = (f.integral_val - test_function_2D(u, f.o, f.n));
+                }
+            }
+
+#pragma omp parallel for
+            for (int i = 0; i < 65536; ++i) {
+                printf("Preparing Errors LUT : %i/%i\n", i, TotalCount);
+                auto &oerr = data->errors_q[i];
+                for (int j = i + 1; j < 65536; ++j) {
+                    const auto &err = data->errors_q[j];
+                    assert(data->errors_lut[i][j] == 0.0f);
+                    for (int k = 0; k < TestFunctionsCount; ++k) {
+                        data->errors_lut[i][j] += (oerr[k] - err[k]) * (oerr[k] - err[k]);
+                    }
+                    data->errors_lut[i][j] /= TestFunctionsCount;
+                    data->errors_lut[j][i] = data->errors_lut[i][j];
+                }
+            }
+
+            for (int i = 0; i < 65536; ++i) {
+                data->errors_q[i] = {};
+            }
+
+            /*for (int i = 0; i < TotalCount; ++i) {
+                printf("Preparing Errors LUT : %i/%i\n", i, TotalCount);
+                const auto [ox, oy, oz] = xyz_from_index(i);
+                const auto &oerr = data->errors[oz][oy][ox];
+                for (int j = i + 1; j < TotalCount; ++j) {
+                    const auto [x2, y2, z2] = xyz_from_index(j);
+                    const auto &err = data->errors[z2][y2][x2];
+                    assert(data->errors_lut[i][j] == 0.0f);
+                    for (int k = 0; k < TestFunctionsCount; ++k) {
+                        data->errors_lut[i][j] += (oerr[k] - err[k]) * (oerr[k] - err[k]);
+                    }
+                    data->errors_lut[i][j] /= TestFunctionsCount;
+                    data->errors_lut[j][i] = data->errors_lut[i][j];
+                }
+            }*/
+            std::ofstream out_file(name_buf, std::ios::binary);
+            out_file.write((const char *)data->errors_lut_data.data(), sizeof(float) * TotalCount * TotalCount);
+        }
+    }
 
     auto debug_dft = [&]() {
         float min_val = FLT_MAX, max_val = 0.0f;
         for (int z = 0; z < SampleCount; ++z) {
             for (int y = 0; y < TileRes; ++y) {
                 for (int x = 0; x < TileRes; ++x) {
-                    data->debug_values3[y][x] = data->samples[y][x][z][0];
+                    data->debug_values3[y][x] = data->samples[z][y][x][0];
                 }
             }
 
@@ -1105,7 +1422,7 @@ template <int Log2SampleCount> void Eng::Generate2D_TCBN(const unsigned int seed
             }
         }
 
-        for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
+        for (int j = 0; j < TotalCount; ++j) {
             const auto [x, y, z] = xyz_from_index(j);
 
             float &e = data->debug_values[z][y][x];
@@ -1113,28 +1430,31 @@ template <int Log2SampleCount> void Eng::Generate2D_TCBN(const unsigned int seed
             e /= max_val;
         }
 
-        snprintf(name_buf, sizeof(name_buf), "debug_dft_%i.dds", SampleCount);
+        snprintf(name_buf, sizeof(name_buf), "debug_dft_%i_tcbn.dds", SampleCount);
         WriteDDS(&data->debug_values[0][0][0], TileRes, TileRes, SampleCount, name_buf);
     };
 
     debug_dft();
 
-    for (int i = 0; i < SampleCount * TileRes * TileRes; ++i) {
+    for (int i = 0; i < TotalCount; ++i) {
         const auto [x, y, z] = xyz_from_index(i);
 
-        data->debug_values2[z][y][x] = data->samples[y][x][z];
+        data->debug_values2[z][y][x] = data->samples[z][y][x];
     }
 
-    snprintf(name_buf, sizeof(name_buf), "debug_samples_%i.dds", SampleCount);
+    snprintf(name_buf, sizeof(name_buf), "debug_samples_%i_tcbn.dds", SampleCount);
     WriteDDS(&data->debug_values2[0][0][0], TileRes, TileRes, SampleCount, name_buf);
 
-    float best_total_proximity = 0.0f;
+    double best_total_proximity = 0.0f;
     for (int z = 0; z < SampleCount; ++z) {
         for (int y = 0; y < TileRes; ++y) {
+            data->proximity_lines[z][y] = 0.0;
             for (int x = 0; x < TileRes; ++x) {
-                data->proximity[z][y][x] = calc_pixel_proximity<SampleCount>(x, y, z, data->samples);
-                best_total_proximity += data->proximity[z][y][x];
+                data->proximity[z][y][x] = calc_pixel_proximity<SampleCount>(
+                    x, y, z, data->sample_index, data->errors_lut, data->xy_filter, data->z_filter);
+                data->proximity_lines[z][y] += data->proximity[z][y][x];
             }
+            best_total_proximity += data->proximity_lines[z][y];
         }
     }
 
@@ -1142,11 +1462,19 @@ template <int Log2SampleCount> void Eng::Generate2D_TCBN(const unsigned int seed
         if ((iter % 10000) == 0) {
             printf("Swapping Iteration %i (%f)\n", iter, best_total_proximity);
 
-            validate_stratification();
-            debug_dft();
+            validate_stratification(false);
+            // debug_dft();
+
+            { // save current state
+                snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/tcbn_samples_2D_%ispp.bin",
+                         SampleCount);
+                std::ofstream out_file(name_buf, std::ios::binary);
+                out_file << gen;
+                out_file.write((const char *)data->samples, sizeof(data->samples));
+            }
 
             float min_proximity = FLT_MAX, max_proximity = 0.0f;
-            for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
+            for (int j = 0; j < TotalCount; ++j) {
                 const auto [x, y, z] = xyz_from_index(j);
 
                 data->debug_values[z][y][x] = data->proximity[z][y][x];
@@ -1154,19 +1482,19 @@ template <int Log2SampleCount> void Eng::Generate2D_TCBN(const unsigned int seed
                 max_proximity = std::max(max_proximity, data->debug_values[z][y][x]);
             }
             // normalize errors (for easier debugging)
-            for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
+            for (int j = 0; j < TotalCount; ++j) {
                 const auto [x, y, z] = xyz_from_index(j);
 
                 float &e = data->debug_values[z][y][x];
                 e = (e - min_proximity) / (max_proximity - min_proximity);
 
-                data->debug_values2[z][y][x] = data->samples[y][x][z];
+                data->debug_values2[z][y][x] = data->samples[z][y][x];
             }
 
-            snprintf(name_buf, sizeof(name_buf), "debug_energy_%i.dds", SampleCount);
-            WriteDDS(&data->debug_values[0][0][0], TileRes, TileRes, SampleCount, name_buf);
+            // snprintf(name_buf, sizeof(name_buf), "debug_energy_%i_tcbn.dds", SampleCount);
+            // WriteDDS(&data->debug_values[0][0][0], TileRes, TileRes, SampleCount, name_buf);
 
-            snprintf(name_buf, sizeof(name_buf), "debug_samples_%i.dds", SampleCount);
+            snprintf(name_buf, sizeof(name_buf), "debug_samples_%i_tcbn.dds", SampleCount);
             WriteDDS(&data->debug_values2[0][0][0], TileRes, TileRes, SampleCount, name_buf);
         }
 
@@ -1174,124 +1502,77 @@ template <int Log2SampleCount> void Eng::Generate2D_TCBN(const unsigned int seed
         int index1 = uniform_index(gen), index2 = uniform_index(gen);
         const auto [ox1, oy1, oz1] = xyz_from_index(index1);
         auto [ox2, oy2, oz2] = xyz_from_index(index2);
+        // Swap samples within the same XY slice
+        oz2 = oz1;
+        index2 = oz2 * TileRes * TileRes + oy2 * TileRes + ox2;
 
-        if ((iter % 100) < 99 || oz1 == oz2) {
-            // Swap samples within the same XY slice
-            oz2 = oz1;
+        // Subtract swapped pixels contribution
+        splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz1, data->sample_index, data->errors_lut, data->proximity,
+                                                  data->dirty_lines, data->xy_filter, data->z_filter);
+        splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz2, data->sample_index, data->errors_lut, data->proximity,
+                                                  data->dirty_lines, data->xy_filter, data->z_filter);
 
-            // Make sure the samples are from the same strata in Z dimension
-            /*const Ren::Vec2i strata1 = Ren::Vec2i(data->samples[oy1][ox1][oz1] * SampleCountSqrt);
-            Ren::Vec2i strata2 = Ren::Vec2i(data->samples[oy2][ox2][oz2] * SampleCountSqrt);
-            while (strata2 != strata1) {
-                index2 = uniform_index(gen);
-                const auto [_ox2, _oy2, _oz2] = xyz_from_index(index2);
-                ox2 = _ox2, oy2 = _oy2;
-                strata2 = Ren::Vec2i(data->samples[oy2][ox2][oz2] * SampleCountSqrt);
-            }*/
-        } else {
-            // Swap the whole sequence
-        }
+        std::swap(data->samples[oz1][oy1][ox1], data->samples[oz2][oy2][ox2]);
+        std::swap(data->errors[oz1][oy1][ox1], data->errors[oz2][oy2][ox2]);
+        std::swap(data->sample_index[oz1][oy1][ox1], data->sample_index[oz2][oy2][ox2]);
 
-        if (oz1 == oz2) {
-            //
-            // Swap single sample within the sequence
-            //
-            const int oz = oz1;
+        // Add swapped pixels contribution
+        splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz1, data->sample_index, data->errors_lut, data->proximity,
+                                                 data->dirty_lines, data->xy_filter, data->z_filter);
+        splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz2, data->sample_index, data->errors_lut, data->proximity,
+                                                 data->dirty_lines, data->xy_filter, data->z_filter);
 
-            // Subtract swapped pixels contribution
-            splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz, data->samples, data->proximity);
-            splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz, data->samples, data->proximity);
+        // Recalc proximity of changed pixels
+        data->proximity[oz1][oy1][ox1] = calc_pixel_proximity<SampleCount>(
+            ox1, oy1, oz1, data->sample_index, data->errors_lut, data->xy_filter, data->z_filter);
+        data->proximity[oz2][oy2][ox2] = calc_pixel_proximity<SampleCount>(
+            ox2, oy2, oz2, data->sample_index, data->errors_lut, data->xy_filter, data->z_filter);
 
-            const Ren::Vec2i strata1 = Ren::Vec2i(data->samples[oy1][ox1][oz1] * SampleCountSqrt);
-            const Ren::Vec2i strata2 = Ren::Vec2i(data->samples[oy2][ox2][oz2] * SampleCountSqrt);
+        data->dirty_lines[oz1][oy1] = data->dirty_lines[oz2][oy2] = true;
 
-            std::swap(data->samples[oy1][ox1][oz], data->samples[oy2][ox2][oz]);
-
-            // Add swapped pixels contribution
-            splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz, data->samples, data->proximity);
-            splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz, data->samples, data->proximity);
-
-            // Recalc proximity of changed pixels
-            data->proximity[oz][oy1][ox1] = calc_pixel_proximity<SampleCount>(ox1, oy1, oz, data->samples);
-            data->proximity[oz][oy2][ox2] = calc_pixel_proximity<SampleCount>(ox2, oy2, oz, data->samples);
-        } else {
-            //
-            // Swap the whole sequence
-            //
-
-            // Subtract swapped pixels contribution
-            for (int oz = 0; oz < SampleCount; ++oz) {
-                splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz, data->samples, data->proximity);
-                splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz, data->samples, data->proximity);
-            }
-
-            std::swap(data->samples[oy1][ox1], data->samples[oy2][ox2]);
-
-            // Add swapped pixels contribution
-            for (int oz = 0; oz < SampleCount; ++oz) {
-                splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz, data->samples, data->proximity);
-                splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz, data->samples, data->proximity);
-            }
-
-            // Recalc proximity of changed pixels
-            for (int oz = 0; oz < SampleCount; ++oz) {
-                data->proximity[oz][oy1][ox1] = calc_pixel_proximity<SampleCount>(ox1, oy1, oz, data->samples);
-                data->proximity[oz][oy2][ox2] = calc_pixel_proximity<SampleCount>(ox2, oy2, oz, data->samples);
-            }
-        }
-
-        float total_proximity = 0.0f;
+        double total_proximity = 0.0f;
         for (int z = 0; z < SampleCount; ++z) {
             for (int y = 0; y < TileRes; ++y) {
-                for (int x = 0; x < TileRes; ++x) {
-                    total_proximity += data->proximity[z][y][x];
+                if (data->dirty_lines[z][y]) {
+                    data->proximity_lines[z][y] = 0.0;
+                    for (int x = 0; x < TileRes; ++x) {
+                        data->proximity_lines[z][y] += data->proximity[z][y][x];
+                    }
+                    data->dirty_lines[z][y] = false;
                 }
+                total_proximity += data->proximity_lines[z][y];
             }
         }
 
-        const float acceptance_prob = fminf(powf(0.95f, 0.001f * iter), 0.001f);
-        if (total_proximity < best_total_proximity || uniform_unorm_float(gen) < acceptance_prob) {
-            if (total_proximity > best_total_proximity) {
-                printf("Suboptimal iteration accepted!\n");
-            }
+        if (total_proximity > best_total_proximity) {
             // Accept this iteration
             best_total_proximity = total_proximity;
-            if (oz1 != oz2) {
-                printf("Sequence swap accepted!\n");
-            }
         } else {
             // Revert swap
-            if (oz1 == oz2) {
-                const int oz = oz1;
+            splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz1, data->sample_index, data->errors_lut,
+                                                      data->proximity, data->dirty_lines, data->xy_filter,
+                                                      data->z_filter);
+            splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz2, data->sample_index, data->errors_lut,
+                                                      data->proximity, data->dirty_lines, data->xy_filter,
+                                                      data->z_filter);
 
-                splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz, data->samples, data->proximity);
-                splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz, data->samples, data->proximity);
+            std::swap(data->samples[oz1][oy1][ox1], data->samples[oz2][oy2][ox2]);
+            std::swap(data->errors[oz1][oy1][ox1], data->errors[oz2][oy2][ox2]);
+            std::swap(data->sample_index[oz1][oy1][ox1], data->sample_index[oz2][oy2][ox2]);
 
-                std::swap(data->samples[oy1][ox1][oz], data->samples[oy2][ox2][oz]);
+            splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz1, data->sample_index, data->errors_lut,
+                                                     data->proximity, data->dirty_lines, data->xy_filter,
+                                                     data->z_filter);
+            splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz2, data->sample_index, data->errors_lut,
+                                                     data->proximity, data->dirty_lines, data->xy_filter,
+                                                     data->z_filter);
 
-                splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz, data->samples, data->proximity);
-                splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz, data->samples, data->proximity);
+            data->proximity[oz1][oy1][ox1] = calc_pixel_proximity<SampleCount>(
+                ox1, oy1, oz1, data->sample_index, data->errors_lut, data->xy_filter, data->z_filter);
+            data->proximity[oz2][oy2][ox2] = calc_pixel_proximity<SampleCount>(
+                ox2, oy2, oz2, data->sample_index, data->errors_lut, data->xy_filter, data->z_filter);
 
-                data->proximity[oz][oy1][ox1] = calc_pixel_proximity<SampleCount>(ox1, oy1, oz, data->samples);
-                data->proximity[oz][oy2][ox2] = calc_pixel_proximity<SampleCount>(ox2, oy2, oz, data->samples);
-            } else {
-                for (int oz = 0; oz < SampleCount; ++oz) {
-                    splat_pixel_proximity<SampleCount, false>(ox1, oy1, oz, data->samples, data->proximity);
-                    splat_pixel_proximity<SampleCount, false>(ox2, oy2, oz, data->samples, data->proximity);
-                }
-
-                std::swap(data->samples[oy1][ox1], data->samples[oy2][ox2]);
-
-                for (int oz = 0; oz < SampleCount; ++oz) {
-                    splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz, data->samples, data->proximity);
-                    splat_pixel_proximity<SampleCount, true>(ox2, oy2, oz, data->samples, data->proximity);
-                }
-
-                for (int oz = 0; oz < SampleCount; ++oz) {
-                    data->proximity[oz][oy1][ox1] = calc_pixel_proximity<SampleCount>(ox1, oy1, oz, data->samples);
-                    data->proximity[oz][oy2][ox2] = calc_pixel_proximity<SampleCount>(ox2, oy2, oz, data->samples);
-                }
-            }
+            data->dirty_lines[oz1][oy1] = data->dirty_lines[oz2][oy2] = true;
         }
     }
 
@@ -1307,9 +1588,9 @@ template <int Log2SampleCount> void Eng::Generate2D_TCBN(const unsigned int seed
         for (int z = 0; z < SampleCount; ++z) {
             for (int y = 0; y < TileRes; ++y) {
                 for (int x = 0; x < TileRes; ++x) {
-                    out_file << std::clamp(int(data->samples[y][x][z][0] * 255.0f), 0, 255);
+                    out_file << std::clamp(int(data->samples[z][y][x][0] * 255.0f), 0, 255);
                     out_file << "u, ";
-                    out_file << std::clamp(int(data->samples[y][x][z][1] * 255.0f), 0, 255);
+                    out_file << std::clamp(int(data->samples[z][y][x][1] * 255.0f), 0, 255);
                     if (x != TileRes - 1 || y != TileRes - 1 || z != SampleCount - 1) {
                         out_file << "u, ";
                     } else {
@@ -1340,12 +1621,16 @@ template void Eng::Generate1D_TCBN_Swap<6, Eng::eSpatialFilter::Gauss, Eng::eTem
 template void
 Eng::Generate1D_TCBN_Swap<6, Eng::eSpatialFilter::Gauss, Eng::eTemporalFilter::TruncatedEMA>(unsigned int seed);
 
-// template void Eng::Generate2D_TCBN<0>(unsigned int seed);
-// template void Eng::Generate2D_TCBN<1>(unsigned int seed);
-// template void Eng::Generate2D_TCBN<2>(unsigned int seed);
-// template void Eng::Generate2D_TCBN<3>(unsigned int seed);
-template void Eng::Generate2D_TCBN<4>(unsigned int seed);
-// template void Eng::Generate2D_TCBN<5>(unsigned int seed);
-template void Eng::Generate2D_TCBN<6>(unsigned int seed);
-// template void Eng::Generate2D_TCBN<7>(unsigned int seed);
-// template void Eng::Generate2D_TCBN<8>(unsigned int seed);
+template void
+Eng::Generate2D_TCBN<4, Eng ::eSpatialFilter::Gauss, Eng::eTemporalFilter::TruncatedEMA>(unsigned int seed);
+template void
+Eng::Generate2D_TCBN<5, Eng ::eSpatialFilter::Gauss, Eng::eTemporalFilter::TruncatedEMA>(unsigned int seed);
+template void
+Eng::Generate2D_TCBN<6, Eng ::eSpatialFilter::Gauss, Eng::eTemporalFilter::TruncatedEMA>(unsigned int seed);
+
+template void
+Eng::Generate2D_TCBN<4, Eng ::eSpatialFilter::Gauss, Eng::eTemporalFilter::TruncatedLinear>(unsigned int seed);
+template void
+Eng::Generate2D_TCBN<5, Eng ::eSpatialFilter::Gauss, Eng::eTemporalFilter::TruncatedLinear>(unsigned int seed);
+template void
+Eng::Generate2D_TCBN<6, Eng ::eSpatialFilter::Gauss, Eng::eTemporalFilter::TruncatedLinear>(unsigned int seed);

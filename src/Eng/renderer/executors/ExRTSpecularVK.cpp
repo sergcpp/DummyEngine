@@ -8,12 +8,12 @@
 #include "../shaders/rt_specular_interface.h"
 
 void Eng::ExRTSpecular::Execute_HWRT(const FgContext &fg) {
+    const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(args_->shared_data);
     const Ren::BufferROHandle geo_data = fg.AccessROBuffer(args_->geo_data);
     const Ren::BufferROHandle materials = fg.AccessROBuffer(args_->materials);
     const Ren::BufferROHandle vtx_buf1 = fg.AccessROBuffer(args_->vtx_buf1);
     const Ren::BufferROHandle vtx_buf2 = fg.AccessROBuffer(args_->vtx_buf2);
     const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
-    const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(args_->shared_data);
     const Ren::ImageROHandle depth = fg.AccessROImage(args_->depth);
     const Ren::ImageROHandle normal = fg.AccessROImage(args_->normal);
     const Ren::BufferROHandle ray_list = fg.AccessROBuffer(args_->ray_list);
@@ -24,11 +24,11 @@ void Eng::ExRTSpecular::Execute_HWRT(const FgContext &fg) {
     const Ren::BufferHandle out_ray_hits = fg.AccessRWBuffer(args_->out_ray_hits);
 
     Ren::BufferROHandle oit_depth = {};
-    Ren::ImageROHandle noise = {};
+    Ren::ImageROHandle tcbn = {};
     if (args_->oit_depth) {
         oit_depth = fg.AccessROBuffer(args_->oit_depth);
     } else {
-        noise = fg.AccessROImage(args_->noise);
+        tcbn = fg.AccessROImage(args_->tcbn);
     }
 
     const Ren::ApiContext &api = fg.ren_ctx().api();
@@ -49,8 +49,8 @@ void Eng::ExRTSpecular::Execute_HWRT(const FgContext &fg) {
         {Ren::eBindTarget::SBufRO, RTSpecular::NDX_BUF_SLOT, ndx_buf},
         {Ren::eBindTarget::SBufRW, RTSpecular::RAY_COUNTER_SLOT, inout_ray_counter},
         {Ren::eBindTarget::SBufRW, RTSpecular::OUT_RAY_HITS_BUF_SLOT, out_ray_hits}};
-    if (noise) {
-        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTSpecular::NOISE_TEX_SLOT, noise);
+    if (tcbn) {
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTSpecular::TCBN_TEX_SLOT, tcbn);
     }
     if (oit_depth) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTSpecular::OIT_DEPTH_BUF_SLOT, oit_depth);
@@ -73,6 +73,7 @@ void Eng::ExRTSpecular::Execute_HWRT(const FgContext &fg) {
         // Expected to be half resolution
         uniform_params.pixel_spread_angle *= 2.0f;
     }
+    uniform_params.frame_index = (view_state_->frame_index % 256);
 
     api.vkCmdPushConstants(cmd_buf, pi.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params), &uniform_params);
 

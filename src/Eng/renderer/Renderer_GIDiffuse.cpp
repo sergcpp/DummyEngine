@@ -153,7 +153,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
     const int tile_count = ((view_state_.ren_res[0] + 7) / 8) * ((view_state_.ren_res[1] + 7) / 8);
 
     FgBufRWHandle ray_list, tile_list;
-    FgImgRWHandle gi_img, noise;
+    FgImgRWHandle gi_img;
 
     { // Classify pixel quads
         auto &diff_classify = fg_builder_.AddNode("DIFF CLASSIFY");
@@ -162,11 +162,10 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
             FgImgROHandle depth;
             FgImgROHandle spec;
             FgImgROHandle variance_history;
-            FgBufROHandle bn_pmj_seq;
             FgBufRWHandle ray_counter;
             FgBufRWHandle ray_list;
             FgBufRWHandle tile_list;
-            FgImgRWHandle out_gi, out_noise;
+            FgImgRWHandle out_gi;
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
@@ -177,8 +176,6 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
         } else {
             data->variance_history = diff_classify.AddHistoryTextureInput(DIFFUSE_VARIANCE_TEX, Stg::ComputeShader);
         }
-        data->bn_pmj_seq =
-            diff_classify.AddStorageReadonlyInput(common_buffers.bn_pmj_2D_64spp_seq, Stg::ComputeShader);
         ray_counter = data->ray_counter = diff_classify.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // packed ray list
@@ -204,14 +201,6 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
             desc.sampling.wrap = Ren::eWrap::ClampToEdge;
             gi_img = data->out_gi = diff_classify.AddStorageImageOutput("GI Final", desc, Stg::ComputeShader);
         }
-        { // blue noise texture
-            FgImgDesc desc;
-            desc.w = desc.h = 128;
-            desc.format = Ren::eFormat::RGBA8;
-            desc.sampling.filter = Ren::eFilter::Nearest;
-            desc.sampling.wrap = Ren::eWrap::Repeat;
-            noise = data->out_noise = diff_classify.AddStorageImageOutput("GI BN Tex", desc, Stg::ComputeShader);
-        }
 
         diff_classify.set_execute_cb([this, data, tile_count, SamplesPerQuad](const FgContext &fg) {
             using namespace RTDiffuseClassifyTiles;
@@ -219,21 +208,20 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
             const Ren::ImageROHandle depth = fg.AccessROImage(data->depth);
             const Ren::ImageROHandle spec = fg.AccessROImage(data->spec);
             const Ren::ImageROHandle variance = fg.AccessROImage(data->variance_history);
-            const Ren::BufferROHandle bn_pmj_seq = fg.AccessROBuffer(data->bn_pmj_seq);
 
             const Ren::BufferHandle ray_counter = fg.AccessRWBuffer(data->ray_counter);
             const Ren::BufferHandle ray_list = fg.AccessRWBuffer(data->ray_list);
             const Ren::BufferHandle tile_list = fg.AccessRWBuffer(data->tile_list);
 
             const Ren::ImageRWHandle gi = fg.AccessRWImage(data->out_gi);
-            const Ren::ImageRWHandle noise = fg.AccessRWImage(data->out_noise);
 
-            const Ren::Binding bindings[] = {
-                {Trg::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},  {Trg::TexSampled, SPEC_TEX_SLOT, spec},
-                {Trg::TexSampled, VARIANCE_TEX_SLOT, variance}, {Trg::SBufRW, RAY_COUNTER_SLOT, ray_counter},
-                {Trg::SBufRW, RAY_LIST_SLOT, ray_list},         {Trg::SBufRW, TILE_LIST_SLOT, tile_list},
-                {Trg::UTBuf, BN_PMJ_SEQ_BUF_SLOT, bn_pmj_seq},  {Trg::ImageRW, OUT_GI_IMG_SLOT, gi},
-                {Trg::ImageRW, OUT_NOISE_IMG_SLOT, noise}};
+            const Ren::Binding bindings[] = {{Trg::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},
+                                             {Trg::TexSampled, SPEC_TEX_SLOT, spec},
+                                             {Trg::TexSampled, VARIANCE_TEX_SLOT, variance},
+                                             {Trg::SBufRW, RAY_COUNTER_SLOT, ray_counter},
+                                             {Trg::SBufRW, RAY_LIST_SLOT, ray_list},
+                                             {Trg::SBufRW, TILE_LIST_SLOT, tile_list},
+                                             {Trg::ImageRW, OUT_GI_IMG_SLOT, gi}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
                                                     (view_state_.ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
@@ -290,8 +278,8 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
         auto &diff_trace_ss = fg_builder_.AddNode("DIFF TRACE SS");
 
         struct PassData {
-            FgImgROHandle noise;
             FgBufROHandle shared_data;
+            FgImgROHandle tcbn;
             FgImgROHandle color, normal;
             FgImgROHandle depth_hierarchy;
 
@@ -302,8 +290,8 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
-        data->noise = diff_trace_ss.AddTextureInput(noise, Stg::ComputeShader);
         data->shared_data = diff_trace_ss.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+        data->tcbn = diff_trace_ss.AddTextureInput(frame_textures.tcbn_2D_64spp, Stg::ComputeShader);
         data->color = diff_trace_ss.AddHistoryTextureInput(MAIN_COLOR_TEX, Stg::ComputeShader);
         data->normal = diff_trace_ss.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->depth_hierarchy = diff_trace_ss.AddTextureInput(depth_hierarchy, Stg::ComputeShader);
@@ -325,8 +313,8 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
         diff_trace_ss.set_execute_cb([this, data](const FgContext &fg) {
             using namespace RTDiffuseTraceSS;
 
-            const Ren::ImageROHandle noise = fg.AccessROImage(data->noise);
             const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
+            const Ren::ImageROHandle tcbn = fg.AccessROImage(data->tcbn);
             const Ren::ImageROHandle color = fg.AccessROImage(data->color);
             const Ren::ImageROHandle normal = fg.AccessROImage(data->normal);
             const Ren::ImageROHandle depth_hierarchy = fg.AccessROImage(data->depth_hierarchy);
@@ -341,7 +329,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                                              {Trg::TexSampled, DEPTH_TEX_SLOT, depth_hierarchy},
                                              {Trg::TexSampled, COLOR_TEX_SLOT, color},
                                              {Trg::TexSampled, NORM_TEX_SLOT, normal},
-                                             {Trg::TexSampled, NOISE_TEX_SLOT, noise},
+                                             {Trg::TexSampled, TCBN_TEX_SLOT, tcbn},
                                              {Trg::SBufRO, IN_RAY_LIST_SLOT, in_ray_list},
                                              {Trg::ImageRW, OUT_GI_IMG_SLOT, out_gi},
                                              {Trg::SBufRW, INOUT_RAY_COUNTER_SLOT, inout_ray_counter},
@@ -350,6 +338,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
             Params uniform_params;
             uniform_params.resolution =
                 Ren::Vec4u{uint32_t(view_state_.ren_res[0]), uint32_t(view_state_.ren_res[1]), 0, 0};
+            uniform_params.frame_index = (view_state_.frame_index % 256);
 
             DispatchComputeIndirect(fg.cmd_buf(), pi_diffuse_trace_ss_, fg.storages(), indir_args, 0, bindings,
                                     &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
@@ -408,7 +397,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
             data->vtx_buf1 = rt_diff.AddStorageReadonlyInput(common_buffers.vertex_buf1, stage);
             data->ndx_buf = rt_diff.AddStorageReadonlyInput(common_buffers.indices_buf, stage);
             data->shared_data = rt_diff.AddUniformBufferInput(common_buffers.shared_data, stage);
-            data->noise = rt_diff.AddTextureInput(noise, stage);
+            data->tcbn = rt_diff.AddTextureInput(frame_textures.tcbn_2D_64spp, stage);
             data->depth = rt_diff.AddTextureInput(frame_textures.depth, stage);
             data->normal = rt_diff.AddTextureInput(frame_textures.normal, stage);
             data->ray_list = rt_diff.AddStorageReadonlyInput(ray_rt_list, stage);
@@ -479,8 +468,8 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
             auto &diff_shade = fg_builder_.AddNode(two_bounces ? "DIFF SHADE 1ST" : "DIFF SHADE");
 
             struct PassData {
-                FgImgROHandle noise;
                 FgBufROHandle shared_data;
+                FgImgROHandle tcbn;
                 FgImgROHandle depth, normal;
                 FgImgROHandle env;
                 FgBufROHandle mesh_instances;
@@ -508,8 +497,8 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
             };
 
             auto *data = fg_builder_.AllocTempData<PassData>();
-            data->noise = diff_shade.AddTextureInput(noise, Stg::ComputeShader);
             data->shared_data = diff_shade.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+            data->tcbn = diff_shade.AddTextureInput(frame_textures.tcbn_2D_64spp, Stg::ComputeShader);
             data->depth = diff_shade.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->normal = diff_shade.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
             data->env = diff_shade.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
@@ -555,8 +544,8 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
             diff_shade.set_execute_cb([this, &bindless, two_bounces, data](const FgContext &fg) {
                 using namespace RTDiffuse;
 
-                const Ren::ImageROHandle noise = fg.AccessROImage(data->noise);
                 const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
+                const Ren::ImageROHandle tcbn = fg.AccessROImage(data->tcbn);
                 const Ren::ImageROHandle depth = fg.AccessROImage(data->depth);
                 const Ren::ImageROHandle normal = fg.AccessROImage(data->normal);
                 const Ren::ImageROHandle env = fg.AccessROImage(data->env);
@@ -598,7 +587,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                     {Trg::BindlessDescriptors, BIND_BINDLESS_TEX, bindless.rt_inline_textures},
                     {Trg::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},
                     {Trg::TexSampled, NORM_TEX_SLOT, normal},
-                    {Trg::TexSampled, NOISE_TEX_SLOT, noise},
+                    {Trg::TexSampled, TCBN_TEX_SLOT, tcbn},
                     {Trg::TexSampled, ENV_TEX_SLOT, env},
                     {Trg::UTBuf, MESH_INSTANCES_BUF_SLOT, mesh_instances},
                     {Trg::SBufRO, GEO_DATA_BUF_SLOT, geo_data},
@@ -618,7 +607,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                 RTDiffuse::Params uniform_params;
                 uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                 uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
-                uniform_params.frame_index = view_state_.frame_index;
+                uniform_params.frame_index = (view_state_.frame_index % 256);
                 uniform_params.lights_count = view_state_.stochastic_lights_count;
                 uniform_params.is_hwrt = ctx_.capabilities.hwrt ? 1 : 0;
 
@@ -697,7 +686,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                 data->vtx_buf1 = rt_diff.AddStorageReadonlyInput(common_buffers.vertex_buf1, stage);
                 data->ndx_buf = rt_diff.AddStorageReadonlyInput(common_buffers.indices_buf, stage);
                 data->shared_data = rt_diff.AddUniformBufferInput(common_buffers.shared_data, stage);
-                data->noise = rt_diff.AddTextureInput(noise, stage);
+                data->tcbn = rt_diff.AddTextureInput(frame_textures.tcbn_2D_64spp, stage);
                 data->depth = rt_diff.AddTextureInput(frame_textures.depth, stage);
                 data->normal = rt_diff.AddTextureInput(frame_textures.normal, stage);
                 data->ray_list = rt_diff.AddStorageReadonlyInput(secondary_ray_list, stage);
@@ -766,8 +755,8 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                 auto &diff_shade = fg_builder_.AddNode("DIFF SHADE 2ND");
 
                 struct PassData {
-                    FgImgROHandle noise;
                     FgBufROHandle shared_data;
+                    FgImgROHandle tcbn;
                     FgImgROHandle depth, normal;
                     FgImgROHandle env;
                     FgBufROHandle mesh_instances;
@@ -791,7 +780,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                 };
 
                 auto *data = fg_builder_.AllocTempData<PassData>();
-                data->noise = diff_shade.AddTextureInput(noise, Stg::ComputeShader);
+                data->tcbn = diff_shade.AddTextureInput(frame_textures.tcbn_2D_64spp, Stg::ComputeShader);
                 data->shared_data = diff_shade.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
                 data->depth = diff_shade.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
                 data->normal = diff_shade.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
@@ -822,8 +811,8 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                 diff_shade.set_execute_cb([this, &bindless, data](const FgContext &fg) {
                     using namespace RTDiffuse;
 
-                    const Ren::ImageROHandle noise = fg.AccessROImage(data->noise);
                     const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
+                    const Ren::ImageROHandle tcbn = fg.AccessROImage(data->tcbn);
                     const Ren::ImageROHandle depth = fg.AccessROImage(data->depth);
                     const Ren::ImageROHandle normal = fg.AccessROImage(data->normal);
                     const Ren::ImageROHandle env = fg.AccessROImage(data->env);
@@ -855,7 +844,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                         {Trg::BindlessDescriptors, BIND_BINDLESS_TEX, bindless.rt_inline_textures},
                         {Trg::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},
                         {Trg::TexSampled, NORM_TEX_SLOT, normal},
-                        {Trg::TexSampled, NOISE_TEX_SLOT, noise},
+                        {Trg::TexSampled, TCBN_TEX_SLOT, tcbn},
                         {Trg::TexSampled, ENV_TEX_SLOT, env},
                         {Trg::UTBuf, MESH_INSTANCES_BUF_SLOT, mesh_instances},
                         {Trg::SBufRO, GEO_DATA_BUF_SLOT, geo_data},
@@ -876,7 +865,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                     RTDiffuse::Params uniform_params;
                     uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                     uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
-                    uniform_params.frame_index = view_state_.frame_index;
+                    uniform_params.frame_index = (view_state_.frame_index % 256);
                     uniform_params.lights_count = view_state_.stochastic_lights_count;
                     uniform_params.is_hwrt = ctx_.capabilities.hwrt ? 1 : 0;
 

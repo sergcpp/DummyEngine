@@ -66,7 +66,7 @@ layout(std430, binding = RAY_HITS_BUF_SLOT) readonly buffer RayHitsList {
     uint g_ray_hits[];
 };
 
-layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
+layout(binding = TCBN_TEX_SLOT) uniform sampler2DArray g_tcbn_tex;
 
 layout(binding = MESH_INSTANCES_BUF_SLOT) uniform samplerBuffer g_mesh_instances;
 
@@ -179,7 +179,7 @@ void main() {
     const vec4 ray_origin_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
     vec3 ray_origin_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, ray_origin_cs);
     const float view_z = LinearizeDepth(ray_origin_cs.z, g_shrd_data.clip_info);
-    vec3 gi_ray_ws = SampleDiffuseVector(g_noise_tex, normal_ws, icoord, 0);
+    vec3 gi_ray_ws = SampleDiffuseVector(g_tcbn_tex, normal_ws, icoord, g_params.frame_index, DIM_DIFFUSE_0);
 
     // Bias to avoid self-intersection
     // TODO: use flat normal here
@@ -192,7 +192,7 @@ void main() {
     normal_ws = UnpackUnitVector(unpackUnorm2x16(g_ray_list[ray_index * RAY_LIST_STRIDE + 2]));
     ray_origin_ws += 0.001 * normal_ws;
 
-    gi_ray_ws = SampleDiffuseVector(g_noise_tex, normal_ws, icoord, 1);
+    gi_ray_ws = SampleDiffuseVector(g_tcbn_tex, normal_ws, icoord, g_params.frame_index, DIM_DIFFUSE_1);
     const float _cone_width = g_params.pixel_spread_angle * (view_z + first_hit_t);
 #else
     const float _cone_width = g_params.pixel_spread_angle * view_z;

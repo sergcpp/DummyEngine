@@ -77,11 +77,11 @@ void Eng::ExRTSpecular::Execute_SWRT(const FgContext &fg) {
     const Ren::BufferHandle out_ray_hits = fg.AccessRWBuffer(args_->out_ray_hits);
 
     Ren::BufferROHandle oit_depth = {};
-    Ren::ImageROHandle noise = {};
+    Ren::ImageROHandle tcbn = {};
     if (args_->oit_depth) {
         oit_depth = fg.AccessROBuffer(args_->oit_depth);
     } else {
-        noise = fg.AccessROImage(args_->noise);
+        tcbn = fg.AccessROImage(args_->tcbn);
     }
 
     Ren::SmallVector<Ren::Binding, 24> bindings = {
@@ -101,8 +101,8 @@ void Eng::ExRTSpecular::Execute_SWRT(const FgContext &fg) {
         {Ren::eBindTarget::UTBuf, RTSpecular::NDX_BUF_SLOT, ndx_buf},
         {Ren::eBindTarget::SBufRW, RTSpecular::RAY_COUNTER_SLOT, inout_ray_counter},
         {Ren::eBindTarget::SBufRW, RTSpecular::OUT_RAY_HITS_BUF_SLOT, out_ray_hits}};
-    if (noise) {
-        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTSpecular::NOISE_TEX_SLOT, noise);
+    if (tcbn) {
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTSpecular::TCBN_TEX_SLOT, tcbn);
     }
     if (oit_depth) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTSpecular::OIT_DEPTH_BUF_SLOT, oit_depth);
@@ -115,6 +115,7 @@ void Eng::ExRTSpecular::Execute_SWRT(const FgContext &fg) {
         // Expected to be half resolution
         uniform_params.pixel_spread_angle *= 2.0f;
     }
+    uniform_params.frame_index = (view_state_->frame_index % 256);
 
     DispatchComputeIndirect(fg.cmd_buf(), pi_rt_specular_, fg.storages(), indir_args,
                             sizeof(VkTraceRaysIndirectCommandKHR), bindings, &uniform_params, sizeof(uniform_params),

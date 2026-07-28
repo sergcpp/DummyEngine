@@ -8,7 +8,6 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "bn_pmj_2D_64spp.glsl"
 #include "rt_shadow_classify_interface.h"
 #include "rt_shadow_common.glsl.inl"
 
@@ -32,10 +31,7 @@ layout(std430, binding = TILE_LIST_SLOT) writeonly buffer TileList {
     uvec4 g_tile_list[];
 };
 
-layout(binding = BN_PMJ_SEQ_BUF_SLOT) uniform usamplerBuffer g_bn_pmj_seq;
-
 layout(binding = OUT_RAY_HITS_IMG_SLOT, r32ui) uniform restrict writeonly uimage2D g_ray_hits_img;
-layout(binding = OUT_NOISE_IMG_SLOT, rg8) uniform restrict writeonly image2D g_noise_img;
 
 shared uint g_shared_mask;
 
@@ -93,18 +89,11 @@ void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool u
     }
 }
 
-vec2 SampleRandomVector2D(uvec2 pixel) {
-    return Sample2D_BN_PMJ_64SPP(g_bn_pmj_seq, pixel, 4u, g_params.frame_index % 64u);
-}
-
 layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     if (gl_LocalInvocationIndex == 0) {
         g_shared_mask = 0;
-    }
-    if (gl_GlobalInvocationID.x < 128u && gl_GlobalInvocationID.y < 128u) {
-        imageStore(g_noise_img, ivec2(gl_GlobalInvocationID.xy), vec4(SampleRandomVector2D(gl_GlobalInvocationID.xy), 0, 0));
     }
     const uvec2 group_id = gl_WorkGroupID.xy;
     const uint group_index = gl_LocalInvocationIndex;

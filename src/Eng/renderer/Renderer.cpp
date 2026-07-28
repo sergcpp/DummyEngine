@@ -99,29 +99,8 @@ namespace tcbn_1D_64spp {
 }
 
 // 2D blue noise, used for GI
-namespace bn_2D_64spp_0 {
-#include "precomputed/__bn_sampler_2D_64spp_0.inl"
-}
-namespace bn_2D_64spp_1 {
-#include "precomputed/__bn_sampler_2D_64spp_1.inl"
-}
-namespace bn_2D_64spp_2 {
-#include "precomputed/__bn_sampler_2D_64spp_2.inl"
-}
-namespace bn_2D_64spp_3 {
-#include "precomputed/__bn_sampler_2D_64spp_3.inl"
-}
-namespace bn_2D_64spp_4 {
-#include "precomputed/__bn_sampler_2D_64spp_4.inl"
-}
-namespace bn_2D_64spp_5 {
-#include "precomputed/__bn_sampler_2D_64spp_5.inl"
-}
-namespace bn_2D_64spp_6 {
-#include "precomputed/__bn_sampler_2D_64spp_6.inl"
-}
-namespace bn_2D_64spp_7 {
-#include "precomputed/__bn_sampler_2D_64spp_7.inl"
+namespace tcbn_2D_64spp {
+#include "precomputed/__tcbn_sampler_2D_64spp_lin_1%.inl"
 }
 
 __itt_string_handle *itt_exec_dr_str = __itt_string_handle_create("ExecuteDrawList");
@@ -308,122 +287,20 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         assert(tcbn_1D_64spp_);
     }
 
-    { // PMJ 2D blue-noise sampler
-        static const int SampleSizePerDimPair = 2 * 64 * sizeof(uint32_t);
-        static const int ScramblingSizePerDimPair = 2 * 128 * 128 * sizeof(uint32_t);
-        static const int SortingSizePerDimPair = 128 * 128 * sizeof(uint32_t);
+    { // TCBN 2D sampler
+        Ren::ImgParams p;
+        p.w = tcbn_2D_64spp::w;
+        p.h = tcbn_2D_64spp::h;
+        p.d = tcbn_2D_64spp::d;
+        p.format = Ren::eFormat::RG8;
+        p.flags = Ren::eImgFlags::Array;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+        p.sampling.filter = Ren::eFilter::Nearest;
 
-        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_0::bn_pmj_samples));
-        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_1::bn_pmj_samples));
-        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_2::bn_pmj_samples));
-        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_3::bn_pmj_samples));
-        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_4::bn_pmj_samples));
-        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_5::bn_pmj_samples));
-        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_6::bn_pmj_samples));
-        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_7::bn_pmj_samples));
-
-        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_0::bn_pmj_scrambling));
-        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_1::bn_pmj_scrambling));
-        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_2::bn_pmj_scrambling));
-        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_3::bn_pmj_scrambling));
-        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_4::bn_pmj_scrambling));
-        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_5::bn_pmj_scrambling));
-        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_6::bn_pmj_scrambling));
-        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_7::bn_pmj_scrambling));
-
-        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_0::bn_pmj_sorting));
-        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_1::bn_pmj_sorting));
-        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_2::bn_pmj_sorting));
-        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_3::bn_pmj_sorting));
-        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_4::bn_pmj_sorting));
-        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_5::bn_pmj_sorting));
-        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_6::bn_pmj_sorting));
-        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_7::bn_pmj_sorting));
-
-        const uint32_t buf_size = 8 * (SampleSizePerDimPair + ScramblingSizePerDimPair + SortingSizePerDimPair);
-        bn_pmj_2D_64spp_seq_buf_ = ctx_.CreateBuffer(Ren::String{"BN_PMJ_2D_64SPP"}, Ren::eBufType::Texture, buf_size);
-        { // Add view
-            const auto &[buf_main, buf_cold] = ctx_.storages().buffers[bn_pmj_2D_64spp_seq_buf_];
-            Ren::Buffer_AddView(ctx_.api(), buf_main, buf_cold, Ren::eFormat::R32UI);
-        }
-
-        Ren::BufferMain stage_buf_main = {};
-        Ren::BufferCold stage_buf_cold = {};
-        if (!Ren::Buffer_Init(ctx_.api(), stage_buf_main, stage_buf_cold, Ren::String{"BN_PMJ_2D_64SPP_Stage"},
-                              Ren::eBufType::Upload, buf_size, ctx_.log())) {
-            // TODO: Properly handle failure
-            assert(false);
-        }
-
-        { // init stage buf
-            uint8_t *mapped_ptr = Buffer_Map(ctx_.api(), stage_buf_main, stage_buf_cold);
-
-            // sample data
-            memcpy(mapped_ptr, bn_2D_64spp_0::bn_pmj_samples, SampleSizePerDimPair);
-            mapped_ptr += SampleSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_1::bn_pmj_samples, SampleSizePerDimPair);
-            mapped_ptr += SampleSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_2::bn_pmj_samples, SampleSizePerDimPair);
-            mapped_ptr += SampleSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_3::bn_pmj_samples, SampleSizePerDimPair);
-            mapped_ptr += SampleSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_4::bn_pmj_samples, SampleSizePerDimPair);
-            mapped_ptr += SampleSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_5::bn_pmj_samples, SampleSizePerDimPair);
-            mapped_ptr += SampleSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_6::bn_pmj_samples, SampleSizePerDimPair);
-            mapped_ptr += SampleSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_7::bn_pmj_samples, SampleSizePerDimPair);
-            mapped_ptr += SampleSizePerDimPair;
-
-            // scrambling data
-            memcpy(mapped_ptr, bn_2D_64spp_0::bn_pmj_scrambling, ScramblingSizePerDimPair);
-            mapped_ptr += ScramblingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_1::bn_pmj_scrambling, ScramblingSizePerDimPair);
-            mapped_ptr += ScramblingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_2::bn_pmj_scrambling, ScramblingSizePerDimPair);
-            mapped_ptr += ScramblingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_3::bn_pmj_scrambling, ScramblingSizePerDimPair);
-            mapped_ptr += ScramblingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_4::bn_pmj_scrambling, ScramblingSizePerDimPair);
-            mapped_ptr += ScramblingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_5::bn_pmj_scrambling, ScramblingSizePerDimPair);
-            mapped_ptr += ScramblingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_6::bn_pmj_scrambling, ScramblingSizePerDimPair);
-            mapped_ptr += ScramblingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_7::bn_pmj_scrambling, SortingSizePerDimPair);
-            mapped_ptr += SortingSizePerDimPair;
-
-            // sorting data
-            memcpy(mapped_ptr, bn_2D_64spp_0::bn_pmj_sorting, SortingSizePerDimPair);
-            mapped_ptr += SortingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_1::bn_pmj_sorting, SortingSizePerDimPair);
-            mapped_ptr += SortingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_2::bn_pmj_sorting, SortingSizePerDimPair);
-            mapped_ptr += SortingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_3::bn_pmj_sorting, SortingSizePerDimPair);
-            mapped_ptr += SortingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_4::bn_pmj_sorting, SortingSizePerDimPair);
-            mapped_ptr += SortingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_5::bn_pmj_sorting, SortingSizePerDimPair);
-            mapped_ptr += SortingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_6::bn_pmj_sorting, SortingSizePerDimPair);
-            mapped_ptr += SortingSizePerDimPair;
-            memcpy(mapped_ptr, bn_2D_64spp_7::bn_pmj_sorting, SortingSizePerDimPair);
-            mapped_ptr += SortingSizePerDimPair;
-
-            Buffer_Unmap(ctx_.api(), stage_buf_main, stage_buf_cold);
-        }
-
-        Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
-
-        const auto &[dst_buf_main, dst_buf_cold] = ctx_.storages().buffers[bn_pmj_2D_64spp_seq_buf_];
-        CopyBufferToBuffer(ctx_.api(), stage_buf_main, 0, dst_buf_main, 0,
-                           8 * (SampleSizePerDimPair + ScramblingSizePerDimPair + SortingSizePerDimPair), cmd_buf);
-
-        ctx_.EndTempSingleTimeCommands(cmd_buf);
-
-        Buffer_DestroyImmediately(ctx_.api(), stage_buf_main, stage_buf_cold);
+        tcbn_2D_64spp_ = ctx_.CreateImage(Ren::String{"TCBN 2D 64spp"},
+                                          {(const uint8_t *)&tcbn_2D_64spp::tcbn_samples[0], 2 * p.w * p.h * p.d}, p,
+                                          ctx_.default_mem_allocs());
+        assert(tcbn_2D_64spp_);
     }
 
     { // PMJ samples
@@ -487,8 +364,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
              Ren::eStoreOp::Store},
 #endif
             {Ren::eFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
-             Ren::eStoreOp::Store}
-        };
+             Ren::eStoreOp::Store}};
 
         // color_rts[2].flags = Ren::eImgFlags::SRGB;
 
@@ -590,6 +466,7 @@ Eng::Renderer::~Renderer() {
                                                   brdf_lut_,
                                                   ltc_luts_,
                                                   tcbn_1D_64spp_,
+                                                  tcbn_2D_64spp_,
                                                   cone_rt_lut_,
                                                   tonemap_lut_,
                                                   sky_transmittance_lut_,
@@ -861,7 +738,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             common_buffers.materials = fg_builder_.ImportResource(persistent_data.materials);
 
             common_buffers.pmj_samples = fg_builder_.ImportResource(pmj_samples_buf_);
-            common_buffers.bn_pmj_2D_64spp_seq = fg_builder_.ImportResource(bn_pmj_2D_64spp_seq_buf_);
 
             if (persistent_data.stoch_lights) {
                 common_buffers.stoch_lights = fg_builder_.ImportResource(persistent_data.stoch_lights);
@@ -890,6 +766,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.brdf_lut = fg_builder_.ImportResource(brdf_lut_);
             frame_textures.cone_rt_lut = fg_builder_.ImportResource(cone_rt_lut_);
             frame_textures.tcbn_1D_64spp = fg_builder_.ImportResource(tcbn_1D_64spp_);
+            frame_textures.tcbn_2D_64spp = fg_builder_.ImportResource(tcbn_2D_64spp_);
             if (tonemap_lut_) {
                 frame_textures.tonemap_lut = fg_builder_.ImportResource(tonemap_lut_);
             }

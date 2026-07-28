@@ -55,7 +55,7 @@ void Eng::ExRTDiffuse::Execute_SWRT(const FgContext &fg) {
     const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
     const Ren::BufferROHandle rt_blas = fg.AccessROBuffer(args_->swrt.rt_blas);
     const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(args_->shared_data);
-    const Ren::ImageROHandle noise = fg.AccessROImage(args_->noise);
+    const Ren::ImageROHandle tcbn = fg.AccessROImage(args_->tcbn);
     const Ren::ImageROHandle depth = fg.AccessROImage(args_->depth);
     const Ren::ImageROHandle normal = fg.AccessROImage(args_->normal);
     const Ren::BufferROHandle ray_list = fg.AccessROBuffer(args_->ray_list);
@@ -72,7 +72,7 @@ void Eng::ExRTDiffuse::Execute_SWRT(const FgContext &fg) {
         {Ren::eBindTarget::BindlessDescriptors, BIND_BINDLESS_TEX, bindless_tex_->rt_inline_textures},
         {Ren::eBindTarget::TexSampled, RTDiffuse::DEPTH_TEX_SLOT, {depth, 1}},
         {Ren::eBindTarget::TexSampled, RTDiffuse::NORM_TEX_SLOT, normal},
-        {Ren::eBindTarget::TexSampled, RTDiffuse::NOISE_TEX_SLOT, noise},
+        {Ren::eBindTarget::TexSampled, RTDiffuse::TCBN_TEX_SLOT, tcbn},
         {Ren::eBindTarget::SBufRO, RTDiffuse::RAY_LIST_SLOT, ray_list},
         {Ren::eBindTarget::UTBuf, RTDiffuse::BLAS_BUF_SLOT, rt_blas},
         {Ren::eBindTarget::UTBuf, RTDiffuse::TLAS_BUF_SLOT, rt_tlas},
@@ -88,7 +88,7 @@ void Eng::ExRTDiffuse::Execute_SWRT(const FgContext &fg) {
     RTDiffuse::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
-    uniform_params.frame_index = view_state_->frame_index;
+    uniform_params.frame_index = (view_state_->frame_index % 256);
     uniform_params.lights_count = view_state_->stochastic_lights_count;
 
     DispatchComputeIndirect(fg.cmd_buf(), pi_rt_diffuse_, fg.storages(), indir_args,

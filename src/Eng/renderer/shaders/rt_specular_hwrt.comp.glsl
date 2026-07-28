@@ -76,7 +76,7 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
 #ifdef LAYERED
     layout(binding = OIT_DEPTH_BUF_SLOT) uniform usamplerBuffer g_oit_depth_buf;
 #else
-    layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
+    layout(binding = TCBN_TEX_SLOT) uniform sampler2DArray g_tcbn_tex;
 #endif
 
 layout(std430, binding = OUT_RAY_HITS_BUF_SLOT) writeonly buffer RayHitsList {
@@ -116,7 +116,8 @@ void main() {
     const float view_z = -ray_origin_vs.z;
 
     const vec3 view_ray_vs = normalize(ray_origin_vs);
-    const vec4 u = texelFetch(g_noise_tex, icoord % 128, 0);
+    const vec4 u = vec4(texelFetch(g_tcbn_tex, ivec3(icoord + ivec2(39, 39) * DIM_SPECULAR_0, g_params.frame_index) % 64, 0).xy,
+                        texelFetch(g_tcbn_tex, ivec3(icoord + ivec2(39, 39) * DIM_SPECULAR_1, g_params.frame_index) % 64, 0).xy);
     const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, first_roughness, u.xy);
     vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs.xyz, 0.0)).xyz;
 
@@ -170,7 +171,6 @@ void main() {
     vec3 throughput = UnpackRGB565(packed_roughness_throughput & 0xffffu);
 #endif
 
-    
     const float t_max = 100.0;
 
     rayQueryEXT rq;

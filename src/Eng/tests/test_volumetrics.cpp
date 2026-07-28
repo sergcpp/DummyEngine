@@ -16,7 +16,7 @@ void test_volumetrics(Sys::ThreadPool &threads) {
     run_image_test(ren_ctx, threads, "vol_global1", 25.15, Full);
     run_image_test(ren_ctx, threads, "vol_global1", 25.20, Full_Ultra);
     run_image_test(ren_ctx, threads, "vol_global2", 30.35, Full);
-    run_image_test(ren_ctx, threads, "vol_global2", 30.45, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_global2", 30.40, Full_Ultra);
     run_image_test(ren_ctx, threads, "vol_global3", 33.25, Full);
     run_image_test(ren_ctx, threads, "vol_global3", 33.45, Full_Ultra);
     run_image_test(ren_ctx, threads, "vol_global4", 28.30, Full);

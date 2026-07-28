@@ -29,8 +29,8 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(ren_ctx, threads, "complex_mat2_area_spread", 18.05, MedDiffGI);
     run_image_test(ren_ctx, threads, "complex_mat2_area_spread", 18.50, Full);
     run_image_test(ren_ctx, threads, "complex_mat2_area_spread", 18.30, Full_Ultra);
-    run_image_test(ren_ctx, threads, "complex_mat2_emissive", 18.30, Full);
-    run_image_test(ren_ctx, threads, "complex_mat2_emissive", 17.15, Full_Ultra);
+    run_image_test(ren_ctx, threads, "complex_mat2_emissive", 18.20, Full);
+    run_image_test(ren_ctx, threads, "complex_mat2_emissive", 17.05, Full_Ultra);
     run_image_test(ren_ctx, threads, "complex_mat2_dyn",
                    std::vector<double>{23.85, 23.85, 23.80, 23.70, 23.70, 23.60, 23.55, 23.50, 23.40, 23.30, //
                                        23.15, 23.05, 23.00, 22.90, 22.80, 22.85, 22.95, 23.00, 23.00, 23.05,
@@ -59,12 +59,12 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(ren_ctx, threads, "complex_mat2_sun_light", 22.45, Full_Ultra);
     run_image_test(ren_ctx, threads, "complex_mat2_sun_light_dyn",
                    std::vector<double>{33.35, 33.65, 33.70, 33.65, 33.50, 33.15, 32.65, 32.05, 31.25, 30.30, //
-                                       29.45, 27.70, 26.40, 25.60, 23.60, 22.00, 20.35, 22.10, 23.60, 24.60,
-                                       25.20, 25.95, 25.60, 26.95, 26.55, 28.25, 28.20, 27.80, 29.20, 29.35,
+                                       29.45, 28.20, 26.40, 25.60, 23.60, 22.00, 20.35, 22.10, 23.60, 24.60,
+                                       25.20, 25.95, 25.60, 26.95, 26.55, 28.20, 28.20, 27.80, 29.20, 29.35,
                                        29.35, 30.10, 30.50},
                    Full);
     run_image_test(ren_ctx, threads, "complex_mat2_sun_light_dyn",
-                   std::vector<double>{33.50, 33.80, 33.55, 33.45, 33.70, 33.45, 32.90, 31.90, 31.45, 30.40, //
+                   std::vector<double>{33.45, 33.80, 33.55, 33.45, 33.65, 33.45, 32.90, 31.90, 31.45, 30.40, //
                                        29.35, 28.15, 26.95, 25.70, 24.05, 22.60, 20.80, 22.05, 23.75, 24.25,
                                        25.10, 26.10, 26.00, 27.10, 26.70, 27.95, 28.35, 27.90, 29.40, 29.50,
                                        29.55, 30.25, 30.70},
@@ -114,9 +114,9 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(ren_ctx, threads, "complex_mat4", 20.05, Full_Ultra);
     run_image_test(ren_ctx, threads, "complex_mat4_sun_light", 20.05, Full);
     run_image_test(ren_ctx, threads, "complex_mat4_sun_light", 19.90, Full_Ultra);
-    run_image_test(ren_ctx, threads, "emit_mat0", 24.75, Full);
-    run_image_test(ren_ctx, threads, "emit_mat0", 25.50, Full_Ultra);
-    run_image_test(ren_ctx, threads, "emit_mat1", 23.20, Full);
+    run_image_test(ren_ctx, threads, "emit_mat0", 24.65, Full);
+    run_image_test(ren_ctx, threads, "emit_mat0", 25.40, Full_Ultra);
+    run_image_test(ren_ctx, threads, "emit_mat1", 23.05, Full);
     run_image_test(ren_ctx, threads, "emit_mat1", 23.45, Full_Ultra);
 
     if (!full) {

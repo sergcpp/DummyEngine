@@ -75,11 +75,11 @@ Ren::Vec2i splat_pixel_energy(const int ox, const int oy, const int oz,
     return Ren::Vec2i{imin, imax};
 }
 
-static const float GaussOmegaI = 3.6f;
+static const float GaussOmegaI = 7.22f; // 3.6f;
 static const float GaussOmegaS = 1.0f;
 
 static const int ProximityRadius = 7;
-static const int MaxSwappingIterations = 10000000;
+static const int MaxSwappingIterations = 100000000;
 
 template <int SampleCount>
 float calc_pixel_proximity(const int ox, const int oy, const int oz,
@@ -530,7 +530,7 @@ template <int Log2SampleCount> void Eng::Generate2D_STBN(unsigned int seed) {
         if ((iter % 10000) == 0) {
             printf("Swapping Iteration %i (%f)\n", iter, best_total_proximity);
 
-            debug_dft();
+            //debug_dft();
 
             float min_proximity = FLT_MAX, max_proximity = 0.0f;
             for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {

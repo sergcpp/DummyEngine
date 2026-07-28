@@ -89,7 +89,7 @@ class Renderer {
     Ren::ImageHandle tonemap_lut_;
     Ren::BufferHandle bn_pmj_2D_64spp_seq_buf_;
     Ren::BufferHandle pmj_samples_buf_;
-    Ren::ImageHandle tcbn_1D_64spp_;
+    Ren::ImageHandle tcbn_1D_64spp_, tcbn_2D_64spp_;
     Ren::ImageHandle sky_transmittance_lut_, sky_multiscatter_lut_, sky_moon_, sky_weather_, sky_cirrus_, sky_curl_;
     Ren::ImageHandle sky_noise3d_;
 
@@ -231,7 +231,6 @@ class Renderer {
         FgBufRWHandle skin_vertex_buf, delta_buf;
 
         FgBufROHandle pmj_samples;
-        FgBufROHandle bn_pmj_2D_64spp_seq;
 
         FgBufROHandle instances;
         FgBufROHandle materials;
@@ -292,6 +291,7 @@ class Renderer {
         FgImgROHandle brdf_lut;
         FgImgROHandle cone_rt_lut;
         FgImgROHandle tcbn_1D_64spp;
+        FgImgROHandle tcbn_2D_64spp;
         FgImgROHandle tonemap_lut;
 
         FgImgRWHandle gi_cache_irradiance;

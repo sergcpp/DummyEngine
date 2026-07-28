@@ -21,9 +21,9 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = COLOR_TEX_SLOT) uniform sampler2D color_tex;
+layout(binding = COLOR_TEX_SLOT) uniform sampler2D g_color_tex;
 layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
-layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
+layout(binding = TCBN_TEX_SLOT) uniform sampler2DArray g_tcbn_tex;
 
 layout(std430, binding = IN_RAY_LIST_SLOT) readonly buffer InRayList {
     uint g_in_ray_list[];
@@ -68,7 +68,7 @@ void main() {
     const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
 
     // NOTE: Computed in world-space so that TBN choice is synchronized with world-space traversal
-    const vec3 refl_ray_ws = SampleDiffuseVector(g_noise_tex, normal_ws, pix_uvs, 0);
+    const vec3 refl_ray_ws = SampleDiffuseVector(g_tcbn_tex, normal_ws, pix_uvs, g_params.frame_index, DIM_DIFFUSE_0);
     const vec3 refl_ray_vs = normalize((g_shrd_data.view_from_world * vec4(refl_ray_ws, 0.0)).xyz);
 
     vec3 hit_point_cs, hit_point_vs, hit_normal_vs;
@@ -83,9 +83,9 @@ void main() {
         uv.xy = 0.5 * uv.xy + 0.5;
 
         const float hit_t = distance(hit_point_vs, ray_origin_vs);
-        out_color = textureLod(color_tex, uv, 0.0);
+        out_color = textureLod(g_color_tex, uv, 0.0);
 
-        const vec4 is_emissive = textureGather(color_tex, uv, 3);
+        const vec4 is_emissive = textureGather(g_color_tex, uv, 3);
         if (any(greaterThanEqual(is_emissive, vec4(2.0)))) {
             // Skip emissive surface
             hit_found = false;

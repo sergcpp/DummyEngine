@@ -14,13 +14,13 @@ class ShaderLoader;
 class ExRTSpecular final : public FgExecutor {
   public:
     struct Args {
-        FgImgROHandle noise;
+        FgBufROHandle shared_data;
         FgBufROHandle geo_data;
         FgBufROHandle materials;
         FgBufROHandle vtx_buf1;
         FgBufROHandle vtx_buf2;
         FgBufROHandle ndx_buf;
-        FgBufROHandle shared_data;
+        FgImgROHandle tcbn;
         FgImgROHandle depth;
         FgImgROHandle normal;
         FgBufROHandle ray_list;

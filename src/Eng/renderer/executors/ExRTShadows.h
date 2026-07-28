@@ -11,12 +11,12 @@ struct view_state_t;
 class ExRTShadows final : public FgExecutor {
   public:
     struct Args {
+        FgBufROHandle shared_data;
         FgBufROHandle geo_data;
         FgBufROHandle materials;
         FgBufROHandle vtx_buf1;
         FgBufROHandle ndx_buf;
-        FgBufROHandle shared_data;
-        FgImgROHandle noise;
+        FgImgROHandle tcbn;
         FgImgROHandle depth;
         FgImgROHandle normal;
         FgBufROHandle tlas_buf;

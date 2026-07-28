@@ -10,7 +10,8 @@ struct Params {
     float pixel_spread_angle;
     int lights_count;
     uint is_hwrt;
-    uint _pad[3];
+    uint frame_index;
+    uint _pad[2];
 };
 
 struct RayPayload {
@@ -46,7 +47,7 @@ const uint RAY_COUNTER_SLOT = 10;
 const uint RAY_LIST_SLOT = 11;
 const uint BLAS_BUF_SLOT = 12;
 const uint TLAS_BUF_SLOT = 13;
-const uint NOISE_TEX_SLOT = 14;
+const uint TCBN_TEX_SLOT = 14;
 const uint OIT_DEPTH_BUF_SLOT = 14;
 const uint LIGHTS_BUF_SLOT = 15;
 const uint VTX_BUF1_SLOT = 16;
