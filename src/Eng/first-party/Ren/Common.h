@@ -4,7 +4,7 @@
 
 namespace Ren {
 const int MaxFramesInFlight = 3;
-const int MaxTimestampQueries = 256;
+const int MaxTimestampQueries = 512;
 
 template <typename T> inline T RoundDown(const T size, const T alignment) { return alignment * (size / alignment); }
 
