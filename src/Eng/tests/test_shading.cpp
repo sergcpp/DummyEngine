@@ -29,7 +29,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(ren_ctx, threads, "complex_mat2_area_spread", 18.05, MedDiffGI);
     run_image_test(ren_ctx, threads, "complex_mat2_area_spread", 18.50, Full);
     run_image_test(ren_ctx, threads, "complex_mat2_area_spread", 18.30, Full_Ultra);
-    run_image_test(ren_ctx, threads, "complex_mat2_emissive", 18.20, Full);
+    run_image_test(ren_ctx, threads, "complex_mat2_emissive", 18.15, Full);
     run_image_test(ren_ctx, threads, "complex_mat2_emissive", 17.05, Full_Ultra);
     run_image_test(ren_ctx, threads, "complex_mat2_dyn",
                    std::vector<double>{23.85, 23.85, 23.80, 23.70, 23.70, 23.60, 23.55, 23.50, 23.40, 23.30, //

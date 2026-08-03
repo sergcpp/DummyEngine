@@ -27,9 +27,6 @@ static const float EMA_Alpha = 0.08f;
 static const int Linear_FramesLimit = 32;
 static const float HistoryRejection = 0.01f; // 0.05f;
 
-// static const int TestFunctionsCountCbrt = 1;
-// static const int TestFunctionsCount = TestFunctionsCountCbrt * TestFunctionsCountCbrt * TestFunctionsCountCbrt;
-
 static const int TestFunctionsCountSqrt = 256;
 static const int TestFunctionsCount = TestFunctionsCountSqrt * TestFunctionsCountSqrt;
 
@@ -1023,7 +1020,6 @@ void Eng::Generate2D_TCBN(const unsigned int seed) {
         float proximity[SampleCount][TileRes][TileRes] = {};
         double proximity_lines[SampleCount][TileRes] = {};
         bool dirty_lines[SampleCount][TileRes] = {};
-        std::vector<float> errors[SampleCount][TileRes][TileRes];
 
         std::vector<float> errors_q[65536];
         std::vector<float> errors_lut_data;
@@ -1059,6 +1055,10 @@ void Eng::Generate2D_TCBN(const unsigned int seed) {
 
     // Init temporal filter
     if constexpr (tf == eTemporalFilter::Gauss) {
+        for (int z = 0; z < SampleCount; ++z) {
+            const int dz = std::min(z, SampleCount - z);
+            data->z_filter[z] = std::exp(-(dz * dz) / GaussOmegaI);
+        }
     } else if constexpr (tf == eTemporalFilter::TruncatedEMA || tf == eTemporalFilter::TruncatedLinear) {
         // Stochastically sample the EMA filter.
         // This totally can be solved analytically, but I'm too lazy to do it.
@@ -1172,29 +1172,11 @@ void Eng::Generate2D_TCBN(const unsigned int seed) {
     {                                 // Generate randomly oriented heavysides
         std::mt19937 temp_gen(45678); // fixed seed for reproduceability
         functions.reserve(TestFunctionsCount);
-        /*for (int i = 0; i < TestFunctionsCountCbrt; ++i) {
-            for (int j = 0; j < TestFunctionsCountCbrt; ++j) {
-                for (int k = 0; k < TestFunctionsCountCbrt; ++k) {
-                    heavyside_func_t &f = functions.emplace_back();
-                    f.o = Ren::Vec2f((i + uniform_unorm_float(temp_gen)) / TestFunctionsCountCbrt,
-                                     (j + uniform_unorm_float(temp_gen)) / TestFunctionsCountCbrt);
-                    const float angle = Ren::Pi<float>() * (k + uniform_unorm_float(temp_gen)) / TestFunctionsCountCbrt;
-                    f.n = Ren::Vec2f(std::cos(angle), std::sin(angle));
 
-                    double integral_val = 0.0;
-                    for (int y = 0; y < 256; ++y) {
-                        const float fy = float(y) / 255.0f;
-                        for (int x = 0; x < 256; ++x) {
-                            const float fx = float(x) / 255.0f;
-                            integral_val += test_function_2D(Ren::Vec2f(fx, fy), f.o, f.n);
-                        }
-                    }
-                    f.integral_val = float(integral_val / (256 * 256));
-                }
-            }
-        }*/
+        // NOTE: Simple random angle selection leads to uneven distribution as
+        // diagonal is longer than side. So we use simple importance sampling to fairly
+        // distribute angles which accounts for that difference.
 
-#if 1
         static const int LutResolution = 4096;
         std::vector<float> theta_lut, cdf;
 
@@ -1258,78 +1240,7 @@ void Eng::Generate2D_TCBN(const unsigned int seed) {
                 f.integral_val = float(integral_val / (256 * 256));
             }
         }
-#else
-        for (int i = 0; i < TestFunctionsCountSqrt; ++i) {
-            for (int j = 0; j < TestFunctionsCountSqrt; ++j) {
-                heavyside_func_t &f = functions.emplace_back();
-
-                const float angle =
-                    2.0f * Ren::Pi<float>() * (i + uniform_unorm_float(temp_gen)) / TestFunctionsCountSqrt;
-                f.n = Ren::Vec2f(std::cos(angle), std::sin(angle));
-
-                const float d_min = std::min(0.0f, f.n[0]) + std::min(0.0f, f.n[1]);
-                const float d_max = std::max(0.0f, f.n[0]) + std::max(0.0f, f.n[1]);
-
-                const float d = Ren::Mix(d_min, d_max, (j + uniform_unorm_float(temp_gen)) / TestFunctionsCountSqrt);
-                f.o = d * f.n;
-
-                double integral_val = 0.0;
-                for (int y = 0; y < 256; ++y) {
-                    const float fy = float(y) / 255.0f;
-                    for (int x = 0; x < 256; ++x) {
-                        const float fx = float(x) / 255.0f;
-                        integral_val += test_function_2D(Ren::Vec2f(fx, fy), f.o, f.n);
-                    }
-                }
-                f.integral_val = float(integral_val / (256 * 256));
-            }
-        }
-#endif
-
-        /*for (int i = 0; i < TestFunctionsCount; ++i) {
-            heavyside_func_t &f = functions.emplace_back();
-            f.o = Ren::Vec2f(uniform_unorm_float(temp_gen), uniform_unorm_float(temp_gen));
-            const float angle = 1.0f * Ren::Pi<float>() * uniform_unorm_float(temp_gen);
-            f.n = Ren::Vec2f(std::cos(angle), std::sin(angle));
-
-            //// TEST
-            f.o = Ren::Vec2f{0.5f, 0.5f};
-            f.n = Ren::Vec2f(std::cos(0.25f), std::sin(0.25f));
-
-            double integral_val = 0.0;
-            for (int y = 0; y < 256; ++y) {
-                const float fy = float(y) / 255.0f;
-                for (int x = 0; x < 256; ++x) {
-                    const float fx = float(x) / 255.0f;
-                    integral_val += test_function_2D(Ren::Vec2f(fx, fy), f.o, f.n);
-                }
-            }
-            f.integral_val = float(integral_val / (256 * 256));
-        }*/
     }
-
-    { // load checkpoint (if exists)
-        snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/tcbn_samples_2D_%ispp.bin", SampleCount);
-        std::ifstream in_file(name_buf, std::ios::binary);
-        if (in_file.good()) {
-            in_file >> gen;
-            in_file.read((char *)data->samples, sizeof(data->samples));
-            validate_stratification(false);
-        }
-    }
-
-    // Sample test functions
-    /*for (int z = 0; z < SampleCount; ++z) {
-        for (int y = 0; y < TileRes; ++y) {
-            for (int x = 0; x < TileRes; ++x) {
-                data->errors[z][y][x].resize(TestFunctionsCount);
-                for (uint32_t j = 0; j < TestFunctionsCount; ++j) {
-                    const heavyside_func_t &f = functions[j];
-                    data->errors[z][y][x][j] = (f.integral_val - test_function_2D(data->samples[z][y][x], f.o, f.n));
-                }
-            }
-        }
-    }*/
 
     // Prepare Errors LUT
     data->errors_lut_data.resize(size_t(65536) * 65536, 0.0f);
@@ -1382,23 +1293,8 @@ void Eng::Generate2D_TCBN(const unsigned int seed) {
                 data->errors_q[i] = {};
             }
 
-            /*for (int i = 0; i < TotalCount; ++i) {
-                printf("Preparing Errors LUT : %i/%i\n", i, TotalCount);
-                const auto [ox, oy, oz] = xyz_from_index(i);
-                const auto &oerr = data->errors[oz][oy][ox];
-                for (int j = i + 1; j < TotalCount; ++j) {
-                    const auto [x2, y2, z2] = xyz_from_index(j);
-                    const auto &err = data->errors[z2][y2][x2];
-                    assert(data->errors_lut[i][j] == 0.0f);
-                    for (int k = 0; k < TestFunctionsCount; ++k) {
-                        data->errors_lut[i][j] += (oerr[k] - err[k]) * (oerr[k] - err[k]);
-                    }
-                    data->errors_lut[i][j] /= TestFunctionsCount;
-                    data->errors_lut[j][i] = data->errors_lut[i][j];
-                }
-            }*/
             std::ofstream out_file(name_buf, std::ios::binary);
-            out_file.write((const char *)data->errors_lut_data.data(), sizeof(float) * TotalCount * TotalCount);
+            out_file.write((const char *)data->errors_lut_data.data(), sizeof(float) * 65536 * 65536);
         }
     }
 
@@ -1465,34 +1361,11 @@ void Eng::Generate2D_TCBN(const unsigned int seed) {
             validate_stratification(false);
             // debug_dft();
 
-            { // save current state
-                snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/tcbn_samples_2D_%ispp.bin",
-                         SampleCount);
-                std::ofstream out_file(name_buf, std::ios::binary);
-                out_file << gen;
-                out_file.write((const char *)data->samples, sizeof(data->samples));
-            }
-
-            float min_proximity = FLT_MAX, max_proximity = 0.0f;
             for (int j = 0; j < TotalCount; ++j) {
                 const auto [x, y, z] = xyz_from_index(j);
-
-                data->debug_values[z][y][x] = data->proximity[z][y][x];
-                min_proximity = std::min(min_proximity, data->debug_values[z][y][x]);
-                max_proximity = std::max(max_proximity, data->debug_values[z][y][x]);
-            }
-            // normalize errors (for easier debugging)
-            for (int j = 0; j < TotalCount; ++j) {
-                const auto [x, y, z] = xyz_from_index(j);
-
-                float &e = data->debug_values[z][y][x];
-                e = (e - min_proximity) / (max_proximity - min_proximity);
 
                 data->debug_values2[z][y][x] = data->samples[z][y][x];
             }
-
-            // snprintf(name_buf, sizeof(name_buf), "debug_energy_%i_tcbn.dds", SampleCount);
-            // WriteDDS(&data->debug_values[0][0][0], TileRes, TileRes, SampleCount, name_buf);
 
             snprintf(name_buf, sizeof(name_buf), "debug_samples_%i_tcbn.dds", SampleCount);
             WriteDDS(&data->debug_values2[0][0][0], TileRes, TileRes, SampleCount, name_buf);
@@ -1513,7 +1386,6 @@ void Eng::Generate2D_TCBN(const unsigned int seed) {
                                                   data->dirty_lines, data->xy_filter, data->z_filter);
 
         std::swap(data->samples[oz1][oy1][ox1], data->samples[oz2][oy2][ox2]);
-        std::swap(data->errors[oz1][oy1][ox1], data->errors[oz2][oy2][ox2]);
         std::swap(data->sample_index[oz1][oy1][ox1], data->sample_index[oz2][oy2][ox2]);
 
         // Add swapped pixels contribution
@@ -1557,7 +1429,6 @@ void Eng::Generate2D_TCBN(const unsigned int seed) {
                                                       data->z_filter);
 
             std::swap(data->samples[oz1][oy1][ox1], data->samples[oz2][oy2][ox2]);
-            std::swap(data->errors[oz1][oy1][ox1], data->errors[oz2][oy2][ox2]);
             std::swap(data->sample_index[oz1][oy1][ox1], data->sample_index[oz2][oy2][ox2]);
 
             splat_pixel_proximity<SampleCount, true>(ox1, oy1, oz1, data->sample_index, data->errors_lut,

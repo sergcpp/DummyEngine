@@ -84,6 +84,30 @@ vec3 SampleCosineHemisphere(const float u, const float v) {
     return vec3(dir * cos_phi, dir * sin_phi, k);
 }
 
+vec3 SampleCosineHemisphere_Concentric(const float u1, const float u2) {
+    const float sx = 2.0 * u1 - 1.0;
+    const float sy = 2.0 * u2 - 1.0;
+
+    if (sx == 0.0 && sy == 0.0) {
+        return vec3(0.0, 0.0, 1.0);
+    }
+
+    float r, theta;
+
+    if (abs(sx) > abs(sy)) {
+        r = sx;
+        theta = 0.25 * M_PI * (sy / sx);
+    } else {
+        r = sy;
+        theta = 0.5 * M_PI - 0.25 * M_PI * (sx / sy);
+    }
+
+    const float x = r * cos(theta), y = r * sin(theta);
+    const float z = sqrt(max(0.0, 1.0 - x * x - y * y));
+
+    return vec3(x, y, z);
+}
+
 mat3 CreateTBN(vec3 N) {
     vec3 U;
     if (abs(N.z) > 0.0) {
@@ -103,7 +127,7 @@ mat3 CreateTBN(vec3 N) {
 
 vec3 SampleDiffuseVector(const sampler2DArray noise_tex, const vec3 normal, const ivec2 dispatch_thread_id, const uint frame, const uint dim) {
     const vec2 u = texelFetch(noise_tex, ivec3(dispatch_thread_id + ivec2(39, 39) * dim, frame) % 64, 0).xy;
-    const vec3 direction_tbn = SampleCosineHemisphere(u.x, u.y);
+    const vec3 direction_tbn = SampleCosineHemisphere_Concentric(u.x, u.y);
 
     const mat3 inv_tbn_transform = transpose(CreateTBN(normal));
     return normalize(inv_tbn_transform * direction_tbn);

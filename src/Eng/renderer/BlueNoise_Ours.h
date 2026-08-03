@@ -2,7 +2,8 @@
 
 //
 // Time-coupled 3D blue noise texture generator. Follows the ideas from:
-// https://hal.science/hal-02150657, https://doi.org/10.2312/sr.20221161, https://arxiv.org/pdf/2112.09629, https://arxiv.org/pdf/2310.15364
+// https://hal.science/hal-02150657, https://doi.org/10.2312/sr.20221161, https://arxiv.org/pdf/2112.09629,
+// https://arxiv.org/pdf/2310.15364
 //
 
 namespace Eng {
@@ -12,8 +13,8 @@ enum class eSpatialFilter { Gauss };
 // The filter applied to Z dimension
 enum class eTemporalFilter {
     Gauss,
-    TruncatedEMA, // exponential moving average with random history rejection
-    TruncatedLinear
+    TruncatedEMA,   // exponential moving average with random history rejection
+    TruncatedLinear // linear accumulation (sample counter) with random history rejection
 };
 
 //
@@ -40,7 +41,12 @@ template <int Log2SampleCount, eSpatialFilter sf = eSpatialFilter::Gauss,
           eTemporalFilter tf = eTemporalFilter::TruncatedEMA>
 void Generate1D_TCBN_Swap(unsigned int seed);
 
+// Pixel swap method
+// * optimized on 65k random heavysides
+// * distributes the integration error as blue noise
+// * preserves XY-slice histogram
+// * uses 16GB sample-to-sample interaction LUT (pre-quantized to 0-255)
 template <int Log2SampleCount, eSpatialFilter sf = eSpatialFilter::Gauss,
-          eTemporalFilter tf = eTemporalFilter::TruncatedEMA>
+          eTemporalFilter tf = eTemporalFilter::TruncatedLinear>
 void Generate2D_TCBN(unsigned int seed);
 } // namespace Eng
