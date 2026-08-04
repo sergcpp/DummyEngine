@@ -8,9 +8,6 @@
 namespace Ren {
 struct ApiContext;
 
-//
-// DescrPool is able to allocate up to fixed amount of sets of specific size
-//
 enum class eDescrType : uint8_t {
     CombinedImageSampler,
     SampledImage,
@@ -36,6 +33,9 @@ struct DescrSizes {
     uint32_t acc_count = 0;
 };
 
+//
+// DescrPool is able to allocate up to fixed amount of sets of specific size
+//
 class DescrPool {
     const ApiContext &api_;
 #if defined(REN_VK_BACKEND)
@@ -48,7 +48,7 @@ class DescrPool {
   public:
     DescrPool(const ApiContext &api) : api_(api) {}
     DescrPool(const DescrPool &rhs) = delete;
-    DescrPool(DescrPool &&rhs) : api_(rhs.api_) { (*this) = std::move(rhs); }
+    DescrPool(DescrPool &&rhs) noexcept : api_(rhs.api_) { (*this) = std::move(rhs); }
     ~DescrPool() { Destroy(); }
 
     DescrPool &operator=(const DescrPool &rhs) = delete;
