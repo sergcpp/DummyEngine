@@ -515,7 +515,8 @@ void main() {
     }
 #endif // GI_CACHE
 
-    throughput *= lobe_masks.diffuse_mul * base_color * ltc.diff_t2.x;
+    // NOTE: Fresnel value for principled diffuse can go beyond 1.0, so we need saturate
+    throughput *= lobe_masks.diffuse_mul * saturate(ltc.diff_t2.x) *  base_color;
 #endif
 
     final_color = compress_hdr(final_color, g_shrd_data.cam_pos_and_exp.w);
