@@ -75,7 +75,7 @@ void main() {
         const vec4 ray_origin_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
         const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
 
-        const vec2 u = texelFetch(g_tcbn_tex, ivec3(icoord + ivec2(39, 39) * DIM_SHADOW, g_params.frame_index) % 64, 0).xy;
+        const vec2 u = texelFetch(g_tcbn_tex, (ivec3(icoord, g_params.frame_index) + 39 * DIM_SHADOW) % 64, 0).xy;
         const vec3 shadow_ray_ws = MapToCone(u, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w);
 
         vec4 ray_origin_ws = g_shrd_data.world_from_view * vec4(ray_origin_vs, 1.0);

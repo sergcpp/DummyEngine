@@ -173,7 +173,7 @@ void main() {
     const float view_z = -ray_origin_vs.z;
 
     const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-    const vec2 u = texelFetch(g_tcbn_tex, ivec3(pix_uvs + ivec2(39, 39) * DIM_SPECULAR_0, g_params.frame_index) % 64, 0).xy;
+    const vec2 u = texelFetch(g_tcbn_tex, (ivec3(pix_uvs, g_params.frame_index) + 39 * DIM_SPECULAR_0) % 64, 0).xy;
     const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, u);
 #else
     const uint packed_coords = g_in_ray_list[2 * ray_index + 0];

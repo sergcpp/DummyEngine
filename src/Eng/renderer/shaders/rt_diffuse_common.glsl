@@ -125,8 +125,8 @@ mat3 CreateTBN(vec3 N) {
     return transpose(TBN);
 }
 
-vec3 SampleDiffuseVector(const sampler2DArray noise_tex, const vec3 normal, const ivec2 dispatch_thread_id, const uint frame, const uint dim) {
-    const vec2 u = texelFetch(noise_tex, ivec3(dispatch_thread_id + ivec2(39, 39) * dim, frame) % 64, 0).xy;
+vec3 SampleDiffuseVector(const sampler2DArray noise_tex, const vec3 normal, const ivec2 dispatch_thread_id, const uint frame, const int dim) {
+    const vec2 u = texelFetch(noise_tex, (ivec3(dispatch_thread_id, frame) + 39 * dim) % 64, 0).xy;
     const vec3 direction_tbn = SampleCosineHemisphere_Concentric(u.x, u.y);
 
     const mat3 inv_tbn_transform = transpose(CreateTBN(normal));
