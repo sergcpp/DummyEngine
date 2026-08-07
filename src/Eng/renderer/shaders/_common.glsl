@@ -391,30 +391,6 @@ mat2x3 CreateTangentVectors(vec3 normal) {
 	return tangents;
 }
 
-vec3 MapToCone(vec2 u, vec3 n, float radius) {
-	vec2 offset = 2.0 * u - vec2(1.0);
-
-	if (offset.x == 0.0 && offset.y == 0.0) {
-		return n;
-	}
-
-	float theta, r;
-
-	if (abs(offset.x) > abs(offset.y)) {
-		r = offset.x;
-		theta = 0.25 * M_PI * (offset.y / offset.x);
-	} else {
-		r = offset.y;
-		theta = 0.5 * M_PI * (1.0 - 0.5 * (offset.x / offset.y));
-	}
-
-	vec2 uv = vec2(radius * r * cos(theta), radius * r * sin(theta));
-
-	mat2x3 tangents = CreateTangentVectors(n);
-
-	return n + uv.x * tangents[0] + uv.y * tangents[1];
-}
-
 struct shadow_map_region_t {
     vec4 transform;
     mat4 clip_from_world;

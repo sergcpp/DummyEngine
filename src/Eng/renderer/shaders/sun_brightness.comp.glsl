@@ -1,6 +1,7 @@
 #version 430 core
 
 #include "_cs_common.glsl"
+#include "rt_common.glsl"
 #include "sun_brightness_interface.h"
 
 #define ENABLE_SUN_DISK 0

@@ -23,12 +23,19 @@ void Eng::ExRTSpecular::Execute_HWRT(const FgContext &fg) {
     const Ren::BufferRWHandle inout_ray_counter = fg.AccessRWBuffer(args_->inout_ray_counter);
     const Ren::BufferHandle out_ray_hits = fg.AccessRWBuffer(args_->out_ray_hits);
 
-    Ren::BufferROHandle oit_depth = {};
-    Ren::ImageROHandle tcbn = {};
+    Ren::BufferROHandle oit_depth;
+    Ren::BufferROHandle cache_entries, cache_voxels;
+    Ren::ImageROHandle tcbn;
+    Ren::ImageRWHandle out_color;
     if (args_->oit_depth) {
         oit_depth = fg.AccessROBuffer(args_->oit_depth);
     } else {
         tcbn = fg.AccessROImage(args_->tcbn);
+
+        cache_entries = fg.AccessROBuffer(args_->cache_entries);
+        cache_voxels = fg.AccessROBuffer(args_->cache_voxels);
+
+        out_color = fg.AccessRWImage(args_->out_color);
     }
 
     const Ren::ApiContext &api = fg.ren_ctx().api();
@@ -49,11 +56,15 @@ void Eng::ExRTSpecular::Execute_HWRT(const FgContext &fg) {
         {Ren::eBindTarget::SBufRO, RTSpecular::NDX_BUF_SLOT, ndx_buf},
         {Ren::eBindTarget::SBufRW, RTSpecular::RAY_COUNTER_SLOT, inout_ray_counter},
         {Ren::eBindTarget::SBufRW, RTSpecular::OUT_RAY_HITS_BUF_SLOT, out_ray_hits}};
-    if (tcbn) {
-        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTSpecular::TCBN_TEX_SLOT, tcbn);
-    }
     if (oit_depth) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTSpecular::OIT_DEPTH_BUF_SLOT, oit_depth);
+    } else {
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTSpecular::TCBN_TEX_SLOT, tcbn);
+
+        bindings.emplace_back(Ren::eBindTarget::SBufRO, RTSpecular::CACHE_ENTRIES_BUF_SLOT, cache_entries);
+        bindings.emplace_back(Ren::eBindTarget::SBufRO, RTSpecular::CACHE_VOXELS_BUF_SLOT, cache_voxels);
+
+        bindings.emplace_back(Ren::eBindTarget::ImageRW, RTSpecular::OUT_REFL_IMG_SLOT, out_color);
     }
 
     const Ren::PipelineMain &pi = storages.pipelines[pi_rt_specular_].first;

@@ -26,8 +26,10 @@ class ExRTSpecular final : public FgExecutor {
         FgBufROHandle ray_list;
         FgBufROHandle indir_args;
         FgBufROHandle tlas_buf;
-
         FgBufROHandle oit_depth;
+
+        FgBufROHandle cache_entries;
+        FgBufROHandle cache_voxels;
 
         Ren::AccStructROHandle tlas;
 
@@ -41,6 +43,7 @@ class ExRTSpecular final : public FgExecutor {
         bool layered = false;
         bool second_bounce = false;
 
+        FgImgRWHandle out_color;
         FgBufRWHandle inout_ray_counter;
         FgBufRWHandle out_ray_hits;
     };

@@ -50,8 +50,8 @@ const uint STOCH_LIGHTS_BUF_SLOT = 28;
 const uint LIGHT_NODES_BUF_SLOT = 29;
 const uint RAY_HITS_BUF_SLOT = 30;
 
-const uint CACHE_ENTRIES_BUF_SLOT = 31;
-const uint CACHE_VOXELS_BUF_SLOT = 32;
+const uint CACHE_ENTRIES_BUF_SLOT = 25;
+const uint CACHE_VOXELS_BUF_SLOT = 26;
 
 const uint OUT_GI_IMG_SLOT = 0;
 const uint OUT_RAY_HITS_BUF_SLOT = 1;

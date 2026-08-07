@@ -355,12 +355,17 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             data->indir_args = rt_spec.AddIndirectBufferInput(indir_rt_disp);
             data->tlas_buf = rt_spec.AddStorageReadonlyInput(acc_structs.rt_tlas_buf[int(eTLASIndex::Main)], stage);
 
+            data->cache_entries = rt_spec.AddStorageReadonlyInput(common_buffers.spatial_cache_entries, stage);
+            data->cache_voxels = rt_spec.AddStorageReadonlyInput(common_buffers.spatial_cache_voxels, stage);
+
             if (!ctx_.capabilities.hwrt) {
                 data->swrt.root_node = acc_structs.swrt.rt_root_node;
                 data->swrt.rt_blas = rt_spec.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_buf, stage);
                 data->swrt.prim_ndx = rt_spec.AddStorageReadonlyInput(acc_structs.swrt.rt_prim_indices, stage);
                 data->swrt.mesh_instances = rt_spec.AddStorageReadonlyInput(rt_obj_instances_res, stage);
             }
+
+            refl = data->out_color = rt_spec.AddStorageImageOutput(refl, Stg::ComputeShader);
 
             data->tlas = acc_structs.rt_tlases[int(eTLASIndex::Main)];
 
@@ -684,12 +689,17 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 data->indir_args = rt_spec.AddIndirectBufferInput(indir_rt_disp);
                 data->tlas_buf = rt_spec.AddStorageReadonlyInput(acc_structs.rt_tlas_buf[int(eTLASIndex::Main)], stage);
 
+                data->cache_entries = rt_spec.AddStorageReadonlyInput(common_buffers.spatial_cache_entries, stage);
+                data->cache_voxels = rt_spec.AddStorageReadonlyInput(common_buffers.spatial_cache_voxels, stage);
+
                 if (!ctx_.capabilities.hwrt) {
                     data->swrt.root_node = acc_structs.swrt.rt_root_node;
                     data->swrt.rt_blas = rt_spec.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_buf, stage);
                     data->swrt.prim_ndx = rt_spec.AddStorageReadonlyInput(acc_structs.swrt.rt_prim_indices, stage);
                     data->swrt.mesh_instances = rt_spec.AddStorageReadonlyInput(rt_obj_instances_res, stage);
                 }
+
+                refl = data->out_color = rt_spec.AddStorageImageOutput(refl, Stg::ComputeShader);
 
                 data->tlas = acc_structs.rt_tlases[int(eTLASIndex::Main)];
 

@@ -11,6 +11,7 @@
 #include "rt_common.glsl"
 #include "texturing_common.glsl"
 #include "rt_specular_common.glsl"
+#include "rad_cache_common.glsl"
 
 #include "rt_specular_interface.h"
 
@@ -77,11 +78,42 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
     layout(binding = OIT_DEPTH_BUF_SLOT) uniform usamplerBuffer g_oit_depth_buf;
 #else
     layout(binding = TCBN_TEX_SLOT) uniform sampler2DArray g_tcbn_tex;
+
+    layout(std430, binding = CACHE_ENTRIES_BUF_SLOT) readonly buffer CacheEntries {
+        uint g_cache_entries[];
+    };
+
+    layout(std430, binding = CACHE_VOXELS_BUF_SLOT) readonly buffer CacheVoxels {
+        uint g_cache_voxels[];
+    };
+
+    layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform image2D g_out_color_img;
 #endif
 
 layout(std430, binding = OUT_RAY_HITS_BUF_SLOT) writeonly buffer RayHitsList {
-    uint g_ray_hits[];
+    uint g_out_ray_hits[];
 };
+
+#ifndef LAYERED
+bool hash_map_find(const uint hash_key, inout uint cache_entry, out uint bucket_offset) {
+    const uint base_slot = hash_map_base_slot(hash_key);
+    for (bucket_offset = 0; bucket_offset < HASH_GRID_HASH_MAP_BUCKET_SIZE; ++bucket_offset) {
+        const uint stored_hash_key = g_cache_entries[base_slot + bucket_offset];
+        if (stored_hash_key == hash_key) {
+            cache_entry = base_slot + bucket_offset;
+            return true;
+        }
+    }
+    return false;
+}
+
+uint find_entry(const vec3 p, const bool backfacing, const vec3 cam_pos) {
+    const uint hash_key = compute_hash(p, backfacing, cam_pos);
+    uint cache_entry = HASH_GRID_INVALID_CACHE_ENTRY, collisions_count;
+    hash_map_find(hash_key, cache_entry, collisions_count);
+    return cache_entry;
+}
+#endif
 
 layout (local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
@@ -156,6 +188,7 @@ void main() {
 #endif // LAYERED
 
 #if defined(FIRST) || defined(LAYERED)
+    const float roughness = first_roughness;
     vec3 throughput = vec3(1.0);
 #elif defined(SECOND)
     const float first_hit_t = uintBitsToFloat(g_ray_list[ray_index * RAY_LIST_STRIDE + 1]);
@@ -225,6 +258,63 @@ void main() {
     }
 
     const bool is_hit = (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT);
+#ifndef LAYERED
+    if (is_hit) {
+        const float hit_t = rayQueryGetIntersectionTEXT(rq, true);
+        const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, true);
+        const vec3 P = ray_origin_ws.xyz + hit_t * refl_ray_ws;
+
+        const uint grid_level = calc_grid_level(P, g_shrd_data.cam_pos_and_exp.xyz);
+        const float voxel_size = calc_voxel_size(grid_level);
+
+        float cone_angle = g_params.pixel_spread_angle;
+        float cone_width = cone_angle * view_z;
+#if defined(SECOND)
+        cone_angle = sqrt(cone_angle * cone_angle + first_roughness * first_roughness);
+        cone_width += cone_angle * first_hit_t;
+#endif
+        cone_angle = sqrt(cone_angle * cone_angle + roughness * roughness);
+        cone_width += cone_angle * hit_t;
+        const bool use_cache =  cone_width > 1.5 * voxel_size;
+        if (use_cache) {
+            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_and_exp.xyz);
+            if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
+                vec4 out_color = vec4(0.0);
+
+                out_color.xyz = vec3(
+                    unpackHalf2x16(g_cache_voxels[2 * cache_entry + 0]),
+                    unpackHalf2x16(g_cache_voxels[2 * cache_entry + 1]).x);
+
+                const bool is_emissive = any(lessThan(out_color.xyz, vec3(0.0)));
+                if (!is_emissive) {
+                    out_color.xyz *= throughput * RAD_CACHE_RADIANCE_COMPRESSION;
+                    out_color.xyz = compress_hdr(out_color.xyz, g_shrd_data.cam_pos_and_exp.w);
+
+                    const vec4 old_color = imageLoad(g_out_color_img, icoord);
+                    out_color.xyz += old_color.xyz;
+#if defined(SECOND)
+                    out_color.w = old_color.w;
+#else
+                    out_color.w = NormalizeHitDist(hit_t, view_z, first_roughness);
+#endif
+                    imageStore(g_out_color_img, icoord, out_color);
+
+                    const ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
+                    if (copy_horizontal) {
+                        imageStore(g_out_color_img, ivec2(copy_target.x, icoord.y), out_color);
+                    }
+                    if (copy_vertical) {
+                        imageStore(g_out_color_img, ivec2(icoord.x, copy_target.y), out_color);
+                    }
+                    if (copy_diagonal) {
+                        imageStore(g_out_color_img, copy_target, out_color);
+                    }
+                    return;
+                }
+            }
+        }
+    }
+#endif // LAYERED
 
 #if !defined(NO_SUBGROUP)
     const uvec4 miss_ballot = subgroupBallot(!is_hit);
@@ -266,11 +356,11 @@ void main() {
 
         // Append at the end of buffer
     #if defined(FIRST)
-        g_ray_hits[out_offset + 0] = packed_coords;
+        g_out_ray_hits[out_offset + 0] = packed_coords;
     #elif defined(SECOND) || defined(LAYERED)
-        g_ray_hits[out_offset + 0] = ray_index;
+        g_out_ray_hits[out_offset + 0] = ray_index;
     #endif
-        g_ray_hits[out_offset + 1] = PackRGB565(throughput);
+        g_out_ray_hits[out_offset + 1] = PackRGB565(throughput);
     } else {
         const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, true);
         const int instance_index = rayQueryGetIntersectionInstanceIdEXT(rq, true);
@@ -281,13 +371,13 @@ void main() {
         const uint packed_throughput = PackRGB565(throughput);
 
     #if defined(FIRST)
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 0] = packed_coords;
+        g_out_ray_hits[out_index * RAY_HITS_STRIDE + 0] = packed_coords;
     #elif defined(SECOND) || defined(LAYERED)
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 0] = ray_index;
+        g_out_ray_hits[out_index * RAY_HITS_STRIDE + 0] = ray_index;
     #endif
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 1] = (uint(instance_index) << 16u) | packed_throughput;
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 2] = floatBitsToUint(backfacing ? -hit_t : hit_t);
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 3] = (uint(prim_id) << 8u) | (geo_index & 0xffu);
-        g_ray_hits[out_index * RAY_HITS_STRIDE + 4] = packUnorm2x16(bary_coord);
+        g_out_ray_hits[out_index * RAY_HITS_STRIDE + 1] = (uint(instance_index) << 16u) | packed_throughput;
+        g_out_ray_hits[out_index * RAY_HITS_STRIDE + 2] = floatBitsToUint(backfacing ? -hit_t : hit_t);
+        g_out_ray_hits[out_index * RAY_HITS_STRIDE + 3] = (uint(prim_id) << 8u) | (geo_index & 0xffu);
+        g_out_ray_hits[out_index * RAY_HITS_STRIDE + 4] = packUnorm2x16(bary_coord);
     }
 }
