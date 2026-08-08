@@ -177,7 +177,7 @@ void Eng::DebugFrameUI::DrawCompact(Gui::Renderer *r) {
     char text_buffer[256];
 
     float vertical_offset = 0.75f;
-    static const uint8_t text_color[4] = {255, 0, 0, 100};
+    static const uint8_t text_color[4] = {255, 255, 255, 100};
 
     { // fps counter
         const uint64_t cur_frame_time = Sys::GetTimeUs();
