@@ -102,14 +102,14 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     for (uint32_t i = update_range.first; i < update_range.second; ++i) {
         const uint32_t rel_i = i - update_range.first;
         if (storages.materials.IsOccupied(i)) {
-            const auto &[mat_main, mat_cold] = storages.materials.GetUnsafe(i);
+            const auto &[mat_main2, mat_cold2] = storages.materials.GetUnsafe(i);
 
             int j = 0;
-            for (; j < int(mat_main.textures.size()); ++j) {
+            for (; j < int(mat_main2.textures.size()); ++j) {
                 material_data[rel_i].texture_indices[j] = i * MAX_TEX_PER_MATERIAL + j;
                 if (texture_data) {
                     const GLuint64 handle =
-                        glGetTextureSamplerHandleARB(storages.images[mat_main.textures[j]].first.img, sampler.id);
+                        glGetTextureSamplerHandleARB(storages.images[mat_main2.textures[j]].first.img, sampler.id);
                     if (!glIsTextureHandleResidentARB(handle)) {
                         glMakeTextureHandleResidentARB(handle);
                     }
@@ -124,8 +124,8 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
             }
 
             int k = 0;
-            for (; k < int(mat_cold.params.size()); ++k) {
-                material_data[rel_i].params[k] = mat_cold.params[k];
+            for (; k < int(mat_cold2.params.size()); ++k) {
+                material_data[rel_i].params[k] = mat_cold2.params[k];
             }
             for (; k < MAX_MATERIAL_PARAMS; ++k) {
                 material_data[rel_i].params[k] = Ren::Vec4f{0.0f};
