@@ -400,7 +400,7 @@ void main() {
                 if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0) {
                     vec3 irradiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.prev_probe_volumes[i].spacing.xyz, 0.5 * hit_t), N,
                                                             g_shrd_data.prev_probe_volumes[i].scroll.xyz, g_shrd_data.prev_probe_volumes[i].origin.xyz, g_shrd_data.prev_probe_volumes[i].spacing.xyz, true);
-                    irradiance *= base_color * ltc.diff_t2.x;
+                    irradiance *= base_color * saturate(ltc.diff_t2.x);
                     irradiance *= saturate(hit_t / (0.5 * length(g_shrd_data.prev_probe_volumes[i].spacing.xyz)));
                     light_total += GI_CACHE_MULTIBOUNCE_FACTOR * lobe_masks.diffuse_mul * (1.0 / M_PI) * irradiance;
                 }

@@ -35,7 +35,7 @@ namespace Eng::SceneManagerConstants {
 const float NEAR_CLIP = 0.05f;
 const float FAR_CLIP = 10000.0f;
 
-const int SCROLLING_DISTANCE = 64;
+const uint64_t SCROLLING_DISTANCE = 64;
 
 extern const int DECALS_ATLAS_RESX = 4096 / 4, DECALS_ATLAS_RESY = 2048 / 4;
 extern const int LIGHTMAP_ATLAS_RESX = 2048, LIGHTMAP_ATLAS_RESY = 1024;
@@ -1234,9 +1234,9 @@ void Eng::SceneManager::SetupView(const Ren::Vec3d &origin, const Ren::Vec3d &ta
         return;
     }
 
-    int origin_dist = int(std::abs(origin[0] - scene_data_.origin[0]));
-    origin_dist = std::max(origin_dist, int(std::abs(origin[1] - scene_data_.origin[1])));
-    origin_dist = std::max(origin_dist, int(std::abs(origin[2] - scene_data_.origin[2])));
+    uint64_t origin_dist = uint64_t(std::abs(origin[0] - scene_data_.origin[0]));
+    origin_dist = std::max(origin_dist, uint64_t(std::abs(origin[1] - scene_data_.origin[1])));
+    origin_dist = std::max(origin_dist, uint64_t(std::abs(origin[2] - scene_data_.origin[2])));
 
     if (origin_dist > SCROLLING_DISTANCE) {
         const Ren::Vec3i cam_sector = Ren::Vec3i(origin / double(SCROLLING_DISTANCE / 2));

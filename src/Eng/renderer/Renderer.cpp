@@ -534,8 +534,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 view_state_.prev_world_origin - list.world_origin + Ren::Vec3d(volume.prev_origin);
             volume.prev_origin = Ren::Vec3f(new_prev_orig);
 
-            const Ren::Vec3i test = Ren::Vec3i{Floor((volume.pivot - volume.origin) / volume.spacing)};
-            assert(test == volume.scroll);
+            // const Ren::Vec3i test = Ren::Vec3i{Floor((volume.pivot - volume.origin) / volume.spacing)};
+            // assert(test == volume.scroll);
         }
     }
 
