@@ -337,7 +337,7 @@ void main() {
         const vec3 reflected_dir_ts = tbn_transform * L;
 
         const float D = D_GGX(sampled_normal_ts, vec2(roughness * roughness));
-        const float bsdf_pdf = GGX_VNDF_Reflection_Bounded_PDF(D, view_dir_ts, vec2(roughness * roughness));
+        const float bsdf_pdf = GGX_VNDF_Reflection_PDF(D, view_dir_ts, vec2(roughness * roughness));
         const float mis_weight = power_heuristic(ls_pdf, bsdf_pdf);
 
         const float denom = 4.0 * abs(view_dir_ts[2] * reflected_dir_ts[2]);

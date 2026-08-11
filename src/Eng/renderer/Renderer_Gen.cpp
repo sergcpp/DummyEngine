@@ -59,7 +59,7 @@ float G1V_Epic(const float roughness, const float n_dot_v) {
 }
 
 float G_Smith(const float roughness, const float n_dot_v, const float n_dot_l) {
-    return G1V_Epic(roughness, n_dot_v) * G1V_Epic(roughness, n_dot_v);
+    return G1V_Epic(roughness, n_dot_v) * G1V_Epic(roughness, n_dot_l);
 }
 
 Ren::Vec2f IntegrateBRDF(const float NdotV, const float roughness) {

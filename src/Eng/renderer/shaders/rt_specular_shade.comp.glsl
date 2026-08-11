@@ -473,7 +473,7 @@ void main() {
         const vec3 sampled_normal_ts = tbn_transform * normalize(refl_ray_ws - view_ray_ws);
 
         const float D = D_GGX(sampled_normal_ts, vec2(first_roughness));
-        const float bsdf_pdf = GGX_VNDF_Reflection_Bounded_PDF(D, view_dir_ts, vec2(first_roughness));
+        const float bsdf_pdf = GGX_VNDF_Reflection_PDF(D, view_dir_ts, vec2(first_roughness));
         const float ls_pdf = pdf_factor * (hit_t * hit_t) / (0.5 * light_fwd_len * cos_theta);
         const float mis_weight = power_heuristic(bsdf_pdf, ls_pdf);
         emission_color *= mis_weight;

@@ -124,19 +124,48 @@ void UnpackRayCoords(uint packed_ray, out uvec2 ray_coord, out uint layer_index)
     layer_index = (packed_ray >> 29u) & 7u; // 0b111
 }
 
+vec3 MapSquareToConcentricDisk(const vec2 v) {
+    const vec2 offset = 2.0 * v - 1.0;
+    if (offset.x == 0.0 && offset.y == 0.0) {
+        return vec3(0.0, 0.0, 0.0);
+    }
+
+    float r, theta;
+    if (abs(offset.x) > abs(offset.y))
+    {
+        r = offset.x;
+        theta = 0.25 * M_PI * (offset.y / offset.x);
+    }
+    else
+    {
+        r = offset.y;
+        theta = 0.5 * M_PI - 0.25 * M_PI * (offset.x / offset.y);
+    }
+    return sign(r) * vec3(cos(theta), sin(theta), r);
+}
+
+#define USE_CONCENTRIC_DISK_MAPPING 1
+#define USE_BOUNDED_VNDF_SAMPLING 1
+
 // http://jcgt.org/published/0007/04/01/paper.pdf
-vec3 SampleGGXVNDF_CrossSect(const vec3 Vh, const float U1, const float U2) {
+vec3 SampleVNDF_Hemisphere_CrossSect(const vec3 Vh, const float U1, const float U2) {
     // Section 4.1: orthonormal basis (with special case if cross product is zero)
     const float lensq = Vh.x * Vh.x + Vh.y * Vh.y;
     const vec3 T1 = lensq > 0.0 ? vec3(-Vh.y, Vh.x, 0) * inversesqrt(lensq) : vec3(1.0, 0.0, 0.0);
     const vec3 T2 = cross(Vh, T1);
+
     // Section 4.2: parameterization of the projected area
-    const float r = sqrt(U1);
-    const float phi = 2.0 * M_PI * U2;
-    const float t1 = r * cos(phi);
-    float t2 = r * sin(phi);
+#if USE_CONCENTRIC_DISK_MAPPING
+    const vec3 disk = MapSquareToConcentricDisk(vec2(U1, U2)) * vec3(1.0, 1.0, SpecularLobeTrim);
+    float t1 = disk.x * disk.z, t2 = disk.y * disk.z;
+#else
+    const float r = sqrt(U2);
+    const float phi = 2.0 * M_PI * U1;
+    float t1 = r * cos(phi), t2 = r * sin(phi);
+#endif
     const float s = 0.5 * (1.0 + Vh.z);
     t2 = (1.0 - s) * sqrt(1.0 - t1 * t1) + s * t2;
+
     // Section 4.3: reprojection onto hemisphere
     const vec3 Nh = t1 * T1 + t2 * T2 + sqrt(max(0.0, 1.0 - t1 * t1 - t2 * t2)) * Vh;
     return Nh;
@@ -145,11 +174,20 @@ vec3 SampleGGXVNDF_CrossSect(const vec3 Vh, const float U1, const float U2) {
 // https://arxiv.org/pdf/2306.05044.pdf
 vec3 SampleVNDF_Hemisphere_SphCap(const vec3 Vh, const float U1, const float U2) {
     // sample a spherical cap in (-Vh.z, 1]
+#if USE_CONCENTRIC_DISK_MAPPING
+    const vec3 disk = MapSquareToConcentricDisk(vec2(U1, U2)) * vec3(1.0, 1.0, SpecularLobeTrim);
+    const float r2 = disk.z * disk.z;
+    const float z = fma(1.0 - r2, 1.0 + Vh.z, -Vh.z);
+    const float sin_theta = sqrt(saturate(1.0 - z * z));
+    const float x = sin_theta * disk.x;
+    const float y = sin_theta * disk.y;
+#else
     const float phi = 2.0f * M_PI * U1;
     const float z = fma(1.0 - U2, 1.0 + Vh.z, -Vh.z);
     const float sin_theta = sqrt(saturate(1.0 - z * z));
     const float x = sin_theta * cos(phi);
     const float y = sin_theta * sin(phi);
+#endif
     const vec3 c = vec3(x, y, z);
     // normalization will be done later
     return c + Vh;
@@ -158,31 +196,47 @@ vec3 SampleVNDF_Hemisphere_SphCap(const vec3 Vh, const float U1, const float U2)
 // https://gpuopen.com/download/publications/Bounded_VNDF_Sampling_for_Smith-GGX_Reflections.pdf
 vec3 SampleVNDF_Hemisphere_SphCap_Bounded(const vec3 Ve, const vec3 Vh, const vec2 alpha, const float U1, const float U2) {
     // sample a spherical cap in (-Vh.z, 1]
+#if USE_CONCENTRIC_DISK_MAPPING
+    const vec3 disk = MapSquareToConcentricDisk(vec2(U1, U2)) * vec3(1.0, 1.0, SpecularLobeTrim);
+    const float r2 = disk.z * disk.z;
+#else
     const float phi = 2.0 * M_PI * U1;
+#endif
     const float a = saturate(min(alpha.x, alpha.y));
     const float s = 1.0 + length(Ve.xy);
     const float a2 = a * a, s2 = s * s;
     const float k = (1.0 - a2) * s2 / (s2 + a2 * Ve.z * Ve.z);
     const float b = (Ve.z > 0.0) ? k * Vh.z : Vh.z;
+#if USE_CONCENTRIC_DISK_MAPPING
+    const float z = fma(1.0 - r2, 1.0f + b, -b);
+    const float sin_theta = sqrt(saturate(1.0 - z * z));
+    const float x = sin_theta * disk.x;
+    const float y = sin_theta * disk.y;
+#else
     const float z = fma(1.0 - U2, 1.0f + b, -b);
     const float sin_theta = sqrt(saturate(1.0 - z * z));
     const float x = sin_theta * cos(phi);
     const float y = sin_theta * sin(phi);
+#endif
     const vec3 c = vec3(x, y, z);
     // normalization will be done later
     return c + Vh;
 }
 
-vec3 Sample_GGX_VNDF_Ellipsoid(const vec3 Ve, const float alpha_x, const float alpha_y, const float U1, const float U2) {
+vec3 Sample_GGX_VNDF_Anisotropic(const vec3 Ve, const float alpha_x, const float alpha_y, const float U1, const float U2) {
     const vec3 Vh = normalize(vec3(alpha_x * Ve.x, alpha_y * Ve.y, Ve.z));
+#if USE_BOUNDED_VNDF_SAMPLING
     const vec3 Nh = SampleVNDF_Hemisphere_SphCap_Bounded(Ve, Vh, vec2(alpha_x, alpha_y), U1, U2);
-    const vec3 Ne = normalize(vec3(alpha_x * Nh[0], alpha_y * Nh[1], max(0.0, Nh[2])));
+#else
+    const vec3 Nh = SampleVNDF_Hemisphere_SphCap(Vh, U1, U2);
+#endif
+    const vec3 Ne = normalize(vec3(alpha_x * Nh.x, alpha_y * Nh.y, max(0.0, Nh.z)));
     return Ne;
 }
 
-vec3 Sample_GGX_VNDF_Hemisphere(const vec3 Ve, float alpha, const float U1, const float U2) {
+vec3 Sample_GGX_VNDF_Isotropic(const vec3 Ve, float alpha, const float U1, const float U2) {
     alpha = max(alpha, 0.00001);
-    return Sample_GGX_VNDF_Ellipsoid(Ve, alpha, alpha, U1, U2);
+    return Sample_GGX_VNDF_Anisotropic(Ve, alpha, alpha, U1, U2);
 }
 
 float D_GGX(const vec3 H, const vec2 alpha) {
@@ -196,19 +250,24 @@ float D_GGX(const vec3 H, const vec2 alpha) {
     return 1.0 / ((s1 * s1) * M_PI * alpha.x * alpha.y * cos_theta_h4);
 }
 
-float GGX_VNDF_Reflection_Bounded_PDF(const float D, const vec3 view_dir_ts, const vec2 alpha) {
+float GGX_VNDF_Reflection_PDF(const float D, const vec3 view_dir_ts, const vec2 alpha) {
     const vec2 ai = alpha * view_dir_ts.xy;
     const float len2 = dot(ai, ai);
     const float t = sqrt(len2 + view_dir_ts.z * view_dir_ts.z);
-    if (view_dir_ts.z >= 0.0) {
+#if USE_BOUNDED_VNDF_SAMPLING
+    if (view_dir_ts.z >= 0.0 && false) {
         const float a = saturate(min(alpha.x, alpha.y));
         const float s = 1.0 + length(view_dir_ts.xy);
         const float a2 = a * a, s2 = s * s;
         const float k = (1.0 - a2) * s2 / (s2 + a2 * view_dir_ts.z * view_dir_ts.z);
         return D / (2.0 * (k * view_dir_ts.z + t));
     }
+#endif
     return D * (t - view_dir_ts.z) / (2.0 * len2);
 }
+
+#undef USE_CONCENTRIC_DISK_MAPPING
+#undef USE_BOUNDED_VNDF_SAMPLING
 
 mat3 CreateTBN(vec3 N) {
     vec3 U;
@@ -229,14 +288,14 @@ mat3 CreateTBN(vec3 N) {
 
 vec3 SampleReflectionVector(const vec3 view_direction, const vec3 normal, const float roughness, const vec2 u) {
     const mat3 tbn_transform = CreateTBN(normal);
-    const vec3 view_direction_tbn = tbn_transform * (-view_direction);
+    const vec3 view_direction_tbn = tbn_transform * view_direction;
 
-    vec3 sampled_normal_tbn = Sample_GGX_VNDF_Hemisphere(view_direction_tbn, roughness, u.x, u.y * SpecularLobeTrim);
+    vec3 sampled_normal_tbn = Sample_GGX_VNDF_Isotropic(-view_direction_tbn, roughness, u.x, u.y);
 #ifdef PERFECT_REFLECTIONS
     sampled_normal_tbn = vec3(0.0, 0.0, 1.0); // Overwrite normal sample to produce perfect reflection.
 #endif
 
-    const vec3 reflected_direction_tbn = reflect(-view_direction_tbn, sampled_normal_tbn);
+    const vec3 reflected_direction_tbn = reflect(view_direction_tbn, sampled_normal_tbn);
 
     // Transform reflected_direction back to the initial space.
     const mat3 inv_tbn_transform = transpose(tbn_transform);
