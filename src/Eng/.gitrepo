@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = update_09_08
-	commit = 2e7aef003e75e41d946363a81904301ef518e570
+	branch = concentric_ggx
+	commit = 656d6d50b9304f67ea01c9008d1435bee33bace6
 	method = merge
 	cmdver = 0.4.6
-	parent = da941a4d1aabce29b0c7ce82777ee47dec5ec1a1
+	parent = a343ffb7f35418fd523169577ec890af18db11bc
