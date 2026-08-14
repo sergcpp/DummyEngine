@@ -62,7 +62,7 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
 #ifdef LAYERED
     layout(binding = OIT_DEPTH_BUF_SLOT) uniform usamplerBuffer g_oit_depth_buf;
 #else
-    layout(binding = TCBN_TEX_SLOT) uniform sampler2DArray g_tcbn_tex;
+    layout(binding = TCBN_2D_TEX_SLOT) uniform sampler2DArray g_tcbn_2d_tex;
 
     layout(std430, binding = CACHE_ENTRIES_BUF_SLOT) readonly buffer CacheEntries {
         uint g_cache_entries[];
@@ -133,8 +133,8 @@ void main() {
     const float view_z = -ray_origin_vs.z;
 
     const vec3 view_ray_vs = normalize(ray_origin_vs);
-    const vec4 u = vec4(texelFetch(g_tcbn_tex, (ivec3(icoord, g_params.frame_index) + 39 * DIM_SPECULAR_0) % 64, 0).xy,
-                        texelFetch(g_tcbn_tex, (ivec3(icoord, g_params.frame_index) + 39 * DIM_SPECULAR_1) % 64, 0).xy);
+    const vec4 u = vec4(texelFetch(g_tcbn_2d_tex, (ivec3(icoord, g_params.frame_index) + 39 * RAND_DIM_2D_SPECULAR_0) % 64, 0).xy,
+                        texelFetch(g_tcbn_2d_tex, (ivec3(icoord, g_params.frame_index) + 39 * RAND_DIM_2D_SPECULAR_1) % 64, 0).xy);
     const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, first_roughness, u.xy);
     vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs.xyz, 0.0)).xyz;
 

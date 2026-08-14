@@ -18,7 +18,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = TCBN_TEX_SLOT) uniform sampler2DArray g_tcbn_tex;
+layout(binding = TCBN_1D_TEX_SLOT) uniform sampler2DArray g_tcbn_1d_tex;
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
     rt_geo_instance_t g_geometries[];
@@ -63,7 +63,7 @@ void main() {
     const float k = dot(dir_ws, g_shrd_data.frustum_planes[4].xyz);
 
     const uint px_hash = hash((gl_GlobalInvocationID.x << 16) | gl_GlobalInvocationID.y);
-    const float offset_rand = textureLod(g_tcbn_tex, vec3((vec2(ucoord.xy) + 0.5) / 64.0, float(g_params.frame_index % 64)), 0.0).x;
+    const float offset_rand = texelFetch(g_tcbn_1d_tex, (ivec3(ucoord.xy, g_params.frame_index) + 39 * RAND_DIM_1D_VOL) % 64, 0).x;
 
     const int MAX_VOL_STACK_SIZE = 6;
 

@@ -162,11 +162,15 @@ const float PROBE_STATE_ACTIVE_OUTDOOR = 2;
 const float GI_CACHE_MULTIBOUNCE_FACTOR = 0.8f;
 const float GI_LIGHT_CUTOFF = 0.0001f;
 
-const int DIM_DIFFUSE_0 = 0;
-const int DIM_DIFFUSE_1 = 1;
-const int DIM_SPECULAR_0 = 2;
-const int DIM_SPECULAR_1 = 3;
-const int DIM_SHADOW = 4;
+const int RAND_DIM_1D_VOL = 0;
+const int RAND_DIM_1D_LIGHT_PICK = 1;
+
+const int RAND_DIM_2D_DIFFUSE_0 = 0;
+const int RAND_DIM_2D_DIFFUSE_1 = 1;
+const int RAND_DIM_2D_SPECULAR_0 = 2;
+const int RAND_DIM_2D_SPECULAR_1 = 3;
+const int RAND_DIM_2D_SHADOW = 4;
+const int RAND_DIM_2D_LIGHT_UV = 6;
 
 // Transparency
 const int OIT_LAYERS_HIGH = 4;

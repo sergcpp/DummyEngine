@@ -111,7 +111,7 @@ void Eng::ExRTSpecular::Execute_SWRT(const FgContext &fg) {
     if (oit_depth) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTSpecular::OIT_DEPTH_BUF_SLOT, oit_depth);
     } else {
-        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTSpecular::TCBN_TEX_SLOT, tcbn);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTSpecular::TCBN_2D_TEX_SLOT, tcbn);
 
         bindings.emplace_back(Ren::eBindTarget::SBufRO, RTSpecular::CACHE_ENTRIES_BUF_SLOT, cache_entries);
         bindings.emplace_back(Ren::eBindTarget::SBufRO, RTSpecular::CACHE_VOXELS_BUF_SLOT, cache_voxels);

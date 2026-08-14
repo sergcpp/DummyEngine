@@ -17,7 +17,7 @@ const uint DEPTH_TEX_SLOT = 4;
 const uint COLOR_TEX_SLOT = 5;
 const uint NORM_TEX_SLOT = 6;
 const uint IN_RAY_LIST_SLOT = 7;
-const uint TCBN_TEX_SLOT = 8;
+const uint TCBN_2D_TEX_SLOT = 8;
 
 const uint OUT_GI_IMG_SLOT = 0;
 const uint INOUT_RAY_COUNTER_SLOT = 2;

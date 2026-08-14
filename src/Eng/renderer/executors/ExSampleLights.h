@@ -11,7 +11,6 @@ class ExSampleLights final : public FgExecutor {
   public:
     struct Args {
         FgBufROHandle shared_data;
-        FgBufROHandle random_seq;
         FgBufROHandle lights;
         FgBufROHandle nodes;
 
@@ -25,6 +24,9 @@ class ExSampleLights final : public FgExecutor {
         FgImgROHandle depth;
         FgImgROHandle norm;
         FgImgROHandle spec;
+
+        FgImgROHandle tcbn_1d;
+        FgImgROHandle tcbn_2d;
 
         Ren::AccStructROHandle tlas;
 

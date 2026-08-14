@@ -589,7 +589,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             }
 
             Ren::SmallVector<Ren::Binding, 16> bindings = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
-                                                           {Trg::TexSampled, Fog::TCBN_TEX_SLOT, tcbn},
+                                                           {Trg::TexSampled, Fog::TCBN_1D_TEX_SLOT, tcbn},
                                                            {Trg::TexSampled, Fog::SHADOW_DEPTH_TEX_SLOT, shadow_depth},
                                                            {Trg::TexSampled, Fog::SHADOW_COLOR_TEX_SLOT, shadow_color},
                                                            {Trg::TexSampled, Fog::FR_EMISSION_TEX_SLOT, fr_emission},

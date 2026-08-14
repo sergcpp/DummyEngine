@@ -31,7 +31,7 @@ const uint SHADOW_COLOR_TEX_SLOT = 3;
 const uint FR_EMISSION_TEX_SLOT = 4;
 const uint FR_SCATTER_TEX_SLOT = 5;
 const uint DEPTH_TEX_SLOT = 6;
-const uint TCBN_TEX_SLOT = 7;
+const uint TCBN_1D_TEX_SLOT = 7;
 
 const uint LIGHT_BUF_SLOT = 8;
 const uint DECAL_BUF_SLOT = 9;

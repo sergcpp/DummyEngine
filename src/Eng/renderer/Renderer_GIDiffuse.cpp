@@ -329,7 +329,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                                              {Trg::TexSampled, DEPTH_TEX_SLOT, depth_hierarchy},
                                              {Trg::TexSampled, COLOR_TEX_SLOT, color},
                                              {Trg::TexSampled, NORM_TEX_SLOT, normal},
-                                             {Trg::TexSampled, TCBN_TEX_SLOT, tcbn},
+                                             {Trg::TexSampled, TCBN_2D_TEX_SLOT, tcbn},
                                              {Trg::SBufRO, IN_RAY_LIST_SLOT, in_ray_list},
                                              {Trg::ImageRW, OUT_GI_IMG_SLOT, out_gi},
                                              {Trg::SBufRW, INOUT_RAY_COUNTER_SLOT, inout_ray_counter},
@@ -592,7 +592,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                     {Trg::BindlessDescriptors, BIND_BINDLESS_TEX, bindless.rt_inline_textures},
                     {Trg::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},
                     {Trg::TexSampled, NORM_TEX_SLOT, normal},
-                    {Trg::TexSampled, TCBN_TEX_SLOT, tcbn},
+                    {Trg::TexSampled, TCBN_2D_TEX_SLOT, tcbn},
                     {Trg::TexSampled, ENV_TEX_SLOT, env},
                     {Trg::UTBuf, MESH_INSTANCES_BUF_SLOT, mesh_instances},
                     {Trg::SBufRO, GEO_DATA_BUF_SLOT, geo_data},
@@ -854,7 +854,7 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
                         {Trg::BindlessDescriptors, BIND_BINDLESS_TEX, bindless.rt_inline_textures},
                         {Trg::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},
                         {Trg::TexSampled, NORM_TEX_SLOT, normal},
-                        {Trg::TexSampled, TCBN_TEX_SLOT, tcbn},
+                        {Trg::TexSampled, TCBN_2D_TEX_SLOT, tcbn},
                         {Trg::TexSampled, ENV_TEX_SLOT, env},
                         {Trg::UTBuf, MESH_INSTANCES_BUF_SLOT, mesh_instances},
                         {Trg::SBufRO, GEO_DATA_BUF_SLOT, geo_data},
@@ -900,7 +900,10 @@ void Eng::Renderer::AddDiffusePasses(const bool debug_denoise, const CommonBuffe
 
             auto *data = fg_builder_.AllocTempData<ExSampleLights::Args>();
             data->shared_data = sample_lights.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
-            data->random_seq = sample_lights.AddStorageReadonlyInput(common_buffers.pmj_samples, Stg::ComputeShader);
+
+            data->tcbn_1d = sample_lights.AddTextureInput(frame_textures.tcbn_1D_64spp, Stg::ComputeShader);
+            data->tcbn_2d = sample_lights.AddTextureInput(frame_textures.tcbn_2D_64spp, Stg::ComputeShader);
+
             if (common_buffers.stoch_lights) {
                 data->lights = sample_lights.AddStorageReadonlyInput(common_buffers.stoch_lights, Stg::ComputeShader);
                 data->nodes =

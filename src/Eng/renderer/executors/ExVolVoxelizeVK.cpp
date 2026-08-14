@@ -25,7 +25,7 @@ void Eng::ExVolVoxelize::Execute_HWRT(const FgContext &fg) {
     }
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
-                                     {Ren::eBindTarget::TexSampled, Fog::TCBN_TEX_SLOT, tcbn},
+                                     {Ren::eBindTarget::TexSampled, Fog::TCBN_1D_TEX_SLOT, tcbn},
                                      {Ren::eBindTarget::SBufRO, Fog::GEO_DATA_BUF_SLOT, geo_data},
                                      {Ren::eBindTarget::SBufRO, Fog::MATERIAL_BUF_SLOT, materials},
                                      {Ren::eBindTarget::AccStruct, Fog::TLAS_SLOT, args_->tlas},

@@ -51,7 +51,7 @@ void Eng::ExRTShadows::Execute_SWRT(const FgContext &fg) {
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
         {Ren::eBindTarget::BindlessDescriptors, BIND_BINDLESS_TEX, bindless_tex_->rt_inline_textures},
-        {Ren::eBindTarget::TexSampled, RTShadows::TCBN_TEX_SLOT, tcbn},
+        {Ren::eBindTarget::TexSampled, RTShadows::TCBN_2D_TEX_SLOT, tcbn},
         {Ren::eBindTarget::TexSampled, RTShadows::DEPTH_TEX_SLOT, {depth, 1}},
         {Ren::eBindTarget::TexSampled, RTShadows::NORM_TEX_SLOT, normal},
         {Ren::eBindTarget::SBufRO, RTShadows::GEO_DATA_BUF_SLOT, geo_data},

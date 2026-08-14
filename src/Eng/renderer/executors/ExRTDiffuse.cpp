@@ -75,7 +75,7 @@ void Eng::ExRTDiffuse::Execute_SWRT(const FgContext &fg) {
         {Ren::eBindTarget::BindlessDescriptors, BIND_BINDLESS_TEX, bindless_tex_->rt_inline_textures},
         {Ren::eBindTarget::TexSampled, RTDiffuse::DEPTH_TEX_SLOT, {depth, 1}},
         {Ren::eBindTarget::TexSampled, RTDiffuse::NORM_TEX_SLOT, normal},
-        {Ren::eBindTarget::TexSampled, RTDiffuse::TCBN_TEX_SLOT, tcbn},
+        {Ren::eBindTarget::TexSampled, RTDiffuse::TCBN_2D_TEX_SLOT, tcbn},
         {Ren::eBindTarget::SBufRO, RTDiffuse::RAY_LIST_SLOT, ray_list},
         {Ren::eBindTarget::UTBuf, RTDiffuse::BLAS_BUF_SLOT, rt_blas},
         {Ren::eBindTarget::UTBuf, RTDiffuse::TLAS_BUF_SLOT, rt_tlas},

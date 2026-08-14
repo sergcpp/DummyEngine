@@ -17,7 +17,7 @@ struct RayPayload {
 };
 
 const uint TLAS_SLOT = 1;
-const uint TCBN_TEX_SLOT = 2;
+const uint TCBN_2D_TEX_SLOT = 2;
 const uint DEPTH_TEX_SLOT = 3;
 const uint NORM_TEX_SLOT = 4;
 const uint GEO_DATA_BUF_SLOT = 5;

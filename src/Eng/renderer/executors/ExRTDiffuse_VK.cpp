@@ -36,7 +36,7 @@ void Eng::ExRTDiffuse::Execute_HWRT(const FgContext &fg) {
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
                                      {Ren::eBindTarget::TexSampled, RTDiffuse::DEPTH_TEX_SLOT, {depth, 1}},
                                      {Ren::eBindTarget::TexSampled, RTDiffuse::NORM_TEX_SLOT, normal},
-                                     {Ren::eBindTarget::TexSampled, RTDiffuse::TCBN_TEX_SLOT, tcbn},
+                                     {Ren::eBindTarget::TexSampled, RTDiffuse::TCBN_2D_TEX_SLOT, tcbn},
                                      {Ren::eBindTarget::SBufRO, RTDiffuse::RAY_LIST_SLOT, ray_list},
                                      {Ren::eBindTarget::AccStruct, RTDiffuse::TLAS_SLOT, args_->tlas},
                                      {Ren::eBindTarget::SBufRO, RTDiffuse::GEO_DATA_BUF_SLOT, geo_data},

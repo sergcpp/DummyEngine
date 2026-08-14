@@ -15,7 +15,9 @@ void Eng::ExSampleLights::Execute_HWRT(const FgContext &fg) {
     using namespace SampleLights;
 
     const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(args_->shared_data);
-    const Ren::BufferROHandle random_seq = fg.AccessROBuffer(args_->random_seq);
+
+    const Ren::ImageROHandle tcbn_1d = fg.AccessROImage(args_->tcbn_1d);
+    const Ren::ImageROHandle tcbn_2d = fg.AccessROImage(args_->tcbn_2d);
 
     const Ren::BufferROHandle geo_data = fg.AccessROBuffer(args_->geo_data);
     const Ren::BufferROHandle materials = fg.AccessROBuffer(args_->materials);
@@ -42,7 +44,6 @@ void Eng::ExSampleLights::Execute_HWRT(const FgContext &fg) {
     const Ren::StoragesRef &storages = fg.storages();
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
-                                     {Ren::eBindTarget::UTBuf, RANDOM_SEQ_BUF_SLOT, random_seq},
                                      {Ren::eBindTarget::UTBuf, LIGHTS_BUF_SLOT, lights},
                                      {Ren::eBindTarget::UTBuf, LIGHT_NODES_BUF_SLOT, nodes},
                                      {Ren::eBindTarget::AccStruct, TLAS_SLOT, args_->tlas},
@@ -54,16 +55,18 @@ void Eng::ExSampleLights::Execute_HWRT(const FgContext &fg) {
                                      {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},
                                      {Ren::eBindTarget::TexSampled, NORM_TEX_SLOT, norm},
                                      {Ren::eBindTarget::TexSampled, SPEC_TEX_SLOT, spec},
+                                     {Ren::eBindTarget::TexSampled, TCBN_1D_TEX_SLOT, tcbn_1d},
+                                     {Ren::eBindTarget::TexSampled, TCBN_2D_TEX_SLOT, tcbn_2d},
                                      {Ren::eBindTarget::ImageRW, OUT_DIFFUSE_IMG_SLOT, out_diffuse},
                                      {Ren::eBindTarget::ImageRW, OUT_SPECULAR_IMG_SLOT, out_specular}};
 
-    const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_->ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
-                                            (view_state_->ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
+    const auto grp_count = Ren::Vec3u(Ren::DivCeil(view_state_->ren_res[0], GRP_SIZE_X),
+                                      Ren::DivCeil(view_state_->ren_res[1], GRP_SIZE_Y), 1u);
 
     Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};
     uniform_params.lights_count = view_state_->stochastic_lights_count;
-    uniform_params.frame_index = view_state_->frame_index;
+    uniform_params.frame_index = (view_state_->frame_index % 256);
 
     const Ren::PipelineMain &pi = storages.pipelines[pi_sample_lights_].first;
     const Ren::ProgramMain &pr = storages.programs[pi.prog].first;

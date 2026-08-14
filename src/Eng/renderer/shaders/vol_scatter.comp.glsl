@@ -32,7 +32,7 @@ LAYOUT_PARAMS uniform UniformParams {
 layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_tex;
 layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 
-layout(binding = TCBN_TEX_SLOT) uniform sampler2DArray g_tcbn_tex;
+layout(binding = TCBN_1D_TEX_SLOT) uniform sampler2DArray g_tcbn_1d_tex;
 
 layout(binding = FR_SCATTER_TEX_SLOT) uniform sampler3D g_fr_scatter_hist_tex;
 layout(binding = FR_EMISSION_TEX_SLOT) uniform sampler3D g_fr_emission_hist_tex;
@@ -85,7 +85,7 @@ void main() {
     const vec2 norm_uvs = (vec2(ucoord.xy) + 0.5) / g_params.froxel_res.xy;
 
     const uint px_hash = hash((gl_GlobalInvocationID.x << 16) | gl_GlobalInvocationID.y);
-    const float offset_rand = textureLod(g_tcbn_tex, vec3((vec2(ucoord.xy) + 0.5) / 64.0, float(g_params.frame_index % 64)), 0.0).x;
+    const float offset_rand = texelFetch(g_tcbn_1d_tex, (ivec3(ucoord.xy, g_params.frame_index) + 39 * RAND_DIM_1D_VOL) % 64, 0).x;
 
     const vec3 pos_uvw = froxel_to_uvw(ucoord, offset_rand, g_params.froxel_res.xyz);
     const vec4 pos_cs = vec4(2.0 * pos_uvw.xy - 1.0, pos_uvw.z, 1.0);

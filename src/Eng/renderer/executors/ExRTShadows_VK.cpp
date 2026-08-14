@@ -30,7 +30,7 @@ void Eng::ExRTShadows::Execute_HWRT(const FgContext &fg) {
     VkCommandBuffer cmd_buf = fg.cmd_buf();
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
-                                     {Ren::eBindTarget::TexSampled, RTShadows::TCBN_TEX_SLOT, tcbn},
+                                     {Ren::eBindTarget::TexSampled, RTShadows::TCBN_2D_TEX_SLOT, tcbn},
                                      {Ren::eBindTarget::TexSampled, RTShadows::DEPTH_TEX_SLOT, {depth, 1}},
                                      {Ren::eBindTarget::TexSampled, RTShadows::NORM_TEX_SLOT, normal},
                                      {Ren::eBindTarget::AccStruct, RTShadows::TLAS_SLOT, args_->tlas},

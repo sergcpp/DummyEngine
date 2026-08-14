@@ -15,7 +15,6 @@
 #include "swrt_common.glsl"
 #include "texturing_common.glsl"
 #include "principled_common.glsl"
-#include "pmj_common.glsl"
 #include "rt_specular_common.glsl"
 #include "light_bvh_common.glsl"
 
@@ -39,7 +38,6 @@ layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = NORM_TEX_SLOT) uniform usampler2D g_normal_tex;
 layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_specular_tex;
 
-layout(binding = RANDOM_SEQ_BUF_SLOT) uniform usamplerBuffer g_random_seq;
 layout(binding = LIGHTS_BUF_SLOT) uniform usamplerBuffer g_lights_buf;
 layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
 
@@ -63,6 +61,9 @@ layout(binding = NDX_BUF_SLOT) uniform usamplerBuffer g_vtx_indices;
     layout(binding = PRIM_NDX_BUF_SLOT) uniform usamplerBuffer g_prim_indices;
     layout(binding = MESH_INSTANCES_BUF_SLOT) uniform samplerBuffer g_mesh_instances;
 #endif
+
+layout(binding = TCBN_1D_TEX_SLOT) uniform sampler2DArray g_tcbn_1d_tex;
+layout(binding = TCBN_2D_TEX_SLOT) uniform sampler2DArray g_tcbn_2d_tex;
 
 layout(binding = OUT_DIFFUSE_IMG_SLOT, rgba16f) uniform restrict image2D g_out_diffuse_img;
 layout(binding = OUT_SPECULAR_IMG_SLOT, rgba16f) uniform restrict image2D g_out_specular_img;
@@ -146,7 +147,7 @@ void main() {
     //
 
     const uint px_hash = hash((gl_GlobalInvocationID.x << 16) | gl_GlobalInvocationID.y);
-    const float light_pick_rand = get_scrambled_2d_rand(g_random_seq, RAND_DIM_LIGHT_PICK, px_hash, int(g_params.frame_index)).x;
+    const float light_pick_rand = texelFetch(g_tcbn_1d_tex, (ivec3(icoord, g_params.frame_index) + 39 * RAND_DIM_1D_LIGHT_PICK) % 64, 0).x;
 
     float pdf_factor;
     const int li = PickLightSource(P, g_light_nodes_buf, g_params.lights_count, light_pick_rand, pdf_factor);
@@ -176,7 +177,7 @@ void main() {
     const vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
 
     // Simple area sampling
-    const vec2 rand_light_uv = get_scrambled_2d_rand(g_random_seq, RAND_DIM_LIGHT_UV, px_hash, int(g_params.frame_index));
+    const vec2 rand_light_uv = texelFetch(g_tcbn_2d_tex, (ivec3(icoord, g_params.frame_index) + 39 * RAND_DIM_2D_LIGHT_UV) % 64, 0).xy;
     const float r1 = sqrt(rand_light_uv.x), r2 = rand_light_uv.y;
     const vec2 luv = uv1 * (1.0 - r1) + r1 * (uv2 * (1.0 - r2) + uv3 * r2);
     const vec3 lp = p1 * (1.0 - r1) + r1 * (p2 * (1.0 - r2) + p3 * r2);

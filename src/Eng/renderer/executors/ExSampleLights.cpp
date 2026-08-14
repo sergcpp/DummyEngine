@@ -37,8 +37,12 @@ void Eng::ExSampleLights::LazyInit(const FgContext &fg) {
 }
 
 void Eng::ExSampleLights::Execute_SWRT(const FgContext &fg) {
+    using namespace SampleLights;
+
     const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(args_->shared_data);
-    const Ren::BufferROHandle random_seq = fg.AccessROBuffer(args_->random_seq);
+
+    const Ren::ImageROHandle tcbn_1d = fg.AccessROImage(args_->tcbn_1d);
+    const Ren::ImageROHandle tcbn_2d = fg.AccessROImage(args_->tcbn_2d);
 
     const Ren::BufferROHandle geo_data = fg.AccessROBuffer(args_->geo_data);
     const Ren::BufferROHandle materials = fg.AccessROBuffer(args_->materials);
@@ -68,26 +72,27 @@ void Eng::ExSampleLights::Execute_SWRT(const FgContext &fg) {
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
         {Ren::eBindTarget::BindlessDescriptors, BIND_BINDLESS_TEX, bindless_tex_->rt_inline_textures},
-        {Ren::eBindTarget::UTBuf, SampleLights::RANDOM_SEQ_BUF_SLOT, random_seq},
-        {Ren::eBindTarget::UTBuf, SampleLights::LIGHTS_BUF_SLOT, lights},
-        {Ren::eBindTarget::UTBuf, SampleLights::LIGHT_NODES_BUF_SLOT, nodes},
-        {Ren::eBindTarget::UTBuf, SampleLights::BLAS_BUF_SLOT, rt_blas_buf},
-        {Ren::eBindTarget::UTBuf, SampleLights::TLAS_BUF_SLOT, rt_tlas_buf},
-        {Ren::eBindTarget::UTBuf, SampleLights::PRIM_NDX_BUF_SLOT, prim_ndx},
-        {Ren::eBindTarget::UTBuf, SampleLights::MESH_INSTANCES_BUF_SLOT, mesh_instances},
-        {Ren::eBindTarget::SBufRO, SampleLights::GEO_DATA_BUF_SLOT, geo_data},
-        {Ren::eBindTarget::SBufRO, SampleLights::MATERIAL_BUF_SLOT, materials},
-        {Ren::eBindTarget::UTBuf, SampleLights::VTX_BUF1_SLOT, vtx_buf1},
-        {Ren::eBindTarget::UTBuf, SampleLights::NDX_BUF_SLOT, ndx_buf},
-        {Ren::eBindTarget::TexSampled, SampleLights::ALBEDO_TEX_SLOT, albedo},
-        {Ren::eBindTarget::TexSampled, SampleLights::DEPTH_TEX_SLOT, {depth, 1}},
-        {Ren::eBindTarget::TexSampled, SampleLights::NORM_TEX_SLOT, norm},
-        {Ren::eBindTarget::TexSampled, SampleLights::SPEC_TEX_SLOT, spec},
-        {Ren::eBindTarget::ImageRW, SampleLights::OUT_DIFFUSE_IMG_SLOT, out_diffuse},
-        {Ren::eBindTarget::ImageRW, SampleLights::OUT_SPECULAR_IMG_SLOT, out_specular}};
+        {Ren::eBindTarget::UTBuf, LIGHTS_BUF_SLOT, lights},
+        {Ren::eBindTarget::UTBuf, LIGHT_NODES_BUF_SLOT, nodes},
+        {Ren::eBindTarget::UTBuf, BLAS_BUF_SLOT, rt_blas_buf},
+        {Ren::eBindTarget::UTBuf, TLAS_BUF_SLOT, rt_tlas_buf},
+        {Ren::eBindTarget::UTBuf, PRIM_NDX_BUF_SLOT, prim_ndx},
+        {Ren::eBindTarget::UTBuf, MESH_INSTANCES_BUF_SLOT, mesh_instances},
+        {Ren::eBindTarget::SBufRO, GEO_DATA_BUF_SLOT, geo_data},
+        {Ren::eBindTarget::SBufRO, MATERIAL_BUF_SLOT, materials},
+        {Ren::eBindTarget::UTBuf, VTX_BUF1_SLOT, vtx_buf1},
+        {Ren::eBindTarget::UTBuf, NDX_BUF_SLOT, ndx_buf},
+        {Ren::eBindTarget::TexSampled, ALBEDO_TEX_SLOT, albedo},
+        {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {depth, 1}},
+        {Ren::eBindTarget::TexSampled, NORM_TEX_SLOT, norm},
+        {Ren::eBindTarget::TexSampled, SPEC_TEX_SLOT, spec},
+        {Ren::eBindTarget::TexSampled, TCBN_1D_TEX_SLOT, tcbn_1d},
+        {Ren::eBindTarget::TexSampled, TCBN_2D_TEX_SLOT, tcbn_2d},
+        {Ren::eBindTarget::ImageRW, OUT_DIFFUSE_IMG_SLOT, out_diffuse},
+        {Ren::eBindTarget::ImageRW, OUT_SPECULAR_IMG_SLOT, out_specular}};
 
-    const auto grp_count = Ren::Vec3u(Ren::DivCeil(view_state_->ren_res[0], SampleLights::GRP_SIZE_X),
-                                      Ren::DivCeil(view_state_->ren_res[1], SampleLights::GRP_SIZE_Y), 1u);
+    const auto grp_count = Ren::Vec3u(Ren::DivCeil(view_state_->ren_res[0], GRP_SIZE_X),
+                                      Ren::DivCeil(view_state_->ren_res[1], GRP_SIZE_Y), 1u);
 
     // TODO: Avoid accessing cold data
     const Ren::BufferCold &lights_cold = fg.storages().buffers[lights].second;

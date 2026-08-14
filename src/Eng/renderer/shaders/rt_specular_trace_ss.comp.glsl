@@ -30,7 +30,7 @@ layout(binding = NORM_TEX_SLOT) uniform usampler2D g_normal_tex;
 #ifdef LAYERED
     layout(binding = OIT_DEPTH_BUF_SLOT) uniform usamplerBuffer g_oit_depth_buf;
 #else
-    layout(binding = TCBN_TEX_SLOT) uniform sampler2DArray g_tcbn_tex;
+    layout(binding = TCBN_2D_TEX_SLOT) uniform sampler2DArray g_tcbn_2d_tex;
 #endif
 
 #ifdef GI_CACHE
@@ -173,7 +173,7 @@ void main() {
     const float view_z = -ray_origin_vs.z;
 
     const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-    const vec2 u = texelFetch(g_tcbn_tex, (ivec3(pix_uvs, g_params.frame_index) + 39 * DIM_SPECULAR_0) % 64, 0).xy;
+    const vec2 u = texelFetch(g_tcbn_2d_tex, (ivec3(pix_uvs, g_params.frame_index) + 39 * RAND_DIM_2D_SPECULAR_0) % 64, 0).xy;
     const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, u);
 #else
     const uint packed_coords = g_in_ray_list[2 * ray_index + 0];
