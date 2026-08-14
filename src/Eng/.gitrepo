@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = concentric_ggx
-	commit = 656d6d50b9304f67ea01c9008d1435bee33bace6
+	branch = bn_sample_lights
+	commit = 3ea407e2a52538bf30b0d35f60821cdedbb28e54
 	method = merge
 	cmdver = 0.4.6
-	parent = a343ffb7f35418fd523169577ec890af18db11bc
+	parent = dbf79632d365c819323e730210b7be40c3498ead
