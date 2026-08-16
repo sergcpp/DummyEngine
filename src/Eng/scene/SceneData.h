@@ -263,6 +263,7 @@ struct PersistentGpuData {
     std::vector<probe_volume_t> probe_volumes;
 
     // Radiance cache
+    mutable Ren::Vec3f cam_pos_rad;
     Ren::BufferHandle spatial_cache_entries;
     Ren::BufferHandle spatial_cache_voxels;
 

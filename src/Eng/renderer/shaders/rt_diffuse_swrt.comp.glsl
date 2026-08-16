@@ -217,7 +217,7 @@ void main() {
         const bool backfacing = (inter.prim_index < 0);
         const vec3 P = ray_origin_ws + inter.tmax * gi_ray_ws;
 
-        const uint grid_level = calc_grid_level(P, g_shrd_data.cam_pos_and_exp.xyz);
+        const uint grid_level = calc_grid_level(P, g_shrd_data.cam_pos_rad.xyz);
         const float voxel_size = calc_voxel_size(grid_level);
 
 #if defined(SECOND)
@@ -226,7 +226,7 @@ void main() {
         const bool use_cache = 0.5 * inter.tmax > voxel_size;
 #endif
         if (use_cache) {
-            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_and_exp.xyz);
+            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_rad.xyz);
 
             const float norm_first_ray_len = NormalizeHitDist(inter.tmax, view_z, 1.0);
             vec4 out_color = vec4(0.0, 0.0, 0.0, norm_first_ray_len);

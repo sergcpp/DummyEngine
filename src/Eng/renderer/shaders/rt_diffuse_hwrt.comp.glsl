@@ -196,7 +196,7 @@ void main() {
         const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, true);
         const vec3 P = ray_origin_ws + hit_t * gi_ray_ws;
 
-        const uint grid_level = calc_grid_level(P, g_shrd_data.cam_pos_and_exp.xyz);
+        const uint grid_level = calc_grid_level(P, g_shrd_data.cam_pos_rad.xyz);
         const float voxel_size = calc_voxel_size(grid_level);
 
 #if defined(SECOND)
@@ -205,7 +205,7 @@ void main() {
         const bool use_cache = 0.5 * hit_t > voxel_size;
 #endif
         if (use_cache) {
-            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_and_exp.xyz);
+            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_rad.xyz);
             if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
                 vec4 out_color = vec4(0.0);
 

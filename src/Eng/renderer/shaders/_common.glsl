@@ -413,7 +413,7 @@ struct shared_data_t {
     mat4 rt_clip_from_world;
     shadow_map_region_t shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     vec4 sun_dir, sun_col, sun_col_point, sun_col_point_sh, env_col, taa_info, frustum_info;
-    vec4 clip_info, rt_clip_info, cam_pos_and_exp;
+    vec4 clip_info, rt_clip_info, cam_pos_and_exp, cam_pos_rad;
     uvec4 uren_res;
     vec4 fren_res, transp_params_and_time;
     uvec4 uout_res;

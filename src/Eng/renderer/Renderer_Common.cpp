@@ -491,6 +491,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
 
             const Ren::Vec3f &cam_pos = p_list_->draw_cam.world_position();
             shrd_data.cam_pos_and_exp = Ren::Vec4f{cam_pos, view_state_.pre_exposure};
+            shrd_data.cam_pos_rad = Ren::Vec4f{persistent_data.cam_pos_rad, 0.0f};
             shrd_data.wind_scroll =
                 Ren::Vec4f{p_list_->env.curr_wind_scroll_lf[0], p_list_->env.curr_wind_scroll_lf[1],
                            p_list_->env.curr_wind_scroll_hf[0], p_list_->env.curr_wind_scroll_hf[1]};

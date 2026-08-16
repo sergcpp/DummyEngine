@@ -428,7 +428,7 @@ struct shared_data_t {
     Ren::Mat4f rt_clip_from_world;
     shadow_map_region_t shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     Ren::Vec4f sun_dir, sun_col, sun_col_point, sun_col_point_sh, env_col, taa_info, frustum_info;
-    Ren::Vec4f clip_info, rt_clip_info, cam_pos_and_exp;
+    Ren::Vec4f clip_info, rt_clip_info, cam_pos_and_exp, cam_pos_rad;
     Ren::Vec4u uren_res;
     Ren::Vec4f fren_res, transp_params_and_time;
     Ren::Vec4u uout_res;
@@ -445,7 +445,7 @@ struct shared_data_t {
 };
 static_assert(sizeof(shared_data_t) == sizeof(Ren::Mat4f) * 12 +                                 //
                                            sizeof(shadow_map_region_t) * MAX_SHADOWMAPS_TOTAL +  //
-                                           sizeof(Ren::Vec4f) * 24 +                             //
+                                           sizeof(Ren::Vec4f) * 25 +                             //
                                            sizeof(Types::probe_volume_t) * 2 * PROBE_VOLUMES_COUNT + //
                                            sizeof(uint32_t) * MAX_PORTALS_TOTAL +
                                            sizeof(probe_item_t) * MAX_PROBES_TOTAL +     //

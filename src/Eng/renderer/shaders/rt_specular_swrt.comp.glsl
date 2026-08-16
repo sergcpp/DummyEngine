@@ -267,7 +267,7 @@ void main() {
         const bool backfacing = (inter.prim_index < 0);
         const vec3 P = ray_origin_ws.xyz + inter.tmax * refl_ray_ws;
 
-        const uint grid_level = calc_grid_level(P, g_shrd_data.cam_pos_and_exp.xyz);
+        const uint grid_level = calc_grid_level(P, g_shrd_data.cam_pos_rad.xyz);
         const float voxel_size = calc_voxel_size(grid_level);
 
         float cone_angle = g_params.pixel_spread_angle;
@@ -280,7 +280,7 @@ void main() {
         cone_width += cone_angle * inter.tmax;
         const bool use_cache =  cone_width > 1.5 * voxel_size;
         if (use_cache) {
-            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_and_exp.xyz);
+            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_rad.xyz);
             if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
                 vec4 out_color = vec4(0.0);
 

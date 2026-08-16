@@ -442,7 +442,7 @@ void main() {
         } else if (SHADING_MODE == 2) {
             light_total = vec3(0.0);
 
-            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_and_exp.xyz);
+            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_rad.xyz);
             if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
                 light_total = abs(vec3(
                     unpackHalf2x16(g_cache_voxels[2 * cache_entry + 0]),

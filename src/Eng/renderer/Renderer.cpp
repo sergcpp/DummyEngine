@@ -124,14 +124,6 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     // Culling is done in lower resolution
     swCullCtxInit(&cull_ctx_, 8 * std::max(ctx.w() / 32, 1), 4 * std::max(ctx.h() / 16, 1), 0.0f);
 
-    /*{ // buffer used to sample probes
-        FrameBuf::ColorAttachmentDesc desc;
-        desc.format = Ren::eFormat::RGBA32F;
-        desc.filter = Ren::eFilter::NoFilter;
-        desc.wrap = Ren::eWrap::ClampToEdge;
-        probe_sample_buf_ = FrameBuf("Probe sample", ctx_, 24, 8, &desc, 1, {}, 1, ctx.log());
-    }*/
-
     static const uint8_t black[] = {0, 0, 0, 0}, white[] = {255, 255, 255, 255};
 
     { // dummy 1px textures
@@ -315,8 +307,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::BufferCold stage_buf_cold = {};
         if (!Ren::Buffer_Init(ctx_.api(), stage_buf_main, stage_buf_cold, Ren::String{"PMJSamplesStage"},
                               Ren::eBufType::Upload, buf_size, ctx_.log())) {
-            // TODO: Properly handle failure
-            assert(false);
+            throw std::runtime_error("Renderer initialization failed!");
         }
 
         { // init stage buf
@@ -553,6 +544,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         } else {
             volume.scroll_diff = Ren::Vec3i{0};
         }
+    }
+
+    if (list.volume_to_update == 0) {
+        // Update camera position used to query radiance cache
+        persistent_data.cam_pos_rad = list.draw_cam.world_position();
     }
 
     if (list.volume_to_update == PROBE_VOLUMES_COUNT - 1) {

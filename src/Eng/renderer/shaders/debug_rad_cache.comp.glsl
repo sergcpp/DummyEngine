@@ -78,9 +78,9 @@ void main() {
     const vec4 normal_ws = UnpackNormalAndRoughness(texelFetch(g_normal_tex, ivec2(ucoord), 0).x);
     const vec3 view_ray_vs = normalize(pos_ws - g_shrd_data.cam_pos_and_exp.xyz);
 
-    const uint cache_entry = find_entry(pos_ws, false, g_shrd_data.cam_pos_and_exp.xyz);
+    const uint cache_entry = find_entry(pos_ws, false, g_shrd_data.cam_pos_rad.xyz);
     if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
-        const vec3 debug_color = hash_grid_debug(pos_ws, false, g_shrd_data.cam_pos_and_exp.xyz);
+        const vec3 debug_color = hash_grid_debug(pos_ws, false, g_shrd_data.cam_pos_rad.xyz);
         imageStore(g_out_img, ivec2(px_coords), vec4(debug_color, 1.0));
     } else {
         imageStore(g_out_img, ivec2(px_coords), vec4(0.0, 0.0, 0.0, 1.0));
