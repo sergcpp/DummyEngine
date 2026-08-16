@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = bn_sample_lights
-	commit = 3ea407e2a52538bf30b0d35f60821cdedbb28e54
+	branch = rad_cache_scroll
+	commit = 7193ef5d15fe01e3a58e3a89fdc6d7cf704fd83b
 	method = merge
 	cmdver = 0.4.6
-	parent = dbf79632d365c819323e730210b7be40c3498ead
+	parent = c52e3ac1706e448e63d8652a7f56315e965b0d2d
