@@ -2,6 +2,18 @@
 
 | Date       | Device     | Preset | Commit       | Scene          | Avg FPS | CPU (ms) | GPU (ms) | Notes               |
 |------------|------------|:------:|:------------:|----------------|---------|----------|----------|---------------------|
+| 2026-08-17 | RTX 4070 S | high   | `785fde09e2` | Bistro         | 98      | 10.0     | 10.0     | Radiance caching    |
+|            |            | high   |              | Bistro (night) | 104     | 7.9      | 9.5      |                     |
+|            |            | ultra  |              | Bistro         | 50      | 12.0     | 19.8     |                     |
+|            |            | ultra  |              | Bistro (night) | 56      | 8.2      | 17.8     |                     |
+|            | RX 9070 XT | high   |              | Bistro         | 87      | 5.9      | 10.9     |                     |
+|            |            | high   |              | Bistro (night) | 91      | 4.7      | 10.4     |                     |
+|            |            | ultra  |              | Bistro         | 44      | 6.7      | 22.0     |                     |
+|            |            | ultra  |              | Bistro (night) | 48      | 4.7      | 20.0     |                     |
+|            | Arc A310   | high   |              | Bistro         | 7.9     | 6.9      | 127.0    |                     |
+|            |            | high   |              | Bistro (night) | 8.1     | 5.5      | 123.0    |                     |
+|            |            | ultra  |              | Bistro         | 3.5     | 8.3      | 283.0    |                     |
+|            |            | ultra  |              | Bistro (night) | 3.8     | 6.2      | 261.0    |                     |
 | 2026-04-08 | RTX 4070 S | high   | `5797b34806` | Bistro         | 82      | 8.6      | 12.2     | Deferred RTSpecular |
 |            |            | high   |              | Bistro (night) | 85      | 7.2      | 11.6     |                     |
 |            |            | ultra  |              | Bistro         | 40      | 9.2      | 24.7     |                     |
