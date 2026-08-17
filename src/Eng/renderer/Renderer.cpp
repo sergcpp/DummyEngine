@@ -187,37 +187,45 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     }
 
     { // LTC LUTs
-        auto combined_data = std::make_unique<float[]>(8 * 4 * 64 * 64);
-        float *_combined_data = combined_data.get();
-        for (int y = 0; y < 64; ++y) {
-            memcpy(_combined_data, &__ltc_diff_tex1[y * 4 * 64], 4 * 64 * sizeof(float));
-            _combined_data += 4 * 64;
-            memcpy(_combined_data, &__ltc_diff_tex2[y * 4 * 64], 4 * 64 * sizeof(float));
-            _combined_data += 4 * 64;
-            memcpy(_combined_data, &__ltc_sheen_tex1[y * 4 * 64], 4 * 64 * sizeof(float));
-            _combined_data += 4 * 64;
-            memcpy(_combined_data, &__ltc_sheen_tex2[y * 4 * 64], 4 * 64 * sizeof(float));
-            _combined_data += 4 * 64;
-            memcpy(_combined_data, &__ltc_specular_tex1[y * 4 * 64], 4 * 64 * sizeof(float));
-            _combined_data += 4 * 64;
-            memcpy(_combined_data, &__ltc_specular_tex2[y * 4 * 64], 4 * 64 * sizeof(float));
-            _combined_data += 4 * 64;
-            memcpy(_combined_data, &__ltc_clearcoat_tex1[y * 4 * 64], 4 * 64 * sizeof(float));
-            _combined_data += 4 * 64;
-            memcpy(_combined_data, &__ltc_clearcoat_tex2[y * 4 * 64], 4 * 64 * sizeof(float));
-            _combined_data += 4 * 64;
+        auto combined_data = std::make_unique<uint16_t[]>(8 * 4 * 32 * 32);
+        uint16_t *_combined_data = combined_data.get();
+        for (int y = 0; y < 32; ++y) {
+            for (int i = 0; i < 4 * 32; ++i) {
+                *_combined_data++ = Ren::f32_to_f16(__ltc_diff_tex1[y * 4 * 32 + i]);
+            }
+            for (int i = 0; i < 4 * 32; ++i) {
+                *_combined_data++ = Ren::f32_to_f16(__ltc_diff_tex2[y * 4 * 32 + i]);
+            }
+            for (int i = 0; i < 4 * 32; ++i) {
+                *_combined_data++ = Ren::f32_to_f16(__ltc_sheen_tex1[y * 4 * 32 + i]);
+            }
+            for (int i = 0; i < 4 * 32; ++i) {
+                *_combined_data++ = Ren::f32_to_f16(__ltc_sheen_tex2[y * 4 * 32 + i]);
+            }
+            for (int i = 0; i < 4 * 32; ++i) {
+                *_combined_data++ = Ren::f32_to_f16(__ltc_specular_tex1[y * 4 * 32 + i]);
+            }
+            for (int i = 0; i < 4 * 32; ++i) {
+                *_combined_data++ = Ren::f32_to_f16(__ltc_specular_tex2[y * 4 * 32 + i]);
+            }
+            for (int i = 0; i < 4 * 32; ++i) {
+                *_combined_data++ = Ren::f32_to_f16(__ltc_clearcoat_tex1[y * 4 * 32 + i]);
+            }
+            for (int i = 0; i < 4 * 32; ++i) {
+                *_combined_data++ = Ren::f32_to_f16(__ltc_clearcoat_tex2[y * 4 * 32 + i]);
+            }
         }
 
         Ren::ImgParams p;
-        p.w = 8 * 64;
-        p.h = 64;
-        p.format = Ren::eFormat::RGBA32F;
+        p.w = 8 * 32;
+        p.h = 32;
+        p.format = Ren::eFormat::RGBA16F;
         p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
         p.sampling.filter = Ren::eFilter::Bilinear;
         p.sampling.wrap = Ren::eWrap::ClampToEdge;
 
         ltc_luts_ = ctx_.CreateImage(Ren::String{"LTC LUTs"},
-                                     {(const uint8_t *)combined_data.get(), 8 * 4 * 64 * 64 * sizeof(float)}, p,
+                                     {(const uint8_t *)combined_data.get(), 8 * 4 * 32 * 32 * sizeof(uint16_t)}, p,
                                      ctx_.default_mem_allocs());
         assert(ltc_luts_);
     }

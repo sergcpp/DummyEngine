@@ -24,7 +24,7 @@
 #include "MVec.h"
 
 // size of precomputed table (theta, alpha)
-const int N = 64;
+const int N = 32;
 // number of samples used to compute the error during fitting
 const int Nsample = 32;
 // minimal roughness (avoid singularities)

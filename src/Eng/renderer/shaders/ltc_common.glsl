@@ -5,7 +5,7 @@
 // Linearly Transformed Cosines
 ///////////////////////////////
 
-const float LTC_LUT_SIZE  = 64.0;
+const float LTC_LUT_SIZE  = 32.0;
 const float LTC_LUT_SCALE = (LTC_LUT_SIZE - 1.0) / LTC_LUT_SIZE;
 const float LTC_LUT_BIAS  = 0.5 / LTC_LUT_SIZE;
 

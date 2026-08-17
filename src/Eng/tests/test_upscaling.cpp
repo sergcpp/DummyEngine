@@ -38,7 +38,7 @@ void test_upscaling(Sys::ThreadPool &threads) {
     run_image_test(ren_ctx, threads, "upscaling_dyn_exposure",
                    std::vector<double>{38.80, 38.95, 38.25, 37.45, 36.45, 35.35, 34.30, 33.30, 31.90, 30.65, //
                                        29.10, 27.60, 26.15, 24.75, 23.05, 21.25, 19.55, 20.75, 21.85, 22.60,
-                                       23.15, 23.55, 23.85, 24.35, 24.70, 25.35, 25.70, 26.80, 26.80, 26.85,
+                                       23.15, 23.55, 23.85, 24.35, 24.70, 25.35, 26.20, 26.80, 26.80, 26.85,
                                        26.95, 27.05, 26.70},
                    Full, 1.5f);
     run_image_test(ren_ctx, threads, "upscaling_dyn_exposure",
