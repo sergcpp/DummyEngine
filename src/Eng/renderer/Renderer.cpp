@@ -94,6 +94,9 @@ extern const int TaaSampleCountStatic = 64;
 #include "precomputed/__pmj02_samples.inl"
 
 // 1D blue noise, used for volumetrics
+namespace tcbn_1D_16spp_stride {
+#include "precomputed/__tcbn_sampler_1D_16spp_stride.inl"
+}
 namespace tcbn_1D_64spp {
 #include "precomputed/__tcbn_sampler_1D_64spp.inl"
 }
@@ -271,7 +274,22 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         "assets/textures/skin_diffusion.uncompressed.png");
     }*/
 
-    { // TCBN 1D sampler
+    { // TCBN 1D sampler (16spp, strided access)
+        Ren::ImgParams p;
+        p.w = tcbn_1D_16spp_stride::w;
+        p.h = tcbn_1D_16spp_stride::h;
+        p.d = tcbn_1D_16spp_stride::d;
+        p.format = Ren::eFormat::R8;
+        p.flags = Ren::eImgFlags::Array;
+        p.usage = Ren::Bitmask(Ren::eImgUsage::Transfer) | Ren::eImgUsage::Sampled;
+        p.sampling.filter = Ren::eFilter::Nearest;
+
+        tcbn_1D_16spp_stride_ = ctx_.CreateImage(
+            Ren::String{"TCBN 1D 16spp Stride"},
+            {(const uint8_t *)&tcbn_1D_16spp_stride::tcbn_samples[0], p.w * p.h * p.d}, p, ctx_.default_mem_allocs());
+        assert(tcbn_1D_16spp_stride_);
+    }
+    { // TCBN 1D sampler (64spp)
         Ren::ImgParams p;
         p.w = tcbn_1D_64spp::w;
         p.h = tcbn_1D_64spp::h;
@@ -286,7 +304,6 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
                                           ctx_.default_mem_allocs());
         assert(tcbn_1D_64spp_);
     }
-
     { // TCBN 2D sampler
         Ren::ImgParams p;
         p.w = tcbn_2D_64spp::w;
@@ -464,6 +481,7 @@ Eng::Renderer::~Renderer() {
                                                   dummy_white_,
                                                   brdf_lut_,
                                                   ltc_luts_,
+                                                  tcbn_1D_16spp_stride_,
                                                   tcbn_1D_64spp_,
                                                   tcbn_2D_64spp_,
                                                   cone_rt_lut_,
@@ -629,6 +647,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     }
     assert(view_state_.ren_res[0] <= view_state_.out_res[0] && view_state_.ren_res[1] <= view_state_.out_res[1]);
 
+    view_state_.sun_dir = list.env.sun_dir;
     view_state_.vertical_fov = list.draw_cam.angle();
     view_state_.pixel_spread_angle = std::atan(
         2.0f * std::tan(0.5f * view_state_.vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_.ren_res[1]));
@@ -643,7 +662,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         const auto &[lights_buf_main, lights_buf_cold] = ctx_.storages().buffers[persistent_data.stoch_lights];
         view_state_.stochastic_lights_count = lights_buf_cold.size / sizeof(light_item_t);
     }
-
+    ++view_state_.clouds_shadow_iteration;
     view_state_.env_generation = list.env.generation;
     view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
     // view_state_.prev_pre_exposure = std::min(std::max(view_state_.prev_pre_exposure, min_exposure_), max_exposure_);
@@ -769,6 +788,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.ltc_luts = fg_builder_.ImportResource(ltc_luts_);
             frame_textures.brdf_lut = fg_builder_.ImportResource(brdf_lut_);
             frame_textures.cone_rt_lut = fg_builder_.ImportResource(cone_rt_lut_);
+            frame_textures.tcbn_1D_16spp_stride = fg_builder_.ImportResource(tcbn_1D_16spp_stride_);
             frame_textures.tcbn_1D_64spp = fg_builder_.ImportResource(tcbn_1D_64spp_);
             frame_textures.tcbn_2D_64spp = fg_builder_.ImportResource(tcbn_2D_64spp_);
             if (tonemap_lut_) {

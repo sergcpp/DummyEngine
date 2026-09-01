@@ -19,6 +19,10 @@ class ExSkydomeCube final : public FgExecutor {
         FgImgROHandle cirrus;
         FgImgROHandle curl;
         FgImgROHandle noise3d;
+        FgImgROHandle tcbn;
+
+        FgImgROHandle clouds_shadow_b0;
+        FgImgROHandle clouds_shadow_b1234;
 
         FgImgRWHandle color;
     };
@@ -60,6 +64,10 @@ class ExSkydomeScreen final : public FgExecutor {
             FgImgROHandle cirrus;
             FgImgROHandle curl;
             FgImgROHandle noise3d;
+            FgImgROHandle tcbn;
+
+            FgImgROHandle clouds_shadow_b0;
+            FgImgROHandle clouds_shadow_b1234;
         } phys;
 
         FgImgROHandle depth_ro;

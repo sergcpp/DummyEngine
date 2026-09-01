@@ -309,7 +309,7 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/sun_brightness.comp.glsl" ]
+        "shaders" : [ "internal/skydome_sun_brightness.comp.glsl" ]
     },
     {
         "type" : "compute",

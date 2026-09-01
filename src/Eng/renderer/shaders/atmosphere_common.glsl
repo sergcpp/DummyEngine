@@ -1,12 +1,23 @@
 #ifndef ATMOSPHERE_COMMON_GLSL
 #define ATMOSPHERE_COMMON_GLSL
 
+#ifndef ENABLE_RAY_JITTER
+    #define ENABLE_RAY_JITTER 1
+#endif
 #ifndef ENABLE_SUN_DISK
     #define ENABLE_SUN_DISK 1
 #endif
 #ifndef ENABLE_CLOUDS_CURL
     #define ENABLE_CLOUDS_CURL 1
 #endif
+#ifndef ENABLE_SHADOW_MAP
+    #define ENABLE_SHADOW_MAP 1
+#endif
+#ifndef ENABLE_SHADOW_RAY
+    #define ENABLE_SHADOW_RAY 1
+#endif
+
+#include "moments_common.glsl"
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     shared_data_t g_shrd_data;
@@ -20,6 +31,14 @@ float _SRGBToLinear(float col) {
         ret = col / 12.92;
     }
     return ret;
+}
+
+vec2 RadialWarp(const vec2 p, const float gamma) {
+    const float r = length(p);
+    if (r < 1e-6) {
+        return p;
+    }
+    return p * (pow(r, gamma) / r);
 }
 
 vec2 SphereIntersection(vec3 ray_start, const vec3 ray_dir, const vec3 sphere_center, const float sphere_radius) {
@@ -271,7 +290,7 @@ float GetCloudsDensity(sampler2D weather_tex, sampler2D curl_tex, sampler3D nois
 
     const vec3 curl_read1 = textureLod(curl_tex, 16.0 * local_position.yx, 0.0).yzx;
     local_position += curl_read1 * (1.0 - out_height_fraction) * 0.05;
-#endif
+#endif // ENABLE_CLOUDS_CURL
 
     // Additional micromovement
     local_position.xz += vec2(g_shrd_data.atmosphere.clouds_flutter_x, g_shrd_data.atmosphere.clouds_flutter_z);
@@ -281,30 +300,78 @@ float GetCloudsDensity(sampler2D weather_tex, sampler2D curl_tex, sampler3D nois
            remap(cloud_coverage, 0.6 * noise_read);
 }
 
-float TraceCloudShadow(sampler2D weather_tex, sampler2D curl_tex, sampler3D noise3d_tex, const uint rand_hash, vec3 ray_start, const vec3 ray_dir) {
+float TraceCloudShadow(sampler2D weather_tex, sampler2D curl_tex, sampler3D noise3d_tex, sampler2D moments_b0, sampler2D moments_b1234, const float rand_offset, vec3 ray_start, const vec3 ray_dir) {
+    float absorbance = 0.0;
+
     const vec4 clouds_intersection = CloudsIntersection(ray_start, ray_dir);
+#if ENABLE_SHADOW_RAY
     if (clouds_intersection.w > 0) {
-        const int SampleCount = 24;
+        const int SampleCount = 4;
 
         const float StepSize = 16.0;
-        vec3 pos = ray_start + construct_float(rand_hash) * ray_dir * StepSize;
+        vec3 pos = ray_start + (rand_offset * StepSize) * ray_dir;
 
-        float ret = 0.0;
+        float density = 0.0;
         for (int i = 0; i < SampleCount; ++i) {
             float local_height, height_fraction;
             vec3 up_vector;
             const float local_density = GetCloudsDensity(weather_tex, curl_tex, noise3d_tex, pos, local_height, height_fraction, up_vector);
-            ret += local_density;
+            density += local_density;
             pos += ray_dir * StepSize;
         }
 
-        return ret * StepSize;
+        absorbance = density * StepSize;
     }
-    return 1.0;
+#endif // ENABLE_SHADOW_RAY
+
+#if ENABLE_SHADOW_MAP
+    if (clouds_intersection.w > 0) {
+        // Skip 64 units raymarched above
+        const float clouds_beg = max(clouds_intersection.w - 64.0, 0.001);
+
+        vec3 shadow_uvs = (g_shrd_data.cloud_sh_clip_from_world * vec4(ray_start, 1.0)).xyz;
+        shadow_uvs.xy = RadialWarp(shadow_uvs.xy, 0.5);
+        shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
+    #if defined(VULKAN)
+        shadow_uvs.y = 1.0 - shadow_uvs.y;
+    #endif // VULKAN
+
+        pow_moments4_t moments;
+        moments.b0 = textureLod(moments_b0, shadow_uvs.xy, 0.0).x;
+        moments.b1234 = textureLod(moments_b1234, shadow_uvs.xy, 0.0);
+
+        const float trust_factor = 1.0 - sqr(1.0 - ray_dir.y);
+        absorbance += trust_factor * ResolveAbsorbance(clouds_beg, moments, 0.0035, 0.25).x;
+    }
+#endif // ENABLE_SHADOW_MAP
+
+    return absorbance;
 }
 
-vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray_length, float rand_offset, const int sample_count,
-                             sampler2D transmittance_lut, sampler2D multiscatter_lut, inout vec3 inout_transmittance) {
+float TraceCloudShadowBelow(sampler2D moments_b0, sampler2D moments_b1234, vec3 ray_start, const vec3 ray_dir) {
+    float absorbance = 0.0;
+
+#if ENABLE_SHADOW_MAP
+    const vec4 clouds_intersection = CloudsIntersection(ray_start, ray_dir);
+    if (clouds_intersection.w > 0) {
+        vec3 shadow_uvs = (g_shrd_data.cloud_sh_clip_from_world * vec4(ray_start, 1.0)).xyz;
+        shadow_uvs.xy = RadialWarp(shadow_uvs.xy, 0.5);
+        shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
+    #if defined(VULKAN)
+        shadow_uvs.y = 1.0 - shadow_uvs.y;
+    #endif // VULKAN
+
+        // Use total absorbance (assume we are always below the clouds)
+        const float trust_factor = 1.0 - sqr(1.0 - ray_dir.y);
+        absorbance = trust_factor * textureLod(moments_b0, shadow_uvs.xy, 0.0).x;
+    }
+#endif // ENABLE_SHADOW_MAP
+
+    return absorbance;
+}
+
+vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray_length, const float rand_offset, const int sample_count,
+                             sampler2D transmittance_lut, sampler2D multiscatter_lut, const bool use_clouds_shadow, sampler2D moments_b0, sampler2D moments_b1234, inout vec3 inout_transmittance) {
     const vec2 atm_intersection = AtmosphereIntersection(ray_start, ray_dir);
     ray_length = min(ray_length, atm_intersection.y);
     const vec2 planet_intersection = PlanetIntersection(ray_start, ray_dir);
@@ -321,7 +388,7 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
     vec3 radiance = vec3(0.0), multiscat_as_1 = vec3(0.0);
 
     const float step_size = ray_length / float(sample_count);
-    float ray_time = 0.1 * rand_offset * step_size;
+    float ray_time = rand_offset * step_size;
     for (int i = 0; i < sample_count; ++i) {
         const vec3 local_position = ray_start + ray_dir * ray_time;
         vec3 up_vector;
@@ -339,7 +406,11 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
             const vec3 light_transmittance = textureLod(transmittance_lut, uv, 0.0).xyz;
 
             const vec2 planet_intersection = PlanetIntersection(local_position, g_shrd_data.sun_dir.xyz);
-            const float planet_shadow = planet_intersection.x > 0 ? 0.0 : 1.0;
+            float planet_shadow = float(planet_intersection.x < 0.0);
+            if (use_clouds_shadow && planet_shadow > 0.0) {
+                const float mask = saturate(-0.2 - dot(ray_dir, g_shrd_data.sun_dir.xyz));
+                planet_shadow *= mix(exp(-TraceCloudShadowBelow(moments_b0, moments_b1234, local_position, g_shrd_data.sun_dir.xyz)), 1.0, mask);
+            }
 
             vec2 uv2 = saturate(vec2(view_zenith_cos_angle * 0.5 + 0.5, local_height / g_shrd_data.atmosphere.atmosphere_height));
             uv2 = vec2(from_unit_to_sub_uvs(uv2.x, SKY_MULTISCATTER_LUT_RES), from_unit_to_sub_uvs(uv2.y, SKY_MULTISCATTER_LUT_RES));
@@ -353,12 +424,17 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
             const vec2 uv = LutTransmittanceParamsToUv(local_height + g_shrd_data.atmosphere.planet_radius, view_zenith_cos_angle);
             const vec3 light_transmittance = textureLod(transmittance_lut, uv, 0.0).xyz;
 
+            float cloud_shadow = 1.0;
+            if (use_clouds_shadow) {
+                cloud_shadow = exp(-TraceCloudShadowBelow(moments_b0, moments_b1234, local_position, g_shrd_data.atmosphere.moon_dir.xyz));
+            }
+
             vec2 uv2 = saturate(vec2(view_zenith_cos_angle * 0.5 + 0.5, local_height / g_shrd_data.atmosphere.atmosphere_height));
             uv2 = vec2(from_unit_to_sub_uvs(uv2.x, SKY_MULTISCATTER_LUT_RES), from_unit_to_sub_uvs(uv2.y, SKY_MULTISCATTER_LUT_RES));
             const vec3 multiscattered_lum = textureLod(multiscatter_lut, uv2, 0.0).xyz;
 
             const vec3 phase_times_scattering = medium.scattering_ray * moon_phase_r + medium.scattering_mie * moon_phase_m;
-            S += SKY_MOON_SUN_RELATION * (light_transmittance * phase_times_scattering + multiscattered_lum * medium.scattering) * g_shrd_data.sun_col_point.xyz;
+            S += SKY_MOON_SUN_RELATION * (cloud_shadow * light_transmittance * phase_times_scattering + multiscattered_lum * medium.scattering) * g_shrd_data.sun_col_point.xyz;
         }
 
         // 1 is the integration of luminance over the 4pi of a sphere, and assuming an isotropic phase function
@@ -386,6 +462,7 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
         const float view_zenith_cos_angle = dot(g_shrd_data.sun_dir.xyz, up_vector);
         const vec2 uv = LutTransmittanceParamsToUv(local_height + g_shrd_data.atmosphere.planet_radius, view_zenith_cos_angle);
         const vec3 light_transmittance = textureLod(transmittance_lut, uv, 0.0).xyz;
+
         radiance += g_shrd_data.atmosphere.ground_albedo.xyz * saturate(dot(up_vector, g_shrd_data.sun_dir.xyz)) *
                     inout_transmittance * light_transmittance * g_shrd_data.sun_col_point.xyz;
     }
@@ -393,8 +470,9 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
     return radiance;
 }
 
-vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, uint rand_hash, sampler2D transmittance_lut, sampler2D multiscatter_lut,
-                         sampler2D moon_tex, sampler2D weather_tex, sampler2D cirrus_tex, sampler2D curl_tex, sampler3D noise3d_tex, out vec3 total_transmittance) {
+vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float ray_length, sampler2D transmittance_lut, sampler2D multiscatter_lut,
+                         sampler2D moon_tex, sampler2D weather_tex, sampler2D cirrus_tex, sampler2D curl_tex, sampler3D noise3d_tex, sampler2DArray tcbn_1d_tex,
+                         sampler2D moments_b0, sampler2D moments_b1234, out vec3 total_transmittance) {
     const vec2 atm_intersection = AtmosphereIntersection(ray_start, ray_dir);
     ray_length = min(ray_length, atm_intersection.y);
     if (atm_intersection.x > 0) {
@@ -430,17 +508,22 @@ vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, u
 
     const vec4 clouds_intersection = CloudsIntersection(ray_start, ray_dir);
 
+#if ENABLE_RAY_JITTER
+    const float rand_offset_main = texelFetch(tcbn_1d_tex, ivec3((ucoord + 39 * 0) % uvec3(64, 64, 16)), 0).x;
+    const float rand_offset_shadow = texelFetch(tcbn_1d_tex, ivec3((ucoord + 39 * 1) % uvec3(64, 64, 16)), 0).x;
+#else
+    const float rand_offset_main = 0.5;
+    const float rand_offset_shadow = 0.5;
+#endif
+
     //
     // Atmosphere before clouds
     //
     if (clouds_intersection.y > 0.0 && light_brightness > 0.0) {
         const float pre_atmosphere_ray_length = min(ray_length, clouds_intersection.y);
 
-        const float rand_offset = construct_float(rand_hash);
-        rand_hash = hash(rand_hash);
-
-        total_radiance += IntegrateScatteringMain(ray_start, ray_dir, pre_atmosphere_ray_length, rand_offset, SKY_PRE_ATMOSPHERE_SAMPLE_COUNT,
-                                                  transmittance_lut, multiscatter_lut, total_transmittance);
+        total_radiance += IntegrateScatteringMain(ray_start, ray_dir, pre_atmosphere_ray_length, rand_offset_main, SKY_PRE_ATMOSPHERE_SAMPLE_COUNT,
+                                                  transmittance_lut, multiscatter_lut, true /* use_clouds_shadow */, moments_b0, moments_b1234, total_transmittance);
     }
 
     //
@@ -456,8 +539,7 @@ vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, u
         if (clouds_ray_length > 0.0) {
             const float step_size = clouds_ray_length / float(SKY_CLOUDS_SAMPLE_COUNT);
 
-            vec3 local_position = clouds_ray_start + ray_dir * construct_float(rand_hash) * step_size;
-            rand_hash = hash(rand_hash);
+            vec3 local_position = clouds_ray_start + ray_dir * rand_offset_main * step_size;
 
             vec3 clouds = vec3(0.0);
 
@@ -502,7 +584,7 @@ vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, u
                         // main light contribution
                         const vec2 planet_intersection = PlanetIntersection(local_position, g_shrd_data.sun_dir.xyz);
                         const float planet_shadow = planet_intersection.x > 0 ? 0.0 : 1.0;
-                        const float cloud_shadow = TraceCloudShadow(weather_tex, curl_tex, noise3d_tex, rand_hash, local_position, g_shrd_data.sun_dir.xyz);
+                        const float cloud_shadow = TraceCloudShadow(weather_tex, curl_tex, noise3d_tex, moments_b0, moments_b1234, rand_offset_shadow, local_position, g_shrd_data.sun_dir.xyz);
 
                         clouds += total_transmittance *
                                 (planet_shadow * GetLightEnergy(cloud_shadow, local_density, phase_w) +
@@ -510,7 +592,7 @@ vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, u
                                 (1.0 - local_transmittance) * light_transmittance;
                     } else if (g_shrd_data.atmosphere.moon_radius > 0.0) {
                         // moon reflection contribution (totally fake)
-                        const float cloud_shadow = TraceCloudShadow(weather_tex, curl_tex, noise3d_tex, rand_hash, local_position, moon_dir);
+                        const float cloud_shadow = TraceCloudShadow(weather_tex, curl_tex, noise3d_tex, moments_b0, moments_b1234, rand_offset_shadow, local_position, moon_dir);
 
                         clouds += SKY_MOON_SUN_RELATION * total_transmittance *
                                 (GetLightEnergy(cloud_shadow, local_density, moon_phase_w) +
@@ -596,11 +678,8 @@ vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, u
         vec3 main_ray_start = ray_start + ray_dir * clouds_intersection.w;
         main_ray_length -= clouds_intersection.y;
 
-        const float rand_offset = construct_float(rand_hash);
-        rand_hash = hash(rand_hash);
-
-        total_radiance += IntegrateScatteringMain(main_ray_start, ray_dir, main_ray_length, rand_offset, SKY_MAIN_ATMOSPHERE_SAMPLE_COUNT,
-                                                  transmittance_lut, multiscatter_lut, total_transmittance);
+        total_radiance += IntegrateScatteringMain(main_ray_start, ray_dir, main_ray_length, 0.5 /* no random offset*/, SKY_MAIN_ATMOSPHERE_SAMPLE_COUNT,
+                                                  transmittance_lut, multiscatter_lut, false /* use_clouds_shadow */, moments_b0, moments_b1234, total_transmittance);
     }
 
 #if ENABLE_SUN_DISK

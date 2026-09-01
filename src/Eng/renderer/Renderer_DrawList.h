@@ -142,6 +142,8 @@ struct DrawList {
 
     Ren::Vec3d world_origin;
 
+    Ren::Mat4f cloud_sh_clip_from_world, cloud_sh_world_from_clip;
+
     std::vector<TexEntry> visible_textures;
     std::vector<TexEntry> desired_textures;
 

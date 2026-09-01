@@ -169,7 +169,6 @@ void Eng::Renderer::InitPipelines() {
     // Sun Shadow
     pi_sun_shadows_[0] = sh_.FindOrCreatePipeline("internal/sun_shadows@SS_SHADOW.comp.glsl");
     pi_sun_shadows_[1] = sh_.FindOrCreatePipeline("internal/sun_shadows@RT_SHADOW.comp.glsl");
-    pi_sun_brightness_ = sh_.FindOrCreatePipeline("internal/sun_brightness.comp.glsl");
     pi_shadow_classify_ = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_shadow_classify.comp.glsl"), 32);
     pi_shadow_prepare_mask_ =
         sh_.FindOrCreatePipeline(subgroup_select("internal/rt_shadow_prepare_mask.comp.glsl"), 32);
@@ -193,7 +192,10 @@ void Eng::Renderer::InitPipelines() {
     pi_histogram_exposure_ = sh_.FindOrCreatePipeline("internal/histogram_exposure.comp.glsl");
 
     // Volumetrics
+    pi_clouds_shadow_ = sh_.FindOrCreatePipeline("internal/skydome_clouds_shadow.comp.glsl");
+    pi_clouds_shadow_upsample_ = sh_.FindOrCreatePipeline("internal/skydome_clouds_shadow_upsample.comp.glsl");
     pi_sky_upsample_ = sh_.FindOrCreatePipeline("internal/skydome_upsample.comp.glsl");
+    pi_sun_brightness_ = sh_.FindOrCreatePipeline("internal/skydome_sun_brightness.comp.glsl");
     pi_vol_scatter_[0][0] = sh_.FindOrCreatePipeline(subgroup_select("internal/vol_scatter.comp.glsl"));
     pi_vol_scatter_[0][1] = sh_.FindOrCreatePipeline(subgroup_select("internal/vol_scatter@GI_CACHE.comp.glsl"));
     pi_vol_scatter_[1][0] = sh_.FindOrCreatePipeline(subgroup_select("internal/vol_scatter@ALL_CASCADES.comp.glsl"));
@@ -385,6 +387,9 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             shrd_data.delta_matrix =
                 view_state_.prev_clip_from_view * (view_state_.down_buf_view_from_world * shrd_data.world_from_view);
             shrd_data.rt_clip_from_world = p_list_->ext_cam.proj_matrix() * p_list_->ext_cam.view_matrix();
+
+            shrd_data.cloud_sh_clip_from_world = p_list_->cloud_sh_clip_from_world;
+            shrd_data.cloud_sh_world_from_clip = p_list_->cloud_sh_world_from_clip;
 
             if (p_list_->shadow_regions.count) {
                 assert(p_list_->shadow_regions.count <= MAX_SHADOWMAPS_TOTAL);

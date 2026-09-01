@@ -11,7 +11,6 @@
 #include "shaders/blit_fxaa_interface.h"
 #include "shaders/blit_vol_compose_interface.h"
 #include "shaders/skydome_interface.h"
-#include "shaders/sun_brightness_interface.h"
 #include "shaders/vol_interface.h"
 
 void Eng::Renderer::InitSkyResources() {
@@ -203,25 +202,160 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
         return;
     }
 
+    FgImgROHandle clouds_shadow_b0, clouds_shadow_b1234;
+
     if (p_list_->env.env_map_name == "physical_sky") {
-        auto &skydome_cube = fg_builder_.AddNode("SKYDOME CUBE");
+        FgImgROHandle clouds_shadow_b0_temp, clouds_shadow_b1234_temp;
+        { // Update clouds shadowmap
+            auto &clouds_shadow = fg_builder_.AddNode("CLOUDS SHADOW");
 
-        auto *data = fg_builder_.AllocTempData<ExSkydomeCube::Args>();
+            struct PassData {
+                FgBufROHandle shared_data;
+                FgImgROHandle weather;
+                FgImgROHandle curl;
+                FgImgROHandle noise3d;
+                FgImgRWHandle output_b0;
+                FgImgRWHandle output_b1234;
+            };
 
-        data->shared_data = skydome_cube.AddUniformBufferInput(common_buffers.shared_data,
-                                                               Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
+            auto *data = fg_builder_.AllocTempData<PassData>();
+            data->shared_data = clouds_shadow.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
 
-        data->transmittance_lut =
-            skydome_cube.AddTextureInput(frame_textures.sky_transmittance_lut, Stg::FragmentShader);
-        data->multiscatter_lut = skydome_cube.AddTextureInput(frame_textures.sky_multiscatter_lut, Stg::FragmentShader);
-        data->moon = skydome_cube.AddTextureInput(frame_textures.sky_moon, Stg::FragmentShader);
-        data->weather = skydome_cube.AddTextureInput(frame_textures.sky_weather, Stg::FragmentShader);
-        data->cirrus = skydome_cube.AddTextureInput(frame_textures.sky_cirrus, Stg::FragmentShader);
-        data->curl = skydome_cube.AddTextureInput(frame_textures.sky_curl, Stg::FragmentShader);
-        data->noise3d = skydome_cube.AddTextureInput(frame_textures.sky_noise3d, Stg::FragmentShader);
-        frame_textures.envmap = data->color = skydome_cube.AddColorOutput(frame_textures.envmap);
+            data->weather = clouds_shadow.AddTextureInput(frame_textures.sky_weather, Stg::FragmentShader);
+            data->curl = clouds_shadow.AddTextureInput(frame_textures.sky_curl, Stg::FragmentShader);
+            data->noise3d = clouds_shadow.AddTextureInput(frame_textures.sky_noise3d, Stg::FragmentShader);
 
-        skydome_cube.make_executor<ExSkydomeCube>(prim_draw_, &view_state_, data);
+            { //
+                FgImgDesc desc;
+                desc.w = (Skydome::CLOUD_SHADOWMAP_RES / 4);
+                desc.h = (Skydome::CLOUD_SHADOWMAP_RES / 4);
+
+                desc.format = Ren::eFormat::R16F;
+                clouds_shadow_b0_temp = data->output_b0 =
+                    clouds_shadow.AddStorageImageOutput("Clouds Shadow B0 Temp", desc, Stg::ComputeShader);
+
+                desc.format = Ren::eFormat::RGBA16F;
+                clouds_shadow_b1234_temp = data->output_b1234 =
+                    clouds_shadow.AddStorageImageOutput("Clouds Shadow B1234 Temp", desc, Stg::ComputeShader);
+            }
+
+            clouds_shadow.set_execute_cb([data, this](const FgContext &fg) {
+                const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(data->shared_data);
+                const Ren::ImageROHandle weather = fg.AccessROImage(data->weather);
+                const Ren::ImageROHandle curl = fg.AccessROImage(data->curl);
+                const Ren::ImageROHandle noise3d = fg.AccessROImage(data->noise3d);
+
+                const Ren::ImageRWHandle output_b0 = fg.AccessRWImage(data->output_b0);
+                const Ren::ImageRWHandle output_b1234 = fg.AccessRWImage(data->output_b1234);
+
+                const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
+                                                 {Trg::TexSampled, Skydome::WEATHER_TEX_SLOT, weather},
+                                                 {Trg::TexSampled, Skydome::CURL_TEX_SLOT, curl},
+                                                 {Trg::TexSampled, Skydome::NOISE3D_TEX_SLOT, noise3d},
+                                                 {Trg::ImageRW, Skydome::OUT_B0_IMG_SLOT, output_b0},
+                                                 {Trg::ImageRW, Skydome::OUT_B1234_IMG_SLOT, output_b1234}};
+
+                static_assert((Skydome::CLOUD_SHADOWMAP_RES / 4) % Skydome::GRP_SIZE_X == 0);
+                static_assert((Skydome::CLOUD_SHADOWMAP_RES / 4) % Skydome::GRP_SIZE_Y == 0);
+                const Ren::Vec3u grp_count = Ren::Vec3u{(Skydome::CLOUD_SHADOWMAP_RES / 4) / Skydome::GRP_SIZE_X,
+                                                        (Skydome::CLOUD_SHADOWMAP_RES / 4) / Skydome::GRP_SIZE_Y, 1u};
+
+                Skydome::Params2 uniform_params = {};
+                uniform_params.sample_coord = ExSkydomeScreen::sample_pos(view_state_.frame_index);
+
+                DispatchCompute(fg.cmd_buf(), pi_clouds_shadow_, fg.storages(), grp_count, bindings, &uniform_params,
+                                sizeof(uniform_params), fg.descr_alloc(), fg.log());
+            });
+        }
+        { // Upsample clouds shadowmap
+            auto &clouds_shadow_upsample = fg_builder_.AddNode("CLOUDS SHADOW UPSAMPLE");
+
+            struct PassData {
+                FgImgROHandle input_b0;
+                FgImgROHandle input_b1234;
+                FgImgROHandle hist_b0;
+                FgImgROHandle hist_b1234;
+
+                FgImgRWHandle output_b0;
+                FgImgRWHandle output_b1234;
+            };
+
+            auto *data = fg_builder_.AllocTempData<PassData>();
+
+            data->input_b0 = clouds_shadow_upsample.AddTextureInput(clouds_shadow_b0_temp, Stg::ComputeShader);
+            data->input_b1234 = clouds_shadow_upsample.AddTextureInput(clouds_shadow_b1234_temp, Stg::ComputeShader);
+
+            { //
+                FgImgDesc desc;
+                desc.w = Skydome::CLOUD_SHADOWMAP_RES;
+                desc.h = Skydome::CLOUD_SHADOWMAP_RES;
+                desc.sampling.filter = Ren::eFilter::Bilinear;
+                desc.sampling.wrap = Ren::eWrap::ClampToBorder;
+
+                desc.format = Ren::eFormat::R16F;
+                clouds_shadow_b0 = data->output_b0 =
+                    clouds_shadow_upsample.AddStorageImageOutput("Clouds Shadow B0", desc, Stg::ComputeShader);
+
+                desc.format = Ren::eFormat::RGBA16F;
+                clouds_shadow_b1234 = data->output_b1234 =
+                    clouds_shadow_upsample.AddStorageImageOutput("Clouds Shadow B1234", desc, Stg::ComputeShader);
+            }
+
+            data->hist_b0 = clouds_shadow_upsample.AddHistoryTextureInput(data->output_b0, Stg::ComputeShader);
+            data->hist_b1234 = clouds_shadow_upsample.AddHistoryTextureInput(data->output_b1234, Stg::ComputeShader);
+
+            clouds_shadow_upsample.set_execute_cb([data, this](const FgContext &fg) {
+                const Ren::ImageROHandle input_b0 = fg.AccessROImage(data->input_b0);
+                const Ren::ImageROHandle input_b1234 = fg.AccessROImage(data->input_b1234);
+                const Ren::ImageROHandle hist_b0 = fg.AccessROImage(data->hist_b0);
+                const Ren::ImageROHandle hist_b1234 = fg.AccessROImage(data->hist_b1234);
+
+                const Ren::ImageRWHandle output_b0 = fg.AccessRWImage(data->output_b0);
+                const Ren::ImageRWHandle output_b1234 = fg.AccessRWImage(data->output_b1234);
+
+                const Ren::Binding bindings[] = {{Trg::TexSampled, Skydome::MOMENTS_B0_TEX_SLOT, input_b0},
+                                                 {Trg::TexSampled, Skydome::MOMENTS_B1234_TEX_SLOT, input_b1234},
+                                                 {Trg::TexSampled, Skydome::MOMENTS_B0_HIST_TEX_SLOT, hist_b0},
+                                                 {Trg::TexSampled, Skydome::MOMENTS_B1234_HIST_TEX_SLOT, hist_b1234},
+                                                 {Trg::ImageRW, Skydome::OUT_B0_IMG_SLOT, output_b0},
+                                                 {Trg::ImageRW, Skydome::OUT_B1234_IMG_SLOT, output_b1234}};
+
+                static_assert(Skydome::CLOUD_SHADOWMAP_RES % Skydome::GRP_SIZE_X == 0);
+                static_assert(Skydome::CLOUD_SHADOWMAP_RES % Skydome::GRP_SIZE_Y == 0);
+                const Ren::Vec3u grp_count = Ren::Vec3u{Skydome::CLOUD_SHADOWMAP_RES / Skydome::GRP_SIZE_X,
+                                                        Skydome::CLOUD_SHADOWMAP_RES / Skydome::GRP_SIZE_Y, 1u};
+
+                Skydome::Params2 uniform_params = {};
+                uniform_params.sample_coord = ExSkydomeScreen::sample_pos(view_state_.frame_index);
+
+                DispatchCompute(fg.cmd_buf(), pi_clouds_shadow_upsample_, fg.storages(), grp_count, bindings, &uniform_params,
+                                sizeof(uniform_params), fg.descr_alloc(), fg.log());
+            });
+        }
+        { // Update skydome cube map
+            auto &skydome_cube = fg_builder_.AddNode("SKYDOME CUBE");
+
+            auto *data = fg_builder_.AllocTempData<ExSkydomeCube::Args>();
+
+            data->shared_data = skydome_cube.AddUniformBufferInput(
+                common_buffers.shared_data, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
+
+            data->transmittance_lut =
+                skydome_cube.AddTextureInput(frame_textures.sky_transmittance_lut, Stg::FragmentShader);
+            data->multiscatter_lut =
+                skydome_cube.AddTextureInput(frame_textures.sky_multiscatter_lut, Stg::FragmentShader);
+            data->moon = skydome_cube.AddTextureInput(frame_textures.sky_moon, Stg::FragmentShader);
+            data->weather = skydome_cube.AddTextureInput(frame_textures.sky_weather, Stg::FragmentShader);
+            data->cirrus = skydome_cube.AddTextureInput(frame_textures.sky_cirrus, Stg::FragmentShader);
+            data->curl = skydome_cube.AddTextureInput(frame_textures.sky_curl, Stg::FragmentShader);
+            data->noise3d = skydome_cube.AddTextureInput(frame_textures.sky_noise3d, Stg::FragmentShader);
+            data->tcbn = skydome_cube.AddTextureInput(frame_textures.tcbn_1D_16spp_stride, Stg::FragmentShader);
+            data->clouds_shadow_b0 = skydome_cube.AddTextureInput(clouds_shadow_b0, Stg::FragmentShader);
+            data->clouds_shadow_b1234 = skydome_cube.AddTextureInput(clouds_shadow_b1234, Stg::FragmentShader);
+            frame_textures.envmap = data->color = skydome_cube.AddColorOutput(frame_textures.envmap);
+
+            skydome_cube.make_executor<ExSkydomeCube>(prim_draw_, &view_state_, data);
+        }
     }
 
     FgImgRWHandle sky_temp;
@@ -247,6 +381,9 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             data->phys.cirrus = skymap.AddTextureInput(frame_textures.sky_cirrus, Stg::FragmentShader);
             data->phys.curl = skymap.AddTextureInput(frame_textures.sky_curl, Stg::FragmentShader);
             data->phys.noise3d = skymap.AddTextureInput(frame_textures.sky_noise3d, Stg::FragmentShader);
+            data->phys.tcbn = skymap.AddTextureInput(frame_textures.tcbn_1D_16spp_stride, Stg::FragmentShader);
+            data->phys.clouds_shadow_b0 = skymap.AddTextureInput(clouds_shadow_b0, Stg::FragmentShader);
+            data->phys.clouds_shadow_b1234 = skymap.AddTextureInput(clouds_shadow_b1234, Stg::FragmentShader);
 
             if (settings.sky_quality == eSkyQuality::High) {
                 data->depth_ro = skymap.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
@@ -398,6 +535,7 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers, const F
             FgImgROHandle weather;
             FgImgROHandle cirrus;
             FgImgROHandle noise3d;
+            FgImgROHandle tcbn;
             FgBufRWHandle output;
         };
 
@@ -410,6 +548,7 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers, const F
         data->weather = sun_color.AddTextureInput(frame_textures.sky_weather, Stg::ComputeShader);
         data->cirrus = sun_color.AddTextureInput(frame_textures.sky_cirrus, Stg::ComputeShader);
         data->noise3d = sun_color.AddTextureInput(frame_textures.sky_noise3d, Stg::ComputeShader);
+        data->tcbn = sun_color.AddTextureInput(frame_textures.tcbn_1D_16spp_stride, Stg::ComputeShader);
 
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Storage;
@@ -424,17 +563,18 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers, const F
             const Ren::ImageROHandle weather = fg.AccessROImage(data->weather);
             const Ren::ImageROHandle cirrus = fg.AccessROImage(data->cirrus);
             const Ren::ImageROHandle noise3d = fg.AccessROImage(data->noise3d);
+            const Ren::ImageROHandle tcbn = fg.AccessROImage(data->tcbn);
             const Ren::BufferHandle output = fg.AccessRWBuffer(data->output);
 
-            const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
-                {Trg::TexSampled, SunBrightness::TRANSMITTANCE_LUT_SLOT, transmittance_lut},
-                {Trg::TexSampled, SunBrightness::MULTISCATTER_LUT_SLOT, multiscatter_lut},
-                {Trg::TexSampled, SunBrightness::MOON_TEX_SLOT, moon},
-                {Trg::TexSampled, SunBrightness::WEATHER_TEX_SLOT, weather},
-                {Trg::TexSampled, SunBrightness::CIRRUS_TEX_SLOT, cirrus},
-                {Trg::TexSampled, SunBrightness::NOISE3D_TEX_SLOT, noise3d},
-                {Trg::SBufRW, SunBrightness::OUT_BUF_SLOT, output}};
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
+                                             {Trg::TexSampled, Skydome::TRANSMITTANCE_LUT_SLOT, transmittance_lut},
+                                             {Trg::TexSampled, Skydome::MULTISCATTER_LUT_SLOT, multiscatter_lut},
+                                             {Trg::TexSampled, Skydome::MOON_TEX_SLOT, moon},
+                                             {Trg::TexSampled, Skydome::WEATHER_TEX_SLOT, weather},
+                                             {Trg::TexSampled, Skydome::CIRRUS_TEX_SLOT, cirrus},
+                                             {Trg::TexSampled, Skydome::NOISE3D_TEX_SLOT, noise3d},
+                                             {Trg::TexSampled, Skydome::TCBN_1D_TEX_SLOT, tcbn},
+                                             {Trg::SBufRW, Skydome::OUT_BUF_SLOT, output}};
 
             DispatchCompute(fg.cmd_buf(), pi_sun_brightness_, fg.storages(), Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr,
                             0, fg.descr_alloc(), fg.log());

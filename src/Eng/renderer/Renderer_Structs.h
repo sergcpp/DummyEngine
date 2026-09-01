@@ -408,7 +408,7 @@ struct view_state_t {
     float vertical_fov;
     float pixel_spread_angle;
     int frame_index, volume_to_update, stochastic_lights_count, stochastic_lights_count_cache;
-    Ren::Vec3f prev_sun_dir;
+    Ren::Vec3f sun_dir, prev_sun_dir;
     Ren::Vec3d prev_world_origin;
     Ren::Mat4f clip_from_world, clip_from_world_no_translation, prev_clip_from_world_no_translation, view_from_world,
         prev_view_from_world, prev_clip_from_world, down_buf_view_from_world, prev_clip_from_view;
@@ -416,6 +416,7 @@ struct view_state_t {
     float pre_exposure = 1.0f, prev_pre_exposure = 1.0f;
     Ren::Quatf probe_ray_rotator;
     uint32_t probe_ray_hash = 0;
+    uint32_t clouds_shadow_iteration = 0;
     uint32_t env_generation = 0xffffffff;
 
     bool skip_volumetrics = false;
@@ -426,6 +427,7 @@ struct shared_data_t {
         prev_clip_from_world_no_translation;
     Ren::Mat4f world_from_view, view_from_clip, world_from_clip, world_from_clip_no_translation, delta_matrix;
     Ren::Mat4f rt_clip_from_world;
+    Ren::Mat4f cloud_sh_clip_from_world, cloud_sh_world_from_clip;
     shadow_map_region_t shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     Ren::Vec4f sun_dir, sun_col, sun_col_point, sun_col_point_sh, env_col, taa_info, frustum_info;
     Ren::Vec4f clip_info, rt_clip_info, cam_pos_and_exp, cam_pos_rad;
@@ -443,7 +445,7 @@ struct shared_data_t {
     ellipse_item_t ellipsoids[MAX_ELLIPSES_TOTAL] = {};
     Types::atmosphere_params_t atmosphere;
 };
-static_assert(sizeof(shared_data_t) == sizeof(Ren::Mat4f) * 12 +                                 //
+static_assert(sizeof(shared_data_t) == sizeof(Ren::Mat4f) * 14 +                                 //
                                            sizeof(shadow_map_region_t) * MAX_SHADOWMAPS_TOTAL +  //
                                            sizeof(Ren::Vec4f) * 25 +                             //
                                            sizeof(Types::probe_volume_t) * 2 * PROBE_VOLUMES_COUNT + //

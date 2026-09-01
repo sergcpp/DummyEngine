@@ -180,7 +180,7 @@ __itt_string_handle *itt_proc_occluders_str = __itt_string_handle_create("Proces
     }
 
 #define _CROSS(x, y)                                                                                                   \
-    { (x)[1] * (y)[2] - (x)[2] * (y)[1], (x)[2] * (y)[0] - (x)[0] * (y)[2], (x)[0] * (y)[1] - (x)[1] * (y)[0] }
+    {(x)[1] * (y)[2] - (x)[2] * (y)[1], (x)[2] * (y)[0] - (x)[0] * (y)[2], (x)[0] * (y)[1] - (x)[1] * (y)[0]}
 
 void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam,
                                     DrawList &list) {
@@ -319,7 +319,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     list.draw_cam.near());
     swCullCtxClear(&cull_ctx_);
 
-    const Mat4f view_from_identity = view_from_world *Mat4f{1.0f},
+    const Mat4f view_from_identity = view_from_world * Mat4f{1.0f},
                 clip_from_identity = clip_from_view * view_from_identity;
 
     uint32_t stack[MAX_STACK_SIZE];
@@ -619,8 +619,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         auto dir = Vec4f{-light.dir[0], -light.dir[1], -light.dir[2], 0.0f};
                         dir = tr.world_from_object * dir;
 
-                        const auto u = tr.world_from_object *Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
-                        const auto v = tr.world_from_object *Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
+                        const auto u = tr.world_from_object * Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
+                        const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
 
                         litem_to_lsource_.emplace_back(obj.components[CompLightSource]);
                         proc_objects_[i.index].li_index = int32_t(list.lights.size());
@@ -812,8 +812,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     auto dir = Vec4f{-light.dir[0], -light.dir[1], -light.dir[2], 0.0f};
                     dir = tr.world_from_object * dir;
 
-                    const auto u = tr.world_from_object *Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
-                    const auto v = tr.world_from_object *Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
+                    const auto u = tr.world_from_object * Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
+                    const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
 
                     litem_to_lsource_.emplace_back(obj.components[CompLightSource]);
                     light_item_t &ls = list.lights.emplace_back();
@@ -1370,6 +1370,32 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             sh_list.shadow_batch_count = uint32_t(list.shadow_batches.size()) - sh_list.shadow_batch_start;
             sh_list.dirty = true;
         }
+    }
+
+    { // Setup clouds shadow projection
+        const Ren::Vec3f &light_dir =
+            (-list.env.sun_dir[1] > -0.025) ? -list.env.sun_dir : -Ren::Vec3f{0.707f, 0.707f, 0.0f};
+        auto cam_up = Ren::Vec3f{1.0f, 0.0f, 0.0f};
+        if (fabsf(light_dir[1]) < 0.999f) {
+            cam_up = Ren::Vec3f{0.0f, 1.0f, 0.0f};
+        }
+
+        const Ren::Vec3f cam_target = Ren::Vec3f{0.0f, list.env.atmosphere.viewpoint_height, 0.0f};
+        const Ren::Vec3f cam_center = cam_target + 50000.0f * light_dir;
+
+        const Ren::Vec3f cam_side = Normalize(Cross(light_dir, cam_up));
+        cam_up = Cross(cam_side, light_dir);
+
+        const float BoundingRadius = 64000.0f;
+
+        Ren::Camera shadow_cam;
+        shadow_cam.SetupView(cam_center, cam_target, cam_up);
+        shadow_cam.Orthographic(Ren::eZRange::OneToZero, -BoundingRadius, BoundingRadius, BoundingRadius,
+                                -BoundingRadius, 0.0f, 50000.0f);
+        shadow_cam.UpdatePlanes();
+
+        list.cloud_sh_clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
+        list.cloud_sh_world_from_clip = Inverse(list.cloud_sh_clip_from_world);
     }
 
     const Vec3f cam_pos = cam.world_position();

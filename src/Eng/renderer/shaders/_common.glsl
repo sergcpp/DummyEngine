@@ -411,6 +411,7 @@ struct shared_data_t {
     mat4 view_from_world, clip_from_view, clip_from_world, prev_view_from_world, prev_clip_from_world, prev_clip_from_world_no_translation;
     mat4 world_from_view, view_from_clip, world_from_clip, world_from_clip_no_translation, delta_matrix;
     mat4 rt_clip_from_world;
+    mat4 cloud_sh_clip_from_world, cloud_sh_world_from_clip;
     shadow_map_region_t shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     vec4 sun_dir, sun_col, sun_col_point, sun_col_point_sh, env_col, taa_info, frustum_info;
     vec4 clip_info, rt_clip_info, cam_pos_and_exp, cam_pos_rad;

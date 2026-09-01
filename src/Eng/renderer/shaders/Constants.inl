@@ -182,7 +182,7 @@ const int MATERIAL_INDEX_BITS = 16383; // 0b0011111111111111
 
 // Atmosphere
 const int SKY_MULTISCATTER_LUT_RES = 32;
-const int SKY_PRE_ATMOSPHERE_SAMPLE_COUNT = 4;
+const int SKY_PRE_ATMOSPHERE_SAMPLE_COUNT = 16; // higher count due to shadow sampling
 const int SKY_MAIN_ATMOSPHERE_SAMPLE_COUNT = 12;
 const int SKY_CLOUDS_SAMPLE_COUNT = 96;
 const float SKY_CLOUDS_HORIZON_CUTOFF = 0.005f;

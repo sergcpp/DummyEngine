@@ -89,7 +89,7 @@ class Renderer {
     Ren::ImageHandle tonemap_lut_;
     Ren::BufferHandle bn_pmj_2D_64spp_seq_buf_;
     Ren::BufferHandle pmj_samples_buf_;
-    Ren::ImageHandle tcbn_1D_64spp_, tcbn_2D_64spp_;
+    Ren::ImageHandle tcbn_1D_16spp_stride_, tcbn_1D_64spp_, tcbn_2D_64spp_;
     Ren::ImageHandle sky_transmittance_lut_, sky_multiscatter_lut_, sky_moon_, sky_weather_, sky_cirrus_, sky_curl_;
     Ren::ImageHandle sky_noise3d_;
 
@@ -202,14 +202,13 @@ class Renderer {
         pi_diffuse_stabilization_;
     // Sun shadows
     Ren::PipelineHandle pi_shadow_classify_, pi_sun_shadows_[2], pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
-        pi_shadow_filter_[3], pi_shadow_debug_;
-    Ren::PipelineHandle pi_sun_brightness_;
+        pi_shadow_filter_[3], pi_shadow_debug_, pi_clouds_shadow_, pi_clouds_shadow_upsample_;
     // Bloom
     Ren::PipelineHandle pi_bloom_downsample_[2][2], pi_bloom_upsample_[2];
     // Autoexposure
     Ren::PipelineHandle pi_histogram_sample_, pi_histogram_exposure_;
     // Volumetrics
-    Ren::PipelineHandle pi_sky_upsample_;
+    Ren::PipelineHandle pi_sky_upsample_, pi_sun_brightness_;
     Ren::PipelineHandle pi_vol_scatter_[2][2], pi_vol_ray_march_;
     // TSR
     Ren::PipelineHandle pi_reconstruct_depth_, pi_prepare_disocclusion_, pi_sharpen_[2];
@@ -290,6 +289,7 @@ class Renderer {
         FgImgROHandle ltc_luts;
         FgImgROHandle brdf_lut;
         FgImgROHandle cone_rt_lut;
+        FgImgROHandle tcbn_1D_16spp_stride;
         FgImgROHandle tcbn_1D_64spp;
         FgImgROHandle tcbn_2D_64spp;
         FgImgROHandle tonemap_lut;

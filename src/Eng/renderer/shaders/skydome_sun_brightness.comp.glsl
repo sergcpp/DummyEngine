@@ -2,11 +2,15 @@
 
 #include "_cs_common.glsl"
 #include "rt_common.glsl"
-#include "sun_brightness_interface.h"
+#include "skydome_interface.h"
 
+#define ENABLE_RAY_JITTER 0
 #define ENABLE_SUN_DISK 0
 #define ENABLE_CLOUDS_CURL 0
+#define ENABLE_SHADOW_MAP 0
 #include "atmosphere_common.glsl"
+
+layout(binding = TCBN_1D_TEX_SLOT) uniform sampler2DArray g_tcbn_1d_tex;
 
 layout(binding = TRANSMITTANCE_LUT_SLOT) uniform sampler2D g_trasmittance_lut;
 layout(binding = MULTISCATTER_LUT_SLOT) uniform sampler2D g_multiscatter_lut;
@@ -37,9 +41,9 @@ void main() {
     vec3 transmittance = vec3(0.0);
     const vec2 planet_intersection = PlanetIntersection(sample_pos, sample_dir);
     if (planet_intersection.x <= 0) {
-        IntegrateScattering(sample_pos, sample_dir, FLT_MAX, 0,
+        IntegrateScattering(uvec3(gl_LocalInvocationID.xy, 0), sample_pos, sample_dir, FLT_MAX,
                             g_trasmittance_lut, g_multiscatter_lut, g_moon_tex, g_weather_tex,
-                            g_cirrus_tex, g_cirrus_tex, g_noise3d_tex, transmittance);
+                            g_cirrus_tex, g_cirrus_tex, g_noise3d_tex, g_tcbn_1d_tex, g_cirrus_tex, g_cirrus_tex, transmittance);
     }
     barrier(); groupMemoryBarrier();
 

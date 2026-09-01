@@ -30,8 +30,16 @@ void Eng::ExSkydomeCube::Execute(const FgContext &fg) {
     const Ren::ImageROHandle cirrus = fg.AccessROImage(args_->cirrus);
     const Ren::ImageROHandle curl = fg.AccessROImage(args_->curl);
     const Ren::ImageROHandle noise3d = fg.AccessROImage(args_->noise3d);
+    const Ren::ImageROHandle tcbn = fg.AccessROImage(args_->tcbn);
+
+    const Ren::ImageROHandle shadow_b0 = fg.AccessROImage(args_->clouds_shadow_b0);
+    const Ren::ImageROHandle shadow_b1234 = fg.AccessROImage(args_->clouds_shadow_b1234);
 
     const Ren::ImageRWHandle color = fg.AccessRWImage(args_->color);
+
+    if (view_state_->clouds_shadow_iteration < 16) {
+        return;
+    }
 
     if (view_state_->env_generation == generation_) {
         return;
@@ -63,7 +71,10 @@ void Eng::ExSkydomeCube::Execute(const FgContext &fg) {
                                      {Ren::eBindTarget::TexSampled, Skydome::WEATHER_TEX_SLOT, weather},
                                      {Ren::eBindTarget::TexSampled, Skydome::CIRRUS_TEX_SLOT, cirrus},
                                      {Ren::eBindTarget::TexSampled, Skydome::CURL_TEX_SLOT, curl},
-                                     {Ren::eBindTarget::TexSampled, Skydome::NOISE3D_TEX_SLOT, noise3d}};
+                                     {Ren::eBindTarget::TexSampled, Skydome::MOMENTS_B0_TEX_SLOT, shadow_b0},
+                                     {Ren::eBindTarget::TexSampled, Skydome::MOMENTS_B1234_TEX_SLOT, shadow_b1234},
+                                     {Ren::eBindTarget::TexSampled, Skydome::NOISE3D_TEX_SLOT, noise3d},
+                                     {Ren::eBindTarget::TexSampled, Skydome::TCBN_1D_TEX_SLOT, tcbn}};
 
 #if defined(REN_GL_BACKEND)
     static const Ren::Vec3f axises[] = {Ren::Vec3f{1.0f, 0.0f, 0.0f}, Ren::Vec3f{-1.0f, 0.0f, 0.0f},
@@ -107,6 +118,7 @@ void Eng::ExSkydomeCube::Execute(const FgContext &fg) {
         Skydome::Params uniform_params = {};
         uniform_params.clip_from_world = temp_cam.proj_matrix() * temp_cam.view_matrix();
         uniform_params.scale = 500.0f;
+        uniform_params.frame_index = 0;
 
         const Ren::RenderTarget color_targets[] = {
             {color, uint8_t((faceq / 4) + 1), Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
@@ -204,6 +216,7 @@ void Eng::ExSkydomeScreen::Execute(const FgContext &fg) {
     uniform_params.img_size = view_state_->ren_res;
     uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_->ren_res);
     uniform_params.scale = 0.95f * view_state_->clip_info[2];
+    uniform_params.frame_index = uint32_t(view_state_->frame_index % 256);
 
     const Ren::RenderTarget color_targets[] = {{color, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
@@ -215,6 +228,9 @@ void Eng::ExSkydomeScreen::Execute(const FgContext &fg) {
         const Ren::ImageROHandle cirrus = fg.AccessROImage(args_->phys.cirrus);
         const Ren::ImageROHandle curl = fg.AccessROImage(args_->phys.curl);
         const Ren::ImageROHandle noise3d = fg.AccessROImage(args_->phys.noise3d);
+        const Ren::ImageROHandle tcbn = fg.AccessROImage(args_->phys.tcbn);
+        const Ren::ImageROHandle shadow_b0 = fg.AccessROImage(args_->phys.clouds_shadow_b0);
+        const Ren::ImageROHandle shadow_b1234 = fg.AccessROImage(args_->phys.clouds_shadow_b1234);
 
         const Ren::ImageRWHandle depth = fg.AccessRWImage(args_->depth_rw);
 
@@ -225,6 +241,9 @@ void Eng::ExSkydomeScreen::Execute(const FgContext &fg) {
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::CIRRUS_TEX_SLOT, cirrus);
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::CURL_TEX_SLOT, curl);
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::NOISE3D_TEX_SLOT, noise3d);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::TCBN_1D_TEX_SLOT, tcbn);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::MOMENTS_B0_TEX_SLOT, shadow_b0);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::MOMENTS_B1234_TEX_SLOT, shadow_b1234);
 
         rast_state.viewport[2] = view_state_->ren_res[0];
         rast_state.viewport[3] = view_state_->ren_res[1];
@@ -242,6 +261,9 @@ void Eng::ExSkydomeScreen::Execute(const FgContext &fg) {
         const Ren::ImageROHandle cirrus = fg.AccessROImage(args_->phys.cirrus);
         const Ren::ImageROHandle curl = fg.AccessROImage(args_->phys.curl);
         const Ren::ImageROHandle noise3d = fg.AccessROImage(args_->phys.noise3d);
+        const Ren::ImageROHandle tcbn = fg.AccessROImage(args_->phys.tcbn);
+        const Ren::ImageROHandle shadow_b0 = fg.AccessROImage(args_->phys.clouds_shadow_b0);
+        const Ren::ImageROHandle shadow_b1234 = fg.AccessROImage(args_->phys.clouds_shadow_b1234);
         const Ren::ImageROHandle depth = fg.AccessROImage(args_->depth_ro);
 
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::TRANSMITTANCE_LUT_SLOT, transmittance_lut);
@@ -251,6 +273,9 @@ void Eng::ExSkydomeScreen::Execute(const FgContext &fg) {
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::CIRRUS_TEX_SLOT, cirrus);
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::CURL_TEX_SLOT, curl);
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::NOISE3D_TEX_SLOT, noise3d);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::TCBN_1D_TEX_SLOT, tcbn);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::MOMENTS_B0_TEX_SLOT, shadow_b0);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::MOMENTS_B1234_TEX_SLOT, shadow_b1234);
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::DEPTH_TEX_SLOT, Ren::OpaqueHandle{depth, 1});
 
         // TODO: Get rid of this!
