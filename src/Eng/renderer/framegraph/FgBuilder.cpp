@@ -128,7 +128,8 @@ Eng::FgBuilder::FgBuilder(Eng::ShaderLoader &sh, PrimDraw &prim_draw)
 
 Eng::FgNode &Eng::FgBuilder::AddNode(const std::string_view name, const eFgQueueType queue) {
     char *mem = alloc_.allocate(sizeof(FgNode) + alignof(FgNode) - 1);
-    auto *new_rp = reinterpret_cast<FgNode *>(mem + (alignof(FgNode) - uintptr_t(mem) % alignof(FgNode)) % alignof(FgNode));
+    auto *new_rp =
+        reinterpret_cast<FgNode *>(mem + (alignof(FgNode) - uintptr_t(mem) % alignof(FgNode)) % alignof(FgNode));
     alloc_.construct(new_rp, name, int(nodes_.size()), queue, *this);
     nodes_.emplace_back(new_rp);
     return *nodes_.back();
@@ -1655,13 +1656,18 @@ void Eng::FgBuilder::ClearBuffer_AsStorage(const Ren::BufferHandle buf, Ren::Com
     const auto &[buf_main, buf_cold] = ctx_.storages().buffers[buf];
     assert((buf_cold.size % 4) == 0);
 
-    const Ren::Vec3u grp_count = Ren::Vec3u{Ren::DivCeil<uint32_t>(buf_cold.size / 4, ClearBuffer::GRP_SIZE_X), 1u, 1u};
+    const uint32_t max_grp_count = 65536u; // typical limitation
+    const uint32_t grp_count = Ren::DivCeil<uint32_t>(buf_cold.size / 4, ClearBuffer::GRP_SIZE_X);
 
     ClearBuffer::Params uniform_params;
     uniform_params.data_len = (buf_cold.size / 4);
 
-    DispatchCompute(cmd_buf, pi_clear_buffer_, ctx_.storages(), grp_count, bindings, &uniform_params,
-                    sizeof(ClearBuffer::Params), ctx_.default_descr_alloc(), ctx_.log());
+    for (uint32_t grp_offset = 0; grp_offset < grp_count; grp_offset += max_grp_count) {
+        uniform_params.data_off = grp_offset * ClearBuffer::GRP_SIZE_X;
+        DispatchCompute(cmd_buf, pi_clear_buffer_, ctx_.storages(),
+                        Ren::Vec3u{std::min(grp_count - grp_offset, max_grp_count), 1u, 1u}, bindings, &uniform_params,
+                        sizeof(ClearBuffer::Params), ctx_.default_descr_alloc(), ctx_.log());
+    }
 }
 
 void Eng::FgBuilder::ClearImage_AsTransfer(const Ren::ImageHandle img, Ren::CommandBuffer cmd_buf) {

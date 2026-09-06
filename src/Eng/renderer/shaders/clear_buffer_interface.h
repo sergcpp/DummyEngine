@@ -6,6 +6,7 @@
 INTERFACE_START(ClearBuffer)
 
 struct Params {
+    uint data_off;
     uint data_len;
 };
 
