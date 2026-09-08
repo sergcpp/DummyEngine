@@ -1,5 +1,6 @@
 #version 430 core
 
+#pragma multi_compile _ NIGHT_TIME
 #pragma multi_compile _ SCREEN
 #pragma multi_compile _ SUBSAMPLE
 
@@ -10,6 +11,11 @@
 #include "_fs_common.glsl"
 #include "skydome_interface.h"
 
+#ifdef NIGHT_TIME
+    #define IS_DAY_TIME 0
+#else
+    #define IS_DAY_TIME 1
+#endif
 #ifdef SCREEN
     #define ENABLE_RAY_JITTER 1
     #define ENABLE_SUN_DISK 1
@@ -56,7 +62,7 @@ void main() {
 #endif
 
 #ifdef SUBSAMPLE
-    const uvec3 ucoord = uvec3(4 * uvec2(gl_FragCoord.xy) + g_params.sample_coord.xy, g_params.frame_index / 16);
+    const uvec3 ucoord = uvec3(4 * uvec2(gl_FragCoord.xy) + g_params.sample_coord.xy, 0 /* no per-frame jitter */);
     if (ucoord.x >= g_params.img_size.x || ucoord.y >= g_params.img_size.y) {
         g_out_color = vec4(0.0, 0.0, 0.0, 0.0);
         return;

@@ -43,7 +43,7 @@ class ExSkydomeCube final : public FgExecutor {
     const Args *args_ = nullptr;
 
     // lazily initialized data
-    Ren::ProgramHandle prog_skydome_phys_;
+    Ren::ProgramHandle prog_skydome_phys_[2];
     Ren::PipelineHandle pi_skydome_downsample_;
 
     void LazyInit(const FgContext &fg);
@@ -80,6 +80,7 @@ class ExSkydomeScreen final : public FgExecutor {
 
     void Execute(const FgContext &fg) override;
 
+    static bool is_night_time(const Ren::Vec3f &sun_dir);
     static Ren::Vec2u sample_pos(int frame_index);
 
   private:
@@ -91,7 +92,7 @@ class ExSkydomeScreen final : public FgExecutor {
     const Args *args_ = nullptr;
 
     // lazily initialized data
-    Ren::ProgramHandle prog_skydome_simple_, prog_skydome_phys_[2];
+    Ren::ProgramHandle prog_skydome_simple_, prog_skydome_phys_[2][2];
 
     void LazyInit(const FgContext &fg);
 };

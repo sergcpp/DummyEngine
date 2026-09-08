@@ -16,6 +16,9 @@
 #ifndef ENABLE_SHADOW_RAY
     #define ENABLE_SHADOW_RAY 1
 #endif
+#ifndef IS_DAY_TIME
+    #define IS_DAY_TIME 1
+#endif
 
 #include "moments_common.glsl"
 
@@ -307,17 +310,18 @@ float TraceCloudShadow(sampler2D weather_tex, sampler2D curl_tex, sampler3D nois
 #if ENABLE_SHADOW_RAY
     if (clouds_intersection.w > 0) {
         const int SampleCount = 4;
-
         const float StepSize = 16.0;
-        vec3 pos = ray_start + (rand_offset * StepSize) * ray_dir;
 
+        float ray_time = rand_offset * StepSize;
         float density = 0.0;
         for (int i = 0; i < SampleCount; ++i) {
+            const vec3 pos = ray_start + ray_time * ray_dir;
+
             float local_height, height_fraction;
             vec3 up_vector;
             const float local_density = GetCloudsDensity(weather_tex, curl_tex, noise3d_tex, pos, local_height, height_fraction, up_vector);
             density += local_density;
-            pos += ray_dir * StepSize;
+            ray_time += StepSize;
         }
 
         absorbance = density * StepSize;
@@ -390,7 +394,7 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
     const float step_size = ray_length / float(sample_count);
     float ray_time = rand_offset * step_size;
     for (int i = 0; i < sample_count; ++i) {
-        const vec3 local_position = ray_start + ray_dir * ray_time;
+        const vec3 local_position = ray_start + ray_time * ray_dir;
         vec3 up_vector;
         const float local_height = AtmosphereHeight(local_position, up_vector);
         const atmosphere_medium_t medium = SampleAtmosphereMedium(local_height);
@@ -399,8 +403,8 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
 
         vec3 S = vec3(0.0);
 
-        if (g_shrd_data.sun_dir.y > -0.025) {
-            // main light contribution
+#if IS_DAY_TIME
+        { // sun light contribution
             const float view_zenith_cos_angle = dot(g_shrd_data.sun_dir.xyz, up_vector);
             const vec2 uv = LutTransmittanceParamsToUv(local_height + g_shrd_data.atmosphere.planet_radius, view_zenith_cos_angle);
             const vec3 light_transmittance = textureLod(transmittance_lut, uv, 0.0).xyz;
@@ -418,7 +422,9 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
 
             const vec3 phase_times_scattering = medium.scattering_ray * phase_r + medium.scattering_mie * phase_m;
             S += (planet_shadow * light_transmittance * phase_times_scattering + multiscattered_lum * medium.scattering) * g_shrd_data.sun_col_point.xyz;
-        } else if (g_shrd_data.atmosphere.moon_radius > 0.0) {
+        }
+#else
+        if (g_shrd_data.atmosphere.moon_radius > 0.0) {
             // moon reflection contribution  (totally fake)
             const float view_zenith_cos_angle = dot(g_shrd_data.atmosphere.moon_dir.xyz, up_vector);
             const vec2 uv = LutTransmittanceParamsToUv(local_height + g_shrd_data.atmosphere.planet_radius, view_zenith_cos_angle);
@@ -436,6 +442,7 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
             const vec3 phase_times_scattering = medium.scattering_ray * moon_phase_r + medium.scattering_mie * moon_phase_m;
             S += SKY_MOON_SUN_RELATION * (cloud_shadow * light_transmittance * phase_times_scattering + multiscattered_lum * medium.scattering) * g_shrd_data.sun_col_point.xyz;
         }
+#endif
 
         // 1 is the integration of luminance over the 4pi of a sphere, and assuming an isotropic phase function
         // of 1.0/(4*PI)
@@ -539,13 +546,14 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
         if (clouds_ray_length > 0.0) {
             const float step_size = clouds_ray_length / float(SKY_CLOUDS_SAMPLE_COUNT);
 
-            vec3 local_position = clouds_ray_start + ray_dir * rand_offset_main * step_size;
-
+            float ray_time = rand_offset_main * step_size;
             vec3 clouds = vec3(0.0);
 
             // NOTE: We assume transmittance is constant along the clouds range (~500m)
             vec3 light_transmittance, moon_transmittance, multiscattered_lum = vec3(0.0), moon_multiscattered_lum = vec3(0.0);
             {
+                const vec3 local_position = clouds_ray_start + ray_time * ray_dir;
+
                 vec3 up_vector;
                 const float local_height = AtmosphereHeight(local_position, up_vector);
                 {
@@ -573,6 +581,8 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
             vec3 transmittance_before = total_transmittance;
 
             for (int i = 0; i < SKY_CLOUDS_SAMPLE_COUNT; ++i) {
+                const vec3 local_position = clouds_ray_start + ray_time * ray_dir;
+
                 float local_height, height_fraction;
                 vec3 up_vector;
                 const float local_density = GetCloudsDensity(weather_tex, curl_tex, noise3d_tex, local_position, local_height, height_fraction, up_vector);
@@ -580,8 +590,8 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
                     const float local_transmittance = exp(-local_density * step_size);
                     const float ambient_visibility = (0.75 + 1.5 * max(0.0, height_fraction - 0.1));
 
-                    if (g_shrd_data.sun_dir.y > -0.025) {
-                        // main light contribution
+#if IS_DAY_TIME
+                    { // sun light contribution
                         const vec2 planet_intersection = PlanetIntersection(local_position, g_shrd_data.sun_dir.xyz);
                         const float planet_shadow = planet_intersection.x > 0 ? 0.0 : 1.0;
                         const float cloud_shadow = TraceCloudShadow(weather_tex, curl_tex, noise3d_tex, moments_b0, moments_b1234, rand_offset_shadow, local_position, g_shrd_data.sun_dir.xyz);
@@ -590,7 +600,9 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
                                 (planet_shadow * GetLightEnergy(cloud_shadow, local_density, phase_w) +
                                 ambient_visibility * multiscattered_lum) *
                                 (1.0 - local_transmittance) * light_transmittance;
-                    } else if (g_shrd_data.atmosphere.moon_radius > 0.0) {
+                    }
+#else
+                    if (g_shrd_data.atmosphere.moon_radius > 0.0) {
                         // moon reflection contribution (totally fake)
                         const float cloud_shadow = TraceCloudShadow(weather_tex, curl_tex, noise3d_tex, moments_b0, moments_b1234, rand_offset_shadow, local_position, moon_dir);
 
@@ -599,13 +611,14 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
                                 ambient_visibility * moon_multiscattered_lum) *
                                 (1.0 - local_transmittance) * moon_transmittance;
                     }
+#endif
 
                     total_transmittance *= local_transmittance;
                     if ((total_transmittance.x + total_transmittance.y + total_transmittance.z) < 0.01) {
                         break;
                     }
                 }
-                local_position += ray_dir * step_size;
+                ray_time += step_size;
             }
 
             // NOTE: totally arbitrary cloud blending
@@ -657,12 +670,14 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
             }
         }
 
-        if (g_shrd_data.sun_dir.y > -0.025) {
-            total_radiance += total_transmittance * GetLightEnergy(0.002, dC, phase_w) * light_transmittance * dC * g_shrd_data.sun_col_point.xyz;
-        } else if (g_shrd_data.atmosphere.moon_radius > 0.0) {
+#if IS_DAY_TIME
+        total_radiance += total_transmittance * GetLightEnergy(0.002, dC, phase_w) * light_transmittance * dC * g_shrd_data.sun_col_point.xyz;
+#else
+        if (g_shrd_data.atmosphere.moon_radius > 0.0) {
             total_radiance += SKY_MOON_SUN_RELATION * total_transmittance * GetLightEnergy(0.002, dC, moon_phase_w) *
                               moon_transmittance * dC * g_shrd_data.sun_col_point.xyz;
         }
+#endif
         total_transmittance *= exp(-dC * 0.002 * 1000.0);
     }
 

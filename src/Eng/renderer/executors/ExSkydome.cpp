@@ -122,8 +122,10 @@ void Eng::ExSkydomeCube::Execute(const FgContext &fg) {
 
         const Ren::RenderTarget color_targets[] = {
             {color, uint8_t((faceq / 4) + 1), Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
-        prim_draw_.DrawPrim(fg.cmd_buf(), PrimDraw::ePrim::Sphere, prog_skydome_phys_, {}, color_targets, rast_state,
-                            fg.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0, fg.framebuffers());
+        prim_draw_.DrawPrim(fg.cmd_buf(), PrimDraw::ePrim::Sphere,
+                            prog_skydome_phys_[ExSkydomeScreen::is_night_time(view_state_->sun_dir)], {}, color_targets,
+                            rast_state, fg.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0,
+                            fg.framebuffers());
 
         last_updated_faceq_ = faceq;
     }
@@ -182,8 +184,10 @@ void Eng::ExSkydomeCube::Execute(const FgContext &fg) {
 void Eng::ExSkydomeCube::LazyInit(const FgContext &fg) {
     auto &sh = fg.sh();
     if (!initialized_) {
-        prog_skydome_phys_ =
+        prog_skydome_phys_[0] =
             sh.FindOrCreateProgram("internal/skydome_phys.vert.glsl", "internal/skydome_phys.frag.glsl");
+        prog_skydome_phys_[1] =
+            sh.FindOrCreateProgram("internal/skydome_phys.vert.glsl", "internal/skydome_phys@NIGHT_TIME.frag.glsl");
         pi_skydome_downsample_ = sh.FindOrCreatePipeline("internal/skydome_downsample.comp.glsl");
 
         initialized_ = true;
@@ -250,7 +254,8 @@ void Eng::ExSkydomeScreen::Execute(const FgContext &fg) {
 
         const Ren::RenderTarget depth_target = {depth, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                                 Ren::eStoreOp::Store};
-        prim_draw_.DrawPrim(fg.cmd_buf(), PrimDraw::ePrim::Sphere, prog_skydome_phys_[0], depth_target, color_targets,
+        prim_draw_.DrawPrim(fg.cmd_buf(), PrimDraw::ePrim::Sphere,
+                            prog_skydome_phys_[is_night_time(view_state_->sun_dir)][0], depth_target, color_targets,
                             rast_state, fg.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0,
                             fg.framebuffers());
     } else if (args_->sky_quality == eSkyQuality::High) {
@@ -283,7 +288,8 @@ void Eng::ExSkydomeScreen::Execute(const FgContext &fg) {
         rast_state.viewport[2] = color_cold.params.w;
         rast_state.viewport[3] = color_cold.params.h;
 
-        prim_draw_.DrawPrim(fg.cmd_buf(), PrimDraw::ePrim::Sphere, prog_skydome_phys_[1], {}, color_targets, rast_state,
+        prim_draw_.DrawPrim(fg.cmd_buf(), PrimDraw::ePrim::Sphere,
+                            prog_skydome_phys_[is_night_time(view_state_->sun_dir)][1], {}, color_targets, rast_state,
                             fg.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
     } else {
         const Ren::ImageROHandle env = fg.AccessROImage(args_->env);
@@ -308,14 +314,21 @@ void Eng::ExSkydomeScreen::LazyInit(const FgContext &fg) {
     if (!initialized_) {
         prog_skydome_simple_ =
             sh.FindOrCreateProgram("internal/skydome_simple.vert.glsl", "internal/skydome_simple.frag.glsl");
-        prog_skydome_phys_[0] =
+        prog_skydome_phys_[0][0] =
             sh.FindOrCreateProgram("internal/skydome_phys.vert.glsl", "internal/skydome_phys@SCREEN.frag.glsl");
-        prog_skydome_phys_[1] = sh.FindOrCreateProgram("internal/skydome_phys.vert.glsl",
-                                                       "internal/skydome_phys@SCREEN;SUBSAMPLE.frag.glsl");
+        prog_skydome_phys_[0][1] = sh.FindOrCreateProgram("internal/skydome_phys.vert.glsl",
+                                                          "internal/skydome_phys@SCREEN;SUBSAMPLE.frag.glsl");
+
+        prog_skydome_phys_[1][0] = sh.FindOrCreateProgram("internal/skydome_phys.vert.glsl",
+                                                          "internal/skydome_phys@NIGHT_TIME;SCREEN.frag.glsl");
+        prog_skydome_phys_[1][1] = sh.FindOrCreateProgram(
+            "internal/skydome_phys.vert.glsl", "internal/skydome_phys@NIGHT_TIME;SCREEN;SUBSAMPLE.frag.glsl");
 
         initialized_ = true;
     }
 }
+
+bool Eng::ExSkydomeScreen::is_night_time(const Ren::Vec3f &sun_dir) { return sun_dir[1] > -0.025; }
 
 Ren::Vec2u Eng::ExSkydomeScreen::sample_pos(const int frame_index) {
     return ExSkydomeCubeInternal::g_sample_positions[frame_index % 16];
