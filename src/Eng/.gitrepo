@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = cloud_shadow
-	commit = d5bc184f17013b1a2be779deab9bb86228b07d9b
+	branch = sky_optim
+	commit = f4c66ccd9b03f802bd857714c980aa2fe36f5db5
 	method = merge
 	cmdver = 0.4.6
-	parent = 626ab20a00516219a8305ca24e4d9c0f908c9d63
+	parent = 510b405a09259e06352fed394a035dfc6d53e562
