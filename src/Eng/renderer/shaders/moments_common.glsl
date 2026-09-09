@@ -103,7 +103,7 @@ vec2 ResolveAbsorbance(const float view_z, const pow_moments4_t moments, const f
     ret.y = moments.b0;
     // Absorbance at requested depth
     ret.x = ComputeAbsorbanceAtDepthFrom4PowerMoments(moments.b0, b1234, log_z, bias,  overestimation);
-    ret.x = min(ret.x, ret.y); // Ensure absorbance at depth is never bigger than total absorbance
+    ret.x = clamp(ret.x, 0.0, ret.y); // Ensure absorbance at depth is never bigger than total absorbance
     return ret;
 }
 

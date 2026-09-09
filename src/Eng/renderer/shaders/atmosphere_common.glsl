@@ -550,12 +550,13 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
             vec3 clouds = vec3(0.0);
 
             // NOTE: We assume transmittance is constant along the clouds range (~500m)
-            vec3 light_transmittance, moon_transmittance, multiscattered_lum = vec3(0.0), moon_multiscattered_lum = vec3(0.0);
+            vec3 light_transmittance = vec3(1.0), moon_transmittance = vec3(1.0), multiscattered_lum = vec3(0.0), moon_multiscattered_lum = vec3(0.0);
             {
                 const vec3 local_position = clouds_ray_start + ray_time * ray_dir;
 
                 vec3 up_vector;
                 const float local_height = AtmosphereHeight(local_position, up_vector);
+#if IS_DAY_TIME
                 {
                     const float view_zenith_cos_angle = dot(g_shrd_data.sun_dir.xyz, up_vector);
                     const vec2 uv = LutTransmittanceParamsToUv(local_height + g_shrd_data.atmosphere.planet_radius, view_zenith_cos_angle);
@@ -566,6 +567,7 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
                                from_unit_to_sub_uvs(uv2.y, SKY_MULTISCATTER_LUT_RES));
                     multiscattered_lum = textureLod(multiscatter_lut, uv2, 0.0).xyz;
                 }
+#else
                 {
                     const float view_zenith_cos_angle = dot(moon_dir, up_vector);
                     const vec2 uv = LutTransmittanceParamsToUv(local_height + g_shrd_data.atmosphere.planet_radius, view_zenith_cos_angle);
@@ -576,6 +578,7 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
                                from_unit_to_sub_uvs(uv2.y, SKY_MULTISCATTER_LUT_RES));
                     moon_multiscattered_lum = textureLod(multiscatter_lut, uv2, 0.0).xyz;
                 }
+#endif
             }
 
             vec3 transmittance_before = total_transmittance;

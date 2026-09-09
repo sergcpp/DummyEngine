@@ -328,7 +328,7 @@ void Eng::ExSkydomeScreen::LazyInit(const FgContext &fg) {
     }
 }
 
-bool Eng::ExSkydomeScreen::is_night_time(const Ren::Vec3f &sun_dir) { return sun_dir[1] > -0.025; }
+bool Eng::ExSkydomeScreen::is_night_time(const Ren::Vec3f &sun_dir) { return -sun_dir[1] < -0.025f; }
 
 Ren::Vec2u Eng::ExSkydomeScreen::sample_pos(const int frame_index) {
     return ExSkydomeCubeInternal::g_sample_positions[frame_index % 16];

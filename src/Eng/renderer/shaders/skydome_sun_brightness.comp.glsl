@@ -40,7 +40,7 @@ void main() {
 
     vec3 transmittance = vec3(0.0);
     const vec2 planet_intersection = PlanetIntersection(sample_pos, sample_dir);
-    if (planet_intersection.x <= 0) {
+    if (planet_intersection.x <= 0 && g_shrd_data.sun_dir.y > -0.025) {
         IntegrateScattering(uvec3(gl_LocalInvocationID.xy, 0), sample_pos, sample_dir, FLT_MAX,
                             g_trasmittance_lut, g_multiscatter_lut, g_moon_tex, g_weather_tex,
                             g_cirrus_tex, g_cirrus_tex, g_noise3d_tex, g_tcbn_1d_tex, g_cirrus_tex, g_cirrus_tex, transmittance);
