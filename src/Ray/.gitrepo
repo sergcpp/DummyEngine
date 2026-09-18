@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Ray
-	branch = cloud_shadow
-	commit = 71950819385083a70f8c7433af77f3243b648a6e
-	parent = baf7f8e8fce8d0dd5dcf259ac249bfe0179a5f87
+	branch = master
+	commit = 3ecd5c23eda15975ef226ce4065d67c6dc7397e9
+	parent = 6ecc9c9da73a1ecccd2d671f5bb16d8636da957e
 	method = merge
-	cmdver = 0.4.6
+	cmdver = 0.4.9
