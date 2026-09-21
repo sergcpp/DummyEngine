@@ -11,6 +11,7 @@
 #include "brdf_beckmann.h"
 #include "brdf_disneyDiffuse.h"
 #include "brdf_ggx.h"
+#include "brdf_orenNayar.h"
 #include "brdf_principledClearcoat.h"
 #include "brdf_principledDiffuse.h"
 #include "brdf_principledSheen.h"
@@ -172,7 +173,7 @@ void fit(LTC &ltc, const Brdf &brdf, const Vec3f &V, const float alpha, const fl
 }
 
 // fit data
-void fitTab(Mat3f *tab, Vec2f *tabMagFresnel, const int N, const Brdf &brdf) {
+void fitTab(Mat3f *tab, Vec2f *tabMagFresnel, float *tabE, float *tabEavg, const int N, const Brdf &brdf) {
     LTC ltc;
 
     // loop over theta and alpha
@@ -242,6 +243,14 @@ void fitTab(Mat3f *tab, Vec2f *tabMagFresnel, const int N, const Brdf &brdf) {
             tab[a + t * N] = ltc.M;
             tabMagFresnel[a + t * N][0] = ltc.magnitude;
             tabMagFresnel[a + t * N][1] = ltc.fresnel;
+
+            if (brdf.supports_ltc_energy()) {
+                tabE[a + t * N] = brdf.compute_E(V[2], roughness);
+                tabEavg[a + t * N] = brdf.compute_Eavg(roughness);
+            } else {
+                tabE[a + t * N] = 0.0f;
+                tabEavg[a + t * N] = 0.0f;
+            }
 
             // kill useless coefs in matrix
             tab[a + t * N][0][1] = 0;
@@ -313,7 +322,8 @@ void genSphereTab(float *tabSphere, int N) {
         }
 }
 
-void packTab(Vec4f *tex1, Vec4f *tex2, const Mat3f *tab, const Vec2f *tabMagFresnel, const float *tabSphere, int N) {
+void packTab(Vec4f *tex1, Vec4f *tex2, const Mat3f *tab, const Vec2f *tabMagFresnel, const float *tabSphere,
+             const float *tabE, const float *tabEavg, const bool energy_terms, const int N) {
     for (int i = 0; i < N * N; ++i) {
         const Mat3f &m = tab[i];
 
@@ -328,8 +338,10 @@ void packTab(Vec4f *tex1, Vec4f *tex2, const Mat3f *tab, const Vec2f *tabMagFres
         tex1[i][2] = invM[2][0];
         tex1[i][3] = invM[2][2];
         tex2[i][0] = tabMagFresnel[i][0];
-        tex2[i][1] = tabMagFresnel[i][1];
-        tex2[i][2] = 0.0f; // unused
+        // For BRDFs with a multi-scatter compensation the amplitude column
+        // reuses y/z for the baked single-scatter energy terms E/Eavg.
+        tex2[i][1] = energy_terms ? tabE[i] : tabMagFresnel[i][1];
+        tex2[i][2] = energy_terms ? tabEavg[i] : 0.0f;
         tex2[i][3] = tabSphere[i];
     }
 }
@@ -339,20 +351,23 @@ int main(int argc, char *argv[]) {
     // BrdfGGX brdf;
     // BrdfBeckmann brdf;
     //BrdfDisneyDiffuse brdf;
+    BrdfOrenNayar brdf;
     //BrdfPrincipledDiffuse brdf;
     //BrdfPrincipledSheen brdf;
     //BrdfPrincipledSpecular brdf;
-    BrdfPrincipledClearcoat brdf;
+    //BrdfPrincipledClearcoat brdf;
 
     // allocate data
     Mat3f *tab = new Mat3f[N * N];
     Vec2f *tabMagFresnel = new Vec2f[N * N];
     float *tabSphere = new float[N * N];
+    float *tabE = new float[N * N];
+    float *tabEavg = new float[N * N];
 
     std::ios::sync_with_stdio(false);
 
     // fit
-    fitTab(tab, tabMagFresnel, N, brdf);
+    fitTab(tab, tabMagFresnel, tabE, tabEavg, N, brdf);
 
     // projected solid angle of a spherical cap, clipped to the horizon
     genSphereTab(tabSphere, N);
@@ -360,7 +375,7 @@ int main(int argc, char *argv[]) {
     // pack tables (texture representation)
     Vec4f *tex1 = new Vec4f[N * N];
     Vec4f *tex2 = new Vec4f[N * N];
-    packTab(tex1, tex2, tab, tabMagFresnel, tabSphere, N);
+    packTab(tex1, tex2, tab, tabMagFresnel, tabSphere, tabE, tabEavg, brdf.supports_ltc_energy(), N);
 
     // export in C, matlab and DDS
     writeTabMatlab(tab, tabMagFresnel, N);
@@ -375,6 +390,8 @@ int main(int argc, char *argv[]) {
     delete[] tab;
     delete[] tabMagFresnel;
     delete[] tabSphere;
+    delete[] tabE;
+    delete[] tabEavg;
     delete[] tex1;
     delete[] tex2;
 

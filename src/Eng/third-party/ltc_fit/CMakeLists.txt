@@ -27,6 +27,7 @@ set(SOURCE_FILES      brdf.h
                       brdf_principledSheen.h
                       brdf_principledSpecular.h
                       brdf_ggx.h
+                      brdf_orenNayar.h
                       CImg.h
                       dds.cpp
                       dds.h

@@ -210,6 +210,21 @@ int cubemap_face(vec3 _dir, vec3 f, vec3 u, vec3 v) {
     #define SIMPLIFIED_LTC_DIFFUSE 1
 #endif
 
+vec3 OrenNayarEnergyCompensation(const vec3 albedo, const float E, const float Eavg) {
+    const float missing = max(1.0 - E, 0.0);
+    if (missing <= 0.0) {
+        return vec3(1.0);
+    }
+    const vec3 Fms = sqr(albedo) / M_PI * (Eavg / (1.0 - Eavg)) / (1.0 - albedo * (1.0 - Eavg));
+    return vec3(1.0) + Fms * missing / max(E, 1e-6);
+}
+
+#if SIMPLIFIED_LTC_DIFFUSE
+    #define OREN_NAYAR_MULTISCATTER(dcol, E, Eavg) vec3(1.0)
+#else
+    #define OREN_NAYAR_MULTISCATTER(dcol, E, Eavg) OrenNayarEnergyCompensation(dcol, E, Eavg)
+#endif
+
 struct ltc_params_t {
     vec4 diff_t1;
     vec4 spec_t1;
@@ -219,7 +234,7 @@ struct ltc_params_t {
 #if ENABLE_SHEEN
     vec4 sheen_t1;
 #endif
-    vec2 diff_t2;
+    vec3 diff_t2;
     vec2 spec_t2;
 #if ENABLE_CLEARCOAT
     vec2 coat_t2;
@@ -232,13 +247,21 @@ struct ltc_params_t {
 ltc_params_t SampleLTC_Params(sampler2D luts, float N_dot_V, float roughness, float clearcoat_roughness2) {
     ltc_params_t ret;
 
-    const vec2 diff_ltc_uv = LTC_Coords(N_dot_V, saturate(roughness));
+    const float sigma = saturate(roughness);
+    const vec2 diff_ltc_uv = LTC_Coords(N_dot_V, sigma);
 #if SIMPLIFIED_LTC_DIFFUSE
     ret.diff_t1 = vec4(1.0, 0.0, 0.0, 1.0);
 #else
     ret.diff_t1 = textureLod(luts, diff_ltc_uv + vec2(0.0, 0.0), 0.0);
 #endif
-    ret.diff_t2 = textureLod(luts, diff_ltc_uv + vec2(0.125, 0.0), 0.0).xy;
+#if SIMPLIFIED_LTC_DIFFUSE
+    // Plain Lambert: no Oren-Nayar lobe, nothing to compensate.
+    ret.diff_t2 = vec3(textureLod(luts, diff_ltc_uv + vec2(0.125, 0.0), 0.0).x, 1.0, 1.0);
+#else
+    // x = magnitude; y/z = baked single-scatter energy terms E/Eavg (ltc_fit).
+    ret.diff_t2 = textureLod(luts, diff_ltc_uv + vec2(0.125, 0.0), 0.0).xyz;
+#endif
+
 #if ENABLE_SHEEN
     ret.sheen_t1 = textureLod(luts, diff_ltc_uv + vec2(0.25, 0.0), 0.0);
     ret.sheen_t2 = textureLod(luts, diff_ltc_uv + vec2(0.375, 0.0), 0.0).xy;
@@ -318,7 +341,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             const vec3 dcol = base_color;
 
             vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, ltc.diff_t1, points, TwoSided);
-            diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
+            diff *= dcol * ltc.diff_t2.x * OREN_NAYAR_MULTISCATTER(dcol, ltc.diff_t2.y, ltc.diff_t2.z);
 
 #if ENABLE_SHEEN
             if (sheen > 0.0) {
@@ -361,7 +384,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             const vec3 dcol = base_color;
 
             vec3 diff = vec3(LTC_Evaluate_Rect(ltc_luts, 0.125, N, I, P, ltc.diff_t1, points, TwoSided));
-            diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
+            diff *= dcol * ltc.diff_t2.x * OREN_NAYAR_MULTISCATTER(dcol, ltc.diff_t2.y, ltc.diff_t2.z);
 
 #if ENABLE_SHEEN
             if (sheen > 0.0) {
@@ -410,7 +433,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             const vec3 dcol = base_color;
 
             vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, ltc.diff_t1, points, TwoSided);
-            diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
+            diff *= dcol * ltc.diff_t2.x * OREN_NAYAR_MULTISCATTER(dcol, ltc.diff_t2.y, ltc.diff_t2.z);
 
 #if ENABLE_SHEEN
             if (sheen > 0.0) {
@@ -457,7 +480,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             const vec3 dcol = base_color;
 
             vec3 diff = LTC_Evaluate_Line(N, I, P, ltc.diff_t1, points, 0.01);
-            diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
+            diff *= dcol * ltc.diff_t2.x * OREN_NAYAR_MULTISCATTER(dcol, ltc.diff_t2.y, ltc.diff_t2.z);
 
 #if ENABLE_SHEEN
             if (sheen > 0.0) {
@@ -515,7 +538,7 @@ vec3 EvaluateSunLight_LTC(const vec3 light_color, const vec3 light_dir, const fl
         const vec3 dcol = base_color;
 
         vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, ltc.diff_t1, points, false);
-        diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
+        diff *= dcol * ltc.diff_t2.x * OREN_NAYAR_MULTISCATTER(dcol, ltc.diff_t2.y, ltc.diff_t2.z);
 
 #if ENABLE_SHEEN
         if (sheen > 0.0) {
@@ -587,7 +610,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             const vec3 dcol = base_color;
 
             vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, TwoSided);
-            diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
+            diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x * OREN_NAYAR_MULTISCATTER(dcol, g_ltc[gl_LocalInvocationIndex].diff_t2.y, g_ltc[gl_LocalInvocationIndex].diff_t2.z);
 
 #if ENABLE_SHEEN
             if (sheen > 0.0) {
@@ -630,7 +653,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             const vec3 dcol = base_color;
 
             vec3 diff = vec3(LTC_Evaluate_Rect(ltc_luts, 0.125, N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, TwoSided));
-            diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
+            diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x * OREN_NAYAR_MULTISCATTER(dcol, g_ltc[gl_LocalInvocationIndex].diff_t2.y, g_ltc[gl_LocalInvocationIndex].diff_t2.z);
 
 #if ENABLE_SHEEN
             if (sheen > 0.0) {
@@ -679,7 +702,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             const vec3 dcol = base_color;
 
             vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, TwoSided);
-            diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
+            diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x * OREN_NAYAR_MULTISCATTER(dcol, g_ltc[gl_LocalInvocationIndex].diff_t2.y, g_ltc[gl_LocalInvocationIndex].diff_t2.z);
 
 #if ENABLE_SHEEN
             if (sheen > 0.0) {
@@ -726,7 +749,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             const vec3 dcol = base_color;
 
             vec3 diff = LTC_Evaluate_Line(N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, 0.01);
-            diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
+            diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x * OREN_NAYAR_MULTISCATTER(dcol, g_ltc[gl_LocalInvocationIndex].diff_t2.y, g_ltc[gl_LocalInvocationIndex].diff_t2.z);
 
 #if ENABLE_SHEEN
             if (sheen > 0.0) {
@@ -784,7 +807,7 @@ vec3 EvaluateSunLight_LTC(const vec3 light_color, const vec3 light_dir, const fl
         const vec3 dcol = base_color;
 
         vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, false);
-        diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
+        diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x * OREN_NAYAR_MULTISCATTER(dcol, g_ltc[gl_LocalInvocationIndex].diff_t2.y, g_ltc[gl_LocalInvocationIndex].diff_t2.z);
 
 #if ENABLE_SHEEN
         if (sheen > 0.0) {

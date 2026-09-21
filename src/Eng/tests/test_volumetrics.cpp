@@ -11,38 +11,38 @@ void test_volumetrics(Sys::ThreadPool &threads) {
     TestContext ren_ctx(512, 512, g_device_name, g_validation_level, g_nohwrt, g_nosubgroup, &log);
 
     // standard lights
-    run_image_test(ren_ctx, threads, "vol_global0", 25.10, Full);
-    run_image_test(ren_ctx, threads, "vol_global0", 24.95, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_global0", 24.75, Full);
+    run_image_test(ren_ctx, threads, "vol_global0", 24.60, Full_Ultra);
     run_image_test(ren_ctx, threads, "vol_global1", 25.15, Full);
     run_image_test(ren_ctx, threads, "vol_global1", 25.20, Full_Ultra);
-    run_image_test(ren_ctx, threads, "vol_global2", 30.35, Full);
-    run_image_test(ren_ctx, threads, "vol_global2", 30.40, Full_Ultra);
-    run_image_test(ren_ctx, threads, "vol_global3", 33.25, Full);
-    run_image_test(ren_ctx, threads, "vol_global3", 33.45, Full_Ultra);
-    run_image_test(ren_ctx, threads, "vol_global4", 28.30, Full);
-    run_image_test(ren_ctx, threads, "vol_global4", 28.45, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_global2", 30.10, Full);
+    run_image_test(ren_ctx, threads, "vol_global2", 30.15, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_global3", 31.95, Full);
+    run_image_test(ren_ctx, threads, "vol_global3", 32.05, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_global4", 27.40, Full);
+    run_image_test(ren_ctx, threads, "vol_global4", 27.55, Full_Ultra);
 
     // mesh lights
-    run_image_test(ren_ctx, threads, "vol_global_mesh_lights", 28.20, Full);
-    run_image_test(ren_ctx, threads, "vol_global_mesh_lights", 28.20, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_global_mesh_lights", 27.70, Full);
+    run_image_test(ren_ctx, threads, "vol_global_mesh_lights", 27.70, Full_Ultra);
 
     // sun
-    run_image_test(ren_ctx, threads, "vol_global_sun", 31.50, Full);
-    run_image_test(ren_ctx, threads, "vol_global_sun", 31.60, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_global_sun", 30.95, Full);
+    run_image_test(ren_ctx, threads, "vol_global_sun", 31.10, Full_Ultra);
 
     // absorption
-    run_image_test(ren_ctx, threads, "vol_global_absorption", 26.15, Full);
-    run_image_test(ren_ctx, threads, "vol_global_absorption", 25.80, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_global_absorption", 22.30, Full);
+    run_image_test(ren_ctx, threads, "vol_global_absorption", 22.30, Full_Ultra);
 
     // emission
-    run_image_test(ren_ctx, threads, "vol_global_emission", 24.65, Full);
-    run_image_test(ren_ctx, threads, "vol_global_emission", 24.65, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_global_emission", 31.60, Full);
+    run_image_test(ren_ctx, threads, "vol_global_emission", 31.55, Full_Ultra);
 
     // meshes
-    run_image_test(ren_ctx, threads, "vol_local", 25.55, Full);
-    run_image_test(ren_ctx, threads, "vol_local", 25.80, Full_Ultra);
-    run_image_test(ren_ctx, threads, "vol_local_absorption", 25.95, Full);
-    run_image_test(ren_ctx, threads, "vol_local_absorption", 26.50, Full_Ultra);
-    run_image_test(ren_ctx, threads, "vol_local_emission", 24.25, Full);
-    run_image_test(ren_ctx, threads, "vol_local_emission", 24.20, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_local", 24.10, Full);
+    run_image_test(ren_ctx, threads, "vol_local", 24.20, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_local_absorption", 24.40, Full);
+    run_image_test(ren_ctx, threads, "vol_local_absorption", 24.60, Full_Ultra);
+    run_image_test(ren_ctx, threads, "vol_local_emission", 27.80, Full);
+    run_image_test(ren_ctx, threads, "vol_local_emission", 27.85, Full_Ultra);
 }
