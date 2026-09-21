@@ -126,7 +126,7 @@ vec2 LTC_Coords(float cos_theta, float roughness) {
     return coords;
 }
 
-float LTC_Evaluate_Rect(sampler2D ltc_2, float u_offset, vec3 N, vec3 V, vec3 P, vec4 t1_fetch, vec3 points[4], bool two_sided) {
+float LTC_Evaluate_Rect(sampler2D ltc_2, vec3 N, vec3 V, vec3 P, vec4 t1_fetch, vec3 points[4], bool two_sided) {
     // construct orthonormal basis around N
     vec3 T1, T2;
     T1 = normalize(V - N * dot(V, N));
@@ -181,9 +181,12 @@ float LTC_Evaluate_Rect(sampler2D ltc_2, float u_offset, vec3 N, vec3 V, vec3 P,
 
     vec2 uv = vec2(z * 0.5 + 0.5, len);
     uv = uv * LTC_LUT_SCALE + LTC_LUT_BIAS;
-    uv.x = (uv.x / 8.0) + u_offset;
+    // horizon-clipped sphere-cap table is BRDF-independent; only the diffuse
+    // slot (first in the atlas) carries it, in tex2.y which diffuse itself
+    // leaves unread
+    uv.x = (uv.x / 8.0) + 0.125;
 
-    float scale = textureLod(ltc_2, uv, 0.0).w;
+    float scale = textureLod(ltc_2, uv, 0.0).y;
 
     sum = len * scale;
 
@@ -307,7 +310,7 @@ vec3 SolveCubic(vec4 Coefficient) {
     return Root;
 }
 
-vec3 LTC_Evaluate_Disk(sampler2D ltc_2, float u_offset, vec3 N, vec3 V, vec3 P, vec4 t1_fetch, vec3 points[4], bool two_sided) {
+vec3 LTC_Evaluate_Disk(sampler2D ltc_2, vec3 N, vec3 V, vec3 P, vec4 t1_fetch, vec3 points[4], bool two_sided) {
     // construct orthonormal basis around N
     vec3 T1, T2;
     T1 = normalize(V - N * dot(V, N));
@@ -422,12 +425,14 @@ vec3 LTC_Evaluate_Disk(sampler2D ltc_2, float u_offset, vec3 N, vec3 V, vec3 P, 
         return vec3(0.0);
     }
 
-    // use tabulated horizon-clipped sphere
+    // use tabulated horizon-clipped sphere; BRDF-independent, so only the
+    // diffuse slot (first in the atlas) carries it, in tex2.y which diffuse
+    // itself leaves unread
     vec2 uv = vec2(avgDir.z * 0.5 + 0.5, form_factor);
     uv = uv * LTC_LUT_SCALE + LTC_LUT_BIAS;
-    uv.x = (uv.x / 8.0) + u_offset;
+    uv.x = (uv.x / 8.0) + 0.125;
 
-    float scale = textureLod(ltc_2, uv, 0.0).w;
+    float scale = textureLod(ltc_2, uv, 0.0).y;
 
     float spec = form_factor * scale;
 

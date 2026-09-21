@@ -220,13 +220,13 @@ void main() {
 
     const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
 
-    const float clearcoat_ior = (2.0 / (1.0 - sqrt(0.08 * clearcoat))) - 1.0;
+    const float clearcoat_ior = (2.0 / (1.0 - sqrt(0.04 * clearcoat))) - 1.0;
     const float clearcoat_F0 = fresnel_dielectric_cos(1.0, clearcoat_ior);
     const float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
 
     // Approximation of FH (using shading normal)
     const float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
-    const vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
+    const vec3 approx_clearcoat_col = vec3(clearcoat * mix(0.04, 1.0, clearcoat_FN));
 
     g_ltc[gl_LocalInvocationIndex] = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 

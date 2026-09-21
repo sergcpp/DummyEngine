@@ -86,7 +86,8 @@ void main() {
     vec3 final_color = vec3(0.0);
 
     if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
-        final_color += refl.xyz * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y);
+        final_color += refl.xyz * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y) *
+                        GGXEnergyCompensation(approx_spec_col, ltc.spec_t2.z, ltc.spec_t2.w);
     }
 
     /*if ((lobe_masks.bits & LOBE_CLEARCOAT_BIT) != 0) {

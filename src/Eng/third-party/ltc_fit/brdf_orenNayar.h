@@ -5,7 +5,7 @@
 
 // Single-scatter Oren-Nayar lobe only. The albedo-dependent part of the multi-scatter
 // compensation is nonlinear/per-channel and cannot be baked into the scalar LTC factors;
-// only the albedo-free energy terms E/Eavg are baked (tex2.y/tex2.z) via compute_E/compute_Eavg.
+// only the albedo-free energy terms E/Eavg are baked (tex2.z/tex2.w) via compute_E/compute_Eavg.
 class BrdfOrenNayar : public Brdf {
   public:
     virtual float eval(const Vec3f &V, const Vec3f &L, const float alpha, float &pdf) const {
@@ -39,6 +39,8 @@ class BrdfOrenNayar : public Brdf {
     }
 
     virtual bool supports_ltc_energy() const { return true; }
+
+    virtual bool requires_fresnel() const { return false; }
 
     virtual float compute_E(const float nv, const float sigma) const {
         const float a = 1.0f / (3.14159f + sigma * (0.5f * 3.14159f - 2.0f / 3.0f));

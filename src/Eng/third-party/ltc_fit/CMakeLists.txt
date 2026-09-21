@@ -28,6 +28,7 @@ set(SOURCE_FILES      brdf.h
                       brdf_principledSpecular.h
                       brdf_ggx.h
                       brdf_orenNayar.h
+                      brdf_GGX_EnergyPreserving.h
                       CImg.h
                       dds.cpp
                       dds.h

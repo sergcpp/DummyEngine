@@ -12,6 +12,7 @@
 #include "brdf_disneyDiffuse.h"
 #include "brdf_ggx.h"
 #include "brdf_orenNayar.h"
+#include "brdf_GGX_EnergyPreserving.h"
 #include "brdf_principledClearcoat.h"
 #include "brdf_principledDiffuse.h"
 #include "brdf_principledSheen.h"
@@ -323,7 +324,8 @@ void genSphereTab(float *tabSphere, int N) {
 }
 
 void packTab(Vec4f *tex1, Vec4f *tex2, const Mat3f *tab, const Vec2f *tabMagFresnel, const float *tabSphere,
-             const float *tabE, const float *tabEavg, const bool energy_terms, const int N) {
+             const float *tabE, const float *tabEavg, const bool energy_terms, const bool requires_fresnel,
+             const int N) {
     for (int i = 0; i < N * N; ++i) {
         const Mat3f &m = tab[i];
 
@@ -338,11 +340,11 @@ void packTab(Vec4f *tex1, Vec4f *tex2, const Mat3f *tab, const Vec2f *tabMagFres
         tex1[i][2] = invM[2][0];
         tex1[i][3] = invM[2][2];
         tex2[i][0] = tabMagFresnel[i][0];
-        // For BRDFs with a multi-scatter compensation the amplitude column
-        // reuses y/z for the baked single-scatter energy terms E/Eavg.
-        tex2[i][1] = energy_terms ? tabE[i] : tabMagFresnel[i][1];
-        tex2[i][2] = energy_terms ? tabEavg[i] : 0.0f;
-        tex2[i][3] = tabSphere[i];
+        // The BRDF that doesn't need its Fresnel slot (diffuse) carries the
+        // universal sphere-cap table there instead, shared by every lobe.
+        tex2[i][1] = requires_fresnel ? tabMagFresnel[i][1] : tabSphere[i];
+        tex2[i][2] = energy_terms ? tabE[i] : 0.0f;
+        tex2[i][3] = energy_terms ? tabEavg[i] : 0.0f;
     }
 }
 
@@ -351,11 +353,12 @@ int main(int argc, char *argv[]) {
     // BrdfGGX brdf;
     // BrdfBeckmann brdf;
     //BrdfDisneyDiffuse brdf;
-    BrdfOrenNayar brdf;
     //BrdfPrincipledDiffuse brdf;
     //BrdfPrincipledSheen brdf;
     //BrdfPrincipledSpecular brdf;
     //BrdfPrincipledClearcoat brdf;
+    //BrdfOrenNayar brdf;
+    BrdfGGX_EnergyPreserving brdf;
 
     // allocate data
     Mat3f *tab = new Mat3f[N * N];
@@ -375,7 +378,8 @@ int main(int argc, char *argv[]) {
     // pack tables (texture representation)
     Vec4f *tex1 = new Vec4f[N * N];
     Vec4f *tex2 = new Vec4f[N * N];
-    packTab(tex1, tex2, tab, tabMagFresnel, tabSphere, tabE, tabEavg, brdf.supports_ltc_energy(), N);
+    packTab(tex1, tex2, tab, tabMagFresnel, tabSphere, tabE, tabEavg, brdf.supports_ltc_energy(),
+            brdf.requires_fresnel(), N);
 
     // export in C, matlab and DDS
     writeTabMatlab(tab, tabMagFresnel, N);
