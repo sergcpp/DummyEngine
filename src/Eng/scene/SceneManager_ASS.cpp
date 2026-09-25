@@ -1,5 +1,7 @@
 #include "SceneManager.h"
 
+#include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -18,7 +20,7 @@
 #include <Gui/Utils.h>
 
 namespace Eng::SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 128;
+const uint32_t AssetsBuildVersion = 129;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = size_t(in_file.size());
@@ -130,7 +132,7 @@ std::vector<float> FlushSeams(const float *pixels, int width, int height, float 
 }
 
 void VisitAllFiles_r(assets_context_t &ctx, const std::filesystem::path &in_folder,
-                    const std::function<void(assets_context_t &ctx, const std::filesystem::path &)> &callback) {
+                     const std::function<void(assets_context_t &ctx, const std::filesystem::path &)> &callback) {
     if (!std::filesystem::exists(in_folder)) {
         // ctx.log->Error("Cannot open folder %s", in_folder.generic_string().c_str());
         return;
@@ -146,8 +148,8 @@ void VisitAllFiles_r(assets_context_t &ctx, const std::filesystem::path &in_fold
 }
 
 void VisitAllFiles_MT_r(assets_context_t &ctx, const std::filesystem::path &in_folder,
-                       const std::function<void(assets_context_t &ctx, const std::filesystem::path &)> &callback,
-                       Sys::ThreadPool *threads, std::deque<std::future<void>> &events) {
+                        const std::function<void(assets_context_t &ctx, const std::filesystem::path &)> &callback,
+                        Sys::ThreadPool *threads, std::deque<std::future<void>> &events) {
     if (!std::filesystem::exists(in_folder)) {
         // ctx.log->Error("Cannot open folder %s", in_folder.generic_string().c_str());
         return;
@@ -222,6 +224,7 @@ bool SkipAssetForCurrentBuild(const Ren::Bitmask<eAssetBuildFlags> flags) {
 struct AssetCache {
     Sys::JsObjectP js_db;
     Ren::HashMap32<std::string, uint32_t> texture_averages;
+    Ren::HashMap32<std::string, uint32_t> file_hash_cache;
 
     explicit AssetCache(const Sys::MultiPoolAllocator<char> &mp_alloc) : js_db(mp_alloc) {}
 
@@ -246,6 +249,29 @@ struct AssetCache {
 
 void WriteTextureAverage(AssetCache &cache, const char *tex_name, const uint8_t average_color[4]) {
     cache.WriteTextureAverage(tex_name, average_color);
+}
+
+uint32_t HashFileCached(assets_context_t &ctx, const std::string &file) {
+    if (const uint32_t *cached = ctx.cache->file_hash_cache.Find(file)) {
+        return *cached;
+    }
+    const uint32_t hash = HashFile(file, ctx.log);
+    ctx.cache->file_hash_cache[file] = hash;
+    return hash;
+}
+
+std::string ComputeDepsSig(assets_context_t &ctx, Ren::SmallVectorImpl<std::string> &deps) {
+    std::vector<uint32_t> hashes;
+    hashes.reserve(deps.size());
+    for (const std::string &dep : deps) {
+        hashes.push_back(HashFileCached(ctx, dep));
+    }
+    std::sort(hashes.begin(), hashes.end());
+    uint32_t sig = 0;
+    for (const uint32_t h : hashes) {
+        sig = murmur3_32(reinterpret_cast<const uint8_t *>(&h), sizeof(h), sig);
+    }
+    return std::to_string(sig);
 }
 
 bool ProcessContinuation(assets_context_t &ctx) {
@@ -291,6 +317,53 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
         bool file_not_changed = true;
 
         Sys::JsObjectP &js_in_file = js_files[in_ndx].second.as_obj();
+
+        // Compute the current dependency signature. Stored dep hashes are reused when timestamps
+        // match, so unchanged files are not re-read.
+        bool dependencies_have_changed = false;
+        std::string cur_deps_sig;
+        if (const size_t deps_ndx = js_in_file.IndexOf("deps"); deps_ndx < js_in_file.Size()) {
+            const Sys::JsObjectP &js_deps = js_in_file[deps_ndx].second.as_obj();
+            std::vector<uint32_t> dep_hashes;
+            dep_hashes.reserve(js_deps.elements.size());
+            for (const auto &dep : js_deps.elements) {
+                const Sys::JsObjectP &js_dep = dep.second.as_obj();
+
+                const size_t time_ndx = js_dep.IndexOf("time"), hash_ndx = js_dep.IndexOf("hash");
+                if (time_ndx >= js_dep.Size() || hash_ndx >= js_dep.Size()) {
+                    dependencies_have_changed = true;
+                    break;
+                }
+
+                const Sys::JsStringP &js_dep_time = js_dep[time_ndx].second.as_str();
+
+                if (!fs::exists(dep.first)) {
+                    ctx.log->Error("File does not exist: %s!", dep.first.c_str());
+                    dependencies_have_changed = true;
+                    break;
+                }
+
+                const auto dep_t = to_time_t(fs::last_write_time(dep.first));
+                const std::string dep_t_str = std::to_string(dep_t);
+
+                uint32_t dep_hash = {};
+                if (strncmp(js_dep_time.val.c_str(), dep_t_str.c_str(), 32) == 0) {
+                    dep_hash = uint32_t(strtoul(js_dep[hash_ndx].second.as_str().val.c_str(), nullptr, 10));
+                } else {
+                    dep_hash = HashFileCached(ctx, dep.first.c_str());
+                }
+                dep_hashes.push_back(dep_hash);
+            }
+            if (!dependencies_have_changed) {
+                std::sort(dep_hashes.begin(), dep_hashes.end());
+                uint32_t sig = 0;
+                for (const uint32_t h : dep_hashes) {
+                    sig = murmur3_32(reinterpret_cast<const uint8_t *>(&h), sizeof(h), sig);
+                }
+                cur_deps_sig = std::to_string(sig);
+            }
+        }
+
         if (const size_t time_ndx = js_in_file.IndexOf("time"), outputs_ndx = js_in_file.IndexOf("outputs");
             time_ndx < js_in_file.Size() && outputs_ndx < js_in_file.Size()) {
             const Sys::JsStringP &js_in_file_time = js_in_file[time_ndx].second.as_str();
@@ -302,6 +375,15 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
                     uint32_t(atoi(output.second.as_obj().at("flags").as_str().val.c_str()))};
                 if (SkipAssetForCurrentBuild(flags)) {
                     continue;
+                }
+
+                // An output is stale when it was built against different dependency contents,
+                // even if the input file itself never changed.
+                if (!cur_deps_sig.empty()) {
+                    const Sys::JsObjectP &js_output = output.second.as_obj();
+                    if (const size_t sig_ndx = js_output.IndexOf("deps_hash"); sig_ndx < js_output.Size()) {
+                        file_not_changed &= (js_output[sig_ndx].second.as_str().val == cur_deps_sig);
+                    }
                 }
 
                 time_t out_t = {};
@@ -368,11 +450,19 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
 
                             const std::string out_t_str = std::to_string(out_t);
 
-                            if (!js_output.Has("time")) {
-                                js_output.Insert("time", Sys::JsStringP(out_t_str, *ctx.mp_alloc));
+                            if (!js_output.Has("out_time")) {
+                                js_output.Insert("out_time", Sys::JsStringP(out_t_str, *ctx.mp_alloc));
                             } else {
-                                Sys::JsStringP &js_out_file_time = js_output.at("time").as_str();
+                                Sys::JsStringP &js_out_file_time = js_output.at("out_time").as_str();
                                 js_out_file_time.val = out_t_str;
+                            }
+
+                            // The input content is unchanged; only its timestamp moved.
+                            if (!js_output.Has("in_time")) {
+                                js_output.Insert("in_time", Sys::JsStringP(in_t_str, *ctx.mp_alloc));
+                            } else {
+                                Sys::JsStringP &js_out_in_time = js_output.at("in_time").as_str();
+                                js_out_in_time.val = in_t_str;
                             }
                         } else {
                             file_not_changed = false;
@@ -400,41 +490,6 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
                 } else {
                     Sys::JsStringP &js_in_file_time = js_in_file["time"].as_str();
                     js_in_file_time.val = in_t_str;
-                }
-            }
-        }
-
-        bool dependencies_have_changed = false;
-
-        if (const size_t deps_ndx = js_in_file.IndexOf("deps"); deps_ndx < js_in_file.Size()) {
-            const Sys::JsObjectP &js_deps = js_in_file[deps_ndx].second.as_obj();
-            for (const auto &dep : js_deps.elements) {
-                const Sys::JsObjectP &js_dep = dep.second.as_obj();
-
-                const size_t time_ndx = js_dep.IndexOf("time"), hash_ndx = js_dep.IndexOf("hash");
-                if (time_ndx >= js_dep.Size() || hash_ndx >= js_dep.Size()) {
-                    dependencies_have_changed = true;
-                    break;
-                }
-
-                const Sys::JsStringP &js_dep_time = js_dep[time_ndx].second.as_str();
-
-                if (!fs::exists(dep.first)) {
-                    ctx.log->Error("File does not exist: %s!", dep.first.c_str());
-                } else {
-                    const auto dep_t = to_time_t(fs::last_write_time(dep.first));
-                    const std::string dep_t_str = std::to_string(dep_t);
-
-                    if (strncmp(js_dep_time.val.c_str(), dep_t_str.c_str(), 32) != 0) {
-                        const uint32_t dep_hash = HashFile(dep.first, ctx.log);
-                        const std::string dep_hash_str = std::to_string(dep_hash);
-
-                        const Sys::JsStringP &js_dep_hash = js_dep[hash_ndx].second.as_str();
-                        if (js_dep_hash.val != dep_hash_str) {
-                            dependencies_have_changed = true;
-                            break;
-                        }
-                    }
                 }
             }
         }
@@ -812,6 +867,10 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                 }
 
                 Sys::JsObjectP &js_outputs = js_in_file["outputs"].as_obj();
+
+                // Signature of the dependency contents this build was produced from.
+                const std::string deps_sig = ComputeDepsSig(ctx, dependencies);
+
                 for (const asset_output_t &_out_file : outputs) {
                     std::string out_t_str = "0", out_hash_str = "0";
                     if (std::filesystem::exists(_out_file.name)) {
@@ -862,18 +921,25 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                         Sys::JsStringP &js_time = js_output["out_time"].as_str();
                         js_time.val = out_t_str;
                     }
-                }
-                if (js_outputs.elements.size() > outputs.size()) {
-                    for (auto it2 = begin(js_outputs.elements); it2 != end(js_outputs.elements);) {
-                        auto it3 = std::find_if(outputs.begin(), outputs.end(), [it2](const asset_output_t &el) {
-                            return el.name == it2->first.c_str();
-                        });
-                        if (it3 == outputs.end()) {
-                            it2 = js_outputs.elements.erase(it2);
-                        } else {
-                            ++it2;
-                        }
+                    // Only rebuilt outputs adopt the new dependency signature; outputs skipped for
+                    // this build keep their old one and stay marked stale until their own run.
+                    if (!js_output.Has("deps_hash")) {
+                        js_output.Insert("deps_hash", Sys::JsStringP(deps_sig, *ctx.mp_alloc));
+                    } else {
+                        Sys::JsStringP &js_depsig = js_output["deps_hash"].as_str();
+                        js_depsig.val = deps_sig;
                     }
+                }
+
+                std::vector<std::string> obsolete_outputs;
+                for (const auto &el : js_outputs.elements) {
+                    if (!std::any_of(outputs.begin(), outputs.end(),
+                                     [&](const asset_output_t &o) { return o.name == el.first.c_str(); })) {
+                        obsolete_outputs.emplace_back(el.first.c_str());
+                    }
+                }
+                for (const std::string &key : obsolete_outputs) {
+                    js_outputs.Erase(key);
                 }
 
                 // store new dependencies list
@@ -889,7 +955,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                         dep_t_str = std::to_string(dep_t);
                     }
 
-                    const uint32_t dep_hash = HashFile(dependencies[i], ctx.log);
+                    const uint32_t dep_hash = HashFileCached(ctx, dependencies[i]);
                     const std::string dep_hash_str = std::to_string(dep_hash);
 
                     Sys::JsObjectP js_dep(*ctx.mp_alloc);
@@ -898,15 +964,16 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
                     js_deps[dependencies[i]] = std::move(js_dep);
                 }
-                if (js_deps.elements.size() > dependencies.size()) {
-                    for (auto it2 = begin(js_deps.elements); it2 != end(js_deps.elements);) {
-                        auto it3 = std::find(begin(dependencies), end(dependencies), it2->first.c_str());
-                        if (it3 == end(dependencies)) {
-                            it2 = js_deps.elements.erase(it2);
-                        } else {
-                            ++it2;
-                        }
+
+                std::vector<std::string> obsolete_deps;
+                for (const auto &el : js_deps.elements) {
+                    if (!std::any_of(dependencies.begin(), dependencies.end(),
+                                     [&](const std::string &d) { return d == el.first.c_str(); })) {
+                        obsolete_deps.emplace_back(el.first.c_str());
                     }
+                }
+                for (const std::string &key : obsolete_deps) {
+                    js_deps.Erase(key);
                 }
             }
 
@@ -1349,10 +1416,15 @@ bool Eng::SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *i
 
                     uint8_t average_color[4] = {0, 255, 255, 255};
 
-                    const uint32_t *cached_color = ctx.cache->texture_averages.Find(tex_name.c_str());
-                    if (cached_color) {
-                        memcpy(average_color, cached_color, 4);
-                    } else {
+                    bool found_cached = false;
+                    { // texture_averages is shared between threads
+                        std::lock_guard<std::mutex> _(ctx.cache_mtx);
+                        if (const uint32_t *cached_color = ctx.cache->texture_averages.Find(tex_name.c_str())) {
+                            memcpy(average_color, cached_color, 4);
+                            found_cached = true;
+                        }
+                    }
+                    if (!found_cached) {
                         if (!SceneManagerInternal::GetTexturesAverageColor(tex_name.c_str(), average_color)) {
                             ctx.log->Error("Failed to get average color of %s", tex_name.c_str());
                         } else {

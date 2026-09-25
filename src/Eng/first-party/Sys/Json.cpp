@@ -295,6 +295,25 @@ template <typename Alloc> size_t Sys::JsObjectT<Alloc>::Insert(std::string_view 
     return *it;
 }
 
+template <typename Alloc> bool Sys::JsObjectT<Alloc>::Erase(std::string_view s) {
+    assert(elements.size() == indices.size());
+    auto it = std::lower_bound(begin(indices), end(indices), s,
+                               [this](const int lhs, std::string_view rhs) { return elements[lhs].first < rhs; });
+    if (it == end(indices) || elements[*it].first != s) {
+        return false;
+    }
+    const size_t elem_ndx = *it;
+    indices.erase(it);
+    // Rebalance the stored element indices so they keep pointing at the right elements.
+    for (int &idx : indices) {
+        if (size_t(idx) > elem_ndx) {
+            --idx;
+        }
+    }
+    elements.erase(elements.begin() + elem_ndx);
+    return true;
+}
+
 template <typename Alloc> bool Sys::JsObjectT<Alloc>::Read(std::istream &in) {
     char c;
     if (!in.read(&c, 1) || c != '{') {

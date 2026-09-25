@@ -165,6 +165,8 @@ template <typename Alloc> struct JsObjectT {
     size_t Insert(std::string_view s, const JsElementT<Alloc> &el);
     size_t Insert(std::string_view s, JsElementT<Alloc> &&el);
 
+    bool Erase(std::string_view s);
+
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = {}) const;
 
