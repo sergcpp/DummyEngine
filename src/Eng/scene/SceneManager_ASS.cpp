@@ -274,6 +274,46 @@ std::string ComputeDepsSig(assets_context_t &ctx, Ren::SmallVectorImpl<std::stri
     return std::to_string(sig);
 }
 
+// Deletes outputs of assets whose source file is gone, and drops their cache entries.
+void CleanupStaleOutputs(assets_context_t &ctx) {
+    std::lock_guard<std::mutex> _(ctx.cache_mtx);
+
+    const size_t files_ndx = ctx.cache->js_db.IndexOf("files");
+    if (files_ndx >= ctx.cache->js_db.Size()) {
+        return;
+    }
+
+    Sys::JsObjectP &js_files = ctx.cache->js_db[files_ndx].second.as_obj();
+
+    std::vector<std::string> stale_keys;
+    for (const auto &file : js_files.elements) {
+        if (!std::filesystem::exists(file.first)) {
+            stale_keys.emplace_back(file.first.c_str());
+        }
+    }
+
+    for (const std::string &key : stale_keys) {
+        const size_t file_ndx = js_files.IndexOf(key);
+        if (file_ndx >= js_files.Size()) {
+            continue;
+        }
+        Sys::JsObjectP &js_file = js_files[file_ndx].second.as_obj();
+
+        if (const size_t outputs_ndx = js_file.IndexOf("outputs"); outputs_ndx < js_file.Size()) {
+            const Sys::JsObjectP &js_outputs = js_file[outputs_ndx].second.as_obj();
+            for (const auto &output : js_outputs.elements) {
+                std::error_code ec;
+                std::filesystem::remove(output.first, ec);
+            }
+        }
+
+        ctx.cache->texture_averages.Erase(key);
+        js_files.Erase(key);
+
+        ctx.log->Info("Removed stale asset %s", key.c_str());
+    }
+}
+
 bool ProcessContinuation(assets_context_t &ctx) {
     std::function<void()> task;
     bool ret = false;
@@ -1025,6 +1065,8 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
     } else {
         VisitAllFiles_r(ctx, in_folder, convert_file);
     }
+
+    CleanupStaleOutputs(ctx);
 
     WriteDB(ctx.cache->js_db, out_folder, ctx.log);
 
