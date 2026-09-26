@@ -1,8 +1,9 @@
 #include "test_common.h"
 
-#include "../Span.h"
-
 #include <array>
+#include <vector>
+
+#include "../Span.h"
 
 void test_span() {
     using namespace Gui;
@@ -358,6 +359,17 @@ void test_span() {
             require(dynamic_span[5] == 8);
             require(dynamic_span[6] == 9);
         }
+    }
+
+    { // reverse iterator arithmetic operators
+        const int arr[5] = {0, 1, 2, 3, 4};
+        Span<const int> s(arr);
+        auto it = s.rbegin();
+        require(*it == 4);
+        it += 2;
+        require(*it == 2);
+        it -= 1;
+        require(*it == 3);
     }
 
     printf("OK\n");

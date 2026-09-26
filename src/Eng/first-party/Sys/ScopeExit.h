@@ -20,12 +20,13 @@ template <typename F> class AtScopeExit {
 
     inline void Execute() {
         if (engaged_) {
+            // Disarm before invoking, so a throwing callback cannot run twice.
+            engaged_ = false;
             func_();
         }
-        Dismiss();
     }
 };
-}
+} // namespace Sys
 
 #define SCOPE_EXIT_INTERNAL2(aname, ...) auto aname = Sys::AtScopeExit([&]() { __VA_ARGS__; });
 

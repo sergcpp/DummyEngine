@@ -57,5 +57,4 @@ template <class enum_type, typename = typename std::enable_if<std::is_enum<enum_
   private:
     underlying_type mask_;
 };
-
 } // namespace Ray

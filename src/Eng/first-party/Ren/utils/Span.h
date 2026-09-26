@@ -141,13 +141,13 @@ template <typename T> class Span {
         }
 
         reverse_iterator_t operator+(ptrdiff_t n) const { return reverse_iterator_t(iter_ - n); }
-        reverse_iterator_t &operator+=(ptrdiff_t n) const {
+        reverse_iterator_t &operator+=(ptrdiff_t n) {
             iter_ -= n;
             return *this;
         }
 
         reverse_iterator_t operator-(ptrdiff_t n) const { return reverse_iterator_t(iter_ + n); }
-        reverse_iterator_t &operator-=(ptrdiff_t n) const {
+        reverse_iterator_t &operator-=(ptrdiff_t n) {
             iter_ += n;
             return *this;
         }

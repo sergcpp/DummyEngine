@@ -12,7 +12,7 @@
 
 #include "AlignedAlloc.h"
 
-namespace Ren {
+namespace Snd {
 template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>> class SmallVectorImpl : Allocator {
     T *begin_;
     uint32_t size_, capacity_;
@@ -441,4 +441,4 @@ class SmallVector : public SmallVectorImpl<T, Allocator> {
 
     bool is_on_heap() const { return uintptr_t(this->begin()) != uintptr_t(&buffer_[0]); }
 };
-} // namespace Ren
+} // namespace Snd

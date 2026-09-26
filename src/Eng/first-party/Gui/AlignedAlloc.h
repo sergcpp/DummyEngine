@@ -91,7 +91,7 @@ template <typename T, size_t Alignment> class aligned_allocator {
         if (n > max_size()) {
             throw std::length_error("aligned_allocator<T>::allocate() - Integer overflow.");
         }
-        void *const pv = aligned_malloc(n * sizeof(T), Alignment);
+        void *const pv = Gui::aligned_malloc(n * sizeof(T), Alignment);
         if (pv == nullptr) {
             throw std::bad_alloc();
         }

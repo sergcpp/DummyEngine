@@ -66,6 +66,7 @@ template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>> cla
         if (capacity_ & OwnerBit) {
             this->deallocate(begin_, (capacity_ & CapacityMask));
             capacity_ = 0;
+            begin_ = nullptr;
         }
 
         reserve(rhs.size_);
@@ -90,6 +91,7 @@ template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>> cla
         if (capacity_ & OwnerBit) {
             this->deallocate(begin_, (capacity_ & CapacityMask));
             capacity_ = 0;
+            begin_ = nullptr;
         }
 
         if (rhs.capacity_ & OwnerBit) {
@@ -271,13 +273,15 @@ template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>> cla
         ensure_reserved(size_ + 1);
         pos = begin_ + off;
 
-        iterator move_src = begin_ + size_ - 1, move_dst = move_src + 1;
-        while (move_src != pos - 1) {
-            new (move_dst) T(std::move(*move_src));
-            move_src->~T();
+        if (size_) {
+            iterator move_src = begin_ + size_ - 1, move_dst = move_src + 1;
+            while (move_src != pos - 1) {
+                new (move_dst) T(std::move(*move_src));
+                move_src->~T();
 
-            --move_dst;
-            --move_src;
+                --move_dst;
+                --move_src;
+            }
         }
 
         new (pos) T(value);
@@ -290,24 +294,51 @@ template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>> cla
         assert(pos >= begin_ && pos <= begin_ + size_);
 
         const uint32_t count = uint32_t(end - beg);
+        if (count == 0) {
+            return pos;
+        }
+
+        // The source range may alias this container: reallocation below would
+        // invalidate it, and shifting elements right could clobber unread
+        // sources, so copy the values out first in that case.
+        const bool same = (beg >= begin_ && beg <= begin_ + size_) || (end >= begin_ && end <= begin_ + size_);
+        T *tmp = nullptr;
+        if (same) {
+            tmp = this->allocate(count);
+            for (uint32_t i = 0; i < count; ++i) {
+                new (tmp + i) T(beg[i]);
+            }
+            beg = tmp;
+            end = tmp + count;
+        }
+
         const uint32_t off = uint32_t(pos - begin_);
         ensure_reserved(size_ + count);
         pos = begin_ + off;
 
-        iterator move_src = begin_ + size_ - 1, move_dst = move_src + count;
-        while (move_src != pos - 1) {
-            new (move_dst) T(std::move(*move_src));
-            move_src->~T();
+        if (size_) {
+            iterator move_src = begin_ + size_ - 1, move_dst = move_src + count;
+            while (move_src != pos - 1) {
+                new (move_dst) T(std::move(*move_src));
+                move_src->~T();
 
-            --move_dst;
-            --move_src;
+                --move_dst;
+                --move_src;
+            }
         }
 
-        move_dst = pos;
-        while (move_dst != pos + count) {
-            new (move_dst++) T(*beg++);
+        iterator dst = pos;
+        while (dst != pos + count) {
+            new (dst++) T(*beg++);
         }
         size_ += count;
+
+        if (tmp) {
+            for (uint32_t i = 0; i < count; ++i) {
+                (tmp + i)->~T();
+            }
+            this->deallocate(tmp, count);
+        }
 
         return pos;
     }

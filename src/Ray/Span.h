@@ -9,6 +9,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "internal/SmallVector.h"
+
 #ifdef __GNUC__
 #define force_inline __attribute__((always_inline)) inline
 #endif
@@ -53,6 +55,13 @@ template <typename T> class Span {
     Span(const std::vector<const typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
     template <typename Alloc>
     Span(std::vector<typename std::remove_cv<T>::type, Alloc> &v) : Span(static_cast<T *>(v.data()), v.size()) {}
+
+    template <typename Alloc>
+    Span(const SmallVectorImpl<typename remove_all_const<T>::type, Alloc> &v) : Span(static_cast<T *>(v.data()), v.size()) {}
+    template <typename Alloc>
+    Span(const SmallVectorImpl<const typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
+    template <typename Alloc>
+    Span(SmallVectorImpl<typename std::remove_cv<T>::type, Alloc> &v) : Span(static_cast<T *>(v.data()), v.size()) {}
 
     template <size_t N> Span(T (&arr)[N]) : Span(arr, N) {}
 
@@ -132,13 +141,13 @@ template <typename T> class Span {
         }
 
         reverse_iterator_t operator+(ptrdiff_t n) const { return reverse_iterator_t(iter_ - n); }
-        reverse_iterator_t &operator+=(ptrdiff_t n) const {
+        reverse_iterator_t &operator+=(ptrdiff_t n) {
             iter_ -= n;
             return *this;
         }
 
         reverse_iterator_t operator-(ptrdiff_t n) const { return reverse_iterator_t(iter_ + n); }
-        reverse_iterator_t &operator-=(ptrdiff_t n) const {
+        reverse_iterator_t &operator-=(ptrdiff_t n) {
             iter_ += n;
             return *this;
         }

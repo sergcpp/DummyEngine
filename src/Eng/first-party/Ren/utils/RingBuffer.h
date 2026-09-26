@@ -31,7 +31,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
                 buf_[mask(i)].~T();
             }
         }
-        aligned_free(buf_);
+        Ren::aligned_free(buf_);
     }
     RingBuffer(const RingBuffer &) = delete;
     RingBuffer &operator=(const RingBuffer &) = delete;
@@ -46,7 +46,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
             new_capacity *= 2;
         }
 
-        T *new_buf = (T *)aligned_malloc(new_capacity * sizeof(T), AlignmentOfT);
+        T *new_buf = (T *)Ren::aligned_malloc(new_capacity * sizeof(T), AlignmentOfT);
         size_t new_head = size();
 
         if (new_head) {
@@ -58,7 +58,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
             } while (src != tail_ - 1);
         }
 
-        aligned_free(buf_);
+        Ren::aligned_free(buf_);
 
         buf_ = new_buf;
         head_ = new_head;
