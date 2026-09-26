@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = assets_build_fix
-	commit = 85d7cfef95958537ac0e738d095dcbe46279a1cd
+	branch = master
+	commit = 6c7510e7029d085e27f9c64ddb191c37cfdf7523
 	method = merge
 	cmdver = 0.4.9
-	parent = 081f56e510bcb44ddf52c840981e2ab600cbc467
+	parent = ff2e1a11a36d50b0c0c5299210d097ad36238d76

@@ -991,5 +991,73 @@ void test_parser() {
         require(ss.str() == expected);
     }
 
+    { // non-constant array size
+        static const char source[] = "int foo();\n"
+                                     "void main() {\n"
+                                     "    float arr[foo()];\n"
+                                     "}";
+
+        auto parser = std::make_unique<Parser>(source, "array_size.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
+        require(tr_unit == nullptr);
+        require(parser->error() != nullptr);
+    }
+    { // constant array sizes
+        static const char source[] = "const int N = 4;\n"
+                                     "float arr[N + 2][N * 2];\n";
+
+        auto parser = std::make_unique<Parser>(source, "array_size_const.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        auto clone = std::make_unique<Clone>();
+        std::unique_ptr<TrUnit> cloned = clone->CloneAST(tr_unit.get());
+        require(Compare(tr_unit.get(), cloned.get()) == 0);
+    }
+    { // serialization round-trip with hidden built-in globals
+        static const char source[] = "const int N = 4;\n"
+                                     "float arr[N + 2][N * 2];\n";
+
+        auto parser = std::make_unique<Parser>(source, "serialize_hidden_globals.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        auto ss = std::make_unique<std::stringstream>();
+        auto s = std::make_unique<Serialize>();
+        s->SerializeAST(tr_unit.get(), *ss);
+
+        auto deserialized = std::make_unique<TrUnit>();
+        require(s->DeserializeAST(deserialized.get(), *ss));
+        require(Compare(tr_unit.get(), deserialized.get()) == 0);
+    }
+
+    { // Compare detects version and extension directive differences
+        int ver_cmp = 0, ext_cmp = 0;
+        {
+            static const char src_a[] = "#version 450\nvoid main() {}";
+            static const char src_b[] = "#version 310\nvoid main() {}";
+            auto pa = std::make_unique<Parser>(src_a, "cmp_ver_a.glsl");
+            auto ta = pa->Parse(eTrUnitType::Compute);
+            require_fatal(ta != nullptr);
+            auto pb = std::make_unique<Parser>(src_b, "cmp_ver_b.glsl");
+            auto tb = pb->Parse(eTrUnitType::Compute);
+            require_fatal(tb != nullptr);
+            ver_cmp = Compare(ta.get(), tb.get());
+        }
+        require(ver_cmp != 0);
+        {
+            static const char src_c[] = "#extension GL_KHR_shader_subgroup_basic : disable\nvoid main() {}";
+            static const char src_d[] = "#extension GL_KHR_shader_subgroup_basic : warn\nvoid main() {}";
+            auto pc = std::make_unique<Parser>(src_c, "cmp_ext_c.glsl");
+            auto tc = pc->Parse(eTrUnitType::Compute);
+            require_fatal(tc != nullptr);
+            auto pd = std::make_unique<Parser>(src_d, "cmp_ext_d.glsl");
+            auto td = pd->Parse(eTrUnitType::Compute);
+            require_fatal(td != nullptr);
+            ext_cmp = Compare(tc.get(), td.get());
+        }
+        require(ext_cmp != 0);
+    }
+
     printf("OK\n");
 }

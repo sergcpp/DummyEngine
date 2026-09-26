@@ -379,7 +379,7 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, local_string &inout_line)
             do {
                 inout_line.erase(0, 1);
                 ++curr_pos_;
-            } while (isspace(inout_line.front()));
+            } while (!inout_line.empty() && isspace(inout_line.front()));
 
             for (const auto &dir : directives_table_) {
                 if (inout_line.rfind(dir.first, 0) == 0) {
@@ -415,13 +415,13 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, local_string &inout_line)
 
             local_string number(alloc_);
 
-            if (ch == '0' && !inout_line.empty()) {
+            if (ch == '0') {
                 inout_line.erase(0, 1);
                 ++curr_pos_;
 
                 number.push_back(ch);
 
-                const char next = inout_line.front();
+                const char next = inout_line.empty() ? '\0' : inout_line.front();
                 if (next == 'x' || isdigit(next)) {
                     inout_line.erase(0, 1);
                     ++curr_pos_;

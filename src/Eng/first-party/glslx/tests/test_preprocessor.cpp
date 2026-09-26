@@ -772,5 +772,22 @@ int main(int argc, char** argv) {
         require(preprocessor->error().empty());
     }
 
+    { // stray hash at end of line
+        static const char source[] = "#version 450\n"
+                                     "#\n"
+                                     "void main() {}";
+        static const char expected[] = "#version 450\n"
+                                       "#void main() {}";
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
+    }
+    { // number at end of file
+        static const char source[] = "int x = 0";
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == source);
+        require(preprocessor->error().empty());
+    }
+
     printf("OK\n");
 }

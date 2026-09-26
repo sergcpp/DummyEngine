@@ -20,9 +20,10 @@ template <typename F> class AtScopeExit {
 
     inline void Execute() {
         if (engaged_) {
+            // Disarm before invoking, so a throwing callback cannot run twice.
+            engaged_ = false;
             func_();
         }
-        Dismiss();
     }
 };
 } // namespace glslx

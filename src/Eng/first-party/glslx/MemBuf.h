@@ -29,6 +29,9 @@ class MemBuf : public std::streambuf {
     }
 
     std::streamsize xsgetn(char *out_ptr, std::streamsize count) override {
+        if (count <= 0) {
+            return 0;
+        }
         count = std::min(count, std::streamsize(end_ - cur_));
         memcpy(out_ptr, cur_, size_t(count));
         cur_ += count;
@@ -44,30 +47,35 @@ class MemBuf : public std::streambuf {
 
     std::streamsize showmanyc() override { return end_ - cur_; }
 
-    std::streampos seekoff(std::streamoff off, std::ios_base::seekdir way,
-                           std::ios_base::openmode which) override {
+    std::streampos seekoff(std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which) override {
+        (void)which;
+        const uint8_t *new_cur = cur_;
         if (way == std::ios_base::beg) {
-            cur_ = beg_ + off;
+            new_cur = beg_ + off;
         } else if (way == std::ios_base::cur) {
-            cur_ += off;
+            new_cur = cur_ + off;
         } else if (way == std::ios_base::end) {
-            cur_ = end_;
+            new_cur = end_ + off;
         }
 
-        if (cur_ < beg_ || cur_ > end_) {
-            return -1;
+        // Only commit the new position when it stays inside the buffer.
+        if (new_cur < beg_ || new_cur > end_) {
+            return std::streampos(-1);
         }
 
+        cur_ = new_cur;
         return cur_ - beg_;
     }
 
     std::streampos seekpos(std::streampos sp, std::ios_base::openmode which) override {
-        cur_ = beg_ + int(sp);
+        (void)which;
+        const uint8_t *new_cur = beg_ + int(sp);
 
-        if (cur_ < beg_ || cur_ > end_) {
-            return -1;
+        if (new_cur < beg_ || new_cur > end_) {
+            return std::streampos(-1);
         }
 
+        cur_ = new_cur;
         return cur_ - beg_;
     }
 

@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
         glslx::Parser parser(final_source, input_name);
         std::unique_ptr<glslx::TrUnit> tu = parser.Parse(tu_type);
         if (!tu) {
-            printf("Failed to parse shader: %s\n", parser.error());
+            printf("Failed to parse shader: %s\n", parser.error() ? parser.error() : "unknown error");
             return -1;
         }
 

@@ -50,5 +50,21 @@ void test_scope_exit() {
         require(lf.b);
     }
 
+    { // throwing callback runs exactly once
+        int count = 0;
+        {
+            auto s = AtScopeExit([&] {
+                ++count;
+                throw 1;
+            });
+            try {
+                s.Execute();
+            } catch (...) {
+            }
+            require(count == 1);
+        }
+        require(count == 1);
+    }
+
     printf("OK\n");
 }

@@ -127,7 +127,7 @@ int glslx::Compare(const TrUnit *lhs, const TrUnit *rhs) {
     }
     const int globals_cmp = Compare_PointerSpans<ast_global_variable *>(lhs->globals, rhs->globals);
     if (globals_cmp != 0) {
-        return structs_cmp;
+        return globals_cmp;
     }
     const int functions_cmp = Compare_PointerSpans<ast_function *>(lhs->functions, rhs->functions);
     if (functions_cmp != 0) {
@@ -210,10 +210,11 @@ int glslx::Compare(const ast_version_directive *lhs, const ast_version_directive
         }
         return (lhs == nullptr) ? -1 : +1;
     }
-    if (lhs->type < rhs->type) {
-        return true;
-    } else if (lhs->type == rhs->type) {
-        return lhs->number < rhs->number;
+    if (lhs->type != rhs->type) {
+        return lhs->type < rhs->type ? -1 : +1;
+    }
+    if (lhs->number != rhs->number) {
+        return lhs->number < rhs->number ? -1 : +1;
     }
     return 0;
 }
@@ -225,12 +226,10 @@ int glslx::Compare(const ast_extension_directive *lhs, const ast_extension_direc
         }
         return (lhs == nullptr) ? -1 : +1;
     }
-    if (lhs->behavior < rhs->behavior) {
-        return true;
-    } else if (lhs->behavior == rhs->behavior) {
-        return str_compare(lhs->name, rhs->name);
+    if (lhs->behavior != rhs->behavior) {
+        return lhs->behavior < rhs->behavior ? -1 : +1;
     }
-    return 0;
+    return str_compare(lhs->name, rhs->name);
 }
 
 int glslx::Compare(const ast_pragma_directive *lhs, const ast_pragma_directive *rhs) {
@@ -263,12 +262,10 @@ int glslx::Compare(const ast_default_precision *lhs, const ast_default_precision
         }
         return (lhs == nullptr) ? -1 : +1;
     }
-    if (lhs->precision < rhs->precision) {
-        return true;
-    } else if (lhs->precision == rhs->precision) {
-        return Compare(lhs->type, rhs->type);
+    if (lhs->precision != rhs->precision) {
+        return lhs->precision < rhs->precision ? -1 : +1;
     }
-    return 0;
+    return Compare(lhs->type, rhs->type);
 }
 
 int glslx::Compare(const ast_variable *lhs, const ast_variable *rhs) {

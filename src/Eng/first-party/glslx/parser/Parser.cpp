@@ -671,6 +671,9 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
     while (is_operator(eOperator::bracket_begin)) {
         level.is_array = true;
         level.array_sizes.push_back(ParseArraySize());
+        if (error_) { // unsized arrays are allowed and don't set an error
+            return false;
+        }
         if (!next()) { // skip ']'
             return false;
         }
@@ -1425,7 +1428,8 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
         }
         return expression;
     } else {
-        return Evaluate(expression);
+        fatal("not a valid constant expression");
+        return nullptr;
     }
     return nullptr;
 }
@@ -2086,7 +2090,18 @@ glslx::ast_constant_expression *glslx::Parser::ParseArraySize() {
     if (!next()) { // skip '['
         return nullptr;
     }
-    return Evaluate(ParseExpression(eEndCondition::Bracket));
+    if (is_operator(eOperator::bracket_end)) { // unsized array
+        return nullptr;
+    }
+    ast_expression *expression = ParseExpression(eEndCondition::Bracket);
+    if (!expression) {
+        return nullptr;
+    }
+    if (!IsConstant(expression)) {
+        fatal("array size is not a valid constant expression");
+        return nullptr;
+    }
+    return Evaluate(expression);
 }
 
 glslx::ast_expression *glslx::Parser::ParseArraySpecifier(Bitmask<eEndCondition> condition) {
@@ -2603,10 +2618,10 @@ glslx::ast_declaration_statement *glslx::Parser::ParseDeclarationStatement(const
             while (is_operator(eOperator::bracket_begin)) {
                 variable->flags |= eVariableFlags::Array;
                 ast_constant_expression *array_size = ParseArraySize();
-                // if (!array_size) {
-                //     return nullptr;
-                // }
                 variable->array_sizes.push_back(array_size);
+                if (error_) { // unsized arrays are allowed and don't set an error
+                    return nullptr;
+                }
                 if (!next()) { // skip ']'
                     return nullptr;
                 }

@@ -1036,10 +1036,21 @@ bool glslx::Serialize::DeserializeAST(TrUnit *tu, std::istream &in) {
             while (in.tellg() < block_end) {
                 int32_t string_len = -1;
                 in.read((char *)&string_len, sizeof(int32_t));
+                if (string_len < 0) {
+                    return false;
+                }
                 char *new_str = tu->alloc.allocator.allocate(string_len + 1);
                 in.read(new_str, string_len);
                 new_str[string_len] = '\0';
-                tu->str.Insert(new_str);
+                // Reuse an already interned string with the same content: strings_ must point
+                // to the exact pointers stored in str, otherwise serialization can't find them.
+                char **existing = tu->str.Find(std::string_view(new_str, size_t(string_len)));
+                if (existing) {
+                    tu->alloc.allocator.deallocate(new_str, string_len + 1);
+                    new_str = *existing;
+                } else {
+                    tu->str.Insert(new_str);
+                }
                 strings_.push_back(new_str);
             }
         } else if (block_id == Block_Extensions) {
