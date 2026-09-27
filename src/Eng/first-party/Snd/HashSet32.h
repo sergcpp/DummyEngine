@@ -119,8 +119,8 @@ template <> class Equal<String> {
 template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>,
           typename Allocator = aligned_allocator<uint8_t, alignof(K)>>
 class HashSet32 : HashFunc, KeyEqual, Allocator {
-    static const uint8_t OccupiedBit = 0b10000000;
-    static const uint8_t HashMask = 0b01111111;
+    static constexpr uint8_t OccupiedBit = 0b10000000;
+    static constexpr uint8_t HashMask = 0b01111111;
 
   public:
     struct Node {

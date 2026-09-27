@@ -18,8 +18,8 @@ template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>> cla
     uint32_t size_, capacity_;
 
     // occupy one last bit of capacity to identify that we own the buffer
-    static const uint32_t OwnerBit = (1u << (8u * sizeof(uint32_t) - 1u));
-    static const uint32_t CapacityMask = ~OwnerBit;
+    static constexpr uint32_t OwnerBit = (1u << (8u * sizeof(uint32_t) - 1u));
+    static constexpr uint32_t CapacityMask = ~OwnerBit;
 
   protected:
     SmallVectorImpl(T *begin, T *end, const uint32_t capacity, const Allocator &alloc)
