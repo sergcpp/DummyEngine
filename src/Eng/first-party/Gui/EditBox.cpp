@@ -4,12 +4,10 @@
 #include "Renderer.h"
 #include "Utils.h"
 
-namespace Gui {
-namespace EditBoxConstants {
+namespace Gui::EditBoxConstants {
 const Bitmask<eEditBoxFlags> default_flags = Bitmask<eEditBoxFlags>{eEditBoxFlags::Integers} | eEditBoxFlags::Chars |
                                              eEditBoxFlags::Floats | eEditBoxFlags::Signed | eEditBoxFlags::Multiline;
-} // namespace EditBoxConstants
-} // namespace Gui
+} // namespace Gui::EditBoxConstants
 
 Gui::EditBox::EditBox(Ren::Context &ctx, std::string_view frame_tex_name, const Vec2f &frame_offsets,
                       const BitmapFont *font, const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
@@ -64,7 +62,7 @@ bool Gui::EditBox::HandleInput(const input_event_t &ev, const std::vector<bool> 
     } else if (ev.type == eInputEvent::P1Move) {
         // consumed = Hover(ToLocal(Gui::Vec2i(ev.point)));
     } else if (ev.type == eInputEvent::KeyDown) {
-        //input_processed = false;
+        // input_processed = false;
 
         if (ev.key_code == eKey::LeftShift || ev.key_code == eKey::RightShift) {
         } else if (ev.key_code == eKey::Return) {
