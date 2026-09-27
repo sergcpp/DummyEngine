@@ -30,7 +30,7 @@ template <uint32_t N> CONSTEXPR Hash static_hash(const char (&s)[N]) { return Ha
 
 template <class T, typename E = void> class Var;
 
-template <class T> class Var<T, typename std::enable_if<!std::is_fundamental<T>::value>::type> : public T {
+template <class T> class Var<T, std::enable_if_t<!std::is_fundamental_v<T>>> : public T {
     friend class VarContainer;
 
     Hash hash_;
@@ -66,7 +66,7 @@ template <class T> class Var<T, typename std::enable_if<!std::is_fundamental<T>:
     }
 };
 
-template <class T> class Var<T, typename std::enable_if<std::is_fundamental<T>::value>::type> {
+template <class T> class Var<T, std::enable_if_t<std::is_fundamental_v<T>>> {
     friend class VarContainer;
 
     Hash hash_;

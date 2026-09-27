@@ -105,8 +105,7 @@ class InplaceFunction<R(Args...), Capacity, Alignment> {
   public:
     InplaceFunction() : func_table_(func_table_t<R, Args...>::empty_func_table()) {}
 
-    template <class T, class C = typename std::decay<T>::type,
-              class = typename std::enable_if<!IsInplaceFunction<C>::value>::type>
+    template <class T, class C = typename std::decay<T>::type, class = std::enable_if_t<!IsInplaceFunction<C>::value>>
     InplaceFunction(T &&func) {
         static_assert(std::is_copy_constructible<C>::value);
         static_assert(sizeof(C) <= Capacity);

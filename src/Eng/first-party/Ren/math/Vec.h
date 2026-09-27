@@ -36,7 +36,7 @@ template <typename T, int N> class Vec {
     }
 
     template <typename... Tail>
-    force_inline explicit Vec(typename std::enable_if<sizeof...(Tail) + 1 == N, T>::type head, Tail... tail) noexcept
+    force_inline explicit Vec(std::enable_if_t<sizeof...(Tail) + 1 == N, T> head, Tail... tail) noexcept
         : data_{head, T(tail)...} {}
 
     template <typename S, int M> force_inline explicit Vec(const Vec<S, M> &rhs) noexcept {

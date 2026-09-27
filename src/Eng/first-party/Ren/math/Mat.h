@@ -38,8 +38,7 @@ template <typename T, int M, int N> class Mat : public Vec<Vec<T, N>, M> {
     }
 
     template <typename... Tail>
-    force_inline explicit Mat(typename std::enable_if<sizeof...(Tail) + 1 == M, Vec<T, N>>::type head,
-                              Tail... tail) noexcept
+    force_inline explicit Mat(std::enable_if_t<sizeof...(Tail) + 1 == M, Vec<T, N>> head, Tail... tail) noexcept
         : Vec<Vec<T, N>, M>{head, tail...} {}
 
     force_inline Vec<T, N> &operator[](const int i) { return this->data_[i]; }

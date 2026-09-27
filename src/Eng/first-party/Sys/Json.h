@@ -185,7 +185,7 @@ template <typename Alloc> struct JsElementT {
                         data_align =
                             Sys::_compile_time_max<alignof(JsLiteral), alignof(JsNumber), alignof(JsStringT<Alloc>),
                                                    alignof(JsArrayT<Alloc>), alignof(JsObjectT<Alloc>)>::value;
-    using data_t = typename std::aligned_storage<data_size, data_align>::type;
+    using data_t = std::aligned_storage_t<data_size, data_align>;
 
     JsType type_;
     data_t data_;
