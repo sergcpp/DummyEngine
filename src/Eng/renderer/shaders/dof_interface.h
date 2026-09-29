@@ -31,9 +31,11 @@ const uint FILTERED_TEX_SLOT = 7;
 const uint ALPHA_TEX_SLOT = 8;
 
 const uint OUT_IMG_SLOT = 0;
-// NOTE: image unit indices must stay below GL_MAX_IMAGE_UNITS (8 on NVIDIA), unlike sampler slots which have a
-// separate, much larger limit. Keep storage image bindings in the low range.
-const uint OUT2_IMG_SLOT = 1;
+// NOTE: image unit indices must stay below GL_MAX_IMAGE_UNITS (8 on NVIDIA). Also, unlike OpenGL where
+// texture units and image units are separate namespaces, Vulkan descriptor bindings share one index space
+// per shader stage - so this slot must not collide with any sampler/storage-buffer binding of the shaders
+// that write two outputs (dof_presort: samplers 1/2/4 + buffer 3; dof_filter: samplers 4/5/6 + buffer 3).
+const uint OUT2_IMG_SLOT = 7;
 
 INTERFACE_END
 
