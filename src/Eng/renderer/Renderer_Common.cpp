@@ -215,6 +215,14 @@ void Eng::Renderer::InitPipelines() {
     pi_motion_blur_dilate_ = sh_.FindOrCreatePipeline("internal/motion_blur_dilate.comp.glsl");
     pi_motion_blur_filter_ = sh_.FindOrCreatePipeline("internal/motion_blur_filter.comp.glsl");
 
+    // Depth of field
+    pi_dof_classify_ = sh_.FindOrCreatePipeline("internal/dof_classify.comp.glsl");
+    pi_dof_dilate_ = sh_.FindOrCreatePipeline("internal/dof_dilate.comp.glsl");
+    pi_dof_presort_ = sh_.FindOrCreatePipeline("internal/dof_presort.comp.glsl");
+    pi_dof_filter_ = sh_.FindOrCreatePipeline("internal/dof_filter.comp.glsl");
+    pi_dof_median_ = sh_.FindOrCreatePipeline("internal/dof_median.comp.glsl");
+    pi_dof_upsample_ = sh_.FindOrCreatePipeline("internal/dof_upsample.comp.glsl");
+
     // Debugging
     pi_debug_velocity_ = sh_.FindOrCreatePipeline("internal/debug_velocity.comp.glsl");
     pi_debug_gbuffer_[0] = sh_.FindOrCreatePipeline("internal/debug_gbuffer@DEPTH.comp.glsl");
@@ -1370,6 +1378,7 @@ Eng::FgImgRWHandle Eng::Renderer::AddMotionBlurPasses(FgImgROHandle input, Frame
     }
     return output;
 }
+
 
 Eng::FgImgRWHandle Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgImgROHandle depth) {
     auto &downsample_depth = fg_builder_.AddNode("DOWN DEPTH");

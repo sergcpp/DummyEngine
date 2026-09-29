@@ -887,6 +887,7 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
     renderer_->settings.enable_aberration = viewer_->app_params.postprocess;
     renderer_->settings.enable_purkinje = viewer_->app_params.postprocess;
     renderer_->settings.enable_sharpen = viewer_->app_params.postprocess;
+    renderer_->settings.enable_dof = viewer_->app_params.postprocess;
 
     main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
 }
@@ -1581,6 +1582,11 @@ void BaseState::InitScene_PT() {
         cam_desc.clip_end = scene_manager_->main_cam().far();
         cam_desc.shift[0] = scene_manager_->main_cam().sensor_shift()[0];
         cam_desc.shift[1] = scene_manager_->main_cam().sensor_shift()[1];
+        cam_desc.sensor_height = scene_manager_->main_cam().sensor_height;
+        cam_desc.focus_distance = scene_manager_->main_cam().focus_distance;
+        cam_desc.fstop = scene_manager_->main_cam().fstop;
+        cam_desc.lens_rotation = scene_manager_->main_cam().lens_rotation;
+        cam_desc.lens_ratio = scene_manager_->main_cam().lens_ratio;
 
         cam_desc.max_diff_depth = viewer_->app_params.pt_max_diff_depth;
         cam_desc.max_spec_depth = viewer_->app_params.pt_max_spec_depth;
@@ -1923,6 +1929,11 @@ void BaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, co
     memcpy(&cam_desc.fwd[0], ValuePtr(fwd), 3 * sizeof(float));
     memcpy(&cam_desc.up[0], ValuePtr(up), 3 * sizeof(float));
     cam_desc.fov = fov;
+    cam_desc.sensor_height = scene_manager_->main_cam().sensor_height;
+    cam_desc.focus_distance = scene_manager_->main_cam().focus_distance;
+    cam_desc.fstop = scene_manager_->main_cam().fstop;
+    cam_desc.lens_rotation = scene_manager_->main_cam().lens_rotation;
+    cam_desc.lens_ratio = scene_manager_->main_cam().lens_ratio;
 
     const float desired_exposure = log2f(renderer_->readback_exposure());
     if (renderer_->readback_exposure() > 0 && std::abs(cam_desc.exposure - desired_exposure) > 4.0f) {

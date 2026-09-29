@@ -612,7 +612,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     }
 
     const bool cur_hq_ssr_enabled = int(list.render_settings.reflections_quality) >= int(eReflectionsQuality::High);
-    const bool cur_dof_enabled = list.render_settings.enable_dof;
+    const bool cur_dof_enabled = list.render_settings.enable_dof && list.draw_cam.fstop > 0.0f;
 
     const uint64_t cpu_draw_start_us = Sys::GetTimeUs();
     // Write timestamp at the beginning of execution
@@ -1472,35 +1472,12 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             resolved_color = AddMotionBlurPasses(resolved_color, frame_textures);
         }
 
-#if defined(REN_GL_BACKEND) && 0 // gl-only for now
-        const bool apply_dof = (list.render_flags & EnableDOF) && list.draw_cam.focus_near_mul > 0.0f &&
-                               list.draw_cam.focus_far_mul > 0.0f && ((list.render_flags & DebugWireframe) == 0);
-
-        if (apply_dof) {
-            const int qres_w = cur_scr_w / 4, qres_h = cur_scr_h / 4;
-
-            const char *color_in_name = nullptr;
-            const char *dof_out_name = refl_out_name;
-
-            if (view_state_.is_multisampled) {
-                // color_tex = resolved_or_transparent_tex_->handle();
-                color_in_name = RESOLVED_COLOR_TEX;
-            } else {
-                if ((list.render_flags & EnableTaa) != 0u) {
-                    // color_tex = resolved_or_transparent_tex_->handle();
-                    color_in_name = RESOLVED_COLOR_TEX;
-                } else {
-                    // color_tex = color_tex_->handle();
-                    color_in_name = MAIN_COLOR_TEX;
-                }
-            }
-
-            rp_dof_.Setup(fg_builder_, &list.draw_cam, &view_state_, SHARED_DATA_BUF, color_in_name, MAIN_DEPTH_TEX,
-                          DEPTH_DOWN_2X_TEX, DEPTH_DOWN_4X_TEX, down_tex_4x_, dof_out_name);
-            rp_tail->p_next = &rp_dof_;
-            rp_tail = rp_tail->p_next;
+        //
+        // Depth of field
+        //
+        if (cur_dof_enabled && !list.render_settings.debug_wireframe) {
+            resolved_color = AddDofPasses(resolved_color, common_buffers, frame_textures);
         }
-#endif
 
         //
         // Bloom
@@ -1554,8 +1531,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             bloom = {};
         }
 
-        bool apply_dof = false;
-
         //
         // Combine with blurred and tonemap
         //
@@ -1563,17 +1538,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             FgImgRWHandle color;
             const char *output_tex = nullptr;
 
-            if ((list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe) ||
-                apply_dof) {
-                if (apply_dof) {
-                    if (list.render_settings.taa_mode != eTAAMode::Off) {
-                        color = frame_textures.color;
-                    } else {
-                        // color_tex = DOF_COLOR_TEX;
-                    }
-                } else {
-                    color = resolved_color;
-                }
+            if (list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe) {
+                color = resolved_color;
             } else {
                 color = frame_textures.color;
             }

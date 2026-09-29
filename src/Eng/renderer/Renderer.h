@@ -214,6 +214,9 @@ class Renderer {
     Ren::PipelineHandle pi_reconstruct_depth_, pi_prepare_disocclusion_, pi_sharpen_[2];
     // Motion blur
     Ren::PipelineHandle pi_motion_blur_classify_[2], pi_motion_blur_dilate_, pi_motion_blur_filter_;
+    // Depth of field
+    Ren::PipelineHandle pi_dof_classify_, pi_dof_dilate_, pi_dof_presort_, pi_dof_filter_, pi_dof_median_,
+        pi_dof_upsample_;
     // Debug
     Ren::PipelineHandle pi_debug_velocity_, pi_debug_gbuffer_[4], pi_debug_image_, pi_debug_rad_cache_;
 
@@ -324,6 +327,8 @@ class Renderer {
     FgImgRWHandle AddTSRPass(const FrameTextures &frame_textures, eTAAMode taa_mode);
     FgImgRWHandle AddSharpenPass(FgImgROHandle input, FgImgROHandle exposure, bool compressed);
     FgImgRWHandle AddMotionBlurPasses(FgImgROHandle input, FrameTextures &frame_textures);
+    FgImgRWHandle AddDofPasses(FgImgROHandle input, const CommonBuffers &common_buffers,
+                               FrameTextures &frame_textures);
     FgImgRWHandle AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgImgROHandle depth);
 
     // GI Cache

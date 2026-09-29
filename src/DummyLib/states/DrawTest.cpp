@@ -145,6 +145,16 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
             view_fov_ = float(js_fov.val);
         }
 
+        if (const size_t fstop_ndx = js_cam.IndexOf("fstop"); fstop_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_fstop = js_cam[fstop_ndx].second.as_num();
+            scene_manager_->main_cam().fstop = float(js_fstop.val);
+        }
+
+        if (const size_t focus_dist_ndx = js_cam.IndexOf("focus_distance"); focus_dist_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_focus_dist = js_cam[focus_dist_ndx].second.as_num();
+            scene_manager_->main_cam().focus_distance = float(js_focus_dist.val);
+        }
+
         if (const size_t gamma_ndx = js_cam.IndexOf("gamma"); gamma_ndx < js_cam.Size()) {
             const Sys::JsNumber &js_gamma = js_cam[gamma_ndx].second.as_num();
             gamma_ = float(js_gamma.val);
