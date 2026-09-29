@@ -35,7 +35,7 @@ void main() {
     for (int i = 0; i < NUM_SAMPLES; ++i) {
         const vec2 r = get_scrambled_2d_rand(g_random_seq, DOF_RANDOM_DIM, seed, uint(i));
         const vec2 uv = tile_uv_min + vec2(TILE_RES) * r / vec2(g_params.img_size.zw);
-        const float depth = LinearizeDepth(texture(g_depth_tex, uv).x, g_params.clip_info);
+        const float depth = LinearizeDepth(textureLod(g_depth_tex, uv, 0.0).x, g_params.clip_info);
         const float coc = min(MAX_KERNEL_RADIUS, blurRadiusFromDelta(depth, FOCAL_DEPTH, COC_FACTOR, FOCAL_LENGTH));
         max_depth = max(max_depth, depth);
         max_coc = max(max_coc, coc);

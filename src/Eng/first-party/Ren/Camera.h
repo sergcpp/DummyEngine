@@ -59,6 +59,7 @@ class Camera {
     float fstop = 0;              // lens f-stop, 0 - no DoF
     float lens_rotation = 0;      // bokeh rotation in radians
     float lens_ratio = 1;         // bokeh anamorphic ratio
+    int lens_blades = 0;          // bokeh blade count, 0 - round aperture
     float fade = 0;
     float gamma = 1;
 

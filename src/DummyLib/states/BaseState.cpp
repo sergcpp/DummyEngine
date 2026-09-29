@@ -1716,6 +1716,7 @@ void BaseState::InitScene_PT() {
         cam_desc.fstop = scene_manager_->main_cam().fstop;
         cam_desc.lens_rotation = scene_manager_->main_cam().lens_rotation;
         cam_desc.lens_ratio = scene_manager_->main_cam().lens_ratio;
+        cam_desc.lens_blades = scene_manager_->main_cam().lens_blades;
 
         cam_desc.max_diff_depth = viewer_->app_params.pt_max_diff_depth;
         cam_desc.max_spec_depth = viewer_->app_params.pt_max_spec_depth;
@@ -2072,6 +2073,7 @@ void BaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, co
     cam_desc.fstop = scene_manager_->main_cam().fstop;
     cam_desc.lens_rotation = scene_manager_->main_cam().lens_rotation;
     cam_desc.lens_ratio = scene_manager_->main_cam().lens_ratio;
+    cam_desc.lens_blades = scene_manager_->main_cam().lens_blades;
 
     const float desired_exposure = log2f(renderer_->readback_exposure());
     if (renderer_->readback_exposure() > 0 && std::abs(cam_desc.exposure - desired_exposure) > 4.0f) {
