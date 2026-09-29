@@ -29,12 +29,7 @@ layout(location = 0) out vec4 g_out_color;
 
 vec3 TonemapLUT(sampler3D lut, const vec3 col) {
     const vec3 encoded = col / (col + 1.0);
-
-    // Align the encoded range to texel centers
-    const float LUT_DIMS = 48.0;
-    const vec3 uv = encoded * (LUT_DIMS - 1.0) / LUT_DIMS;
-
-    return textureLod(lut, uv, 0.0).xyz;
+    return textureLod(lut, encoded, 0.0).xyz;
 }
 
 void main() {
