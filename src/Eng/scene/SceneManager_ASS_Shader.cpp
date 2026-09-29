@@ -28,6 +28,21 @@ bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_fi
         return false;
     }
 
+    // Lexer #line parsing only accepts alnum, '_', '.', '/' and '\' in file names
+    auto sanitize_file_name = [](const std::string &path) {
+        std::string res;
+        res.reserve(path.size());
+        for (const char ch : path) {
+            if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' ||
+                ch == '.' || ch == '/' || ch == '\\') {
+                res.push_back(ch);
+            } else {
+                res.push_back('_');
+            }
+        }
+        return res;
+    };
+
     int line_counter = 1;
 
     std::string line;
@@ -45,7 +60,7 @@ bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_fi
             const auto slash_pos = size_t(intptr_t(strrchr(in_file, '/') - in_file));
             const std::string full_path = std::string(in_file, slash_pos + 1) + file_name;
 
-            output += "#line 1 \"" + file_name + "\"\n";
+            output += "#line 1 \"" + sanitize_file_name(full_path) + "\"\n";
 
             auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), full_path);
             if (it == std::end(out_dependencies)) {
@@ -56,7 +71,7 @@ bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_fi
                 return false;
             }
 
-            output += "\n#line " + std::to_string(line_counter + 1) + " \"" + in_file + "\"\n";
+            output += "#line " + std::to_string(line_counter + 1) + " \"" + sanitize_file_name(in_file) + "\"\n";
         } else {
             output += line + '\n';
         }
@@ -84,12 +99,27 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
         }
         std::string line;
 
+        // Lexer #line parsing only accepts alnum, '_', '.', '/' and '\' in file names
+        auto sanitize_file_name = [](const std::string &path) {
+            std::string res;
+            res.reserve(path.size());
+            for (const char ch : path) {
+                if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' ||
+                    ch == '.' || ch == '/' || ch == '\\') {
+                    res.push_back(ch);
+                } else {
+                    res.push_back('_');
+                }
+            }
+            return res;
+        };
+
         int line_counter = 1;
 
         while (std::getline(src_stream, line)) {
-            /*if (!line.empty() && line.back() == '\r') {
+            if (!line.empty() && line.back() == '\r') {
                 line = line.substr(0, line.size() - 1);
-            }*/
+            }
 
             if (line.rfind("#version ") == 0) {
                 if (ctx.platform == "pc" && line.rfind("es") != std::string::npos) {
@@ -104,7 +134,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 const std::string full_path =
                     (std::filesystem::path(in_file).parent_path() / file_name).generic_string();
 
-                orig_glsl_file_data += "#line 1 \"" + file_name + "\"\n";
+                orig_glsl_file_data += "#line 1 \"" + sanitize_file_name(full_path) + "\"\n";
 
                 auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), full_path);
                 if (it == std::end(out_dependencies)) {
@@ -116,7 +146,8 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                     return false;
                 }
 
-                orig_glsl_file_data += "\n#line " + std::to_string(line_counter + 1) + " \"" + in_file + "\"\n";
+                orig_glsl_file_data += "#line " + std::to_string(line_counter + 1) + " \"" +
+                                       sanitize_file_name(in_file) + "\"\n";
             } else if (line.find("#pragma multi_compile ") == 0) {
                 std::vector<std::string> new_permutations;
                 line = line.substr(22);
@@ -171,6 +202,18 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
 
     enum class eShaderOutput { GLSL, VK_SPIRV };
 
+    // Lexer #line parsing only accepts alnum, '_', '.', '/' and '\' in file names
+    std::string sanitized_in_file;
+    sanitized_in_file.reserve(std::string_view(in_file).size());
+    for (const char ch : std::string_view(in_file)) {
+        if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' ||
+            ch == '.' || ch == '/' || ch == '\\') {
+            sanitized_in_file.push_back(ch);
+        } else {
+            sanitized_in_file.push_back('_');
+        }
+    }
+
     const size_t ext_pos = std::string_view(out_file).find('.');
     assert(ext_pos != std::string::npos);
 
@@ -183,7 +226,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 continue;
             }
             for (const std::string &perm : permutations) {
-                auto compile_job = [ext_pos, &orig_glsl_file_data, &ctx, &out_file,
+                auto compile_job = [ext_pos, &orig_glsl_file_data, &ctx, &out_file, sanitized_in_file,
                                     &out_outputs](const eShaderOutput sh_output, const bool EnableOptimization,
                                                   const std::string &perm) -> bool {
                     std::string prep_glsl_file = out_file;
@@ -260,7 +303,9 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                     }
 
                     if (!preamble.empty()) {
-                        preamble.append("#line 1\n");
+                        preamble.append("#line 1 \"");
+                        preamble += sanitized_in_file;
+                        preamble += "\"\n";
                     }
 
                     std::string glsl_file_data = preamble + orig_glsl_file_data;
@@ -305,7 +350,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                             ctx.log->Error("%s", preprocessor.error().data());
                         }
 
-                        glslx::Parser parser(preprocessed, out_file);
+                        glslx::Parser parser(preprocessed, sanitized_in_file.c_str());
                         std::unique_ptr<glslx::TrUnit> ast = parser.Parse(unit_type);
                         if (!ast) {
                             if (const glslx::TrUnit *tu = parser.internal_ast()) {

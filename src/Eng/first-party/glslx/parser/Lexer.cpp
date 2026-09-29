@@ -367,6 +367,9 @@ void glslx::Lexer::ReadSingle(token_t &out) {
             out.string_mem.assign(extension.data(), extension.data() + extension.length() + 1);
             out.as_directive.as_extension.name = out.string_mem.data();
         } else if (chars == "line") {
+            out.type = eTokType::Directive;
+            out.as_directive.type = eDirType::Line;
+
             SkipWhitespace();
 
             std::string line;
