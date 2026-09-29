@@ -45,7 +45,7 @@ enum class eOperator : uint8_t {
 };
 #undef X
 
-enum class eDirType : uint8_t { Version, Extension, Pragma, Warning };
+enum class eDirType : uint8_t { Version, Extension, Pragma, Warning, Line };
 
 enum class eVerType : uint8_t { Core, Compatibility, ES };
 

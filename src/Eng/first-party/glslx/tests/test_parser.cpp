@@ -960,6 +960,19 @@ void test_parser() {
         require(strcmp(parser.warnings()[1], "path/to\\file.glsl:43:14: warning: 2222") == 0);
         require(strcmp(parser.error(), "path/to\\file.glsl:44:12: error: 3333") == 0);
     }
+    { // errors after #line are reported with the mapped file and line
+        static const char source[] = "#line 7 \"mapped.glsl\"\n"
+                                     "void main()\n"
+                                     "{\n"
+                                     "    int x = ;\n"
+                                     "}\n";
+
+        Parser parser(source, "line_mapped_error.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require(tr_unit == nullptr);
+        require(parser.error() != nullptr);
+        require(strstr(parser.error(), "mapped.glsl:9:") != nullptr);
+    }
     { // first character invalid
         const char source[] = "`\n";
 
