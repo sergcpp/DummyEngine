@@ -52,9 +52,9 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
         test_postfix = "_nodiffgi";
     } else if (img_test == eImgTest::NoDiffGI_RTShadow) {
         test_postfix = "_nodiffgirt";
-    } else if (img_test == eImgTest::MedDiffGI || img_test == eImgTest::MedDiffGI_MotionBlur) {
+    } else if (img_test == eImgTest::MedDiffGI || img_test == eImgTest::MedDiffGI_Dynamic) {
         test_postfix = "_meddiffgi";
-    } else if (img_test == eImgTest::Full_Ultra || img_test == eImgTest::Full_Ultra_MotionBlur) {
+    } else if (img_test == eImgTest::Full_Ultra || img_test == eImgTest::Full_Ultra_Dynamic) {
         test_postfix = "_ultra";
     }
 
@@ -99,13 +99,14 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
         renderer->settings.resolution_scale = res_scale;
 
         renderer->settings.enable_motion_blur =
-            (img_test == eImgTest::MedDiffGI_MotionBlur || img_test == eImgTest::Full_MotionBlur ||
-             img_test == eImgTest::Full_Ultra_MotionBlur);
+            (img_test == eImgTest::MedDiffGI_Dynamic || img_test == eImgTest::Full_Dynamic ||
+             img_test == eImgTest::Full_Ultra_Dynamic);
         renderer->settings.enable_bloom = false;
         renderer->settings.enable_shadow_jitter = true;
         renderer->settings.enable_aberration = false;
         renderer->settings.enable_purkinje = false;
         renderer->settings.enable_sharpen = false;
+        renderer->settings.enable_dof = true;
         renderer->settings.taa_mode = eTAAMode::Static;
         renderer->settings.pixel_filter = ePixelFilter::Box;
         renderer->settings.gi_cache_update_mode = eGICacheUpdateMode::Full;
@@ -121,10 +122,10 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
             renderer->settings.shadows_quality = eShadowsQuality::Raytraced;
             renderer->settings.gi_quality = eGIQuality::Off;
             renderer->settings.sky_quality = eSkyQuality::Medium;
-        } else if (img_test == eImgTest::MedDiffGI || img_test == eImgTest::MedDiffGI_MotionBlur) {
+        } else if (img_test == eImgTest::MedDiffGI || img_test == eImgTest::MedDiffGI_Dynamic) {
             renderer->settings.gi_quality = eGIQuality::Medium;
             renderer->settings.sky_quality = eSkyQuality::Medium;
-        } else if (img_test == eImgTest::Full_Ultra || img_test == eImgTest::Full_Ultra_MotionBlur) {
+        } else if (img_test == eImgTest::Full_Ultra || img_test == eImgTest::Full_Ultra_Dynamic) {
             renderer->settings.shadows_quality = eShadowsQuality::Raytraced;
             renderer->settings.reflections_quality = eReflectionsQuality::Raytraced_High;
             renderer->settings.ssao_quality = eSSAOQuality::Ultra;
@@ -165,6 +166,7 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
         struct cam_frame_t {
             Ren::Vec3d pos, dir;
             std::optional<float> exposure;
+            std::optional<float> focus_distance;
         };
         std::vector<cam_frame_t> cam_frames;
 
@@ -186,6 +188,31 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
                 const Sys::JsNumber &js_fov = js_cam[fov_ndx].second.as_num();
                 view_fov = float(js_fov.val);
             }
+            if (const size_t fstop_ndx = js_cam.IndexOf("fstop"); fstop_ndx < js_cam.Size()) {
+                const Sys::JsNumber &js_fstop = js_cam[fstop_ndx].second.as_num();
+                scene_manager.main_cam().fstop = float(js_fstop.val);
+            }
+            if (const size_t focus_dist_ndx = js_cam.IndexOf("focus_distance"); focus_dist_ndx < js_cam.Size()) {
+                const Sys::JsNumber &js_focus_dist = js_cam[focus_dist_ndx].second.as_num();
+                scene_manager.main_cam().focus_distance = float(js_focus_dist.val);
+            }
+            if (const size_t sensor_height_ndx = js_cam.IndexOf("sensor_height"); sensor_height_ndx < js_cam.Size()) {
+                const Sys::JsNumber &js_sensor_height = js_cam[sensor_height_ndx].second.as_num();
+                scene_manager.main_cam().sensor_height = float(js_sensor_height.val);
+            }
+            if (const size_t lens_blades_ndx = js_cam.IndexOf("lens_blades"); lens_blades_ndx < js_cam.Size()) {
+                const Sys::JsNumber &js_lens_blades = js_cam[lens_blades_ndx].second.as_num();
+                scene_manager.main_cam().lens_blades = int(js_lens_blades.val);
+            }
+            if (const size_t lens_rotation_ndx = js_cam.IndexOf("lens_rotation"); lens_rotation_ndx < js_cam.Size()) {
+                const Sys::JsNumber &js_lens_rotation = js_cam[lens_rotation_ndx].second.as_num();
+                scene_manager.main_cam().lens_rotation = float(js_lens_rotation.val);
+            }
+            if (const size_t lens_ratio_ndx = js_cam.IndexOf("lens_ratio"); lens_ratio_ndx < js_cam.Size()) {
+                const Sys::JsNumber &js_lens_ratio = js_cam[lens_ratio_ndx].second.as_num();
+                scene_manager.main_cam().lens_ratio = float(js_lens_ratio.val);
+            }
+            renderer->settings.enable_dof = scene_manager.main_cam().fstop > 0.0f;
             if (const size_t gamma_ndx = js_cam.IndexOf("gamma"); gamma_ndx < js_cam.Size()) {
                 const Sys::JsNumber &js_gamma = js_cam[gamma_ndx].second.as_num();
                 gamma = float(js_gamma.val);
@@ -243,6 +270,9 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
                     if (const size_t exp_index = js_frame.IndexOf("exposure"); exp_index < js_frame.Size()) {
                         frame.exposure = float(js_frame[exp_index].second.as_num().val);
                     }
+                    if (const size_t focus_ndx = js_frame.IndexOf("focus_distance"); focus_ndx < js_frame.Size()) {
+                        frame.focus_distance = float(js_frame[focus_ndx].second.as_num().val);
+                    }
                 }
             }
         }
@@ -255,6 +285,9 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
             // Use the first frame for warmup
             view_pos = cam_frames[0].pos;
             view_dir = cam_frames[0].dir;
+            if (cam_frames[0].focus_distance.has_value()) {
+                scene_manager.main_cam().focus_distance = *cam_frames[0].focus_distance;
+            }
         }
 
         scene_manager.LoadScene(js_scene);
@@ -626,6 +659,9 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
                 scene_manager.SetupView(frame.pos, frame.pos + frame.dir, Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov,
                                         Ren::Vec2f{0.0f}, gamma, frame.exposure.value_or(min_exposure),
                                         frame.exposure.value_or(max_exposure));
+                if (frame.focus_distance.has_value()) {
+                    scene_manager.main_cam().focus_distance = *frame.focus_distance;
+                }
 
                 draw_list.Clear();
                 renderer->PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(),

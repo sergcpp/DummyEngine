@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 
 #include "math/Mat.h"
@@ -53,8 +54,12 @@ class Camera {
 
   public:
     float min_exposure = -1000, max_exposure = 1000;
-    float focus_distance = 4, focus_depth = 2;
-    float focus_near_mul = 0, focus_far_mul = 0;
+    float focus_distance = 4;
+    float sensor_height = 0.036f; // meters
+    float fstop = 0;              // lens f-stop, 0 - no DoF
+    float lens_rotation = 0;      // bokeh rotation in radians
+    float lens_ratio = 1;         // bokeh anamorphic ratio
+    int lens_blades = 0;          // bokeh blade count, 0 - round aperture
     float fade = 0;
     float gamma = 1;
 
@@ -83,6 +88,10 @@ class Camera {
     [[nodiscard]] float aspect() const { return aspect_; }
     [[nodiscard]] float near() const { return near_; }
     [[nodiscard]] float far() const { return far_; }
+
+    [[nodiscard]] float focal_length() const {
+        return 0.5f * sensor_height / std::tan(angle_ * Ren::Pi<float>() / 360.0f);
+    }
 
     [[nodiscard]] const Frustum &frustum() const { return frustum_; }
 

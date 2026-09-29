@@ -15,11 +15,11 @@ enum eImgTest {
     NoDiffGI,
     NoDiffGI_RTShadow,
     MedDiffGI,
-    MedDiffGI_MotionBlur,
+    MedDiffGI_Dynamic,
     Full,
-    Full_MotionBlur,
+    Full_Dynamic,
     Full_Ultra,
-    Full_Ultra_MotionBlur
+    Full_Ultra_Dynamic
 };
 
 void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_view test_name,

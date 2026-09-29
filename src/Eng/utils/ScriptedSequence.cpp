@@ -620,9 +620,8 @@ void Eng::ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction 
         const auto pos = Ren::Vec3d{cam_mat[3]};
         const Ren::Vec3d trg = pos - Ren::Vec3d{cam_mat[2]};
 
-        cam.focus_depth = 3.0f;
         cam.focus_distance = float(Distance(pos, Ren::Vec3d{target_mat[3]}));
-        cam.focus_far_mul = cam.focus_near_mul = action.dof ? 1.0f : 0.0f;
+        cam.fstop = action.dof ? 2.8f : 0.0f;
         cam.fade = Ren::Mix(action.fade_beg, action.fade_end, t_norm);
         cam.max_exposure = 32.0f;
 

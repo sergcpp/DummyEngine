@@ -17,6 +17,7 @@ void test_shading(Sys::ThreadPool &threads, bool full);
 void test_upscaling(Sys::ThreadPool &threads);
 void test_volumetrics(Sys::ThreadPool &threads);
 void test_motion_blur(Sys::ThreadPool &threads);
+void test_dof(Sys::ThreadPool &threads);
 
 bool g_stop_on_fail = false;
 std::atomic_bool g_tests_success{true};
@@ -96,6 +97,8 @@ int main(int argc, char *argv[]) {
 
     test_empty_scene(mt_run_pool);
     test_shading(mt_run_pool, full);
+    puts(" ---------------");
+    test_dof(mt_run_pool);
     puts(" ---------------");
     test_upscaling(mt_run_pool);
     puts(" ---------------");

@@ -20,7 +20,6 @@
 #include "shaders/blit_static_vel_interface.h"
 #include "shaders/blit_tsr_interface.h"
 #include "shaders/gbuffer_shade_interface.h"
-#include "shaders/motion_blur_interface.h"
 #include "shaders/prepare_disocclusion_interface.h"
 #include "shaders/reconstruct_depth_interface.h"
 
@@ -212,6 +211,18 @@ void Eng::Renderer::InitPipelines() {
     pi_motion_blur_classify_[1] = sh_.FindOrCreatePipeline("internal/motion_blur_classify@VERTICAL.comp.glsl");
     pi_motion_blur_dilate_ = sh_.FindOrCreatePipeline("internal/motion_blur_dilate.comp.glsl");
     pi_motion_blur_filter_ = sh_.FindOrCreatePipeline("internal/motion_blur_filter.comp.glsl");
+
+    // Depth of field
+    pi_dof_classify_ = sh_.FindOrCreatePipeline("internal/dof_classify.comp.glsl");
+    pi_dof_dilate_ = sh_.FindOrCreatePipeline("internal/dof_dilate.comp.glsl");
+    pi_dof_presort_[0] = sh_.FindOrCreatePipeline("internal/dof_presort.comp.glsl");
+    pi_dof_presort_[1] = sh_.FindOrCreatePipeline("internal/dof_presort@LENS_SHAPE.comp.glsl");
+    // The plain (non-tonemapped) dof_filter permutations are intentionally not loaded; the bokeh gathering
+    // always runs in the reversible-tonemap space (see MaybeTonemap in dof_filter.comp.glsl)
+    pi_dof_filter_[0] = sh_.FindOrCreatePipeline("internal/dof_filter@TONEMAP.comp.glsl");
+    pi_dof_filter_[1] = sh_.FindOrCreatePipeline("internal/dof_filter@LENS_SHAPE;TONEMAP.comp.glsl");
+    pi_dof_median_ = sh_.FindOrCreatePipeline("internal/dof_median.comp.glsl");
+    pi_dof_upsample_ = sh_.FindOrCreatePipeline("internal/dof_upsample.comp.glsl");
 
     // Debugging
     pi_debug_velocity_ = sh_.FindOrCreatePipeline("internal/debug_velocity.comp.glsl");
@@ -1179,194 +1190,6 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPass(const FrameTextures &frame_textures
         });
     }
     return resolved_color;
-}
-
-Eng::FgImgRWHandle Eng::Renderer::AddMotionBlurPasses(FgImgROHandle input, FrameTextures &frame_textures) {
-    FgImgRWHandle tiles;
-    { // Horizontal pass
-        auto &classify_h = fg_builder_.AddNode("MB CLASSIFY H");
-
-        struct PassData {
-            FgImgROHandle in_velocity;
-            FgImgRWHandle out_tiles;
-        };
-
-        auto *data = fg_builder_.AllocTempData<PassData>();
-        data->in_velocity = classify_h.AddTextureInput(frame_textures.velocity, Ren::eStage::ComputeShader);
-
-        { // Image that holds horizontal tiles
-            FgImgDesc desc;
-            desc.w = Ren::DivCeil(view_state_.ren_res[0], MotionBlur::TILE_RES);
-            desc.h = view_state_.ren_res[1];
-            desc.format = Ren::eFormat::RGBA16F;
-            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
-
-            tiles = data->out_tiles = classify_h.AddStorageImageOutput("MB Tiles H", desc, Ren::eStage::ComputeShader);
-        }
-
-        classify_h.set_execute_cb([this, data](const FgContext &fg) {
-            const Ren::ImageROHandle in_velocity = fg.AccessROImage(data->in_velocity);
-            const Ren::ImageRWHandle out_tiles = fg.AccessRWImage(data->out_tiles);
-
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, MotionBlur::VELOCITY_TEX_SLOT, in_velocity},
-                                             {Ren::eBindTarget::ImageRW, MotionBlur::OUT_IMG_SLOT, out_tiles}};
-
-            // TODO: Get rid of this!
-            const Ren::ImageCold &img_cold = fg.storages().images[in_velocity].second;
-            const auto grp_count =
-                Ren::Vec3u{Ren::DivCeil<uint32_t>(img_cold.params.w, MotionBlur::GRP_SIZE), img_cold.params.h, 1u};
-
-            MotionBlur::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{img_cold.params.w, img_cold.params.h};
-
-            DispatchCompute(fg.cmd_buf(), pi_motion_blur_classify_[0], fg.storages(), grp_count, bindings,
-                            &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
-        });
-    }
-    { // Vertical pass
-        auto &classify_v = fg_builder_.AddNode("MB CLASSIFY V");
-
-        struct PassData {
-            FgImgROHandle in_velocity;
-            FgImgRWHandle out_tiles;
-        };
-
-        auto *data = fg_builder_.AllocTempData<PassData>();
-        data->in_velocity = classify_v.AddTextureInput(tiles, Ren::eStage::ComputeShader);
-
-        { // Image that holds final tiles
-            FgImgDesc desc;
-            desc.w = Ren::DivCeil(view_state_.ren_res[0], MotionBlur::TILE_RES);
-            desc.h = Ren::DivCeil(view_state_.ren_res[1], MotionBlur::TILE_RES);
-            desc.format = Ren::eFormat::RGBA16F;
-            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
-
-            tiles = data->out_tiles = classify_v.AddStorageImageOutput("MB Tiles V", desc, Ren::eStage::ComputeShader);
-        }
-
-        classify_v.set_execute_cb([this, data](const FgContext &fg) {
-            using namespace MotionBlur;
-
-            const Ren::ImageROHandle in_velocity = fg.AccessROImage(data->in_velocity);
-            const Ren::ImageRWHandle out_tiles = fg.AccessRWImage(data->out_tiles);
-
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, in_velocity},
-                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_tiles}};
-
-            const Ren::Vec2u in_res =
-                Ren::Vec2u(Ren::DivCeil(view_state_.ren_res[0], MotionBlur::TILE_RES), view_state_.ren_res[1]);
-
-            const auto grp_count = Ren::Vec3u{in_res[0], Ren::DivCeil<uint32_t>(in_res[1], GRP_SIZE), 1u};
-
-            Params uniform_params;
-            uniform_params.img_size = in_res;
-
-            DispatchCompute(fg.cmd_buf(), pi_motion_blur_classify_[1], fg.storages(), grp_count, bindings,
-                            &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
-        });
-    }
-    { // Dilation pass
-        auto &dilate = fg_builder_.AddNode("MB DILATE");
-
-        struct PassData {
-            FgImgROHandle in_tiles;
-            FgImgRWHandle out_tiles;
-        };
-
-        auto *data = fg_builder_.AllocTempData<PassData>();
-        data->in_tiles = dilate.AddTextureInput(tiles, Ren::eStage::ComputeShader);
-
-        { // Image that holds dilated tiles
-            FgImgDesc desc;
-            desc.w = Ren::DivCeil(view_state_.ren_res[0], MotionBlur::TILE_RES);
-            desc.h = Ren::DivCeil(view_state_.ren_res[1], MotionBlur::TILE_RES);
-            desc.format = Ren::eFormat::RGBA16F;
-            desc.sampling.filter = Ren::eFilter::Bilinear;
-            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
-
-            tiles = data->out_tiles =
-                dilate.AddStorageImageOutput("MB Tiles Dilated", desc, Ren::eStage::ComputeShader);
-        }
-
-        dilate.set_execute_cb([this, data](const FgContext &fg) {
-            using namespace MotionBlur;
-
-            const Ren::ImageROHandle in_tiles = fg.AccessROImage(data->in_tiles);
-            const Ren::ImageRWHandle out_tiles = fg.AccessRWImage(data->out_tiles);
-
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, TILES_TEX_SLOT, in_tiles},
-                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_tiles}};
-
-            const auto res = Ren::Vec2u(Ren::DivCeil(view_state_.ren_res[0], MotionBlur::TILE_RES),
-                                        Ren::DivCeil(view_state_.ren_res[1], MotionBlur::TILE_RES));
-
-            const auto grp_count = Ren::Vec3u(Ren::DivCeil(res[0], GRP_SIZE_X), Ren::DivCeil(res[1], GRP_SIZE_Y), 1u);
-
-            Params uniform_params;
-            uniform_params.img_size = res;
-
-            DispatchCompute(fg.cmd_buf(), pi_motion_blur_dilate_, fg.storages(), grp_count, bindings, &uniform_params,
-                            sizeof(uniform_params), fg.descr_alloc(), fg.log());
-        });
-    }
-    FgImgRWHandle output;
-    { // Filter pass
-        auto &filter = fg_builder_.AddNode("MB FILTER");
-
-        struct PassData {
-            FgImgROHandle in_color;
-            FgImgROHandle in_depth;
-            FgImgROHandle in_velocity;
-            FgImgROHandle in_tiles;
-            FgImgRWHandle output;
-        };
-
-        auto *data = fg_builder_.AllocTempData<PassData>();
-        data->in_color = filter.AddTextureInput(input, Ren::eStage::ComputeShader);
-        data->in_depth = filter.AddTextureInput(frame_textures.depth, Ren::eStage::ComputeShader);
-        data->in_velocity = filter.AddTextureInput(frame_textures.velocity, Ren::eStage::ComputeShader);
-        data->in_tiles = filter.AddTextureInput(tiles, Ren::eStage::ComputeShader);
-
-        { // Image that holds filtered color
-            FgImgDesc desc;
-            desc.w = view_state_.out_res[0];
-            desc.h = view_state_.out_res[1];
-            desc.format = Ren::eFormat::RGBA16F;
-            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
-
-            output = data->output = filter.AddStorageImageOutput("MB Output", desc, Ren::eStage::ComputeShader);
-        }
-
-        filter.set_execute_cb([this, data](const FgContext &fg) {
-            using namespace MotionBlur;
-
-            const Ren::ImageROHandle in_color = fg.AccessROImage(data->in_color);
-            const Ren::ImageROHandle in_depth = fg.AccessROImage(data->in_depth);
-            const Ren::ImageROHandle in_velocity = fg.AccessROImage(data->in_velocity);
-            const Ren::ImageROHandle in_tiles = fg.AccessROImage(data->in_tiles);
-
-            const Ren::ImageRWHandle output = fg.AccessRWImage(data->output);
-
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, COLOR_TEX_SLOT, in_color},
-                                             {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {in_depth, 1}},
-                                             {Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, in_velocity},
-                                             {Ren::eBindTarget::TexSampled, TILES_TEX_SLOT, in_tiles},
-                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, output}};
-
-            const Ren::ImageCold &img_cold = fg.storages().images[in_color].second;
-            const auto grp_count = Ren::Vec3u{Ren::DivCeil<uint32_t>(img_cold.params.w, GRP_SIZE_X),
-                                              Ren::DivCeil<uint32_t>(img_cold.params.h, GRP_SIZE_Y), 1u};
-
-            Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{img_cold.params.w, img_cold.params.h};
-            uniform_params.inv_ren_res = 1.0f / Ren::Vec2f{view_state_.ren_res};
-            uniform_params.clip_info = view_state_.clip_info;
-
-            DispatchCompute(fg.cmd_buf(), pi_motion_blur_filter_, fg.storages(), grp_count, bindings, &uniform_params,
-                            sizeof(uniform_params), fg.descr_alloc(), fg.log());
-        });
-    }
-    return output;
 }
 
 Eng::FgImgRWHandle Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgImgROHandle depth) {

@@ -2,11 +2,16 @@
 
 #include <Ren/Context.h>
 
+#include <algorithm>
+#include <cmath>
+
 #include "Renderer_Names.h"
 
 #include "shaders/bloom_interface.h"
+#include "shaders/dof_interface.h"
 #include "shaders/histogram_exposure_interface.h"
 #include "shaders/histogram_sample_interface.h"
+#include "shaders/motion_blur_interface.h"
 #include "shaders/sharpen_interface.h"
 
 Eng::FgImgRWHandle Eng::Renderer::AddAutoexposurePasses(const FgImgROHandle hdr_texture,
@@ -267,6 +272,667 @@ Eng::FgImgRWHandle Eng::Renderer::AddSharpenPass(const FgImgROHandle input_tex, 
         DispatchCompute(fg.cmd_buf(), pi_sharpen_[compressed], fg.storages(), grp_count, bindings, &uniform_params,
                         sizeof(uniform_params), fg.descr_alloc(), fg.log());
     });
+
+    return output;
+}
+
+Eng::FgImgRWHandle Eng::Renderer::AddMotionBlurPasses(FgImgROHandle input, FrameTextures &frame_textures) {
+    FgImgRWHandle tiles;
+    { // Horizontal pass
+        auto &classify_h = fg_builder_.AddNode("MB CLASSIFY H");
+
+        struct PassData {
+            FgImgROHandle in_velocity;
+            FgImgRWHandle out_tiles;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+        data->in_velocity = classify_h.AddTextureInput(frame_textures.velocity, Ren::eStage::ComputeShader);
+
+        { // Image that holds horizontal tiles
+            FgImgDesc desc;
+            desc.w = Ren::DivCeil(view_state_.ren_res[0], MotionBlur::TILE_RES);
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+            tiles = data->out_tiles = classify_h.AddStorageImageOutput("MB Tiles H", desc, Ren::eStage::ComputeShader);
+        }
+
+        classify_h.set_execute_cb([this, data](const FgContext &fg) {
+            const Ren::ImageROHandle in_velocity = fg.AccessROImage(data->in_velocity);
+            const Ren::ImageRWHandle out_tiles = fg.AccessRWImage(data->out_tiles);
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, MotionBlur::VELOCITY_TEX_SLOT, in_velocity},
+                                             {Ren::eBindTarget::ImageRW, MotionBlur::OUT_IMG_SLOT, out_tiles}};
+
+            // TODO: Get rid of this!
+            const Ren::ImageCold &img_cold = fg.storages().images[in_velocity].second;
+            const auto grp_count =
+                Ren::Vec3u{Ren::DivCeil<uint32_t>(img_cold.params.w, MotionBlur::GRP_SIZE), img_cold.params.h, 1u};
+
+            MotionBlur::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{img_cold.params.w, img_cold.params.h};
+
+            DispatchCompute(fg.cmd_buf(), pi_motion_blur_classify_[0], fg.storages(), grp_count, bindings,
+                            &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
+        });
+    }
+    { // Vertical pass
+        auto &classify_v = fg_builder_.AddNode("MB CLASSIFY V");
+
+        struct PassData {
+            FgImgROHandle in_velocity;
+            FgImgRWHandle out_tiles;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+        data->in_velocity = classify_v.AddTextureInput(tiles, Ren::eStage::ComputeShader);
+
+        { // Image that holds final tiles
+            FgImgDesc desc;
+            desc.w = Ren::DivCeil(view_state_.ren_res[0], MotionBlur::TILE_RES);
+            desc.h = Ren::DivCeil(view_state_.ren_res[1], MotionBlur::TILE_RES);
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+            tiles = data->out_tiles = classify_v.AddStorageImageOutput("MB Tiles V", desc, Ren::eStage::ComputeShader);
+        }
+
+        classify_v.set_execute_cb([this, data](const FgContext &fg) {
+            using namespace MotionBlur;
+
+            const Ren::ImageROHandle in_velocity = fg.AccessROImage(data->in_velocity);
+            const Ren::ImageRWHandle out_tiles = fg.AccessRWImage(data->out_tiles);
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, in_velocity},
+                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_tiles}};
+
+            const Ren::Vec2u in_res =
+                Ren::Vec2u(Ren::DivCeil(view_state_.ren_res[0], MotionBlur::TILE_RES), view_state_.ren_res[1]);
+
+            const auto grp_count = Ren::Vec3u{in_res[0], Ren::DivCeil<uint32_t>(in_res[1], GRP_SIZE), 1u};
+
+            Params uniform_params;
+            uniform_params.img_size = in_res;
+
+            DispatchCompute(fg.cmd_buf(), pi_motion_blur_classify_[1], fg.storages(), grp_count, bindings,
+                            &uniform_params, sizeof(uniform_params), fg.descr_alloc(), fg.log());
+        });
+    }
+    { // Dilation pass
+        auto &dilate = fg_builder_.AddNode("MB DILATE");
+
+        struct PassData {
+            FgImgROHandle in_tiles;
+            FgImgRWHandle out_tiles;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+        data->in_tiles = dilate.AddTextureInput(tiles, Ren::eStage::ComputeShader);
+
+        { // Image that holds dilated tiles
+            FgImgDesc desc;
+            desc.w = Ren::DivCeil(view_state_.ren_res[0], MotionBlur::TILE_RES);
+            desc.h = Ren::DivCeil(view_state_.ren_res[1], MotionBlur::TILE_RES);
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+            tiles = data->out_tiles =
+                dilate.AddStorageImageOutput("MB Tiles Dilated", desc, Ren::eStage::ComputeShader);
+        }
+
+        dilate.set_execute_cb([this, data](const FgContext &fg) {
+            using namespace MotionBlur;
+
+            const Ren::ImageROHandle in_tiles = fg.AccessROImage(data->in_tiles);
+            const Ren::ImageRWHandle out_tiles = fg.AccessRWImage(data->out_tiles);
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, TILES_TEX_SLOT, in_tiles},
+                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_tiles}};
+
+            const auto res = Ren::Vec2u(Ren::DivCeil(view_state_.ren_res[0], MotionBlur::TILE_RES),
+                                        Ren::DivCeil(view_state_.ren_res[1], MotionBlur::TILE_RES));
+
+            const auto grp_count = Ren::Vec3u(Ren::DivCeil(res[0], GRP_SIZE_X), Ren::DivCeil(res[1], GRP_SIZE_Y), 1u);
+
+            Params uniform_params;
+            uniform_params.img_size = res;
+
+            DispatchCompute(fg.cmd_buf(), pi_motion_blur_dilate_, fg.storages(), grp_count, bindings, &uniform_params,
+                            sizeof(uniform_params), fg.descr_alloc(), fg.log());
+        });
+    }
+    FgImgRWHandle output;
+    { // Filter pass
+        auto &filter = fg_builder_.AddNode("MB FILTER");
+
+        struct PassData {
+            FgImgROHandle in_color;
+            FgImgROHandle in_depth;
+            FgImgROHandle in_velocity;
+            FgImgROHandle in_tiles;
+            FgImgRWHandle output;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+        data->in_color = filter.AddTextureInput(input, Ren::eStage::ComputeShader);
+        data->in_depth = filter.AddTextureInput(frame_textures.depth, Ren::eStage::ComputeShader);
+        data->in_velocity = filter.AddTextureInput(frame_textures.velocity, Ren::eStage::ComputeShader);
+        data->in_tiles = filter.AddTextureInput(tiles, Ren::eStage::ComputeShader);
+
+        { // Image that holds filtered color
+            FgImgDesc desc;
+            desc.w = view_state_.out_res[0];
+            desc.h = view_state_.out_res[1];
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+            output = data->output = filter.AddStorageImageOutput("MB Output", desc, Ren::eStage::ComputeShader);
+        }
+
+        filter.set_execute_cb([this, data](const FgContext &fg) {
+            using namespace MotionBlur;
+
+            const Ren::ImageROHandle in_color = fg.AccessROImage(data->in_color);
+            const Ren::ImageROHandle in_depth = fg.AccessROImage(data->in_depth);
+            const Ren::ImageROHandle in_velocity = fg.AccessROImage(data->in_velocity);
+            const Ren::ImageROHandle in_tiles = fg.AccessROImage(data->in_tiles);
+
+            const Ren::ImageRWHandle output = fg.AccessRWImage(data->output);
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, COLOR_TEX_SLOT, in_color},
+                                             {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {in_depth, 1}},
+                                             {Ren::eBindTarget::TexSampled, VELOCITY_TEX_SLOT, in_velocity},
+                                             {Ren::eBindTarget::TexSampled, TILES_TEX_SLOT, in_tiles},
+                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, output}};
+
+            const Ren::ImageCold &img_cold = fg.storages().images[in_color].second;
+            const auto grp_count = Ren::Vec3u{Ren::DivCeil<uint32_t>(img_cold.params.w, GRP_SIZE_X),
+                                              Ren::DivCeil<uint32_t>(img_cold.params.h, GRP_SIZE_Y), 1u};
+
+            Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{img_cold.params.w, img_cold.params.h};
+            uniform_params.inv_ren_res = 1.0f / Ren::Vec2f{view_state_.ren_res};
+            uniform_params.clip_info = view_state_.clip_info;
+
+            DispatchCompute(fg.cmd_buf(), pi_motion_blur_filter_, fg.storages(), grp_count, bindings, &uniform_params,
+                            sizeof(uniform_params), fg.descr_alloc(), fg.log());
+        });
+    }
+    return output;
+}
+
+Eng::FgImgRWHandle Eng::Renderer::AddDOFPasses(FgImgROHandle input, const CommonBuffers &common_buffers,
+                                               FrameTextures &frame_textures) {
+    using namespace Dof;
+
+    static const float DOF_MAX_SCREEN_FRACTION = 0.015f;
+
+    // Port of "Life of a bokeh" (K. Ilich, GPU Pro 5): classify -> dilate -> presort -> filter -> median ->
+    // upsample, pre-TSR at render res (TSR/postprocess upscale it; static mode averages the rotating patterns).
+    const float full_w = float(view_state_.ren_res[0]);
+
+    // COC radius clamp, in halfres pixels. NOTE: it is a fixed fraction of the screen width, so it is safe to
+    // bake at build time (the per-pixel clamp of the actual COC happens in the shaders).
+    const float max_kernel_radius = std::min(DOF_MAX_SCREEN_FRACTION * full_w / 2.0f, float(4 * TILE_RES));
+    const Ren::Vec4f depth_size{float(frame_textures.depth_desc.w), float(frame_textures.depth_desc.h), 0.0f, 0.0f};
+
+    auto golden_angle = [](float v) { return float(std::modf(v, &v)) * 2.0f * Ren::Pi<float>(); };
+    auto make_rotation = [](float angle) {
+        const float ca = std::cos(angle), sa = std::sin(angle);
+        return Ren::Vec4f{ca, sa, -sa, ca};
+    };
+
+    FgImgRWHandle coc_tiles;
+    { // Tile classification (max depth, max COC, min depth per TILE_RES x TILE_RES tile)
+        auto &classify = fg_builder_.AddNode("DOF CLASSIFY");
+
+        struct PassData {
+            FgImgROHandle in_depth;
+            FgBufROHandle in_random_seq;
+            FgImgRWHandle out_tiles;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+        data->in_depth = classify.AddTextureInput(frame_textures.depth, Ren::eStage::ComputeShader);
+        data->in_random_seq = classify.AddStorageReadonlyInput(common_buffers.pmj_samples, Ren::eStage::ComputeShader);
+
+        const uint32_t tiles_w = Ren::DivCeil(view_state_.ren_res[0], TILE_RES);
+        const uint32_t tiles_h = Ren::DivCeil(view_state_.ren_res[1], TILE_RES);
+
+        { // Image that holds COC tiles
+            FgImgDesc desc;
+            desc.w = tiles_w;
+            desc.h = tiles_h;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+            coc_tiles = data->out_tiles =
+                classify.AddStorageImageOutput("DOF Coc Tiles", desc, Ren::eStage::ComputeShader);
+        }
+
+        classify.set_execute_cb([this, data, depth_size](const FgContext &fg) {
+            const Ren::Camera &cam = p_list_->draw_cam;
+            const Ren::Vec2u base = view_state_.ren_res;
+            const float full_w = float(base[0]), full_h = float(base[1]);
+
+            Params uniform_params = {};
+            uniform_params.img_size = Ren::Vec4f{float(Ren::DivCeil(base[0], TILE_RES)),
+                                                 float(Ren::DivCeil(base[1], TILE_RES)), full_w, full_h};
+            uniform_params.depth_size = depth_size;
+            uniform_params.clip_info = view_state_.clip_info;
+            const float focal_len = cam.focal_length();
+            const float coc_factor =
+                cam.fstop > 0.0f ? full_h / 2.0f * focal_len * (0.5f * focal_len / cam.fstop) / cam.sensor_height
+                                 : 0.0f;
+            uniform_params.focal_params =
+                Ren::Vec4f{cam.focus_distance, coc_factor, focal_len,
+                           std::min(DOF_MAX_SCREEN_FRACTION * full_w / 2.0f, float(4 * TILE_RES))};
+            uniform_params.seed = uint32_t(view_state_.frame_index) * 0x9E3779B9u + 0x12345678u;
+
+            const Ren::ImageROHandle in_depth = fg.AccessROImage(data->in_depth);
+            const Ren::BufferROHandle in_random_seq = fg.AccessROBuffer(data->in_random_seq);
+            const Ren::ImageRWHandle out_tiles = fg.AccessRWImage(data->out_tiles);
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {in_depth, 1}},
+                                             {Ren::eBindTarget::UTBuf, RANDOM_SEQ_BUF_SLOT, in_random_seq},
+                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_tiles}};
+
+            const auto grp_count = Ren::Vec3u{Ren::DivCeil(uint32_t(uniform_params.img_size[0]), GRP_SIZE_X),
+                                              Ren::DivCeil(uint32_t(uniform_params.img_size[1]), GRP_SIZE_Y), 1u};
+
+            DispatchCompute(fg.cmd_buf(), pi_dof_classify_, fg.storages(), grp_count, bindings, &uniform_params,
+                            sizeof(Params), fg.descr_alloc(), fg.log());
+        });
+    }
+    { // COC dilation, one tile ring per iteration. max_kernel_radius is halfres px while a tile spans
+      // TILE_RES fullres px, hence the 2x factor (Enscape: DOF.cpp:89).
+        int n_dilate = std::clamp(int(std::ceil(2.0f * max_kernel_radius / TILE_RES)), 1, 8);
+
+        FgImgRWHandle in_tiles = coc_tiles;
+        for (int i = 0; i < n_dilate; ++i) {
+            // Unique per-iteration node + image names: AddStorageImageOutput() reuses an existing name, so a
+            // shared one would make every pass read+write the same image -> framegraph self-dependency.
+            const std::string node_name = "DOF DILATE #" + std::to_string(i);
+            const std::string output_name = "DOF Coc Dilated #" + std::to_string(i);
+            auto &dilate = fg_builder_.AddNode(node_name);
+
+            struct PassData {
+                FgImgROHandle in_tiles;
+                FgImgRWHandle out_tiles;
+            };
+
+            auto *data = fg_builder_.AllocTempData<PassData>();
+            data->in_tiles = dilate.AddTextureInput(in_tiles, Ren::eStage::ComputeShader);
+
+            const uint32_t tiles_w = Ren::DivCeil(view_state_.ren_res[0], TILE_RES);
+            const uint32_t tiles_h = Ren::DivCeil(view_state_.ren_res[1], TILE_RES);
+
+            FgImgDesc desc;
+            desc.w = tiles_w;
+            desc.h = tiles_h;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+            FgImgRWHandle out_tiles = dilate.AddStorageImageOutput(output_name, desc, Ren::eStage::ComputeShader);
+            data->out_tiles = out_tiles;
+            in_tiles = out_tiles;
+
+            dilate.set_execute_cb([this, data](const FgContext &fg) {
+                // The pass only reads img_size (tiles); no camera- or frame-dependent params are used
+                const Ren::Vec2u base = view_state_.ren_res;
+                Params uniform_params = {};
+                uniform_params.img_size =
+                    Ren::Vec4f{float(Ren::DivCeil(base[0], TILE_RES)), float(Ren::DivCeil(base[1], TILE_RES)),
+                               float(Ren::DivCeil(base[0], TILE_RES)), float(Ren::DivCeil(base[1], TILE_RES))};
+
+                const Ren::ImageROHandle in_tiles = fg.AccessROImage(data->in_tiles);
+                const Ren::ImageRWHandle out_tiles = fg.AccessRWImage(data->out_tiles);
+
+                const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, COC_TILES_TEX_SLOT, in_tiles},
+                                                 {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_tiles}};
+
+                const auto grp_count = Ren::Vec3u{Ren::DivCeil(uint32_t(uniform_params.img_size[0]), GRP_SIZE_X),
+                                                  Ren::DivCeil(uint32_t(uniform_params.img_size[1]), GRP_SIZE_Y), 1u};
+
+                DispatchCompute(fg.cmd_buf(), pi_dof_dilate_, fg.storages(), grp_count, bindings, &uniform_params,
+                                sizeof(Params), fg.descr_alloc(), fg.log());
+            });
+        }
+        coc_tiles = in_tiles;
+    }
+
+    FgImgRWHandle downsampled_scene, presorted_data;
+    { // Foreground/background separation + color downsampling to halfres
+        auto &presort = fg_builder_.AddNode("DOF PRESORT");
+
+        struct PassData {
+            FgImgROHandle in_color;
+            FgImgROHandle in_depth;
+            FgImgROHandle in_tiles;
+            FgBufROHandle in_random_seq;
+            FgImgROHandle in_velocity;
+            FgImgROHandle in_presort_hist;
+            FgImgRWHandle out_presort;
+            FgImgRWHandle out_downsampled;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+        data->in_color = presort.AddTextureInput(input, Ren::eStage::ComputeShader);
+        data->in_depth = presort.AddTextureInput(frame_textures.depth, Ren::eStage::ComputeShader);
+        data->in_tiles = presort.AddTextureInput(coc_tiles, Ren::eStage::ComputeShader);
+        data->in_random_seq = presort.AddStorageReadonlyInput(common_buffers.pmj_samples, Ren::eStage::ComputeShader);
+
+        const uint32_t half_w = (view_state_.ren_res[0] + 1) / 2;
+        const uint32_t half_h = (view_state_.ren_res[1] + 1) / 2;
+
+        { // Halfres presort data (signed COC, foreground/background weights)
+            FgImgDesc desc;
+            desc.w = half_w;
+            desc.h = half_h;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+            presorted_data = data->out_presort =
+                presort.AddStorageImageOutput("DOF Presort", desc, Ren::eStage::ComputeShader);
+        }
+        { // Halfres blurred color (separated foreground/background averages)
+            FgImgDesc desc;
+            desc.w = half_w;
+            desc.h = half_h;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+            downsampled_scene = data->out_downsampled =
+                presort.AddStorageImageOutput("DOF Downsampled", desc, Ren::eStage::ComputeShader);
+        }
+        { // Previous frame's halfres buffer (persistent framegraph history) + motion to reproject it from
+            data->in_velocity = presort.AddTextureInput(frame_textures.dilated_velocity, Ren::eStage::ComputeShader);
+            data->in_presort_hist = presort.AddHistoryTextureInput(downsampled_scene, Ren::eStage::ComputeShader);
+        }
+
+        presort.set_execute_cb([this, data, depth_size, golden_angle, make_rotation](const FgContext &fg) {
+            const Ren::Camera &cam = p_list_->draw_cam;
+            const Ren::Vec2u base = view_state_.ren_res;
+            const float full_w = float(base[0]), full_h = float(base[1]);
+
+            Params uniform_params = {};
+            uniform_params.img_size = Ren::Vec4f{float((base[0] + 1) / 2), float((base[1] + 1) / 2), full_w, full_h};
+            uniform_params.depth_size = depth_size;
+            uniform_params.clip_info = view_state_.clip_info;
+            const float focal_len = cam.focal_length();
+            const float coc_factor =
+                cam.fstop > 0.0f ? full_h / 2.0f * focal_len * (0.5f * focal_len / cam.fstop) / cam.sensor_height
+                                 : 0.0f;
+            uniform_params.focal_params =
+                Ren::Vec4f{cam.focus_distance, coc_factor, focal_len,
+                           std::min(DOF_MAX_SCREEN_FRACTION * full_w / 2.0f, float(4 * TILE_RES))};
+            // Pattern rotation only in static accumulation mode (the TSR accumulation averages it out); rot stays
+            // identity in the other modes (a zero matrix would collapse samples onto the pixel center)
+            if (p_list_->render_settings.taa_mode == eTAAMode::Static) {
+                const float fi = float(view_state_.frame_index);
+                uniform_params.rot = make_rotation(golden_angle((fi + 0.1f) * 0.6180339887498948482f));
+            } else {
+                uniform_params.rot = Ren::Vec4f{1.0f, 0.0f, 0.0f, 1.0f};
+            }
+            uniform_params.seed = uint32_t(view_state_.frame_index) * 0x9E3779B9u + 0x12345678u;
+            uniform_params.vel_texel =
+                Ren::Vec2f{1.0f / float(view_state_.ren_res[0]), 1.0f / float(view_state_.ren_res[1])};
+            // Aperture shape parameters (polygon + anamorphic ratio + lens rotation, see dof_filter.comp.glsl)
+            const float lens_ratio = cam.lens_ratio != 0.0f ? cam.lens_ratio : 1.0f;
+            uniform_params.lens_params =
+                Ren::Vec4f{float(cam.lens_blades > 2 ? cam.lens_blades : 0), lens_ratio, cam.lens_rotation, 0.0f};
+
+            const Ren::ImageROHandle in_color = fg.AccessROImage(data->in_color);
+            const Ren::ImageROHandle in_depth = fg.AccessROImage(data->in_depth);
+            const Ren::ImageROHandle in_tiles = fg.AccessROImage(data->in_tiles);
+            const Ren::ImageROHandle in_velocity = fg.AccessROImage(data->in_velocity);
+            const Ren::ImageROHandle in_presort_hist = fg.AccessROImage(data->in_presort_hist);
+            const Ren::BufferROHandle in_random_seq = fg.AccessROBuffer(data->in_random_seq);
+            const Ren::ImageRWHandle out_presort = fg.AccessRWImage(data->out_presort);
+            const Ren::ImageRWHandle out_downsampled = fg.AccessRWImage(data->out_downsampled);
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, COLOR_TEX_SLOT, in_color},
+                                             {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {in_depth, 1}},
+                                             {Ren::eBindTarget::TexSampled, COC_TILES_TEX_SLOT, in_tiles},
+                                             {Ren::eBindTarget::TexSampled, VEL_TEX_SLOT, in_velocity},
+                                             {Ren::eBindTarget::TexSampled, PRESORT_HIST_TEX_SLOT, in_presort_hist},
+                                             {Ren::eBindTarget::UTBuf, RANDOM_SEQ_BUF_SLOT, in_random_seq},
+                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_presort},
+                                             {Ren::eBindTarget::ImageRW, OUT2_IMG_SLOT, out_downsampled}};
+
+            const auto grp_count = Ren::Vec3u{Ren::DivCeil(uint32_t(uniform_params.img_size[0]), GRP_SIZE_X),
+                                              Ren::DivCeil(uint32_t(uniform_params.img_size[1]), GRP_SIZE_Y), 1u};
+
+            // [1] = @LENS_SHAPE permutation when the camera requests a polygonal aperture
+            DispatchCompute(fg.cmd_buf(), pi_dof_presort_[int(uniform_params.lens_params[0] > 0.0f)], fg.storages(),
+                            grp_count, bindings, &uniform_params, sizeof(Params), fg.descr_alloc(), fg.log());
+        });
+    }
+
+    FgImgRWHandle filtered_scene, filter_alpha;
+    { // Bokeh filter at halfres (49 ring samples from presort data)
+        auto &filter = fg_builder_.AddNode("DOF FILTER");
+
+        struct PassData {
+            FgImgROHandle in_downsampled;
+            FgImgROHandle in_tiles;
+            FgImgROHandle in_presort;
+            FgBufROHandle in_random_seq;
+            FgImgRWHandle out_filtered;
+            FgImgRWHandle out_alpha;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+        data->in_downsampled = filter.AddTextureInput(downsampled_scene, Ren::eStage::ComputeShader);
+        data->in_tiles = filter.AddTextureInput(coc_tiles, Ren::eStage::ComputeShader);
+        data->in_presort = filter.AddTextureInput(presorted_data, Ren::eStage::ComputeShader);
+        data->in_random_seq = filter.AddStorageReadonlyInput(common_buffers.pmj_samples, Ren::eStage::ComputeShader);
+
+        const uint32_t half_w = (view_state_.ren_res[0] + 1) / 2;
+        const uint32_t half_h = (view_state_.ren_res[1] + 1) / 2;
+
+        { // Halfres filtered color
+            FgImgDesc desc;
+            desc.w = half_w;
+            desc.h = half_h;
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+            filtered_scene = data->out_filtered =
+                filter.AddStorageImageOutput("DOF Filtered", desc, Ren::eStage::ComputeShader);
+        }
+        { // Halfres blend alpha (foreground/background mix of the filtered result)
+            FgImgDesc desc;
+            desc.w = half_w;
+            desc.h = half_h;
+            desc.format = Ren::eFormat::R16F;
+            desc.sampling.filter = Ren::eFilter::Bilinear;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+            filter_alpha = data->out_alpha =
+                filter.AddStorageImageOutput("DOF Alpha", desc, Ren::eStage::ComputeShader);
+        }
+
+        filter.set_execute_cb([this, data, golden_angle, make_rotation](const FgContext &fg) {
+            const Ren::Vec2u base = view_state_.ren_res;
+            const float full_w = float(base[0]), full_h = float(base[1]);
+
+            Params uniform_params = {};
+            uniform_params.img_size = Ren::Vec4f{float((base[0] + 1) / 2), float((base[1] + 1) / 2), full_w, full_h};
+            // Pattern rotation in static accumulation mode only, see the DOF PRESORT callback; rot stays identity
+            // in the other modes
+            if (p_list_->render_settings.taa_mode == eTAAMode::Static) {
+                const float fi = float(view_state_.frame_index);
+                uniform_params.rot = make_rotation(golden_angle((fi + 0.37f) * 0.6180339887498948482f));
+            } else {
+                uniform_params.rot = Ren::Vec4f{1.0f, 0.0f, 0.0f, 1.0f};
+            }
+            uniform_params.seed = uint32_t(view_state_.frame_index) * 0x9E3779B9u + 0x12345678u;
+            // Aperture shape parameters, see the DOF PRESORT callback. The camera is read at execute time so that
+            // live lens changes retarget the bokeh immediately without a graph rebuild.
+            const Ren::Camera &cam = p_list_->draw_cam;
+            const float lens_ratio = cam.lens_ratio != 0.0f ? cam.lens_ratio : 1.0f;
+            uniform_params.lens_params =
+                Ren::Vec4f{float(cam.lens_blades > 2 ? cam.lens_blades : 0), lens_ratio, cam.lens_rotation, 0.0f};
+
+            const Ren::ImageROHandle in_downsampled = fg.AccessROImage(data->in_downsampled);
+            const Ren::ImageROHandle in_tiles = fg.AccessROImage(data->in_tiles);
+            const Ren::ImageROHandle in_presort = fg.AccessROImage(data->in_presort);
+            const Ren::BufferROHandle in_random_seq = fg.AccessROBuffer(data->in_random_seq);
+            const Ren::ImageRWHandle out_filtered = fg.AccessRWImage(data->out_filtered);
+            const Ren::ImageRWHandle out_alpha = fg.AccessRWImage(data->out_alpha);
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, DOWNSAMPLED_TEX_SLOT, in_downsampled},
+                                             {Ren::eBindTarget::TexSampled, COC_TILES_TEX_SLOT, in_tiles},
+                                             {Ren::eBindTarget::TexSampled, PRESORT_TEX_SLOT, in_presort},
+                                             {Ren::eBindTarget::UTBuf, RANDOM_SEQ_BUF_SLOT, in_random_seq},
+                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_filtered},
+                                             {Ren::eBindTarget::ImageRW, OUT2_IMG_SLOT, out_alpha}};
+
+            const auto grp_count = Ren::Vec3u{Ren::DivCeil(uint32_t(uniform_params.img_size[0]), GRP_SIZE_X),
+                                              Ren::DivCeil(uint32_t(uniform_params.img_size[1]), GRP_SIZE_Y), 1u};
+
+            // [1] = @LENS_SHAPE permutation when the camera requests a polygonal aperture; both slots are the
+            // @TONEMAP filtering variants (see Renderer_Common.cpp)
+            DispatchCompute(fg.cmd_buf(), pi_dof_filter_[int(uniform_params.lens_params[0] > 0.0f)], fg.storages(),
+                            grp_count, bindings, &uniform_params, sizeof(Params), fg.descr_alloc(), fg.log());
+        });
+    }
+
+    { // Median filter to remove bokeh noise from the halfres result
+        auto &median = fg_builder_.AddNode("DOF MEDIAN");
+
+        struct PassData {
+            FgImgROHandle in_source;
+            FgImgROHandle in_tiles;
+            FgImgRWHandle out_filtered;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+        data->in_source = median.AddTextureInput(filtered_scene, Ren::eStage::ComputeShader);
+        data->in_tiles = median.AddTextureInput(coc_tiles, Ren::eStage::ComputeShader);
+
+        const uint32_t half_w = (view_state_.ren_res[0] + 1) / 2;
+        const uint32_t half_h = (view_state_.ren_res[1] + 1) / 2;
+
+        FgImgDesc desc;
+        desc.w = half_w;
+        desc.h = half_h;
+        desc.format = Ren::eFormat::RGBA16F;
+        desc.sampling.filter = Ren::eFilter::Bilinear;
+        desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+        data->out_filtered = median.AddStorageImageOutput("DOF Median", desc, Ren::eStage::ComputeShader);
+        filtered_scene = data->out_filtered;
+
+        median.set_execute_cb([this, data](const FgContext &fg) {
+            // The pass only reads img_size; no camera- or frame-dependent params are used
+            const Ren::Vec2u base = view_state_.ren_res;
+            Params uniform_params = {};
+            uniform_params.img_size =
+                Ren::Vec4f{float((base[0] + 1) / 2), float((base[1] + 1) / 2), float(base[0]), float(base[1])};
+
+            const Ren::ImageROHandle in_source = fg.AccessROImage(data->in_source);
+            const Ren::ImageROHandle in_tiles = fg.AccessROImage(data->in_tiles);
+            const Ren::ImageRWHandle out_filtered = fg.AccessRWImage(data->out_filtered);
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, DOWNSAMPLED_TEX_SLOT, in_source},
+                                             {Ren::eBindTarget::TexSampled, COC_TILES_TEX_SLOT, in_tiles},
+                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out_filtered}};
+
+            const auto grp_count = Ren::Vec3u{Ren::DivCeil(uint32_t(uniform_params.img_size[0]), GRP_SIZE_X),
+                                              Ren::DivCeil(uint32_t(uniform_params.img_size[1]), GRP_SIZE_Y), 1u};
+
+            DispatchCompute(fg.cmd_buf(), pi_dof_median_, fg.storages(), grp_count, bindings, &uniform_params,
+                            sizeof(Params), fg.descr_alloc(), fg.log());
+        });
+    }
+
+    FgImgRWHandle output;
+    { // Guided upsample back to fullres with sharp foreground from the original color
+        auto &upsample = fg_builder_.AddNode("DOF UPSAMPLE");
+
+        struct PassData {
+            FgImgROHandle in_color;
+            FgImgROHandle in_depth;
+            FgImgROHandle in_tiles;
+            FgImgROHandle in_filtered;
+            FgImgROHandle in_alpha;
+            FgBufROHandle in_random_seq;
+            FgImgRWHandle output;
+        };
+
+        auto *data = fg_builder_.AllocTempData<PassData>();
+        data->in_color = upsample.AddTextureInput(input, Ren::eStage::ComputeShader);
+        data->in_depth = upsample.AddTextureInput(frame_textures.depth, Ren::eStage::ComputeShader);
+        data->in_tiles = upsample.AddTextureInput(coc_tiles, Ren::eStage::ComputeShader);
+        data->in_filtered = upsample.AddTextureInput(filtered_scene, Ren::eStage::ComputeShader);
+        data->in_alpha = upsample.AddTextureInput(filter_alpha, Ren::eStage::ComputeShader);
+        data->in_random_seq = upsample.AddStorageReadonlyInput(common_buffers.pmj_samples, Ren::eStage::ComputeShader);
+
+        { // Render-res DOF result (TSR upscales it; in Off mode the postprocess blit samples it)
+            FgImgDesc desc;
+            desc.w = view_state_.ren_res[0];
+            desc.h = view_state_.ren_res[1];
+            desc.format = Ren::eFormat::RGBA16F;
+            desc.sampling.wrap = Ren::eWrap::ClampToEdge;
+
+            output = data->output = upsample.AddStorageImageOutput("DOF Output", desc, Ren::eStage::ComputeShader);
+        }
+
+        upsample.set_execute_cb([this, data, depth_size, golden_angle](const FgContext &fg) {
+            const Ren::Camera &cam = p_list_->draw_cam;
+            const Ren::Vec2u base = view_state_.ren_res;
+            const float full_w = float(base[0]), full_h = float(base[1]);
+
+            Params uniform_params = {};
+            uniform_params.img_size = Ren::Vec4f{full_w, full_h, full_w, full_h};
+            uniform_params.depth_size = depth_size;
+            // Only written during execution (by the shared-data update pass earlier in the same frame)
+            uniform_params.clip_info = view_state_.clip_info;
+            // Vertical-extent CoC scaling, see the NOTE in the DOF CLASSIFY callback
+            const float focal_len = cam.focal_length();
+            const float coc_factor =
+                cam.fstop > 0.0f ? full_h / 2.0f * focal_len * (0.5f * focal_len / cam.fstop) / cam.sensor_height
+                                 : 0.0f;
+            uniform_params.focal_params =
+                Ren::Vec4f{cam.focus_distance, coc_factor, focal_len,
+                           std::min(DOF_MAX_SCREEN_FRACTION * full_w / 2.0f, float(4 * TILE_RES))};
+            // upsample quad rotation, static accumulation mode only (see the DOF PRESORT callback); 0 = fixed quads
+            uniform_params.rot_angle = p_list_->render_settings.taa_mode == eTAAMode::Static
+                                           ? golden_angle(float(view_state_.frame_index) * 0.6180339887498948482f)
+                                           : 0.0f;
+            uniform_params.seed = uint32_t(view_state_.frame_index) * 0x9E3779B9u + 0x12345678u;
+
+            const Ren::ImageROHandle in_color = fg.AccessROImage(data->in_color);
+            const Ren::ImageROHandle in_depth = fg.AccessROImage(data->in_depth);
+            const Ren::ImageROHandle in_tiles = fg.AccessROImage(data->in_tiles);
+            const Ren::ImageROHandle in_filtered = fg.AccessROImage(data->in_filtered);
+            const Ren::ImageROHandle in_alpha = fg.AccessROImage(data->in_alpha);
+            const Ren::BufferROHandle in_random_seq = fg.AccessROBuffer(data->in_random_seq);
+            const Ren::ImageRWHandle out = fg.AccessRWImage(data->output);
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, COLOR_TEX_SLOT, in_color},
+                                             {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {in_depth, 1}},
+                                             {Ren::eBindTarget::TexSampled, COC_TILES_TEX_SLOT, in_tiles},
+                                             {Ren::eBindTarget::TexSampled, FILTERED_TEX_SLOT, in_filtered},
+                                             {Ren::eBindTarget::TexSampled, ALPHA_TEX_SLOT, in_alpha},
+                                             {Ren::eBindTarget::UTBuf, RANDOM_SEQ_BUF_SLOT, in_random_seq},
+                                             {Ren::eBindTarget::ImageRW, OUT_IMG_SLOT, out}};
+
+            const auto grp_count = Ren::Vec3u{Ren::DivCeil(uint32_t(uniform_params.img_size[0]), GRP_SIZE_X),
+                                              Ren::DivCeil(uint32_t(uniform_params.img_size[1]), GRP_SIZE_Y), 1u};
+
+            DispatchCompute(fg.cmd_buf(), pi_dof_upsample_, fg.storages(), grp_count, bindings, &uniform_params,
+                            sizeof(Params), fg.descr_alloc(), fg.log());
+        });
+    }
 
     return output;
 }

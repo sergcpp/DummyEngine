@@ -39,6 +39,12 @@
             -91.29739693732209
         ],
         "fov": 58.62679896721022,
+        "fstop": 8.0,
+        "focus_distance": 100000.0,
+        "sensor_height": 0.036,
+        "lens_blades": 0,
+        "lens_rotation": 0.0,
+        "lens_ratio": 1.0,
         "view_transform": "agx_punchy",
         "filter": "blackman-harris",
         "filter_width": 1.0,

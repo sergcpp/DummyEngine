@@ -145,6 +145,36 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
             view_fov_ = float(js_fov.val);
         }
 
+        if (const size_t fstop_ndx = js_cam.IndexOf("fstop"); fstop_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_fstop = js_cam[fstop_ndx].second.as_num();
+            scene_manager_->main_cam().fstop = float(js_fstop.val);
+        }
+
+        if (const size_t focus_dist_ndx = js_cam.IndexOf("focus_distance"); focus_dist_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_focus_dist = js_cam[focus_dist_ndx].second.as_num();
+            scene_manager_->main_cam().focus_distance = float(js_focus_dist.val);
+        }
+
+        if (const size_t sensor_height_ndx = js_cam.IndexOf("sensor_height"); sensor_height_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_sensor_height = js_cam[sensor_height_ndx].second.as_num();
+            scene_manager_->main_cam().sensor_height = float(js_sensor_height.val);
+        }
+
+        if (const size_t lens_blades_ndx = js_cam.IndexOf("lens_blades"); lens_blades_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_lens_blades = js_cam[lens_blades_ndx].second.as_num();
+            scene_manager_->main_cam().lens_blades = int(js_lens_blades.val);
+        }
+
+        if (const size_t lens_rotation_ndx = js_cam.IndexOf("lens_rotation"); lens_rotation_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_lens_rotation = js_cam[lens_rotation_ndx].second.as_num();
+            scene_manager_->main_cam().lens_rotation = float(js_lens_rotation.val);
+        }
+
+        if (const size_t lens_ratio_ndx = js_cam.IndexOf("lens_ratio"); lens_ratio_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_lens_ratio = js_cam[lens_ratio_ndx].second.as_num();
+            scene_manager_->main_cam().lens_ratio = float(js_lens_ratio.val);
+        }
+
         if (const size_t gamma_ndx = js_cam.IndexOf("gamma"); gamma_ndx < js_cam.Size()) {
             const Sys::JsNumber &js_gamma = js_cam[gamma_ndx].second.as_num();
             gamma_ = float(js_gamma.val);
@@ -225,6 +255,10 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
                 frame.pos[1] = js_frame_pos.at(1).as_num().val;
                 frame.pos[2] = js_frame_pos.at(2).as_num().val;
                 frame.dir = Ren::Vec3d(view_vec);
+
+                if (const size_t focus_ndx = js_frame.IndexOf("focus_distance"); focus_ndx < js_frame.Size()) {
+                    frame.focus_distance = float(js_frame[focus_ndx].second.as_num().val);
+                }
             }
         }
     }
@@ -233,6 +267,9 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
         // Use the first frame as initial state
         initial_view_pos_ = cam_frames_[0].pos;
         initial_view_dir_ = cam_frames_[0].dir;
+        if (cam_frames_[0].focus_distance.has_value()) {
+            scene_manager_->main_cam().focus_distance = *cam_frames_[0].focus_distance;
+        }
     }
 
     if (viewer_->app_params.exposure.has_value()) {
@@ -437,6 +474,9 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
     if (cam_frame_ != -1 && cam_frame_ < cam_frames_.size()) {
         smooth_view_origin = cam_frames_[cam_frame_].pos;
         view_dir_ = cam_frames_[cam_frame_].dir;
+        if (cam_frames_[cam_frame_].focus_distance.has_value()) {
+            scene_manager_->main_cam().focus_distance = *cam_frames_[cam_frame_].focus_distance;
+        }
     }
 
     // Invalidate view if camera has moved
@@ -722,6 +762,16 @@ void DrawTest::SaveScene(Sys::JsObjectP &js_scene) {
 
         { // write fov
             js_camera.Insert("fov", Sys::JsNumber{view_fov_});
+        }
+
+        { // write lens parameters
+            const auto &cam = scene_manager_->main_cam();
+            js_camera.Insert("focus_distance", Sys::JsNumber{cam.focus_distance});
+            js_camera.Insert("sensor_height", Sys::JsNumber{cam.sensor_height});
+            js_camera.Insert("fstop", Sys::JsNumber{cam.fstop});
+            js_camera.Insert("lens_blades", Sys::JsNumber{float(cam.lens_blades)});
+            js_camera.Insert("lens_rotation", Sys::JsNumber{cam.lens_rotation});
+            js_camera.Insert("lens_ratio", Sys::JsNumber{cam.lens_ratio});
         }
 
         { // write max exposure

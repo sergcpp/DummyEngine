@@ -2,6 +2,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <thread>
 
 #include <Eng/ViewerBase.h>
@@ -126,6 +127,7 @@ class BaseState : public Eng::ViewerState {
 
     struct cam_frame_t {
         Ren::Vec3d pos, dir;
+        std::optional<float> focus_distance;
     };
     std::vector<cam_frame_t> cam_frames_;
     int cam_frame_ = 0;
