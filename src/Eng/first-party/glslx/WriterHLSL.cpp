@@ -236,6 +236,8 @@ const HashMap32<std::string, std::string> g_hlsl_function_mapping{{"intBitsToFlo
                                                                   {"subgroupElect", "WaveIsFirstLane"},
                                                                   {"subgroupExclusiveAdd", "WavePrefixSum"},
                                                                   {"bitCount", "countbits"},
+                                                                  {"findLSB", "firstbitlow"},
+                                                                  {"findMSB", "firstbithigh"},
                                                                   {"nonuniformEXT", "NonUniformResourceIndex"}};
 } // namespace glslx
 
