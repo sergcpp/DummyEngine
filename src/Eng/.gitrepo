@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = fixes_30_09
-	commit = 9539a6ac147d720a76cb1901f6422e4b1cc6f6a2
+	branch = update_05_10
+	commit = 39f02cbb30f258c8a6543fb92285083a7f1e4b50
 	method = merge
 	cmdver = 0.4.9
-	parent = 13c94abfe7557b84a5a195c8a8d0d3efabc9db14
+	parent = 1230db3c8b9db509228420be349b89c7d38e2c7a
