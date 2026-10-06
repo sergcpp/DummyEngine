@@ -654,6 +654,34 @@ void test_parser() {
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
+    { // if/else with non-compound bodies
+        static const char source[] = "void test() {\n"
+                                     "    float a[2];\n"
+                                     "    float b[2];\n"
+                                     "    int n = 0;\n"
+                                     "    if (n < 1)\n"
+                                     "        a[n] = 1.0;\n"
+                                     "    else\n"
+                                     "        b[n] = 2.0;\n"
+                                     "}\n";
+        static const char expected[] = "void test() {\n"
+                                       "    float a[2];\n"
+                                       "    float b[2];\n"
+                                       "    int n = 0;\n"
+                                       "    if (n < 1) a[n] = 1.0; else b[n] = 2.0;\n"
+                                       "}\n";
+
+        Parser parser(source, "if_else_non_compound.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = test_clone(tr_unit.get());
+        tr_unit = test_serialize(tr_unit.get());
+
+        std::stringstream ss;
+        WriterGLSL().Write(tr_unit.get(), ss);
+        require(ss.str() == expected);
+    }
     { // do statement
         static const char source[] = "void test() {\n"
                                      "    [[unroll, dependency_infinite]] do a(); while (true);\n"

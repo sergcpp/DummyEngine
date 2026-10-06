@@ -516,11 +516,14 @@ void glslx::WriterHLSL::Write_IfStatement(const ast_if_statement *statement, std
     out_stream << "if (";
     Write_Expression(statement->condition, {}, out_stream);
     out_stream << ")";
+    if (statement->then_statement->type != eStatement::Compound) {
+        out_stream << " ";
+    }
     if (statement->else_statement) {
         Write_Statement(statement->then_statement, out_stream,
                         DefaultOutputFlags & ~(Bitmask{eOutputFlags::WriteTabs} | eOutputFlags::NewLine));
         out_stream << " else";
-        if (statement->else_statement->type == eStatement::If) {
+        if (statement->else_statement->type != eStatement::Compound) {
             out_stream << " ";
         }
         Write_Statement(statement->else_statement, out_stream, DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
