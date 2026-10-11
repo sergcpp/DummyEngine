@@ -77,6 +77,8 @@ class WriterHLSL : public WriterBase {
                                    Bitmask<eOutputFlags> output_flags);
     void Write_IfStatement(const ast_if_statement *statement, std::ostream &out_stream,
                            Bitmask<eOutputFlags> output_flags);
+    bool Needs_StatementExpansion(const ast_statement *statement);
+    void Write_IfBranch(const ast_statement *statement, std::ostream &out_stream, bool trailing_newline);
     void Write_SwitchStatement(const ast_switch_statement *statement, std::ostream &out_stream,
                                Bitmask<eOutputFlags> output_flags);
     void Write_CaseLabelStatement(const ast_case_label_statement *statement, std::ostream &out_stream,

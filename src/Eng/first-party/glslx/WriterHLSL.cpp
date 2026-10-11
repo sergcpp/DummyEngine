@@ -510,26 +510,61 @@ void glslx::WriterHLSL::Write_ExpressionStatement(const ast_expression_statement
     }
 }
 
+bool glslx::WriterHLSL::Needs_StatementExpansion(const ast_statement *statement) {
+    // An assignment that targets a byteaddress buffer is rewritten into a temp declaration
+    // plus an offset declaration plus a Store() call, so it can't stay a single statement.
+    if (statement->type != eStatement::Expression) {
+        return false;
+    }
+    const auto *expression_statement = static_cast<const ast_expression_statement *>(statement);
+    if (!expression_statement->expression || expression_statement->expression->type != eExprType::Assign) {
+        return false;
+    }
+    const auto *assignment = static_cast<const ast_assignment_expression *>(expression_statement->expression);
+    global_vector<access_index_t> indices;
+    const auto buf_index = Find_BufferAccessExpression(assignment->operand1, 0, indices).first;
+    return buf_index != -1;
+}
+
+void glslx::WriterHLSL::Write_IfBranch(const ast_statement *statement, std::ostream &out_stream,
+                                       const bool trailing_newline) {
+    const Bitmask<eOutputFlags> flags =
+        trailing_newline ? (DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs})
+                         : (DefaultOutputFlags & ~(Bitmask{eOutputFlags::WriteTabs} | eOutputFlags::NewLine));
+    if (statement->type == eStatement::Compound) {
+        // Write_CompoundStatement supplies its own leading space before '{'
+        Write_Statement(statement, out_stream, flags);
+        return;
+    }
+    if (Needs_StatementExpansion(statement)) {
+        // Wrap in a synthetic compound block
+        out_stream << " {\n";
+        ++nest_level_;
+        Write_Statement(statement, out_stream, DefaultOutputFlags);
+        --nest_level_;
+        Write_Tabs(out_stream);
+        out_stream << "}";
+        if (trailing_newline) {
+            out_stream << "\n";
+        }
+        return;
+    }
+    out_stream << " ";
+    Write_Statement(statement, out_stream, flags);
+}
+
 void glslx::WriterHLSL::Write_IfStatement(const ast_if_statement *statement, std::ostream &out_stream,
                                           Bitmask<eOutputFlags> output_flags) {
     Write_SelectionAttributes(statement->attributes, out_stream);
     out_stream << "if (";
     Write_Expression(statement->condition, {}, out_stream);
     out_stream << ")";
-    if (statement->then_statement->type != eStatement::Compound) {
-        out_stream << " ";
-    }
     if (statement->else_statement) {
-        Write_Statement(statement->then_statement, out_stream,
-                        DefaultOutputFlags & ~(Bitmask{eOutputFlags::WriteTabs} | eOutputFlags::NewLine));
+        Write_IfBranch(statement->then_statement, out_stream, false);
         out_stream << " else";
-        if (statement->else_statement->type != eStatement::Compound) {
-            out_stream << " ";
-        }
-        Write_Statement(statement->else_statement, out_stream, DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
+        Write_IfBranch(statement->else_statement, out_stream, true);
     } else {
-        Write_Statement(statement->then_statement, out_stream,
-                        DefaultOutputFlags & ~(Bitmask{eOutputFlags::WriteTabs}));
+        Write_IfBranch(statement->then_statement, out_stream, true);
     }
 }
 
@@ -1007,7 +1042,8 @@ void glslx::WriterHLSL::Write_Precision(ePrecision precision, std::ostream &out_
 }
 
 void glslx::WriterHLSL::Write_GlobalVariable(const ast_global_variable *variable, std::ostream &out_stream) {
-    if (variable->storage == eStorage::Const) {
+    if ((variable->storage == eStorage::None && variable->layout_qualifiers.empty()) ||
+        variable->storage == eStorage::Const) {
         out_stream << "static ";
     }
 
