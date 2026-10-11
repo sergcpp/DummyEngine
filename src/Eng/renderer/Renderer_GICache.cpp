@@ -299,6 +299,7 @@ void Eng::Renderer::AddGICachePasses(const PersistentGpuData &persistent_data,
 
             FgBufROHandle stoch_lights;
             FgBufROHandle light_nodes;
+            FgBufROHandle light_leaf_prims;
 
             FgImgROHandle irradiance;
             FgImgROHandle distance;
@@ -335,6 +336,8 @@ void Eng::Renderer::AddGICachePasses(const PersistentGpuData &persistent_data,
                 rt_gi_cache_shade.AddStorageReadonlyInput(common_buffers.stoch_lights, Stg::ComputeShader);
             data->light_nodes =
                 rt_gi_cache_shade.AddStorageReadonlyInput(common_buffers.stoch_lights_nodes, Stg::ComputeShader);
+            data->light_leaf_prims =
+                rt_gi_cache_shade.AddStorageReadonlyInput(common_buffers.stoch_lights_leaf_prims, Stg::ComputeShader);
         }
 
         data->irradiance = rt_gi_cache_shade.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::ComputeShader);
@@ -373,10 +376,11 @@ void Eng::Renderer::AddGICachePasses(const PersistentGpuData &persistent_data,
             const Ren::BufferROHandle active_entries = fg.AccessROBuffer(data->active_entries);
             const Ren::BufferROHandle indir_args = fg.AccessROBuffer(data->indir_args);
 
-            Ren::BufferROHandle stoch_lights = {}, light_nodes = {};
+            Ren::BufferROHandle stoch_lights = {}, light_nodes = {}, light_leaf_prims = {};
             if (data->stoch_lights) {
                 stoch_lights = fg.AccessROBuffer(data->stoch_lights);
                 light_nodes = fg.AccessROBuffer(data->light_nodes);
+                light_leaf_prims = fg.AccessROBuffer(data->light_leaf_prims);
             }
 
             const Ren::BufferRWHandle inout_cache_voxels = fg.AccessRWBuffer(data->inout_cache_voxels);
@@ -407,6 +411,7 @@ void Eng::Renderer::AddGICachePasses(const PersistentGpuData &persistent_data,
             if (stoch_lights) {
                 bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::STOCH_LIGHTS_BUF_SLOT, stoch_lights);
                 bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::LIGHT_NODES_BUF_SLOT, light_nodes);
+                bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::LIGHT_LEAF_PRIMS_BUF_SLOT, light_leaf_prims);
             }
 
             const int volume_to_update = p_list_->volume_to_update;
@@ -443,6 +448,8 @@ void Eng::Renderer::AddGICachePasses(const PersistentGpuData &persistent_data,
         if (common_buffers.stoch_lights) {
             data->lights = sample_lights.AddStorageReadonlyInput(common_buffers.stoch_lights, Stg::ComputeShader);
             data->nodes = sample_lights.AddStorageReadonlyInput(common_buffers.stoch_lights_nodes, Stg::ComputeShader);
+            data->leaf_prims =
+                sample_lights.AddStorageReadonlyInput(common_buffers.stoch_lights_leaf_prims, Stg::ComputeShader);
         }
 
         data->geo_data = sample_lights.AddStorageReadonlyInput(rt_geo_instances_res, Stg::ComputeShader);

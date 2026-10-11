@@ -42,6 +42,7 @@ layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
 layout(binding = RANDOM_SEQ_BUF_SLOT) uniform usamplerBuffer g_random_seq;
 layout(binding = LIGHTS_BUF_SLOT) uniform usamplerBuffer g_lights_buf;
 layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
+layout(binding = LIGHT_LEAF_PRIMS_BUF_SLOT) uniform usamplerBuffer g_light_leaf_prims_buf;
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
     rt_geo_instance_t g_geometries[];
@@ -106,7 +107,8 @@ void main() {
     const float light_pick_rand = get_scrambled_2d_rand(g_random_seq, RAND_DIM_LIGHT_PICK, px_hash, ray_index).x;
 
     float pdf_factor;
-    const int li = PickLightSource(probe_pos, g_light_nodes_buf, g_params.stoch_lights_count, light_pick_rand, pdf_factor);
+    const int li = PickLightSource(probe_pos, g_light_nodes_buf, g_light_leaf_prims_buf, g_params.stoch_lights_count,
+                                   light_pick_rand, pdf_factor);
     if (li != -1) {
         const _light_item_t litem = FetchLightItem(g_lights_buf, li);
         const bool is_doublesided = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DOUBLESIDED_BIT) != 0;

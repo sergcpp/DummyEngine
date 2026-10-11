@@ -282,10 +282,9 @@ class SceneManager {
     static uint32_t PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,
                                         int primitive_alignment, std::vector<gpu_bvh_node_t> &out_nodes,
                                         std::vector<uint32_t> &out_indices);
-    static uint32_t ConvertToWBVH_r(Ren::Span<const gpu_light_bvh_node_t> nodes, uint32_t node_index,
-                                    uint32_t parent_index, std::vector<gpu_light_wbvh_node_t> &out_nodes);
-    static uint32_t ConvertToCWBVH_r(Ren::Span<const gpu_light_bvh_node_t> nodes, uint32_t node_index,
-                                     uint32_t parent_index, std::vector<gpu_light_cwbvh_node_t> &out_nodes);
+    static uint32_t FlattenLightBVH_r(Ren::Span<const gpu_light_bvh_node_t> nodes, uint32_t node_index,
+                                      std::vector<gpu_light_cwbvh_node_t> &out_nodes,
+                                      std::vector<uint32_t> &out_leaf_lights, int at_index = -1, uint32_t depth = 0);
     static uint32_t ConvertToBVH2(Ren::Span<const gpu_bvh_node_t> nodes, std::vector<gpu_bvh2_node_t> &out_nodes);
 
     std::vector<char> temp_buf;

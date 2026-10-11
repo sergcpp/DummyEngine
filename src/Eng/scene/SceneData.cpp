@@ -81,6 +81,10 @@ void Eng::PersistentGpuData::Release() {
         ctx.ReleaseBuffer(stoch_lights_nodes);
     }
     stoch_lights_nodes = {};
+    if (stoch_lights_leaf_prims) {
+        ctx.ReleaseBuffer(stoch_lights_leaf_prims);
+    }
+    stoch_lights_leaf_prims = {};
     for (Ren::BufferHandle &buf : rt_tlas_buf) {
         if (buf) {
             ctx.ReleaseBuffer(buf);

@@ -221,7 +221,7 @@ struct PersistentGpuData {
 
     Ren::BufferHandle instances;
     Ren::BufferHandle materials;
-    Ren::BufferHandle stoch_lights, stoch_lights_nodes;
+    Ren::BufferHandle stoch_lights, stoch_lights_nodes, stoch_lights_leaf_prims;
     std::unique_ptr<Ren::ResizableBuffer> vertex_buf1, vertex_buf2, indices_buf;
     std::unique_ptr<Ren::ResizableBuffer> skin_vertex_buf, delta_buf;
     std::unique_ptr<Ren::MemAllocators> mem_allocs;

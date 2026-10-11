@@ -46,6 +46,7 @@ const uint PRIM_NDX_BUF_SLOT = 16;
 const uint MESH_INSTANCES_BUF_SLOT = 17;
 const uint LIGHTS_BUF_SLOT = 18;
 const uint LIGHT_NODES_BUF_SLOT = 19;
+const uint LIGHT_LEAF_PRIMS_BUF_SLOT = 20;
 const uint OFFSET_TEX_SLOT = 5; // overlaps with ALBEDO_TEX_SLOT
 
 const uint OUT_DIFFUSE_IMG_SLOT = 0;

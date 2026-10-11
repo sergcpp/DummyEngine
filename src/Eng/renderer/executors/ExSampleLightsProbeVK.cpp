@@ -33,6 +33,7 @@ void Eng::ExSampleLightsProbe::Execute_HWRT(const FgContext &fg) {
 
     const Ren::BufferROHandle lights = fg.AccessROBuffer(args_->lights);
     const Ren::BufferROHandle nodes = fg.AccessROBuffer(args_->nodes);
+    const Ren::BufferROHandle leaf_prims = fg.AccessROBuffer(args_->leaf_prims);
 
     const Ren::ApiContext &api = fg.ren_ctx().api();
     const Ren::StoragesRef &storages = fg.storages();
@@ -41,6 +42,7 @@ void Eng::ExSampleLightsProbe::Execute_HWRT(const FgContext &fg) {
                                      {Ren::eBindTarget::UTBuf, RANDOM_SEQ_BUF_SLOT, random_seq},
                                      {Ren::eBindTarget::UTBuf, LIGHTS_BUF_SLOT, lights},
                                      {Ren::eBindTarget::UTBuf, LIGHT_NODES_BUF_SLOT, nodes},
+                                     {Ren::eBindTarget::UTBuf, LIGHT_LEAF_PRIMS_BUF_SLOT, leaf_prims},
                                      {Ren::eBindTarget::AccStruct, TLAS_SLOT, args_->tlas},
                                      {Ren::eBindTarget::SBufRO, GEO_DATA_BUF_SLOT, geo_data},
                                      {Ren::eBindTarget::SBufRO, MATERIAL_BUF_SLOT, materials},

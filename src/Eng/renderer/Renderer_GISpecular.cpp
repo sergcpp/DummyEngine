@@ -476,6 +476,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                 FgBufROHandle stoch_lights;
                 FgBufROHandle light_nodes;
+                FgBufROHandle light_leaf_prims;
 
                 FgBufROHandle in_ray_hits, indir_args;
                 FgBufRWHandle inout_ray_counter;
@@ -511,6 +512,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     spec_shade.AddStorageReadonlyInput(common_buffers.stoch_lights, Stg::ComputeShader);
                 data->light_nodes =
                     spec_shade.AddStorageReadonlyInput(common_buffers.stoch_lights_nodes, Stg::ComputeShader);
+                data->light_leaf_prims =
+                    spec_shade.AddStorageReadonlyInput(common_buffers.stoch_lights_leaf_prims, Stg::ComputeShader);
             }
 
             data->in_ray_hits = spec_shade.AddStorageReadonlyInput(ray_hits, Stg::ComputeShader);
@@ -554,10 +557,11 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 const Ren::ImageROHandle dist = fg.AccessROImage(data->distance);
                 const Ren::ImageROHandle off = fg.AccessROImage(data->offset);
 
-                Ren::BufferROHandle stoch_lights = {}, light_nodes = {};
+                Ren::BufferROHandle stoch_lights = {}, light_nodes = {}, light_leaf_prims = {};
                 if (data->stoch_lights) {
                     stoch_lights = fg.AccessROBuffer(data->stoch_lights);
                     light_nodes = fg.AccessROBuffer(data->light_nodes);
+                    light_leaf_prims = fg.AccessROBuffer(data->light_leaf_prims);
                 }
 
                 const Ren::BufferROHandle in_ray_hits = fg.AccessROBuffer(data->in_ray_hits);
@@ -612,6 +616,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 if (view_state_.stochastic_lights_count != 0 && stoch_lights) {
                     bindings.emplace_back(Trg::UTBuf, STOCH_LIGHTS_BUF_SLOT, stoch_lights);
                     bindings.emplace_back(Trg::UTBuf, LIGHT_NODES_BUF_SLOT, light_nodes);
+                    bindings.emplace_back(Trg::UTBuf, LIGHT_LEAF_PRIMS_BUF_SLOT, light_leaf_prims);
                 }
                 if (two_bounces && out_ray_list) {
                     bindings.emplace_back(Trg::SBufRW, OUT_RAY_LIST_BUF_SLOT, out_ray_list);

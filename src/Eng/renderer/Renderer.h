@@ -234,7 +234,7 @@ class Renderer {
         FgBufROHandle instances;
         FgBufROHandle materials;
 
-        FgBufROHandle stoch_lights, stoch_lights_nodes;
+        FgBufROHandle stoch_lights, stoch_lights_nodes, stoch_lights_leaf_prims;
 
         FgBufRWHandle spatial_cache_entries;
         FgBufRWHandle spatial_cache_voxels;

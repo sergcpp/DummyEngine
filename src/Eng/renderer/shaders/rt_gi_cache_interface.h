@@ -45,6 +45,7 @@ const uint LTC_LUTS_TEX_SLOT = 17;
 const uint RANDOM_SEQ_BUF_SLOT = 18;
 const uint STOCH_LIGHTS_BUF_SLOT = 19;
 const uint LIGHT_NODES_BUF_SLOT = 20;
+const uint LIGHT_LEAF_PRIMS_BUF_SLOT = 32;
 const uint CELLS_BUF_SLOT = 21;
 const uint ITEMS_BUF_SLOT = 22;
 const uint IRRADIANCE_TEX_SLOT = 25;

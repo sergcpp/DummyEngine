@@ -765,6 +765,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             if (persistent_data.stoch_lights) {
                 common_buffers.stoch_lights = fg_builder_.ImportResource(persistent_data.stoch_lights);
                 common_buffers.stoch_lights_nodes = fg_builder_.ImportResource(persistent_data.stoch_lights_nodes);
+                common_buffers.stoch_lights_leaf_prims =
+                    fg_builder_.ImportResource(persistent_data.stoch_lights_leaf_prims);
             }
 
             common_buffers.spatial_cache_entries = fg_builder_.ImportResource(persistent_data.spatial_cache_entries);

@@ -40,6 +40,7 @@ layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_specular_tex;
 
 layout(binding = LIGHTS_BUF_SLOT) uniform usamplerBuffer g_lights_buf;
 layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
+layout(binding = LIGHT_LEAF_PRIMS_BUF_SLOT) uniform usamplerBuffer g_light_leaf_prims_buf;
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
     rt_geo_instance_t g_geometries[];
@@ -150,7 +151,8 @@ void main() {
     const float light_pick_rand = texelFetch(g_tcbn_1d_tex, (ivec3(icoord, g_params.frame_index) + 39 * RAND_DIM_1D_LIGHT_PICK) % 64, 0).x;
 
     float pdf_factor;
-    const int li = PickLightSource(P, g_light_nodes_buf, g_params.lights_count, light_pick_rand, pdf_factor);
+    const int li = PickLightSource(P, g_light_nodes_buf, g_light_leaf_prims_buf, g_params.lights_count, light_pick_rand,
+                                   pdf_factor);
     if (li == -1) {
         imageStore(g_out_specular_img, icoord, vec4(0.0));
         return;

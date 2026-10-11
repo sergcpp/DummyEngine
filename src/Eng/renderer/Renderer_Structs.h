@@ -25,8 +25,7 @@ namespace Eng {
 using namespace Types;
 static_assert(sizeof(Types::light_item_t) == 96);
 static_assert(sizeof(Types::probe_volume_t) == 64);
-static_assert(sizeof(Types::light_wbvh_node_t) == 320);
-static_assert(sizeof(Types::light_cwbvh_node_t) == 208);
+static_assert(sizeof(Types::light_cwbvh_node_t) == 128);
 
 struct decal_item_t {
     float mat[3][4];
@@ -532,13 +531,6 @@ struct gpu_bvh2_node_t {
 static_assert(sizeof(gpu_bvh2_node_t) == 64);
 static_assert(sizeof(gpu_bvh2_node_t) == BVH2_NODE_BUF_STRIDE * 4 * sizeof(float));
 
-struct alignas(32) gpu_wbvh_node_t {
-    float bbox_min[3][8];
-    float bbox_max[3][8];
-    uint32_t child[8];
-};
-static_assert(sizeof(gpu_wbvh_node_t) == 224);
-
 struct gpu_light_bvh_node_t : public gpu_bvh_node_t {
     float flux;
     Ren::Vec3f axis;
@@ -547,30 +539,43 @@ struct gpu_light_bvh_node_t : public gpu_bvh_node_t {
 };
 static_assert(sizeof(gpu_light_bvh_node_t) == 56);
 
-struct gpu_light_wbvh_node_t : public gpu_wbvh_node_t {
-    float flux[8];
-    uint32_t axis[8];
-    uint32_t cos_omega_ne[8];
-};
-static_assert(sizeof(gpu_light_wbvh_node_t) == 320);
-
-struct gpu_cwbvh_node_t {
+struct alignas(16) gpu_cwbvh_node_t {
     Ren::Vec3f bbox_min;
-    float _unused0;
-    Ren::Vec3f bbox_max;
-    float _unused1;
     uint8_t ch_bbox_min[3][8];
     uint8_t ch_bbox_max[3][8];
-    uint32_t child[8];
+    int8_t ch_exp[4];
+    uint32_t child_base_imask; // low 24 bits child_base, high 8 bits internal-child slot mask
+    uint32_t prim_base;        // leaf payload base
+    uint32_t meta4[2];         // per-slot bytes: 0 - empty, 0x40|rank - leaf, 0x80|slot - internal
 };
-static_assert(sizeof(gpu_cwbvh_node_t) == 112);
+static_assert(sizeof(gpu_cwbvh_node_t) == 80);
 
 struct gpu_light_cwbvh_node_t : public gpu_cwbvh_node_t {
-    float flux[8];
-    uint32_t axis[8];
-    uint32_t cos_omega_ne[8];
+    uint8_t ch_bitmask[8];    // contained light types (unused)
+    uint8_t flux[8];          // fraction of the parent's flux, cube-coded
+    uint16_t axis[8];         // packed (x, y) 8-bit snorm octahedral pairs
+    uint16_t cos_omega_ne[8]; // packed (cos omega_n, cos omega_e) 8-bit snorm pairs
 };
-static_assert(sizeof(gpu_light_cwbvh_node_t) == 208);
+static_assert(sizeof(gpu_light_cwbvh_node_t) == 128);
+
+// popcount for small (<= 8 bit) masks; SWAR so it stays valid everywhere
+inline uint32_t popc8(uint32_t x) {
+    x -= (x >> 1) & 0x55u;
+    x = (x & 0x33u) + ((x >> 2) & 0x33u);
+    return (x + (x >> 4)) & 0x0fu;
+}
+
+// Compact node helpers - the CPU mirror of the GLSL ones in light_bvh_common.glsl
+inline uint32_t cwbvh_child_base(const gpu_cwbvh_node_t &n) { return n.child_base_imask & 0x00FFFFFFu; }
+inline uint8_t cwbvh_internal_mask(const gpu_cwbvh_node_t &n) { return uint8_t(n.child_base_imask >> 24); }
+
+inline uint8_t cwbvh_meta(const gpu_cwbvh_node_t &n, const int slot) {
+    return uint8_t((n.meta4[slot >> 2] >> (8 * (slot & 3))) & 0xFFu);
+}
+
+inline uint32_t cwbvh_internal_child(const gpu_cwbvh_node_t &n, const int slot) {
+    return cwbvh_child_base(n) + popc8(uint32_t(cwbvh_internal_mask(n)) & ((1u << slot) - 1u));
+}
 
 struct swrt_mesh_instance_t {
     uint32_t visibility;

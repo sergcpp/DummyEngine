@@ -66,6 +66,7 @@ layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
 #if defined(STOCH_LIGHTS_MIS)
     layout(binding = STOCH_LIGHTS_BUF_SLOT) uniform usamplerBuffer g_stoch_lights_buf;
     layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
+    layout(binding = LIGHT_LEAF_PRIMS_BUF_SLOT) uniform usamplerBuffer g_light_leaf_prims_buf;
 #endif
 
 layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
@@ -264,7 +265,9 @@ void main() {
         }
         const bool has_emissive = max_component(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7;
         if (has_emissive) {
-            const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_stoch_lights_buf, g_params.stoch_lights_count, uint(tri_index), probe_pos);
+            const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_light_leaf_prims_buf,
+                                                        g_stoch_lights_buf, g_params.stoch_lights_count,
+                                                        uint(tri_index), probe_pos);
 
             const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
             float light_fwd_len;

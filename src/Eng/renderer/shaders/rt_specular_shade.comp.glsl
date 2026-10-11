@@ -120,6 +120,7 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
 #ifdef STOCH_LIGHTS
     layout(binding = STOCH_LIGHTS_BUF_SLOT) uniform usamplerBuffer g_stoch_lights_buf;
     layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
+    layout(binding = LIGHT_LEAF_PRIMS_BUF_SLOT) uniform usamplerBuffer g_light_leaf_prims_buf;
 #endif
 
 #ifdef LAYERED
@@ -460,7 +461,8 @@ void main() {
 
 #ifdef STOCH_LIGHTS
     if (max_component(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7 && first_roughness > 1e-7) {
-        const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_stoch_lights_buf, g_params.lights_count, uint(tri_index), ray_origin_ws.xyz);
+        const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_light_leaf_prims_buf, g_stoch_lights_buf,
+                                                    g_params.lights_count, uint(tri_index), ray_origin_ws.xyz);
 
         const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
         float light_fwd_len;

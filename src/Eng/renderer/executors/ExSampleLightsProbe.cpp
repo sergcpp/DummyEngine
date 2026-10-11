@@ -77,6 +77,7 @@ void Eng::ExSampleLightsProbe::Execute_SWRT(const FgContext &fg) {
 
     const Ren::BufferROHandle lights = fg.AccessROBuffer(args_->lights);
     const Ren::BufferROHandle nodes = fg.AccessROBuffer(args_->nodes);
+    const Ren::BufferROHandle leaf_prims = fg.AccessROBuffer(args_->leaf_prims);
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, unif_sh_data},
@@ -84,6 +85,7 @@ void Eng::ExSampleLightsProbe::Execute_SWRT(const FgContext &fg) {
         {Ren::eBindTarget::UTBuf, RANDOM_SEQ_BUF_SLOT, random_seq},
         {Ren::eBindTarget::UTBuf, LIGHTS_BUF_SLOT, lights},
         {Ren::eBindTarget::UTBuf, LIGHT_NODES_BUF_SLOT, nodes},
+        {Ren::eBindTarget::UTBuf, LIGHT_LEAF_PRIMS_BUF_SLOT, leaf_prims},
         {Ren::eBindTarget::UTBuf, BLAS_BUF_SLOT, rt_blas_buf},
         {Ren::eBindTarget::UTBuf, TLAS_BUF_SLOT, rt_tlas_buf},
         {Ren::eBindTarget::UTBuf, PRIM_NDX_BUF_SLOT, prim_ndx},

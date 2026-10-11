@@ -76,6 +76,17 @@ uint32_t encode_cosines(const float cos_a, const float cos_b) {
     return (a << 16) | b;
 }
 
+uint8_t encode_snorm_u8(const float f) {
+    return uint8_t(std::round(Ren::Clamp((f + 1) / 2.0f, 0.0f, 1.0f) * 255.0f));
+}
+
+uint16_t encode_cosines8(const float cos_a, const float cos_b) {
+    // NOTE: 254 was chosen for precise 0.0 representation
+    const uint16_t a = uint16_t(std::floor(254.0f * ((cos_a + 1.0f) / 2.0f)));
+    const uint16_t b = uint16_t(std::floor(254.0f * ((cos_b + 1.0f) / 2.0f)));
+    return uint16_t((a << 8) | b);
+}
+
 uint32_t EncodeOctDir(const Ren::Vec3f &d) {
     const float denom = fabsf(d[0]) + fabsf(d[1]) + fabsf(d[2]);
     const float v[3] = {d[0] / denom, d[1] / denom, d[2] / denom};
@@ -87,6 +98,48 @@ uint32_t EncodeOctDir(const Ren::Vec3f &d) {
     const uint16_t x = encode_snorm_u16(v[0]);
     const uint16_t y = encode_snorm_u16(v[1]);
     return (uint32_t(x) << 16) | y;
+}
+
+// Same octahedral packing, 8 bits per component (compact light tree)
+uint16_t EncodeOctDir8(const Ren::Vec3f &d) {
+    const float denom = fabsf(d[0]) + fabsf(d[1]) + fabsf(d[2]);
+    const float v[3] = {d[0] / denom, d[1] / denom, d[2] / denom};
+    if (v[2] < 0.0f) {
+        const uint8_t x = encode_snorm_u8((1.0f - fabsf(v[1])) * copysignf(1.0f, v[0]));
+        const uint8_t y = encode_snorm_u8((1.0f - fabsf(v[0])) * copysignf(1.0f, v[1]));
+        return (uint16_t(x) << 8) | y;
+    }
+    const uint8_t x = encode_snorm_u8(v[0]);
+    const uint8_t y = encode_snorm_u8(v[1]);
+    return (uint16_t(x) << 8) | y;
+}
+
+uint8_t encode_flux(const float flux, const float parent_flux) {
+    if (flux <= 0.0f || parent_flux <= 0.0f) {
+        return 0;
+    }
+    return uint8_t(int(fmaxf(1.0f, std::round(255.0f * cbrt(Ren::Clamp(flux / parent_flux, 0.0f, 1.0f))))));
+}
+
+float quantize(const float v, const float min, const float max) {
+    if (min == max) {
+        return 0.0f;
+    }
+    return Ren::Clamp(255.0f * (v - min) / (max - min), 0.0f, 255.0f);
+}
+
+void pow2Extents(const float min[3], float max[3], int8_t out_exp[3]) {
+    for (int i = 0; i < 3; ++i) {
+        const float ext = max[i] - min[i];
+        if (ext > 0.0f) {
+            const int e = int(std::ceil(std::log2(ext / 255.0f)));
+            assert(e >= -126 && e <= 127);
+            out_exp[i] = int8_t(e);
+            max[i] = min[i] + 255.0f * std::exp2(float(e));
+        } else {
+            out_exp[i] = 0;
+        }
+    }
 }
 
 Phy::Vec3f adapt(const Ren::Vec3f &v) { return Phy::Vec3f{v[0], v[1], v[2]}; }
@@ -864,176 +917,48 @@ uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> pri
     return uint32_t(out_nodes.size() - root_node_index);
 }
 
-uint32_t Eng::SceneManager::ConvertToWBVH_r(Ren::Span<const gpu_light_bvh_node_t> nodes, const uint32_t node_index,
-                                            const uint32_t parent_index,
-                                            std::vector<gpu_light_wbvh_node_t> &out_nodes) {
+uint32_t Eng::SceneManager::FlattenLightBVH_r(Ren::Span<const gpu_light_bvh_node_t> nodes, const uint32_t node_index,
+                                              std::vector<gpu_light_cwbvh_node_t> &out_nodes,
+                                              std::vector<uint32_t> &out_leaf_lights, const int at_index,
+                                              const uint32_t depth) {
     using namespace SceneManagerInternal;
 
     const gpu_light_bvh_node_t &cur_node = nodes[node_index];
 
-    // allocate new node
-    const auto new_node_index = uint32_t(out_nodes.size());
-    out_nodes.emplace_back();
+    // The traversal stack holds at most one entry per level of the path - catch too-deep trees
+    // at build time instead of relying on a ray hitting the overflow assert during rendering.
+    assert(depth < uint32_t(MAX_STACK_SIZE) && "light tree too deep for the traversal stack");
+
+    // allocate new node (or use the slot pre-reserved by our parent for contiguous children)
+    uint32_t new_node_index;
+    if (at_index >= 0) {
+        new_node_index = uint32_t(at_index);
+    } else {
+        new_node_index = uint32_t(out_nodes.size());
+        out_nodes.emplace_back();
+    }
 
     if (cur_node.prim_index & LEAF_NODE_BIT) {
-        gpu_light_wbvh_node_t &new_node = out_nodes[new_node_index];
-
-        new_node.bbox_min[0][0] = cur_node.bbox_min[0];
-        new_node.bbox_min[1][0] = cur_node.bbox_min[1];
-        new_node.bbox_min[2][0] = cur_node.bbox_min[2];
-
-        new_node.bbox_max[0][0] = cur_node.bbox_max[0];
-        new_node.bbox_max[1][0] = cur_node.bbox_max[1];
-        new_node.bbox_max[2][0] = cur_node.bbox_max[2];
-
-        new_node.child[0] = cur_node.prim_index;
-        new_node.child[1] = cur_node.prim_count;
-
-        new_node.flux[0] = cur_node.flux;
-        new_node.axis[0] = EncodeOctDir(cur_node.axis);
-        new_node.cos_omega_ne[0] = encode_cosines(cosf(cur_node.omega_n), fmaxf(cosf(cur_node.omega_e), 0.0f));
-
-        return new_node_index;
-    }
-
-    // Gather children 2 levels deep
-
-    uint32_t children[8];
-    int children_count = 0;
-
-    const gpu_light_bvh_node_t &child0 = nodes[cur_node.left_child];
-
-    if (child0.prim_index & LEAF_NODE_BIT) {
-        children[children_count++] = cur_node.left_child & LEFT_CHILD_BITS;
-    } else {
-        const gpu_light_bvh_node_t &child00 = nodes[child0.left_child];
-        const gpu_light_bvh_node_t &child01 = nodes[child0.right_child & RIGHT_CHILD_BITS];
-
-        if (child00.prim_index & LEAF_NODE_BIT) {
-            children[children_count++] = child0.left_child & LEFT_CHILD_BITS;
-        } else {
-            children[children_count++] = child00.left_child;
-            children[children_count++] = child00.right_child & RIGHT_CHILD_BITS;
-        }
-
-        if (child01.prim_index & LEAF_NODE_BIT) {
-            children[children_count++] = child0.right_child & RIGHT_CHILD_BITS;
-        } else {
-            children[children_count++] = child01.left_child;
-            children[children_count++] = child01.right_child & RIGHT_CHILD_BITS;
-        }
-    }
-
-    const gpu_light_bvh_node_t &child1 = nodes[cur_node.right_child & RIGHT_CHILD_BITS];
-
-    if (child1.prim_index & LEAF_NODE_BIT) {
-        children[children_count++] = cur_node.right_child & RIGHT_CHILD_BITS;
-    } else {
-        const gpu_light_bvh_node_t &child10 = nodes[child1.left_child];
-        const gpu_light_bvh_node_t &child11 = nodes[child1.right_child & RIGHT_CHILD_BITS];
-
-        if (child10.prim_index & LEAF_NODE_BIT) {
-            children[children_count++] = child1.left_child & LEFT_CHILD_BITS;
-        } else {
-            children[children_count++] = child10.left_child;
-            children[children_count++] = child10.right_child & RIGHT_CHILD_BITS;
-        }
-
-        if (child11.prim_index & LEAF_NODE_BIT) {
-            children[children_count++] = child1.right_child & RIGHT_CHILD_BITS;
-        } else {
-            children[children_count++] = child11.left_child;
-            children[children_count++] = child11.right_child & RIGHT_CHILD_BITS;
-        }
-    }
-
-    // Sort children in morton order
-    Ren::Vec3f children_centers[8], whole_box_min = {FLT_MAX}, whole_box_max = {-FLT_MAX};
-    for (int i = 0; i < children_count; i++) {
-        children_centers[i] = 0.5f * (nodes[children[i]].bbox_min + nodes[children[i]].bbox_max);
-        whole_box_min = Min(whole_box_min, children_centers[i]);
-        whole_box_max = Max(whole_box_max, children_centers[i]);
-    }
-
-    const Ren::Vec3f scale = 2.0f / (whole_box_max + 0.001f - whole_box_min);
-
-    uint32_t sorted_children[8] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
-                                   0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
-    for (int i = 0; i < children_count; i++) {
-        const Ren::Vec3f code = (children_centers[i] - whole_box_min) * scale;
-
-        const auto x = uint32_t(code[0]), y = uint32_t(code[1]), z = uint32_t(code[2]);
-
-        uint32_t mort = (z << 2) | (y << 1) | (x << 0);
-        while (sorted_children[mort] != 0xffffffff) {
-            mort = (mort + 1) % 8;
-        }
-
-        sorted_children[mort] = children[i];
-    }
-
-    uint32_t new_children[8];
-
-    for (int i = 0; i < 8; i++) {
-        if (sorted_children[i] != 0xffffffff) {
-            new_children[i] = ConvertToWBVH_r(nodes, sorted_children[i], node_index, out_nodes);
-        } else {
-            new_children[i] = 0x7fffffff;
-        }
-    }
-
-    gpu_light_wbvh_node_t &new_node = out_nodes[new_node_index];
-    memcpy(new_node.child, new_children, sizeof(new_children));
-
-    for (int i = 0; i < 8; i++) {
-        if (new_children[i] != 0x7fffffff) {
-            new_node.bbox_min[0][i] = nodes[sorted_children[i]].bbox_min[0];
-            new_node.bbox_min[1][i] = nodes[sorted_children[i]].bbox_min[1];
-            new_node.bbox_min[2][i] = nodes[sorted_children[i]].bbox_min[2];
-
-            new_node.bbox_max[0][i] = nodes[sorted_children[i]].bbox_max[0];
-            new_node.bbox_max[1][i] = nodes[sorted_children[i]].bbox_max[1];
-            new_node.bbox_max[2][i] = nodes[sorted_children[i]].bbox_max[2];
-
-            new_node.flux[i] = nodes[sorted_children[i]].flux;
-            new_node.axis[i] = EncodeOctDir(nodes[sorted_children[i]].axis);
-            new_node.cos_omega_ne[i] = encode_cosines(cosf(nodes[sorted_children[i]].omega_n),
-                                                      fmaxf(cosf(nodes[sorted_children[i]].omega_e), 0.0f));
-        } else {
-            // Init as invalid bounding box
-            new_node.bbox_min[0][i] = new_node.bbox_min[1][i] = new_node.bbox_min[2][i] = 0.0f;
-            new_node.bbox_max[0][i] = new_node.bbox_max[1][i] = new_node.bbox_max[2][i] = 0.0f;
-            // Init as zero light
-            new_node.flux[i] = 0.0f;
-            new_node.axis[i] = 0;
-            new_node.cos_omega_ne[i] = 0;
-        }
-    }
-
-    return new_node_index;
-}
-
-uint32_t Eng::SceneManager::ConvertToCWBVH_r(Ren::Span<const gpu_light_bvh_node_t> nodes, const uint32_t node_index,
-                                             const uint32_t parent_index,
-                                             std::vector<gpu_light_cwbvh_node_t> &out_nodes) {
-    using namespace SceneManagerInternal;
-
-    const gpu_light_bvh_node_t &cur_node = nodes[node_index];
-
-    // allocate new node
-    const auto new_node_index = uint32_t(out_nodes.size());
-    out_nodes.emplace_back();
-
-    if (cur_node.prim_index & LEAF_NODE_BIT) {
+        // Single light tree - wrap the light into a root node so the root is never a leaf
+        // reference; everywhere else the leaf level is collapsed by the parent (see below)
         gpu_light_cwbvh_node_t &new_node = out_nodes[new_node_index];
 
-        new_node.bbox_min[0] = cur_node.bbox_min[0];
-        new_node.bbox_min[1] = cur_node.bbox_min[1];
-        new_node.bbox_min[2] = cur_node.bbox_min[2];
+        new_node.child_base_imask = 0;
+        new_node.prim_base = uint32_t(out_leaf_lights.size());
+        out_leaf_lights.push_back(cur_node.prim_index);
+        new_node.meta4[0] = 0x40u; // slot 0: leaf, rank 0
+        new_node.meta4[1] = 0;
+        if (cur_node.bbox_min[0] > -MAX_DIST) {
+            // the whole-box child encoding (0/255) must decode conservatively under the pow2 step
+            float bmin[3], bmax[3];
+            memcpy(bmin, &cur_node.bbox_min[0], 3 * sizeof(float));
+            memcpy(bmax, &cur_node.bbox_max[0], 3 * sizeof(float));
+            pow2Extents(bmin, bmax, new_node.ch_exp);
+        } else {
+            memset(new_node.ch_exp, 0, sizeof(new_node.ch_exp));
+        }
 
-        new_node.bbox_max[0] = cur_node.bbox_max[0];
-        new_node.bbox_max[1] = cur_node.bbox_max[1];
-        new_node.bbox_max[2] = cur_node.bbox_max[2];
+        new_node.bbox_min = cur_node.bbox_min;
 
         if (cur_node.bbox_min[0] > -MAX_DIST) {
             // Init as whole bounding box
@@ -1045,12 +970,21 @@ uint32_t Eng::SceneManager::ConvertToCWBVH_r(Ren::Span<const gpu_light_bvh_node_
             new_node.ch_bbox_max[0][0] = new_node.ch_bbox_max[1][0] = new_node.ch_bbox_max[2][0] = 0;
         }
 
-        new_node.child[0] = cur_node.prim_index;
-        new_node.child[1] = cur_node.prim_count;
+        for (int j = 1; j < 8; ++j) {
+            // Init as invalid bounding box
+            new_node.ch_bbox_min[0][j] = new_node.ch_bbox_min[1][j] = new_node.ch_bbox_min[2][j] = 0xff;
+            new_node.ch_bbox_max[0][j] = new_node.ch_bbox_max[1][j] = new_node.ch_bbox_max[2][j] = 0xff;
+            // Init as zero light
+            new_node.ch_bitmask[j] = 0;
+            new_node.flux[j] = 0;
+            new_node.axis[j] = 0;
+            new_node.cos_omega_ne[j] = 0;
+        }
 
-        new_node.flux[0] = cur_node.flux;
-        new_node.axis[0] = EncodeOctDir(cur_node.axis);
-        new_node.cos_omega_ne[0] = encode_cosines(cosf(cur_node.omega_n), fmaxf(cosf(cur_node.omega_e), 0.0f));
+        new_node.ch_bitmask[0] = 0xff;
+        new_node.flux[0] = encode_flux(cur_node.flux, cur_node.flux);
+        new_node.axis[0] = EncodeOctDir8(cur_node.axis);
+        new_node.cos_omega_ne[0] = encode_cosines8(cosf(cur_node.omega_n), fmaxf(cosf(cur_node.omega_e), 0.0f));
 
         return new_node_index;
     }
@@ -1116,13 +1050,6 @@ uint32_t Eng::SceneManager::ConvertToCWBVH_r(Ren::Span<const gpu_light_bvh_node_
         }
     }
 
-    auto quantize = [](const float v, const float min, const float max) {
-        if (min == max) {
-            return 0.0f;
-        }
-        return Ren::Clamp(255.0f * (v - min) / (max - min), 0.0f, 255.0f);
-    };
-
     const Ren::Vec3f scale = 2.0f / (all_box_max + 0.001f - all_box_min);
 
     uint32_t sorted_children[8] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
@@ -1140,22 +1067,86 @@ uint32_t Eng::SceneManager::ConvertToCWBVH_r(Ren::Span<const gpu_light_bvh_node_
         sorted_children[mort] = children[i];
     }
 
-    uint32_t new_children[8];
+    // CWBVH-style pow2 quantization: expand the max corner so the per-axis quantization step is
+    // a power of two and store the exponent. Infinite children keep the 0xff/0x00 sentinel.
+    int8_t node_exp[3] = {0, 0, 0};
+    {
+        float bmin[3], bmax[3];
+        memcpy(bmin, &all_box_min[0], 3 * sizeof(float));
+        memcpy(bmax, &all_box_max[0], 3 * sizeof(float));
+        pow2Extents(bmin, bmax, node_exp);
+        all_box_min = Ren::Vec3f{bmin[0], bmin[1], bmin[2]};
+        all_box_max = Ren::Vec3f{bmax[0], bmax[1], bmax[2]};
+    }
+
+    // NOTE: 'new_node' must not be held across recursive calls - out_nodes can reallocate!
+
+    // Implicit child addressing (CWBVH paper): pre-reserve contiguous slots for the internal
+    // children, in slot order, so child i resolves to child_base + popc(internal slots below i).
+    uint8_t internal_mask = 0;
+    int internal_count = 0;
     for (int i = 0; i < 8; i++) {
-        if (sorted_children[i] != 0xffffffff) {
-            new_children[i] = ConvertToCWBVH_r(nodes, sorted_children[i], node_index, out_nodes);
+        if (sorted_children[i] != 0xffffffff && !(nodes[sorted_children[i]].prim_index & LEAF_NODE_BIT)) {
+            internal_mask |= uint8_t(1 << i);
+            ++internal_count;
+        }
+    }
+    const uint32_t child_base = uint32_t(out_nodes.size());
+    out_nodes.resize(size_t(child_base) + size_t(internal_count));
+
+    // meta4 packing (CWBVH paper): leaf light references go to out_leaf_lights, contiguous
+    // per parent in slot order (light_leaf_prims[prim_base + rank]).
+    const uint32_t prim_base = uint32_t(out_leaf_lights.size());
+    uint8_t meta_bytes[8] = {};
+    int leaf_rank = 0;
+
+    int child_rank = 0;
+    for (int i = 0; i < 8; i++) {
+        if (sorted_children[i] == 0xffffffff) {
+            continue;
+        }
+        const gpu_light_bvh_node_t &child = nodes[sorted_children[i]];
+        if (child.prim_index & LEAF_NODE_BIT) {
+            // Collapse leaf level - lights are referenced directly by their parents
+            // (all light leaves hold exactly one light, so no wrapper node is emitted)
+            assert(child.prim_count == 1);
+            out_leaf_lights.push_back(child.prim_index);
+            meta_bytes[i] = uint8_t(0x40 | leaf_rank++);
         } else {
-            new_children[i] = 0x7fffffff;
+            // the pre-reserved slot - the recursion below writes the node there
+            ++child_rank;
+            meta_bytes[i] = uint8_t(0x80 | i);
+        }
+    }
+    assert(leaf_rank <= 0x3f);
+    assert(child_rank == internal_count);
+
+    // Recurse after this node's children arrays are laid out; the internal-child slots were
+    // pre-reserved above, so the recursion cannot move them (never hold a reference across it).
+    child_rank = 0;
+    for (int i = 0; i < 8; i++) {
+        if (sorted_children[i] != 0xffffffff && !(nodes[sorted_children[i]].prim_index & LEAF_NODE_BIT)) {
+            FlattenLightBVH_r(nodes, sorted_children[i], out_nodes, out_leaf_lights, int(child_base + child_rank),
+                              depth + 1);
+            ++child_rank;
         }
     }
 
     gpu_light_cwbvh_node_t &new_node = out_nodes[new_node_index];
+    // child_base lives in the low 24 bits of the packed word
+    assert(child_base < (1u << 24));
+    new_node.child_base_imask = child_base | (uint32_t(internal_mask) << 24);
+    new_node.prim_base = prim_base;
+    new_node.meta4[0] = uint32_t(meta_bytes[0]) | (uint32_t(meta_bytes[1]) << 8) | (uint32_t(meta_bytes[2]) << 16) |
+                        (uint32_t(meta_bytes[3]) << 24);
+    new_node.meta4[1] = uint32_t(meta_bytes[4]) | (uint32_t(meta_bytes[5]) << 8) | (uint32_t(meta_bytes[6]) << 16) |
+                        (uint32_t(meta_bytes[7]) << 24);
     new_node.bbox_min = all_box_min;
-    new_node.bbox_max = all_box_max;
-    memcpy(new_node.child, new_children, sizeof(new_children));
+    memcpy(new_node.ch_exp, node_exp, 3);
+    new_node.ch_exp[3] = 0;
 
     for (int i = 0; i < 8; i++) {
-        if (new_children[i] != 0x7fffffff) {
+        if (sorted_children[i] != 0xffffffff) {
             const gpu_light_bvh_node_t &child = nodes[sorted_children[i]];
 
             if (child.bbox_min[0] > -MAX_DIST) {
@@ -1178,15 +1169,17 @@ uint32_t Eng::SceneManager::ConvertToCWBVH_r(Ren::Span<const gpu_light_bvh_node_
                 new_node.ch_bbox_max[0][i] = new_node.ch_bbox_max[1][i] = new_node.ch_bbox_max[2][i] = 0;
             }
 
-            new_node.flux[i] = child.flux;
-            new_node.axis[i] = EncodeOctDir(child.axis);
-            new_node.cos_omega_ne[i] = encode_cosines(cosf(child.omega_n), fmaxf(cosf(child.omega_e), 0.0f));
+            new_node.ch_bitmask[i] = 0xff;
+            new_node.flux[i] = encode_flux(child.flux, cur_node.flux);
+            new_node.axis[i] = EncodeOctDir8(child.axis);
+            new_node.cos_omega_ne[i] = encode_cosines8(cosf(child.omega_n), fmaxf(cosf(child.omega_e), 0.0f));
         } else {
             // Init as invalid bounding box
             new_node.ch_bbox_min[0][i] = new_node.ch_bbox_min[1][i] = new_node.ch_bbox_min[2][i] = 0xff;
-            new_node.ch_bbox_max[0][i] = new_node.ch_bbox_max[1][i] = new_node.ch_bbox_max[2][i] = 0xff;
+            new_node.ch_bbox_max[0][i] = new_node.ch_bbox_max[1][i] = new_node.ch_bbox_max[2][i] = 0;
             // Init as zero light
-            new_node.flux[i] = 0.0f;
+            new_node.ch_bitmask[i] = 0;
+            new_node.flux[i] = 0;
             new_node.axis[i] = 0;
             new_node.cos_omega_ne[i] = 0;
         }
@@ -1426,6 +1419,7 @@ void Eng::SceneManager::RebuildLightTree() {
     }
 
     std::vector<gpu_light_cwbvh_node_t> light_wnodes;
+    std::vector<uint32_t> light_leaf_lights;  // meta4 leaf payloads (light references)
     { // Build BVH
         std::vector<uint32_t> prim_indices;
         prim_indices.reserve(temp_primitives.size());
@@ -1535,56 +1529,10 @@ void Eng::SceneManager::RebuildLightTree() {
             n.prim_index |= li_index;
         }
 
-        // Flatten to 8-wide BVH
-        [[maybe_unused]] const uint32_t root_node = ConvertToCWBVH_r(light_nodes, 0, 0xffffffff, light_wnodes);
+        // Flatten to compact 8-wide BVH (the leaf level is collapsed into light_leaf_lights)
+        [[maybe_unused]] const uint32_t root_node =
+            FlattenLightBVH_r(light_nodes, 0, light_wnodes, light_leaf_lights);
         assert(root_node == 0);
-
-        // Collapse leaf level (all leaves have only 1 light)
-        if ((light_wnodes[0].child[0] & LEAF_NODE_BIT) != 0) {
-            for (int j = 1; j < 8; ++j) {
-                light_wnodes[0].child[j] = 0x7fffffff;
-            }
-        }
-        std::vector<bool> should_remove(light_wnodes.size(), false);
-        for (uint32_t i = 0; i < light_wnodes.size(); ++i) {
-            if ((light_wnodes[i].child[0] & LEAF_NODE_BIT) == 0) {
-                for (int j = 0; j < 8; ++j) {
-                    if (light_wnodes[i].child[j] == 0x7fffffff) {
-                        continue;
-                    }
-                    if ((light_wnodes[light_wnodes[i].child[j]].child[0] & LEAF_NODE_BIT) != 0) {
-                        assert(light_wnodes[light_wnodes[i].child[j]].child[1] == 1);
-                        should_remove[light_wnodes[i].child[j]] = true;
-                        light_wnodes[i].child[j] = light_wnodes[light_wnodes[i].child[j]].child[0];
-                    }
-                }
-            }
-        }
-        std::vector<uint32_t> compacted_indices;
-        compacted_indices.reserve(should_remove.size());
-        uint32_t compacted_count = 0;
-        for (const bool b : should_remove) {
-            compacted_indices.push_back(compacted_count);
-            if (!b) {
-                ++compacted_count;
-            }
-        }
-        for (int i = 0; i < int(light_wnodes.size()); ++i) {
-            if (should_remove[i]) {
-                continue;
-            }
-            gpu_light_cwbvh_node_t &n = light_wnodes[i];
-            for (int j = 0; j < 8; ++j) {
-                if (n.child[j] == 0x7fffffff) {
-                    continue;
-                }
-                if ((n.child[j] & LEAF_NODE_BIT) == 0) {
-                    n.child[j] = compacted_indices[n.child[j] & PRIM_INDEX_BITS];
-                }
-            }
-            light_wnodes[compacted_indices[i]] = n;
-        }
-        light_wnodes.resize(compacted_count);
     }
 
     { // Init GPU data
@@ -1597,6 +1545,12 @@ void Eng::SceneManager::RebuildLightTree() {
         scene_data_.persistent_data->stoch_lights_nodes =
             ren_ctx_.CreateBuffer(Ren::String{"Stochastic Light Nodes"}, Ren::eBufType::Texture, nodes_buf_size);
         ren_ctx_.FindOrCreateBufferView(scene_data_.persistent_data->stoch_lights_nodes, Ren::eFormat::RGBA32F);
+
+        const uint32_t leaf_prims_buf_size = uint32_t(light_leaf_lights.size() * sizeof(uint32_t));
+        scene_data_.persistent_data->stoch_lights_leaf_prims =
+            ren_ctx_.CreateBuffer(Ren::String{"Stochastic Light Leaf Prims"}, Ren::eBufType::Texture,
+                                  leaf_prims_buf_size);
+        ren_ctx_.FindOrCreateBufferView(scene_data_.persistent_data->stoch_lights_leaf_prims, Ren::eFormat::R32UI);
 
         Ren::BufferMain lights_stage_buf_main = {};
         Ren::BufferCold lights_stage_buf_cold = {};
@@ -1627,6 +1581,21 @@ void Eng::SceneManager::RebuildLightTree() {
             Buffer_Unmap(api, nodes_stage_buf_main, nodes_stage_buf_cold);
         }
 
+        Ren::BufferMain leaf_prims_stage_buf_main = {};
+        Ren::BufferCold leaf_prims_stage_buf_cold = {};
+        if (!Ren::Buffer_Init(api, leaf_prims_stage_buf_main, leaf_prims_stage_buf_cold,
+                              Ren::String{"Stochastic Light Leaf Prims Stage"}, Ren::eBufType::Upload,
+                              leaf_prims_buf_size, ren_ctx_.log())) {
+            // TODO: Properly handle failure
+            assert(false);
+        }
+
+        { // init stage buf
+            uint8_t *mapped_ptr = Buffer_Map(api, leaf_prims_stage_buf_main, leaf_prims_stage_buf_cold);
+            memcpy(mapped_ptr, light_leaf_lights.data(), leaf_prims_buf_size);
+            Buffer_Unmap(api, leaf_prims_stage_buf_main, leaf_prims_stage_buf_cold);
+        }
+
         Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
 
         const auto &[lights_main, lights_cold] = storages.buffers[scene_data_.persistent_data->stoch_lights];
@@ -1635,10 +1604,15 @@ void Eng::SceneManager::RebuildLightTree() {
         const auto &[nodes_main, nodes_cold] = storages.buffers[scene_data_.persistent_data->stoch_lights_nodes];
         CopyBufferToBuffer(api, nodes_stage_buf_main, 0, nodes_main, 0, nodes_buf_size, cmd_buf);
 
+        const auto &[leaf_prims_main, leaf_prims_cold] =
+            storages.buffers[scene_data_.persistent_data->stoch_lights_leaf_prims];
+        CopyBufferToBuffer(api, leaf_prims_stage_buf_main, 0, leaf_prims_main, 0, leaf_prims_buf_size, cmd_buf);
+
         ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
 
         Buffer_DestroyImmediately(api, lights_stage_buf_main, lights_stage_buf_cold);
         Buffer_DestroyImmediately(api, nodes_stage_buf_main, nodes_stage_buf_cold);
+        Buffer_DestroyImmediately(api, leaf_prims_stage_buf_main, leaf_prims_stage_buf_cold);
     }
 }
 
@@ -1658,6 +1632,15 @@ void Eng::SceneManager::ReleaseLightTree(const bool immediate) {
             Buffer_DestroyImmediately(ren_ctx_.api(), nodes_main, nodes_cold);
         } else {
             Buffer_Destroy(ren_ctx_.api(), nodes_main, nodes_cold);
+        }
+    }
+    if (scene_data_.persistent_data->stoch_lights_leaf_prims) {
+        const auto &[leaf_prims_main, leaf_prims_cold] =
+            storages.buffers[scene_data_.persistent_data->stoch_lights_leaf_prims];
+        if (immediate) {
+            Buffer_DestroyImmediately(ren_ctx_.api(), leaf_prims_main, leaf_prims_cold);
+        } else {
+            Buffer_Destroy(ren_ctx_.api(), leaf_prims_main, leaf_prims_cold);
         }
     }
 }

@@ -65,29 +65,33 @@ struct light_item_t {
 };
 const uint LIGHTS_BUF_STRIDE = 6;
 
-struct light_wbvh_node_t {
-    float bbox_min[3][8]; // SoA layout
-    float bbox_max[3][8];
-    uint child[8];
-    float flux[8];
-    uint axis[8];
-    uint cos_omega_ne[8];
+struct cwbvh_node_t {
+    float bbox_min[3];
+    uint ch_bbox_min[3][2]; // per axis, 8 quantized bytes packed as 2 uints
+    uint ch_bbox_max[3][2];
+    uint ch_exp;           // 4 packed int8 quantization-step exponents
+    uint child_base_imask; // low 24 bits child_base, high 8 bits internal-child slot mask
+    uint prim_base;        // leaf payload base
+    uint meta4_0;          // meta4 bytes for slots 0..3
+    uint meta4_1;          // meta4 bytes for slots 4..7
 };
 
 struct light_cwbvh_node_t {
     float bbox_min[3];
-    float _unused0;
-    float bbox_max[3];
-    float _unused1;
     uint ch_bbox_min[3][2];
     uint ch_bbox_max[3][2];
-    uint child[8];
-    float flux[8];
-    uint axis[8];
-    uint cos_omega_ne[8];
+    uint ch_exp;
+    uint child_base_imask;
+    uint prim_base;
+    uint meta4_0;
+    uint meta4_1;
+    uint ch_bitmask[2];   // 8 bytes packed as 2 uints - child light-type filter, not validity
+    uint flux[2];         // 8 bytes packed as 2 uints - fraction of the parent's flux, cube-coded
+    uint axis[4];         // 8 packed (x, y) 8-bit snorm octahedral pairs
+    uint cos_omega_ne[4]; // 8 packed (cos omega_n, cos omega_e) 8-bit snorm pairs
 };
 
-const int LIGHT_NODES_BUF_STRIDE = 13;
+const int LIGHT_NODES_BUF_STRIDE = 8;
 
 INTERFACE_END
 

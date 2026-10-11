@@ -15,6 +15,7 @@ class ExSampleLightsProbe final : public FgExecutor {
         FgBufROHandle random_seq;
         FgBufROHandle lights;
         FgBufROHandle nodes;
+        FgBufROHandle leaf_prims;
 
         FgBufROHandle geo_data;
         FgBufROHandle materials;

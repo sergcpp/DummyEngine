@@ -13,6 +13,7 @@ class ExSampleLights final : public FgExecutor {
         FgBufROHandle shared_data;
         FgBufROHandle lights;
         FgBufROHandle nodes;
+        FgBufROHandle leaf_prims;
 
         FgBufROHandle geo_data;
         FgBufROHandle materials;
