@@ -11,9 +11,6 @@
 
 #define ENABLE_CLEARCOAT 0
 
-#define MAX_STACK_SIZE 10
-#define MAX_STACK_FACTORS_SIZE 10
-
 #include "_fs_common.glsl"
 #include "rt_common.glsl"
 #include "texturing_common.glsl"

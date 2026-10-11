@@ -10,8 +10,6 @@
 #define SWRT_SUBGROUP 1
 #endif
 
-#define MAX_STACK_FACTORS_SIZE 10
-
 #include "_fs_common.glsl"
 #include "rt_common.glsl"
 #include "swrt_common.glsl"

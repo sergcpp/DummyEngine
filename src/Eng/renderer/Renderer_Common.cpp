@@ -101,12 +101,10 @@ void Eng::Renderer::InitPipelines() {
     pi_tile_clear_[3] = sh_.FindOrCreatePipeline("internal/tile_clear@AVERAGE;VARIANCE.comp.glsl");
 
     // GI Cache
-    pi_spatial_cache_resolve_ =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_spatial_cache_resolve.comp.glsl"));
-    pi_spatial_cache_update_[0] =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_spatial_cache_update.comp.glsl"));
+    pi_spatial_cache_resolve_ = sh_.FindOrCreatePipeline("internal/rt_gi_cache_spatial_cache_resolve.comp.glsl");
+    pi_spatial_cache_update_[0] = sh_.FindOrCreatePipeline("internal/rt_gi_cache_spatial_cache_update.comp.glsl");
     pi_spatial_cache_update_[1] =
-        sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_spatial_cache_update@PARTIAL.comp.glsl"));
+        sh_.FindOrCreatePipeline("internal/rt_gi_cache_spatial_cache_update@PARTIAL.comp.glsl");
     pi_cache_write_indirect_ = sh_.FindOrCreatePipeline("internal/rt_gi_cache_write_indirect_args.comp.glsl");
     pi_cache_shade_[0][0] = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_shade.comp.glsl"));
     pi_cache_shade_[0][1] = sh_.FindOrCreatePipeline(subgroup_select("internal/rt_gi_cache_shade@PARTIAL.comp.glsl"));

@@ -284,22 +284,78 @@ int PickLightSource(const vec3 P, samplerBuffer nodes_buf, usamplerBuffer leaf_p
 #endif // USE_HIERARCHICAL_NEE
 }
 
-#ifndef MAX_STACK_FACTORS_SIZE
-    #define MAX_STACK_FACTORS_SIZE MAX_STACK_SIZE
+#if SM_STACK_SIZE > 0
+shared float g_stack_factors[64][SM_STACK_SIZE];
 #endif
 
-shared float g_stack_factors[64][MAX_STACK_SIZE];
+#if SM_STACK_SIZE >= MAX_STACK_SIZE
+    #define STACK_PUSH2(V, F)                                                                  \
+        {                                                                                      \
+            g_stack[gl_LocalInvocationIndex][stack_size] = (V);                                \
+            g_stack_factors[gl_LocalInvocationIndex][stack_size] = (F);                        \
+            ++stack_size;                                                                      \
+        }
+
+    #define STACK_POP2(V, F)                                                                   \
+        {                                                                                      \
+            --stack_size;                                                                      \
+            (V) = g_stack[gl_LocalInvocationIndex][stack_size];                                \
+            (F) = g_stack_factors[gl_LocalInvocationIndex][stack_size];                        \
+        }
+#elif SM_STACK_SIZE == 0
+    float g_stack_factors_spill[MAX_STACK_SIZE]; // whole stack lives here (no shared array)
+
+    #define STACK_PUSH2(V, F)                                                                  \
+        {                                                                                      \
+            g_stack_spill[stack_size] = (V);                                                   \
+            g_stack_factors_spill[stack_size] = (F);                                           \
+            ++stack_size;                                                                      \
+        }
+
+    #define STACK_POP2(V, F)                                                                   \
+        {                                                                                      \
+            --stack_size;                                                                      \
+            (V) = g_stack_spill[stack_size];                                                   \
+            (F) = g_stack_factors_spill[stack_size];                                           \
+        }
+#else
+    float g_stack_factors_spill[MAX_STACK_SIZE - SM_STACK_SIZE]; // expected to be placed into scratch memory
+
+    #define STACK_PUSH2(V, F)                                                                  \
+        {                                                                                      \
+            if (stack_size < SM_STACK_SIZE) {                                                  \
+                g_stack[gl_LocalInvocationIndex][stack_size] = (V);                            \
+                g_stack_factors[gl_LocalInvocationIndex][stack_size] = (F);                    \
+            } else {                                                                           \
+                g_stack_spill[stack_size - SM_STACK_SIZE] = (V);                               \
+                g_stack_factors_spill[stack_size - SM_STACK_SIZE] = (F);                       \
+            }                                                                                  \
+            ++stack_size;                                                                      \
+        }
+
+    #define STACK_POP2(V, F)                                                                   \
+        {                                                                                      \
+            --stack_size;                                                                      \
+            if (stack_size < SM_STACK_SIZE) {                                                  \
+                (V) = g_stack[gl_LocalInvocationIndex][stack_size];                            \
+                (F) = g_stack_factors[gl_LocalInvocationIndex][stack_size];                    \
+            } else {                                                                           \
+                (V) = g_stack_spill[stack_size - SM_STACK_SIZE];                               \
+                (F) = g_stack_factors_spill[stack_size - SM_STACK_SIZE];                       \
+            }                                                                                  \
+        }
+#endif
 
 float EvalTriLightFactor(const vec3 P, samplerBuffer nodes_buf, usamplerBuffer leaf_prims_buf,
                          usamplerBuffer lights_buf, const uint lights_count, const uint tri_index, const vec3 ro) {
     uint stack_size = 0;
-    g_stack_factors[gl_LocalInvocationIndex][stack_size] = 1.0;
-    g_stack[gl_LocalInvocationIndex][stack_size++] = 0;
+    STACK_PUSH2(0u, 1.0);
 
 #if USE_HIERARCHICAL_NEE
     while (stack_size != 0) {
-        const uint cur = g_stack[gl_LocalInvocationIndex][--stack_size];
-        const float cur_factor = g_stack_factors[gl_LocalInvocationIndex][stack_size];
+        uint cur;
+        float cur_factor;
+        STACK_POP2(cur, cur_factor);
 
         if ((cur & LEAF_NODE_BIT) == 0) {
             const light_cwbvh_node_t n = FetchLightCWBVHNode(nodes_buf, int(cur));
@@ -309,13 +365,12 @@ float EvalTriLightFactor(const vec3 P, samplerBuffer nodes_buf, usamplerBuffer l
 
             for (int j = 0; j < 8; ++j) {
                 if (importance[j] > 0.0) {
-                    g_stack_factors[gl_LocalInvocationIndex][stack_size] = cur_factor * importance[j] / total_importance;
+                    const float child_factor = cur_factor * importance[j] / total_importance;
                     const uint meta = cwbvh_meta(n, uint(j));
                     if ((meta & 0x40u) != 0u) {
-                        g_stack[gl_LocalInvocationIndex][stack_size++] =
-                            texelFetch(leaf_prims_buf, int(n.prim_base + (meta & 0x3fu))).x;
+                        STACK_PUSH2(texelFetch(leaf_prims_buf, int(n.prim_base + (meta & 0x3fu))).x, child_factor);
                     } else {
-                        g_stack[gl_LocalInvocationIndex][stack_size++] = cwbvh_internal_child(n, uint(j));
+                        STACK_PUSH2(cwbvh_internal_child(n, uint(j)), child_factor);
                     }
                 }
             }

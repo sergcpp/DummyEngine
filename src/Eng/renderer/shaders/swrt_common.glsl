@@ -220,7 +220,56 @@ void IntersectTris_ClosestHit(samplerBuffer vtx_positions, usamplerBuffer vtx_in
     #define MAX_STACK_SIZE 64
 #endif
 
-shared uint g_stack[64][MAX_STACK_SIZE];
+#ifndef SM_STACK_SIZE
+    #if defined(VULKAN)
+        #define SM_STACK_SIZE 10
+    #else
+        // Workaround for a crash on GL nvidia
+        #define SM_STACK_SIZE 0
+    #endif
+#endif
+
+#if SM_STACK_SIZE > 0
+shared uint g_stack[64][SM_STACK_SIZE];
+#endif
+
+#if SM_STACK_SIZE >= MAX_STACK_SIZE
+    #define STACK_PUSH(V)                                                                      \
+        g_stack[gl_LocalInvocationIndex][stack_size++] = (V);
+
+    #define STACK_POP(V)                                                                       \
+        (V) = g_stack[gl_LocalInvocationIndex][--stack_size];
+#elif SM_STACK_SIZE == 0
+    uint g_stack_spill[MAX_STACK_SIZE]; // whole stack lives here (no shared array)
+
+    #define STACK_PUSH(V)                                                                      \
+        g_stack_spill[stack_size++] = (V);
+
+    #define STACK_POP(V)                                                                       \
+        (V) = g_stack_spill[--stack_size];
+#else
+    uint g_stack_spill[MAX_STACK_SIZE - SM_STACK_SIZE]; // expected to be placed into scratch memory
+
+    #define STACK_PUSH(V)                                                                      \
+        {                                                                                      \
+            if (stack_size < SM_STACK_SIZE) {                                                  \
+                g_stack[gl_LocalInvocationIndex][stack_size] = (V);                            \
+            } else {                                                                           \
+                g_stack_spill[stack_size - SM_STACK_SIZE] = (V);                               \
+            }                                                                                  \
+            ++stack_size;                                                                      \
+        }
+
+    #define STACK_POP(V)                                                                       \
+        {                                                                                      \
+            --stack_size;                                                                      \
+            if (stack_size < SM_STACK_SIZE) {                                                  \
+                (V) = g_stack[gl_LocalInvocationIndex][stack_size];                            \
+            } else {                                                                           \
+                (V) = g_stack_spill[stack_size - SM_STACK_SIZE];                               \
+            }                                                                                  \
+        }
+#endif
 
 // BLAS leaves reference 8-primitive blocks in prim_indices through blas_leaf_prims
 // (payload = block base, baked with the mesh's prim indices offset)
@@ -232,13 +281,13 @@ void Traverse_BLAS_WithStack(samplerBuffer blas_nodes, usamplerBuffer blas_leaf_
     const uint flip_bits = (rd.x < 0.0 ? 1u : 0u) | (rd.y < 0.0 ? 2u : 0u) | (rd.z < 0.0 ? 4u : 0u);
 
     const uint initial_stack_size = stack_size;
-    g_stack[gl_LocalInvocationIndex][stack_size++] = node_index;
+    STACK_PUSH(node_index);
 
     uint index = 0u;
     while (true) {
         while (true) {
             if ((index & LEAF_NODE_BIT) == 0 && stack_size != initial_stack_size) {
-                index = g_stack[gl_LocalInvocationIndex][--stack_size];
+                STACK_POP(index);
                 [[flatten]] if ((index & LEAF_NODE_BIT) != 0) {
                     continue;
                 }
@@ -253,14 +302,14 @@ void Traverse_BLAS_WithStack(samplerBuffer blas_nodes, usamplerBuffer blas_leaf_
                     const uint i = key ^ flip_bits;
                     const uint meta = cwbvh_meta(n, i);
                     if ((meta & 0x80u) != 0u) {
-                        g_stack[gl_LocalInvocationIndex][stack_size++] = cwbvh_internal_child(n, i);
+                        STACK_PUSH(cwbvh_internal_child(n, i));
                     } else {
                         // leaf child: meta4 rank -> the parent's payload block (8-primitive block base)
                         const uint prim_start = (n.prim_base + (meta & 0x3fu)) | LEAF_NODE_BIT;
                         if ((index & LEAF_NODE_BIT) == 0) {
                             index = prim_start;
                         } else {
-                            g_stack[gl_LocalInvocationIndex][stack_size++] = prim_start;
+                            STACK_PUSH(prim_start);
                         }
                     }
                 }
@@ -295,13 +344,13 @@ void Traverse_TLAS_WithStack(samplerBuffer tlas_nodes, usamplerBuffer tlas_leaf_
     const uint flip_bits = (orig_rd.x < 0.0 ? 1u : 0u) | (orig_rd.y < 0.0 ? 2u : 0u) | (orig_rd.z < 0.0 ? 4u : 0u);
 
     uint stack_size = 0;
-    g_stack[gl_LocalInvocationIndex][stack_size++] = node_index;
+    STACK_PUSH(node_index);
 
     uint index = 0u;
     while (true) {
         while (SUBGROUP_ANY((index & LEAF_NODE_BIT) == 0 && stack_size != 0u)) {
             if ((index & LEAF_NODE_BIT) == 0 && stack_size != 0u) {
-                index = g_stack[gl_LocalInvocationIndex][--stack_size];
+                STACK_POP(index);
                 [[flatten]] if ((index & LEAF_NODE_BIT) != 0) {
                     continue;
                 }
@@ -316,10 +365,10 @@ void Traverse_TLAS_WithStack(samplerBuffer tlas_nodes, usamplerBuffer tlas_leaf_
                     const uint i = key ^ flip_bits;
                     const uint meta = cwbvh_meta(n, i);
                     if ((meta & 0x80u) != 0u) {
-                        g_stack[gl_LocalInvocationIndex][stack_size++] = cwbvh_internal_child(n, i);
+                        STACK_PUSH(cwbvh_internal_child(n, i));
                     } else {
                         // leaf child: TLAS leaves are single mesh instances (meta4 rank -> payload)
-                        g_stack[gl_LocalInvocationIndex][stack_size++] = (n.prim_base + (meta & 0x3fu)) | LEAF_NODE_BIT;
+                        STACK_PUSH((n.prim_base + (meta & 0x3fu)) | LEAF_NODE_BIT);
                     }
                 }
             }
