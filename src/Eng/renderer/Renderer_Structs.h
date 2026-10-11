@@ -503,9 +503,6 @@ const uint32_t SEP_AXIS_BITS = (0b11u << 30);
 const uint32_t PRIM_COUNT_BITS = ~SEP_AXIS_BITS;
 const uint32_t RIGHT_CHILD_BITS = ~SEP_AXIS_BITS;
 
-const uint32_t BVH2_PRIM_COUNT_BITS = (7u << 29); // 0b111u
-const uint32_t BVH2_PRIM_INDEX_BITS = ~BVH2_PRIM_COUNT_BITS;
-
 struct gpu_bvh_node_t { // NOLINT
     Ren::Vec3f bbox_min;
     union {
@@ -519,17 +516,6 @@ struct gpu_bvh_node_t { // NOLINT
     };
 };
 static_assert(sizeof(gpu_bvh_node_t) == 32);
-
-struct gpu_bvh2_node_t {
-    Ren::Vec4f ch_data0;  // [ ch0.min.x, ch0.max.x, ch0.min.y, ch0.max.y ]
-    Ren::Vec4f ch_data1;  // [ ch1.min.x, ch1.max.x, ch1.min.y, ch1.max.y ]
-    Ren::Vec4f ch_data2;  // [ ch0.min.z, ch0.max.z, ch1.min.z, ch1.max.z ]
-    uint32_t left_child;  // First three bits identify primitive count in leaf nodes
-    uint32_t right_child; // First three bits identify primitive count in leaf nodes
-    uint32_t _unused0, _unused1;
-};
-static_assert(sizeof(gpu_bvh2_node_t) == 64);
-static_assert(sizeof(gpu_bvh2_node_t) == BVH2_NODE_BUF_STRIDE * 4 * sizeof(float));
 
 struct gpu_light_bvh_node_t : public gpu_bvh_node_t {
     float flux;
@@ -604,7 +590,9 @@ const size_t ItemsBufChunkSize = sizeof(item_data_t) * MAX_ITEMS_TOTAL;
 const size_t RTGeoInstancesBufChunkSize = sizeof(rt_geo_instance_t) * MAX_RT_GEO_INSTANCES;
 const size_t HWRTObjInstancesBufChunkSize = sizeof_VkAccelerationStructureInstanceKHR * MAX_RT_OBJ_INSTANCES_TOTAL;
 const size_t SWRTObjInstancesBufChunkSize = sizeof(swrt_mesh_instance_t) * MAX_RT_OBJ_INSTANCES_TOTAL;
-const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh2_node_t) * MAX_RT_TLAS_NODES;
+// The SWRT TLAS staging chunk holds the compact nodes followed by the leaf prims payload
+const size_t SWRTTLASLeafPrimsOffset = sizeof(gpu_cwbvh_node_t) * MAX_RT_TLAS_NODES;
+const size_t SWRTTLASNodesBufChunkSize = SWRTTLASLeafPrimsOffset + sizeof(uint32_t) * MAX_RT_TLAS_NODES;
 const size_t SharedDataBlockSize = 12 * 1024;
 
 static_assert(sizeof(shared_data_t) <= SharedDataBlockSize);

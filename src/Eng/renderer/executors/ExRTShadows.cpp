@@ -41,6 +41,8 @@ void Eng::ExRTShadows::Execute_SWRT(const FgContext &fg) {
     const Ren::ImageROHandle normal = fg.AccessROImage(args_->normal);
     const Ren::BufferROHandle rt_blas_buf = fg.AccessROBuffer(args_->swrt.blas_buf);
     const Ren::BufferROHandle rt_tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
+    const Ren::BufferROHandle blas_leaf_prims = fg.AccessROBuffer(args_->swrt.blas_leaf_prims);
+    const Ren::BufferROHandle tlas_leaf_prims = fg.AccessROBuffer(args_->swrt.tlas_leaf_prims);
     const Ren::BufferROHandle prim_ndx = fg.AccessROBuffer(args_->swrt.prim_ndx);
     const Ren::BufferROHandle mesh_instances = fg.AccessROBuffer(args_->swrt.mesh_instances);
     const Ren::BufferROHandle tile_list = fg.AccessROBuffer(args_->tile_list);
@@ -58,6 +60,8 @@ void Eng::ExRTShadows::Execute_SWRT(const FgContext &fg) {
         {Ren::eBindTarget::SBufRO, RTShadows::MATERIAL_BUF_SLOT, materials},
         {Ren::eBindTarget::UTBuf, RTShadows::BLAS_BUF_SLOT, rt_blas_buf},
         {Ren::eBindTarget::UTBuf, RTShadows::TLAS_BUF_SLOT, rt_tlas_buf},
+        {Ren::eBindTarget::UTBuf, RTShadows::BLAS_LEAF_PRIMS_BUF_SLOT, blas_leaf_prims},
+        {Ren::eBindTarget::UTBuf, RTShadows::TLAS_LEAF_PRIMS_BUF_SLOT, tlas_leaf_prims},
         {Ren::eBindTarget::UTBuf, RTShadows::PRIM_NDX_BUF_SLOT, prim_ndx},
         {Ren::eBindTarget::UTBuf, RTShadows::MESH_INSTANCES_BUF_SLOT, mesh_instances},
         {Ren::eBindTarget::UTBuf, RTShadows::VTX_BUF1_SLOT, vtx_buf1},

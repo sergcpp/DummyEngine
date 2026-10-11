@@ -839,6 +839,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         auto &acc_structs = *fg_builder_.AllocTempData<AccelerationStructures>();
         for (int i = 0; i < int(eTLASIndex::_Count); ++i) {
             acc_structs.rt_tlas_buf[i] = fg_builder_.ImportResource(persistent_data.rt_tlas_buf[i]);
+            if (persistent_data.rt_tlas_leaf_prims_buf[i]) {
+                acc_structs.rt_tlas_leaf_prims_buf[i] =
+                    fg_builder_.ImportResource(persistent_data.rt_tlas_leaf_prims_buf[i]);
+            }
             if (persistent_data.rt_tlases[i]) {
                 acc_structs.rt_tlases[i] = persistent_data.rt_tlases[i];
             }
@@ -846,6 +850,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         acc_structs.hwrt.rt_tlas_build_scratch_size = persistent_data.hwrt.rt_tlas_build_scratch_size;
         if (persistent_data.swrt.rt_blas_buf) {
             acc_structs.swrt.rt_blas_buf = fg_builder_.ImportResource(persistent_data.swrt.rt_blas_buf->handle());
+        }
+        if (persistent_data.swrt.rt_blas_leaf_prims_buf) {
+            acc_structs.swrt.rt_blas_leaf_prims =
+                fg_builder_.ImportResource(persistent_data.swrt.rt_blas_leaf_prims_buf->handle());
         }
         if (persistent_data.swrt.rt_prim_indices_buf) {
             acc_structs.swrt.rt_prim_indices =
@@ -899,7 +907,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 p_list_, 0, rt_obj_instances_main_res, acc_structs.rt_tlases[int(eTLASIndex::Main)],
                 Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
                                         persistent_data.swrt.rt_meshes.capacity()},
-                rt_tlas_res, rt_tlas_build_scratch_res);
+                rt_tlas_res, FgBufRWHandle{}, rt_tlas_build_scratch_res);
         } else if (ctx_.capabilities.swrt && acc_structs.rt_tlas_buf[int(eTLASIndex::Main)]) {
             auto &update_rt_bufs = fg_builder_.AddNode("UPDATE ACC BUFS");
 
@@ -929,12 +937,14 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             const FgBufRWHandle rt_tlas_res = acc_structs.rt_tlas_buf[int(eTLASIndex::Main)] =
                 build_acc_structs.AddTransferOutput(acc_structs.rt_tlas_buf[int(eTLASIndex::Main)]);
+            const FgBufRWHandle rt_tlas_leaf_prims_res = acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Main)] =
+                build_acc_structs.AddTransferOutput(acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Main)]);
 
             build_acc_structs.make_executor<ExBuildAccStructures>(
                 p_list_, 0, rt_obj_instances_res[int(eTLASIndex::Main)], acc_structs.rt_tlases[int(eTLASIndex::Main)],
                 Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
                                         persistent_data.swrt.rt_meshes.capacity()},
-                rt_tlas_res, FgBufRWHandle{});
+                rt_tlas_res, rt_tlas_leaf_prims_res, FgBufRWHandle{});
         }
 
         if (deferred_shading && list.render_settings.shadows_quality == eShadowsQuality::Raytraced) {
@@ -983,7 +993,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     p_list_, 1, rt_obj_instances_shadow_res, acc_structs.rt_tlases[int(eTLASIndex::Shadow)],
                     Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
                                             persistent_data.swrt.rt_meshes.capacity()},
-                    rt_sh_tlas_res, rt_sh_tlas_build_scratch_res);
+                    rt_sh_tlas_res, FgBufRWHandle{}, rt_sh_tlas_build_scratch_res);
             } else if (ctx_.capabilities.swrt && acc_structs.rt_tlas_buf[int(eTLASIndex::Shadow)]) {
                 auto &update_rt_bufs = fg_builder_.AddNode("UPDATE SH ACC BUFS");
 
@@ -1013,13 +1023,16 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
                 const FgBufRWHandle rt_sh_tlas_res = acc_structs.rt_tlas_buf[int(eTLASIndex::Shadow)] =
                     build_acc_structs.AddTransferOutput(acc_structs.rt_tlas_buf[int(eTLASIndex::Shadow)]);
+                const FgBufRWHandle rt_sh_tlas_leaf_prims_res =
+                    acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Shadow)] =
+                        build_acc_structs.AddTransferOutput(acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Shadow)]);
 
                 build_acc_structs.make_executor<ExBuildAccStructures>(
                     p_list_, int(eTLASIndex::Shadow), rt_obj_instances_res[int(eTLASIndex::Shadow)],
                     acc_structs.rt_tlases[int(eTLASIndex::Shadow)],
                     Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
                                             persistent_data.swrt.rt_meshes.capacity()},
-                    rt_sh_tlas_res, FgBufRWHandle{});
+                    rt_sh_tlas_res, rt_sh_tlas_leaf_prims_res, FgBufRWHandle{});
             }
         }
 
@@ -1070,7 +1083,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     acc_structs.rt_tlases[int(eTLASIndex::Volume)],
                     Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
                                             persistent_data.swrt.rt_meshes.capacity()},
-                    rt_vol_tlas_res, rt_vol_tlas_build_scratch_res);
+                    rt_vol_tlas_res, FgBufRWHandle{}, rt_vol_tlas_build_scratch_res);
             } else if (ctx_.capabilities.swrt && acc_structs.rt_tlas_buf[int(eTLASIndex::Volume)]) {
                 auto &update_rt_bufs = fg_builder_.AddNode("UPDATE VOL ACC BUF");
 
@@ -1100,13 +1113,16 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
                 const FgBufRWHandle rt_vol_tlas_res = acc_structs.rt_tlas_buf[int(eTLASIndex::Volume)] =
                     build_acc_structs.AddTransferOutput(acc_structs.rt_tlas_buf[int(eTLASIndex::Volume)]);
+                const FgBufRWHandle rt_vol_tlas_leaf_prims_res =
+                    acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Volume)] =
+                        build_acc_structs.AddTransferOutput(acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Volume)]);
 
                 build_acc_structs.make_executor<ExBuildAccStructures>(
                     p_list_, int(eTLASIndex::Volume), rt_obj_instances_res[int(eTLASIndex::Volume)],
                     acc_structs.rt_tlases[int(eTLASIndex::Volume)],
                     Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
                                             persistent_data.swrt.rt_meshes.capacity()},
-                    rt_vol_tlas_res, FgBufRWHandle{});
+                    rt_vol_tlas_res, rt_vol_tlas_leaf_prims_res, FgBufRWHandle{});
             }
         }
 
@@ -1427,6 +1443,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             if (!ctx_.capabilities.hwrt) {
                 data->swrt.root_node = acc_structs.swrt.rt_root_node;
                 data->swrt.rt_blas = debug_rt.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_buf, stage);
+                data->swrt.blas_leaf_prims =
+                    debug_rt.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_leaf_prims, stage);
+                data->swrt.tlas_leaf_prims = debug_rt.AddStorageReadonlyInput(
+                    acc_structs.rt_tlas_leaf_prims_buf[int(list.render_settings.debug_rt) - 1], stage);
                 data->swrt.prim_ndx = debug_rt.AddStorageReadonlyInput(acc_structs.swrt.rt_prim_indices, stage);
                 data->swrt.mesh_instances = debug_rt.AddStorageReadonlyInput(
                     rt_obj_instances_res[int(list.render_settings.debug_rt) - 1], stage);

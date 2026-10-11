@@ -148,6 +148,10 @@ Eng::FgImgRWHandle Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &com
         if (!ctx_.capabilities.hwrt) {
             data->swrt.root_node = acc_structs.swrt.rt_root_node;
             data->swrt.blas_buf = rt_shadows.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_buf, stage);
+            data->swrt.blas_leaf_prims =
+                rt_shadows.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_leaf_prims, stage);
+            data->swrt.tlas_leaf_prims =
+                rt_shadows.AddStorageReadonlyInput(acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Shadow)], stage);
             data->swrt.prim_ndx = rt_shadows.AddStorageReadonlyInput(acc_structs.swrt.rt_prim_indices, stage);
             data->swrt.mesh_instances = rt_shadows.AddStorageReadonlyInput(rt_obj_instances_res, stage);
         }

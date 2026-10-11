@@ -40,6 +40,8 @@ void Eng::ExVolVoxelize::Execute_SWRT(const FgContext &fg) {
     const Ren::BufferROHandle tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
 
     const Ren::BufferROHandle blas_buf = fg.AccessROBuffer(args_->swrt.rt_blas_buf);
+    const Ren::BufferROHandle blas_leaf_prims = fg.AccessROBuffer(args_->swrt.blas_leaf_prims);
+    const Ren::BufferROHandle tlas_leaf_prims = fg.AccessROBuffer(args_->swrt.tlas_leaf_prims);
     const Ren::BufferROHandle prim_ndx = fg.AccessROBuffer(args_->swrt.prim_ndx);
     const Ren::BufferROHandle mesh_instances = fg.AccessROBuffer(args_->swrt.mesh_instances);
 
@@ -59,6 +61,8 @@ void Eng::ExVolVoxelize::Execute_SWRT(const FgContext &fg) {
                                      {Ren::eBindTarget::SBufRO, Fog::MATERIAL_BUF_SLOT, materials},
                                      {Ren::eBindTarget::UTBuf, Fog::BLAS_BUF_SLOT, blas_buf},
                                      {Ren::eBindTarget::UTBuf, Fog::TLAS_BUF_SLOT, tlas_buf},
+                                     {Ren::eBindTarget::UTBuf, Fog::BLAS_LEAF_PRIMS_BUF_SLOT, blas_leaf_prims},
+                                     {Ren::eBindTarget::UTBuf, Fog::TLAS_LEAF_PRIMS_BUF_SLOT, tlas_leaf_prims},
                                      {Ren::eBindTarget::UTBuf, Fog::PRIM_NDX_BUF_SLOT, prim_ndx},
                                      {Ren::eBindTarget::UTBuf, Fog::MESH_INSTANCES_BUF_SLOT, mesh_instances},
                                      {Ren::eBindTarget::UTBuf, Fog::VTX_BUF1_SLOT, vtx_buf1},

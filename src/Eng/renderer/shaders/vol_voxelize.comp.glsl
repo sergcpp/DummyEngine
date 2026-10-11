@@ -33,6 +33,8 @@ layout(std430, binding = MATERIAL_BUF_SLOT) readonly buffer Materials {
 #else
     layout(binding = BLAS_BUF_SLOT) uniform samplerBuffer g_blas_nodes;
     layout(binding = TLAS_BUF_SLOT) uniform samplerBuffer g_tlas_nodes;
+    layout(binding = BLAS_LEAF_PRIMS_BUF_SLOT) uniform usamplerBuffer g_blas_leaf_prims;
+    layout(binding = TLAS_LEAF_PRIMS_BUF_SLOT) uniform usamplerBuffer g_tlas_leaf_prims;
 
     layout(binding = PRIM_NDX_BUF_SLOT) uniform usamplerBuffer g_prim_indices;
     layout(binding = MESH_INSTANCES_BUF_SLOT) uniform samplerBuffer g_mesh_instances;
@@ -138,7 +140,8 @@ void main() {
             inter.tmax = next_t;
             inter.u = inter.v = 0.0;
 
-            Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
+            Traverse_TLAS_WithStack(g_tlas_nodes, g_tlas_leaf_prims, g_blas_nodes, g_blas_leaf_prims, g_mesh_instances,
+                                    g_vtx_data0, g_vtx_indices, g_prim_indices,
                                     origin_ws, dir_ws, inv_d, (1u << RAY_TYPE_VOLUME), 0 /* root_node */, inter);
             if (inter.mask != 0) {
                 const bool backfacing = (inter.prim_index < 0);

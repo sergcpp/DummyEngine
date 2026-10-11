@@ -41,15 +41,9 @@ vec2 decode_cosines8(const uint val) {
 }
 
 //
-// Compact (CWBVH-style) node helpers - mirror the CPU side (Renderer_Structs.h)
+// Compact (CWBVH-style) node helpers - mirror the CPU side (Renderer_Structs.h).
+// cwbvh_step() and the generic cwbvh_meta()/cwbvh_internal_child() come from swrt_common.glsl.
 //
-
-// Per-axis quantization step 2^ch_exp[axis] (CWBVH paper trick): sign-extend the stored int8
-// exponent and place it in the float exponent field. ch_exp is always in [-126, 127].
-float cwbvh_step(const uint ch_exp, const uint axis) {
-    const uint b = (ch_exp >> (8u * axis)) & 0xffu;
-    return uintBitsToFloat((((b ^ 0x80u) - 1u) & 0xffu) << 23u);
-}
 
 // meta4 byte of child slot i: 0 = empty slot, 0x40|rank = leaf child, 0x80|i = internal child
 uint cwbvh_meta(const light_cwbvh_node_t n, const uint i) {

@@ -927,12 +927,17 @@ void Eng::SceneManager::Release_TLAS(const bool immediately) {
         for (const Ren::BufferHandle buf : scene_data_.persistent_data->rt_tlas_buf) {
             ren_ctx_.ReleaseBuffer(buf, immediately);
         }
+        for (const Ren::BufferHandle buf : scene_data_.persistent_data->rt_tlas_leaf_prims_buf) {
+            ren_ctx_.ReleaseBuffer(buf, immediately);
+        }
         for (auto &tlas : scene_data_.persistent_data->rt_tlases) {
             ren_ctx_.ReleaseAccStruct(tlas, immediately);
         }
     }
     std::fill(std::begin(scene_data_.persistent_data->rt_tlas_buf), std::end(scene_data_.persistent_data->rt_tlas_buf),
               Ren::BufferHandle{});
+    std::fill(std::begin(scene_data_.persistent_data->rt_tlas_leaf_prims_buf),
+              std::end(scene_data_.persistent_data->rt_tlas_leaf_prims_buf), Ren::BufferHandle{});
     std::fill(std::begin(scene_data_.persistent_data->rt_tlases), std::end(scene_data_.persistent_data->rt_tlases),
               Ren::AccStructHandle{});
 }
@@ -1056,6 +1061,10 @@ void Eng::SceneManager::ReleaseMeshBuffers(const bool immediately) {
         if (scene_data_.persistent_data->swrt.rt_blas_buf) {
             scene_data_.persistent_data->swrt.rt_blas_buf->Release(true /* immediately */);
             scene_data_.persistent_data->swrt.rt_blas_buf = {};
+        }
+        if (scene_data_.persistent_data->swrt.rt_blas_leaf_prims_buf) {
+            scene_data_.persistent_data->swrt.rt_blas_leaf_prims_buf->Release(true /* immediately */);
+            scene_data_.persistent_data->swrt.rt_blas_leaf_prims_buf = {};
         }
     }
     if (scene_data_.persistent_data->vertex_buf1) {

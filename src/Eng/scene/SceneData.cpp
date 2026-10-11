@@ -91,6 +91,12 @@ void Eng::PersistentGpuData::Release() {
         }
         buf = {};
     }
+    for (Ren::BufferHandle &buf : rt_tlas_leaf_prims_buf) {
+        if (buf) {
+            ctx.ReleaseBuffer(buf);
+        }
+        buf = {};
+    }
     for (const Ren::BufferHandle b : hwrt.rt_blas_buffers) {
         ctx.ReleaseBuffer(b);
     }
@@ -102,6 +108,10 @@ void Eng::PersistentGpuData::Release() {
     if (swrt.rt_blas_buf) {
         swrt.rt_blas_buf->Release(true /* immediately */);
         swrt.rt_blas_buf = {};
+    }
+    if (swrt.rt_blas_leaf_prims_buf) {
+        swrt.rt_blas_leaf_prims_buf->Release(true /* immediately */);
+        swrt.rt_blas_leaf_prims_buf = {};
     }
     swrt = {};
 

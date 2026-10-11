@@ -242,6 +242,7 @@ class Renderer {
 
     struct AccelerationStructures {
         FgBufRWHandle rt_tlas_buf[int(eTLASIndex::_Count)];
+        FgBufRWHandle rt_tlas_leaf_prims_buf[int(eTLASIndex::_Count)];
         struct {
             uint32_t rt_tlas_build_scratch_size = 0;
         } hwrt;
@@ -249,6 +250,7 @@ class Renderer {
             FgBufROHandle rt_prim_indices;
             uint32_t rt_root_node = 0;
             FgBufROHandle rt_blas_buf;
+            FgBufROHandle rt_blas_leaf_prims;
         } swrt;
 
         Ren::AccStructHandle rt_tlases[int(eTLASIndex::_Count)];

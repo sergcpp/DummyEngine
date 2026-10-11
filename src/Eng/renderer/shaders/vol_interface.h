@@ -53,6 +53,8 @@ const uint MESH_INSTANCES_BUF_SLOT = 14;
 
 const uint VTX_BUF1_SLOT = 15;
 const uint NDX_BUF_SLOT = 16;
+const uint BLAS_LEAF_PRIMS_BUF_SLOT = 17;
+const uint TLAS_LEAF_PRIMS_BUF_SLOT = 18;
 
 const uint OUT_FR_EMISSION_IMG_SLOT = 0;
 const uint OUT_FR_SCATTER_IMG_SLOT = 1;

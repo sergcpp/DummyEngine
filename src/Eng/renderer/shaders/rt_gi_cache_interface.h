@@ -45,7 +45,6 @@ const uint LTC_LUTS_TEX_SLOT = 17;
 const uint RANDOM_SEQ_BUF_SLOT = 18;
 const uint STOCH_LIGHTS_BUF_SLOT = 19;
 const uint LIGHT_NODES_BUF_SLOT = 20;
-const uint LIGHT_LEAF_PRIMS_BUF_SLOT = 32;
 const uint CELLS_BUF_SLOT = 21;
 const uint ITEMS_BUF_SLOT = 22;
 const uint IRRADIANCE_TEX_SLOT = 25;
@@ -57,6 +56,9 @@ const uint ACTIVE_ENTRIES_BUF_SLOT = 30;
 const uint CACHE_ENTRIES_BUF_SLOT = 31;
 const uint CACHE_VOXELS_BUF_SLOT = 2;
 const uint RAY_IDS_BUF_SLOT = 3;
+const uint LIGHT_LEAF_PRIMS_BUF_SLOT = 4;
+const uint BLAS_LEAF_PRIMS_BUF_SLOT = 12;
+const uint TLAS_LEAF_PRIMS_BUF_SLOT = 15;
 
 const uint OUT_RAY_HITS_BUF_SLOT = 1;
 const uint INOUT_ENTRIES_BUF_SLOT = 0;

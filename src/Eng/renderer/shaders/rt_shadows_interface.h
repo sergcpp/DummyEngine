@@ -29,6 +29,8 @@ const uint BLAS_BUF_SLOT = 11;
 const uint TLAS_BUF_SLOT = 12;
 const uint PRIM_NDX_BUF_SLOT = 13;
 const uint MESH_INSTANCES_BUF_SLOT = 14;
+const uint BLAS_LEAF_PRIMS_BUF_SLOT = 15;
+const uint TLAS_LEAF_PRIMS_BUF_SLOT = 16;
 
 const uint OUT_SHADOW_IMG_SLOT = 0;
 

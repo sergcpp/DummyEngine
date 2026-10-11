@@ -1,5 +1,7 @@
 #include "ExBuildAccStructures.h"
 
+#include <cfloat>
+#include <cmath>
 #include <deque>
 
 #include <Phy/BVHSplit.h>
@@ -21,6 +23,7 @@ void Eng::ExBuildAccStructures::Execute(const FgContext &fg) {
 void Eng::ExBuildAccStructures::Execute_SWRT(const FgContext &fg) {
     const Ren::BufferHandle rt_obj_instances_buf = fg.AccessRWBuffer(rt_obj_instances_rw_);
     const Ren::BufferHandle rt_tlas = fg.AccessRWBuffer(rt_tlas_buf_);
+    const Ren::BufferHandle rt_tlas_leaf_prims = fg.AccessRWBuffer(rt_tlas_leaf_prims_buf_);
 
     const auto &rt_obj_instances = p_list_->rt_obj_instances[rt_index_];
     const Ren::BufferHandle rt_obj_instances_stage = p_list_->rt_obj_instances_stage[rt_index_];
@@ -51,18 +54,14 @@ void Eng::ExBuildAccStructures::Execute_SWRT(const FgContext &fg) {
         const uint32_t nodes_count = PreprocessPrims_SAH(temp_primitives, s, temp_nodes, mi_indices);
         assert(nodes_count <= MAX_RT_TLAS_NODES);
 
-        std::vector<gpu_bvh2_node_t> temp_bvh2_nodes;
-        ConvertToBVH2(temp_nodes, temp_bvh2_nodes);
+        std::vector<gpu_cwbvh_node_t> temp_cw_nodes;
+        std::vector<uint32_t> temp_leaf_prims; // indices into mi_indices
+        [[maybe_unused]] const uint32_t root_node = FlattenCompactBVH_r(temp_nodes, 0, temp_cw_nodes, temp_leaf_prims);
+        assert(root_node == 0);
 
-        for (uint32_t i = 0; i < uint32_t(temp_bvh2_nodes.size()); ++i) {
-            gpu_bvh2_node_t &n = temp_bvh2_nodes[i];
-            if ((n.left_child & BVH2_PRIM_COUNT_BITS) != 0) {
-                n.left_child = (n.left_child & BVH2_PRIM_COUNT_BITS) | mi_indices[n.left_child & BVH2_PRIM_INDEX_BITS];
-            }
-            if ((n.right_child & BVH2_PRIM_COUNT_BITS) != 0) {
-                n.right_child =
-                    (n.right_child & BVH2_PRIM_COUNT_BITS) | mi_indices[n.right_child & BVH2_PRIM_INDEX_BITS];
-            }
+        // resolve leaf payloads to mesh instance indices
+        for (uint32_t &p : temp_leaf_prims) {
+            p = mi_indices[p & PRIM_INDEX_BITS];
         }
 
         std::vector<swrt_mesh_instance_t> mesh_instances;
@@ -114,9 +113,11 @@ void Eng::ExBuildAccStructures::Execute_SWRT(const FgContext &fg) {
             uint8_t *stage_mem =
                 Buffer_MapRange(api, rt_tlas_stage_buf_main, rt_tlas_stage_buf_cold,
                                 fg.backend_frame() * SWRTTLASNodesBufChunkSize, SWRTTLASNodesBufChunkSize);
-            const uint32_t rt_nodes_mem_size = uint32_t(temp_bvh2_nodes.size()) * sizeof(gpu_bvh2_node_t);
+            const uint32_t rt_nodes_mem_size = uint32_t(temp_cw_nodes.size()) * sizeof(gpu_cwbvh_node_t);
+            const uint32_t rt_leaf_prims_mem_size = uint32_t(temp_leaf_prims.size()) * sizeof(uint32_t);
             if (stage_mem) {
-                memcpy(stage_mem, temp_bvh2_nodes.data(), rt_nodes_mem_size);
+                memcpy(stage_mem, temp_cw_nodes.data(), rt_nodes_mem_size);
+                memcpy(stage_mem + SWRTTLASLeafPrimsOffset, temp_leaf_prims.data(), rt_leaf_prims_mem_size);
                 Buffer_Unmap(api, rt_tlas_stage_buf_main, rt_tlas_stage_buf_cold);
             } else {
                 fg.log()->Error("ExBuildAccStructures: Failed to map rt tlas stage buffer!");
@@ -125,9 +126,14 @@ void Eng::ExBuildAccStructures::Execute_SWRT(const FgContext &fg) {
             Ren::BufferMain &rt_tlas_buf_main = storages.buffers[rt_tlas].first;
             CopyBufferToBuffer(api, rt_tlas_stage_buf_main, fg.backend_frame() * SWRTTLASNodesBufChunkSize,
                                rt_tlas_buf_main, 0, rt_nodes_mem_size, fg.cmd_buf());
+
+            Ren::BufferMain &rt_tlas_leaf_prims_buf_main = storages.buffers[rt_tlas_leaf_prims].first;
+            CopyBufferToBuffer(api, rt_tlas_stage_buf_main,
+                               fg.backend_frame() * SWRTTLASNodesBufChunkSize + SWRTTLASLeafPrimsOffset,
+                               rt_tlas_leaf_prims_buf_main, 0, rt_leaf_prims_mem_size, fg.cmd_buf());
         }
     } else {
-        static const gpu_bvh2_node_t dummy_node = {};
+        static const gpu_cwbvh_node_t dummy_node = {};
 
         Ren::BufferMain &rt_tlas_buf_main = storages.buffers[rt_tlas].first;
         Buffer_UpdateInPlace(api, rt_tlas_buf_main, 0, sizeof(dummy_node), &dummy_node, fg.cmd_buf());
@@ -214,102 +220,243 @@ uint32_t Eng::ExBuildAccStructures::PreprocessPrims_SAH(Ren::Span<const Phy::pri
     return uint32_t(out_nodes.size() - root_node_index);
 }
 
-// TODO: avoid duplication with SceneManager::ConvertToBVH2
-uint32_t Eng::ExBuildAccStructures::ConvertToBVH2(Ren::Span<const gpu_bvh_node_t> nodes,
-                                                  std::vector<gpu_bvh2_node_t> &out_nodes) {
-    const uint32_t out_index = uint32_t(out_nodes.size());
-
-    if (nodes.size() == 1) {
-        assert((nodes[0].prim_index & LEAF_NODE_BIT) != 0);
-        gpu_bvh2_node_t root_node = {};
-
-        root_node.left_child = nodes[0].prim_index & PRIM_INDEX_BITS;
-        const uint32_t prim_count = std::max(nodes[0].prim_count & PRIM_COUNT_BITS, 2u);
-        assert(prim_count <= 8);
-        root_node.left_child |= (prim_count - 1) << 29;
-        root_node.right_child = root_node.left_child;
-
-        const gpu_bvh_node_t &ch0 = nodes[0];
-
-        root_node.ch_data0[0] = ch0.bbox_min[0];
-        root_node.ch_data0[1] = ch0.bbox_max[0];
-        root_node.ch_data0[2] = ch0.bbox_min[1];
-        root_node.ch_data0[3] = ch0.bbox_max[1];
-        root_node.ch_data2[0] = ch0.bbox_min[2];
-        root_node.ch_data2[1] = ch0.bbox_max[2];
-
-        out_nodes.push_back(root_node);
-
-        return out_index;
+namespace {
+// CWBVH quantization helpers (mirrors SceneManagerInternal in SceneManager_BVH.cpp)
+float quantize(const float v, const float min, const float max) {
+    if (min == max) {
+        return 0.0f;
     }
+    return Ren::Clamp(255.0f * (v - min) / (max - min), 0.0f, 255.0f);
+}
 
-    std::vector<uint32_t> compacted_indices;
-    compacted_indices.resize(nodes.size());
-    uint32_t compacted_count = 0;
-    for (int i = 0; i < int(nodes.size()); ++i) {
-        compacted_indices[i] = compacted_count;
-        if ((nodes[i].prim_index & LEAF_NODE_BIT) == 0) {
-            ++compacted_count;
+void pow2Extents(const float min[3], float max[3], int8_t out_exp[3]) {
+    for (int i = 0; i < 3; ++i) {
+        const float ext = max[i] - min[i];
+        if (ext > 0.0f) {
+            const int e = int(std::ceil(std::log2(ext / 255.0f)));
+            assert(e >= -126 && e <= 127);
+            out_exp[i] = int8_t(e);
+            max[i] = min[i] + 255.0f * std::exp2(float(e));
+        } else {
+            out_exp[i] = 0;
         }
     }
-    out_nodes.reserve(out_nodes.size() + compacted_count);
+}
+} // namespace
 
-    const uint32_t offset = uint32_t(out_nodes.size());
-    for (const gpu_bvh_node_t &n : nodes) {
-        gpu_bvh2_node_t new_node = {};
-        new_node.left_child = n.left_child;
-        new_node.right_child = n.right_child & RIGHT_CHILD_BITS;
-        if ((n.prim_index & LEAF_NODE_BIT) == 0) {
-            const gpu_bvh_node_t &ch0 = nodes[new_node.left_child];
-            const gpu_bvh_node_t &ch1 = nodes[new_node.right_child];
+// TODO: avoid duplication with SceneManager::FlattenCompactBVH_r
+uint32_t Eng::ExBuildAccStructures::FlattenCompactBVH_r(Ren::Span<const gpu_bvh_node_t> nodes,
+                                                        const uint32_t node_index,
+                                                        std::vector<gpu_cwbvh_node_t> &out_nodes,
+                                                        std::vector<uint32_t> &out_leaf_prims, const int at_index,
+                                                        const uint32_t depth) {
+    const gpu_bvh_node_t &cur_node = nodes[node_index];
 
-            if ((ch0.prim_index & LEAF_NODE_BIT) != 0) {
-                new_node.left_child = ch0.prim_index & PRIM_INDEX_BITS;
+    // The traversal stack holds at most one entry per level of the path - catch too-deep trees
+    // at build time instead of relying on a ray hitting the overflow assert during rendering.
+    assert(depth < uint32_t(MAX_STACK_SIZE) && "cwbvh tree too deep for the traversal stack");
 
-                const uint32_t prim_count = std::max(ch0.prim_count & PRIM_COUNT_BITS, 2u);
-                assert(prim_count <= 8);
-                new_node.left_child |= (prim_count - 1) << 29;
-                assert((new_node.left_child & BVH2_PRIM_COUNT_BITS) != 0);
-            } else {
-                new_node.left_child = compacted_indices[new_node.left_child];
-                new_node.left_child += offset;
-                assert((new_node.left_child & BVH2_PRIM_COUNT_BITS) == 0);
-                assert(new_node.left_child < out_nodes.capacity());
-            }
-            if ((ch1.prim_index & LEAF_NODE_BIT) != 0) {
-                new_node.right_child = ch1.prim_index & PRIM_INDEX_BITS;
+    // allocate new node (or use the slot pre-reserved by our parent for contiguous children)
+    uint32_t new_node_index;
+    if (at_index >= 0) {
+        new_node_index = uint32_t(at_index);
+    } else {
+        new_node_index = uint32_t(out_nodes.size());
+        out_nodes.emplace_back();
+    }
 
-                const uint32_t prim_count = std::max(ch1.prim_count & PRIM_COUNT_BITS, 2u);
-                assert(prim_count <= 8);
-                new_node.right_child |= (prim_count - 1) << 29;
-                assert((new_node.right_child & BVH2_PRIM_COUNT_BITS) != 0);
-            } else {
-                new_node.right_child = compacted_indices[new_node.right_child];
-                new_node.right_child += offset;
-                assert((new_node.right_child & BVH2_PRIM_COUNT_BITS) == 0);
-                assert(new_node.right_child < out_nodes.capacity());
-            }
+    if (cur_node.prim_index & LEAF_NODE_BIT) {
+        // Single leaf tree - wrap it into a regular internal node to make sure root node is never a leaf
+        gpu_cwbvh_node_t &new_node = out_nodes[new_node_index];
+        new_node.child_base_imask = 0;
+        new_node.prim_base = uint32_t(out_leaf_prims.size());
+        out_leaf_prims.push_back(cur_node.prim_index);
+        new_node.meta4[0] = 0x40u; // slot 0: leaf child, rank 0
+        new_node.meta4[1] = 0;
+        new_node.bbox_min = cur_node.bbox_min;
+        { // the whole-box child encoding (0/255) must decode conservatively under the pow2 step
+            float bmin[3], bmax[3];
+            memcpy(bmin, &cur_node.bbox_min[0], 3 * sizeof(float));
+            memcpy(bmax, &cur_node.bbox_max[0], 3 * sizeof(float));
+            pow2Extents(bmin, bmax, new_node.ch_exp);
+        }
+        for (int j = 0; j < 3; ++j) {
+            new_node.ch_bbox_min[j][0] = 0;
+            new_node.ch_bbox_max[j][0] = 0xff;
+        }
+        for (int j = 1; j < 8; ++j) {
+            // Init as infinite bounding box
+            new_node.ch_bbox_min[0][j] = new_node.ch_bbox_min[1][j] = new_node.ch_bbox_min[2][j] = 0xff;
+            new_node.ch_bbox_max[0][j] = new_node.ch_bbox_max[1][j] = new_node.ch_bbox_max[2][j] = 0;
+        }
+        return new_node_index;
+    }
 
-            new_node.ch_data0[0] = ch0.bbox_min[0];
-            new_node.ch_data0[1] = ch0.bbox_max[0];
-            new_node.ch_data0[2] = ch0.bbox_min[1];
-            new_node.ch_data0[3] = ch0.bbox_max[1];
+    // Gather children 2 levels deep
 
-            new_node.ch_data1[0] = ch1.bbox_min[0];
-            new_node.ch_data1[1] = ch1.bbox_max[0];
-            new_node.ch_data1[2] = ch1.bbox_min[1];
-            new_node.ch_data1[3] = ch1.bbox_max[1];
+    uint32_t children[8];
+    int children_count = 0;
 
-            new_node.ch_data2[0] = ch0.bbox_min[2];
-            new_node.ch_data2[1] = ch0.bbox_max[2];
-            new_node.ch_data2[2] = ch1.bbox_min[2];
-            new_node.ch_data2[3] = ch1.bbox_max[2];
+    const gpu_bvh_node_t &child0 = nodes[cur_node.left_child];
 
-            out_nodes.push_back(new_node);
+    if (child0.prim_index & LEAF_NODE_BIT) {
+        children[children_count++] = cur_node.left_child & LEFT_CHILD_BITS;
+    } else {
+        const gpu_bvh_node_t &child00 = nodes[child0.left_child];
+        const gpu_bvh_node_t &child01 = nodes[child0.right_child & RIGHT_CHILD_BITS];
+
+        if (child00.prim_index & LEAF_NODE_BIT) {
+            children[children_count++] = child0.left_child & LEFT_CHILD_BITS;
+        } else {
+            children[children_count++] = child00.left_child;
+            children[children_count++] = child00.right_child & RIGHT_CHILD_BITS;
+        }
+
+        if (child01.prim_index & LEAF_NODE_BIT) {
+            children[children_count++] = child0.right_child & RIGHT_CHILD_BITS;
+        } else {
+            children[children_count++] = child01.left_child;
+            children[children_count++] = child01.right_child & RIGHT_CHILD_BITS;
         }
     }
 
-    assert(out_nodes.size() == out_nodes.capacity());
+    const gpu_bvh_node_t &child1 = nodes[cur_node.right_child & RIGHT_CHILD_BITS];
 
-    return out_index;
+    if (child1.prim_index & LEAF_NODE_BIT) {
+        children[children_count++] = cur_node.right_child & RIGHT_CHILD_BITS;
+    } else {
+        const gpu_bvh_node_t &child10 = nodes[child1.left_child];
+        const gpu_bvh_node_t &child11 = nodes[child1.right_child & RIGHT_CHILD_BITS];
+
+        if (child10.prim_index & LEAF_NODE_BIT) {
+            children[children_count++] = child1.left_child & LEFT_CHILD_BITS;
+        } else {
+            children[children_count++] = child10.left_child;
+            children[children_count++] = child10.right_child & RIGHT_CHILD_BITS;
+        }
+
+        if (child11.prim_index & LEAF_NODE_BIT) {
+            children[children_count++] = child1.right_child & RIGHT_CHILD_BITS;
+        } else {
+            children[children_count++] = child11.left_child;
+            children[children_count++] = child11.right_child & RIGHT_CHILD_BITS;
+        }
+    }
+
+    // Sort children in morton order
+    Ren::Vec3f children_centers[8], whole_box_min = {FLT_MAX}, whole_box_max = {-FLT_MAX};
+    for (int i = 0; i < children_count; i++) {
+        children_centers[i] = 0.5f * (nodes[children[i]].bbox_min + nodes[children[i]].bbox_max);
+        whole_box_min = Min(whole_box_min, children_centers[i]);
+        whole_box_max = Max(whole_box_max, children_centers[i]);
+    }
+
+    whole_box_max += Ren::Vec3f{0.001f};
+
+    const Ren::Vec3f scale = 2.0f / (whole_box_max - whole_box_min);
+
+    uint32_t sorted_children[8] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+                                   0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
+    for (int i = 0; i < children_count; i++) {
+        const Ren::Vec3f code = (children_centers[i] - whole_box_min) * scale;
+
+        const auto x = uint32_t(code[0]), y = uint32_t(code[1]), z = uint32_t(code[2]);
+
+        uint32_t mort = (z << 2) | (y << 1) | (x << 0);
+        while (sorted_children[mort] != 0xffffffff) {
+            mort = (mort + 1) % 8;
+        }
+
+        sorted_children[mort] = children[i];
+    }
+
+    // NOTE: 'new_node' must not be held across recursive calls - out_nodes can reallocate!
+    float node_min[3], node_max[3];
+    int8_t node_exp[3];
+    memcpy(node_min, &cur_node.bbox_min[0], 3 * sizeof(float));
+    memcpy(node_max, &cur_node.bbox_max[0], 3 * sizeof(float));
+    pow2Extents(node_min, node_max, node_exp);
+
+    uint8_t new_ch_min[3][8], new_ch_max[3][8];
+
+    // Implicit child addressing (CWBVH paper): pre-reserve contiguous slots for the internal
+    // children, in slot order, so child i resolves to child_base + popc(internal slots below i).
+    uint8_t internal_mask = 0;
+    int internal_count = 0;
+    for (int i = 0; i < 8; i++) {
+        if (sorted_children[i] != 0xffffffff && !(nodes[sorted_children[i]].prim_index & LEAF_NODE_BIT)) {
+            internal_mask |= uint8_t(1 << i);
+            ++internal_count;
+        }
+    }
+    const uint32_t child_base = uint32_t(out_nodes.size());
+    out_nodes.resize(size_t(child_base) + size_t(internal_count));
+
+    // meta4 packing (CWBVH paper): leaf primitive references go to out_leaf_prims, contiguous
+    // per parent in slot order (leaf_prims[prim_base + rank]).
+    const uint32_t prim_base = uint32_t(out_leaf_prims.size());
+    uint8_t meta_bytes[8] = {};
+    int leaf_rank = 0;
+    for (int i = 0; i < 8; i++) {
+        if (sorted_children[i] == 0xffffffff) {
+            continue;
+        }
+        if (nodes[sorted_children[i]].prim_index & LEAF_NODE_BIT) {
+            out_leaf_prims.push_back(nodes[sorted_children[i]].prim_index);
+            meta_bytes[i] = uint8_t(0x40 | leaf_rank++);
+        } else {
+            meta_bytes[i] = uint8_t(0x80 | i);
+        }
+    }
+    assert(leaf_rank <= 0x3f);
+
+    for (int i = 0; i < 8; i++) {
+        if (sorted_children[i] == 0xffffffff) {
+            // Init as infinite bounding box
+            new_ch_min[0][i] = new_ch_min[1][i] = new_ch_min[2][i] = 0xff;
+            new_ch_max[0][i] = new_ch_max[1][i] = new_ch_max[2][i] = 0;
+            continue;
+        }
+
+        const gpu_bvh_node_t &child = nodes[sorted_children[i]];
+
+        for (int j = 0; j < 3; ++j) {
+            new_ch_min[j][i] = uint8_t(floorf(quantize(child.bbox_min[j], node_min[j], node_max[j])));
+            new_ch_max[j][i] = uint8_t(ceilf(quantize(child.bbox_max[j], node_min[j], node_max[j])));
+            // valid scene children always have finite boxes - the compacted traversal relies on
+            // this (no degenerate 0xff/0x00 'infinite box' encoding outside the light tree)
+            assert(new_ch_min[j][i] <= new_ch_max[j][i]);
+        }
+    }
+
+    // Recurse after this node's children arrays are laid out; the internal-child slots were
+    // pre-reserved above, so the recursion cannot move them (never hold a reference across it).
+    int child_rank = 0;
+    for (int i = 0; i < 8; i++) {
+        if (sorted_children[i] != 0xffffffff && !(nodes[sorted_children[i]].prim_index & LEAF_NODE_BIT)) {
+            FlattenCompactBVH_r(nodes, sorted_children[i], out_nodes, out_leaf_prims, int(child_base + child_rank),
+                                depth + 1);
+            ++child_rank;
+        }
+    }
+
+    gpu_cwbvh_node_t &new_node = out_nodes[new_node_index];
+    assert(child_rank == internal_count);
+    // child_base lives in the low 24 bits of the packed word
+    assert(child_base < (1u << 24));
+    new_node.child_base_imask = child_base | (uint32_t(internal_mask) << 24);
+    new_node.prim_base = prim_base;
+    new_node.meta4[0] = uint32_t(meta_bytes[0]) | (uint32_t(meta_bytes[1]) << 8) | (uint32_t(meta_bytes[2]) << 16) |
+                        (uint32_t(meta_bytes[3]) << 24);
+    new_node.meta4[1] = uint32_t(meta_bytes[4]) | (uint32_t(meta_bytes[5]) << 8) | (uint32_t(meta_bytes[6]) << 16) |
+                        (uint32_t(meta_bytes[7]) << 24);
+    new_node.bbox_min = Ren::Vec3f{node_min[0], node_min[1], node_min[2]};
+    memcpy(new_node.ch_exp, node_exp, 3);
+    new_node.ch_exp[3] = 0;
+    for (int j = 0; j < 3; ++j) {
+        memcpy(new_node.ch_bbox_min[j], new_ch_min[j], 8);
+        memcpy(new_node.ch_bbox_max[j], new_ch_max[j], 8);
+    }
+
+    return new_node_index;
 }

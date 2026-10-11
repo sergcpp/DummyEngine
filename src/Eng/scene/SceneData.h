@@ -244,12 +244,13 @@ struct PersistentGpuData {
         std::vector<Ren::BufferHandle> rt_blas_buffers;
     } hwrt;
 
-    Ren::BufferHandle rt_tlas_buf[3];
+    Ren::BufferHandle rt_tlas_buf[3], rt_tlas_leaf_prims_buf[3];
 
     struct {
         std::unique_ptr<Ren::ResizableBuffer> rt_prim_indices_buf;
         uint32_t rt_root_node = 0;
         std::unique_ptr<Ren::ResizableBuffer> rt_blas_buf;
+        std::unique_ptr<Ren::ResizableBuffer> rt_blas_leaf_prims_buf;
         Ren::SparseArray<mesh_t> rt_meshes;
     } swrt;
 

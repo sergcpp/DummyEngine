@@ -60,6 +60,8 @@ layout(binding = NDX_BUF_SLOT) uniform usamplerBuffer g_vtx_indices;
 #else
     layout(binding = BLAS_BUF_SLOT) uniform samplerBuffer g_blas_nodes;
     layout(binding = TLAS_BUF_SLOT) uniform samplerBuffer g_tlas_nodes;
+    layout(binding = BLAS_LEAF_PRIMS_BUF_SLOT) uniform usamplerBuffer g_blas_leaf_prims;
+    layout(binding = TLAS_LEAF_PRIMS_BUF_SLOT) uniform usamplerBuffer g_tlas_leaf_prims;
 
     layout(binding = PRIM_NDX_BUF_SLOT) uniform usamplerBuffer g_prim_indices;
     layout(binding = MESH_INSTANCES_BUF_SLOT) uniform samplerBuffer g_mesh_instances;
@@ -194,7 +196,8 @@ void main() {
 
             int transp_depth = 0;
             while (transp_depth++ < TRANSPARENCY_LIMIT) {
-                Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
+                Traverse_TLAS_WithStack(g_tlas_nodes, g_tlas_leaf_prims, g_blas_nodes, g_blas_leaf_prims,
+                                        g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
                                         probe_pos, L, inv_d, (1u << RAY_TYPE_SHADOW), 0 /* root_node */, inter);
                 if (inter.mask != 0) {
                     // perform alpha test

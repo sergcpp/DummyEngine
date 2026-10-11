@@ -51,6 +51,8 @@ const uint CELLS_BUF_SLOT = 19;
 const uint ITEMS_BUF_SLOT = 20;
 const uint CACHE_ENTRIES_BUF_SLOT = 21;
 const uint CACHE_VOXELS_BUF_SLOT = 22;
+const uint BLAS_LEAF_PRIMS_BUF_SLOT = 23;
+const uint TLAS_LEAF_PRIMS_BUF_SLOT = 24;
 
 const uint OUT_IMG_SLOT = 0;
 

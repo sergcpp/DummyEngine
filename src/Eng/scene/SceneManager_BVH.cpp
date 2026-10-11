@@ -665,8 +665,17 @@ Ren::AccStructHandle Eng::SceneManager::Build_SWRT_BLAS(const AccStructure &acc)
     if (!scene_data_.persistent_data->swrt.rt_blas_buf) {
         scene_data_.persistent_data->swrt.rt_blas_buf = std::make_unique<Ren::ResizableBuffer>(
             ren_ctx_.api(), "SWRT BLAS", Ren::eBufType::Storage, 16, storages.buffers);
-        scene_data_.persistent_data->swrt.rt_blas_buf->Resize(uint32_t(1024 * sizeof(gpu_bvh2_node_t)), ren_ctx_.log());
+        scene_data_.persistent_data->swrt.rt_blas_buf->Resize(uint32_t(1024 * sizeof(gpu_cwbvh_node_t)),
+                                                              ren_ctx_.log());
         scene_data_.persistent_data->swrt.rt_blas_buf->AddView(Ren::eFormat::RGBA32F);
+    }
+    if (!scene_data_.persistent_data->swrt.rt_blas_leaf_prims_buf) {
+        scene_data_.persistent_data->swrt.rt_blas_leaf_prims_buf = std::make_unique<Ren::ResizableBuffer>(
+            ren_ctx_.api(), "SWRT BLAS Leaf Prims", Ren::eBufType::Texture, uint32_t(sizeof(uint32_t)),
+            storages.buffers);
+        scene_data_.persistent_data->swrt.rt_blas_leaf_prims_buf->Resize(uint32_t(1024 * sizeof(uint32_t)),
+                                                                         ren_ctx_.log());
+        scene_data_.persistent_data->swrt.rt_blas_leaf_prims_buf->AddView(Ren::eFormat::R32UI);
     }
 
     const uint32_t mesh_index = scene_data_.persistent_data->swrt.rt_meshes.Emplace();
@@ -709,13 +718,15 @@ Ren::AccStructHandle Eng::SceneManager::Build_SWRT_BLAS(const AccStructure &acc)
     Phy::split_settings_t s;
     s.oversplit_threshold = -1.0f;
     s.min_primitives_in_leaf = 8;
-    PreprocessPrims_SAH(temp_primitives, s, 2, temp_nodes, prim_indices);
+    PreprocessPrims_SAH(temp_primitives, s, 8, temp_nodes, prim_indices);
 
-    std::vector<gpu_bvh2_node_t> temp_bvh2_nodes;
-    ConvertToBVH2(temp_nodes, temp_bvh2_nodes);
+    std::vector<gpu_cwbvh_node_t> temp_cw_nodes;
+    std::vector<uint32_t> temp_leaf_prims; // 8-primitive block bases into prim_indices
+    [[maybe_unused]] const uint32_t root_node = FlattenCompactBVH_r(temp_nodes, 0, temp_cw_nodes, temp_leaf_prims);
+    assert(root_node == 0);
 
     const Ren::SubAllocation nodes_alloc = scene_data_.persistent_data->swrt.rt_blas_buf->AllocSubRegion(
-        uint32_t(temp_bvh2_nodes.size()) * sizeof(gpu_bvh2_node_t), sizeof(gpu_bvh2_node_t), {}, ren_ctx_.log());
+        uint32_t(temp_cw_nodes.size()) * sizeof(gpu_cwbvh_node_t), sizeof(gpu_cwbvh_node_t), {}, ren_ctx_.log());
     const auto &[rt_blas_buf_main, rt_blas_buf_cold] = scene_data_.persistent_data->swrt.rt_blas_buf->buffer();
 
     const Ren::SubAllocation prim_alloc = scene_data_.persistent_data->swrt.rt_prim_indices_buf->AllocSubRegion(
@@ -723,27 +734,29 @@ Ren::AccStructHandle Eng::SceneManager::Build_SWRT_BLAS(const AccStructure &acc)
     const auto &[rt_prim_indices_buf_main, rt_prim_indices_buf_cold] =
         scene_data_.persistent_data->swrt.rt_prim_indices_buf->buffer();
 
-    new_mesh.node_index = nodes_alloc.offset / sizeof(gpu_bvh2_node_t);
-    new_mesh.node_count = uint32_t(temp_bvh2_nodes.size());
+    const Ren::SubAllocation leaf_prims_alloc =
+        scene_data_.persistent_data->swrt.rt_blas_leaf_prims_buf->AllocSubRegion(
+            uint32_t(temp_leaf_prims.size()) * sizeof(uint32_t), sizeof(uint32_t), {}, ren_ctx_.log());
+    const auto &[rt_blas_leaf_prims_buf_main, rt_blas_leaf_prims_buf_cold] =
+        scene_data_.persistent_data->swrt.rt_blas_leaf_prims_buf->buffer();
+
+    new_mesh.node_index = nodes_alloc.offset / sizeof(gpu_cwbvh_node_t);
+    new_mesh.node_count = uint32_t(temp_cw_nodes.size());
     new_mesh.tris_index = prim_alloc.offset / sizeof(uint32_t);
     new_mesh.tris_count = uint32_t(prim_indices.size());
     new_mesh.vert_index = first_vertex;
 
-    // offset node indices
-    for (uint32_t i = 0; i < uint32_t(temp_bvh2_nodes.size()); ++i) {
-        gpu_bvh2_node_t &n = temp_bvh2_nodes[i];
-        if ((n.left_child & BVH2_PRIM_COUNT_BITS) == 0) {
-            assert(n.left_child < temp_bvh2_nodes.size());
-            n.left_child += new_mesh.node_index;
-        } else {
-            n.left_child += new_mesh.tris_index;
-        }
-        if ((n.right_child & BVH2_PRIM_COUNT_BITS) == 0) {
-            assert(n.right_child < temp_bvh2_nodes.size());
-            n.right_child += new_mesh.node_index;
-        } else {
-            n.right_child += new_mesh.tris_index;
-        }
+    // offset node & leaf payload indices
+    const uint32_t leaf_prims_index = leaf_prims_alloc.offset / sizeof(uint32_t);
+    for (uint32_t i = 0; i < uint32_t(temp_cw_nodes.size()); ++i) {
+        gpu_cwbvh_node_t &n = temp_cw_nodes[i];
+        // child_base lives in the low 24 bits, node_index is far below the imask bits
+        assert(cwbvh_child_base(n) + new_mesh.node_index < (1u << 24));
+        n.child_base_imask += new_mesh.node_index;
+        n.prim_base += leaf_prims_index;
+    }
+    for (uint32_t &p : temp_leaf_prims) {
+        p = new_mesh.tris_index + (p & PRIM_INDEX_BITS);
     }
 
     for (int i = 0; i < int(prim_indices.size()); ++i) {
@@ -760,8 +773,9 @@ Ren::AccStructHandle Eng::SceneManager::Build_SWRT_BLAS(const AccStructure &acc)
     }
     scene_data_.persistent_data->rt_blases.push_back(new_blas);
 
-    const auto total_nodes_size = uint32_t(temp_bvh2_nodes.size() * sizeof(gpu_bvh2_node_t));
+    const auto total_nodes_size = uint32_t(temp_cw_nodes.size() * sizeof(gpu_cwbvh_node_t));
     const auto total_prim_indices_size = uint32_t(prim_indices.size() * sizeof(uint32_t));
+    const auto total_leaf_prims_size = uint32_t(temp_leaf_prims.size() * sizeof(uint32_t));
 
     Ren::BufferMain rt_blas_stage_buf_main = {};
     Ren::BufferCold rt_blas_stage_buf_cold = {};
@@ -774,7 +788,7 @@ Ren::AccStructHandle Eng::SceneManager::Build_SWRT_BLAS(const AccStructure &acc)
 
     {
         uint8_t *rt_blas_stage = Buffer_Map(api, rt_blas_stage_buf_main, rt_blas_stage_buf_cold);
-        memcpy(rt_blas_stage, temp_bvh2_nodes.data(), total_nodes_size);
+        memcpy(rt_blas_stage, temp_cw_nodes.data(), total_nodes_size);
         Buffer_Unmap(api, rt_blas_stage_buf_main, rt_blas_stage_buf_cold);
     }
 
@@ -795,11 +809,29 @@ Ren::AccStructHandle Eng::SceneManager::Build_SWRT_BLAS(const AccStructure &acc)
         Buffer_Unmap(api, rt_prim_indices_stage_buf_main, rt_prim_indices_stage_buf_cold);
     }
 
+    Ren::BufferMain rt_leaf_prims_stage_buf_main = {};
+    Ren::BufferCold rt_leaf_prims_stage_buf_cold = {};
+    if (!Ren::Buffer_Init(api, rt_leaf_prims_stage_buf_main, rt_leaf_prims_stage_buf_cold,
+                          Ren::String{"SWRT BLAS Leaf Prims Upload"}, Ren::eBufType::Upload, total_leaf_prims_size,
+                          ren_ctx_.log())) {
+        ren_ctx_.log()->Error("Failed to initialize staging buffer for SWRT BLAS leaf prims");
+        return {};
+    }
+    SCOPE_EXIT({ Buffer_DestroyImmediately(api, rt_leaf_prims_stage_buf_main, rt_leaf_prims_stage_buf_cold); })
+
+    {
+        uint8_t *rt_leaf_prims_stage = Buffer_Map(api, rt_leaf_prims_stage_buf_main, rt_leaf_prims_stage_buf_cold);
+        memcpy(rt_leaf_prims_stage, temp_leaf_prims.data(), total_leaf_prims_size);
+        Buffer_Unmap(api, rt_leaf_prims_stage_buf_main, rt_leaf_prims_stage_buf_cold);
+    }
+
     Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
 
     CopyBufferToBuffer(api, rt_blas_stage_buf_main, 0, rt_blas_buf_main, nodes_alloc.offset, total_nodes_size, cmd_buf);
     CopyBufferToBuffer(api, rt_prim_indices_stage_buf_main, 0, rt_prim_indices_buf_main, prim_alloc.offset,
                        total_prim_indices_size, cmd_buf);
+    CopyBufferToBuffer(api, rt_leaf_prims_stage_buf_main, 0, rt_blas_leaf_prims_buf_main, leaf_prims_alloc.offset,
+                       total_leaf_prims_size, cmd_buf);
 
     ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
 
@@ -812,16 +844,26 @@ void Eng::SceneManager::Alloc_SWRT_TLAS() {
     auto &data = *scene_data_.persistent_data;
 
     data.rt_tlas_buf[int(eTLASIndex::Main)] = ren_ctx_.CreateBuffer(
-        Ren::String{"TLAS"}, Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh2_node_t)));
+        Ren::String{"TLAS"}, Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_cwbvh_node_t)));
     ren_ctx_.FindOrCreateBufferView(data.rt_tlas_buf[int(eTLASIndex::Main)], Ren::eFormat::RGBA32F);
+    data.rt_tlas_leaf_prims_buf[int(eTLASIndex::Main)] = ren_ctx_.CreateBuffer(
+        Ren::String{"TLAS Leaf Prims"}, Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(uint32_t)));
+    ren_ctx_.FindOrCreateBufferView(data.rt_tlas_leaf_prims_buf[int(eTLASIndex::Main)], Ren::eFormat::R32UI);
 
     data.rt_tlas_buf[int(eTLASIndex::Shadow)] = ren_ctx_.CreateBuffer(
-        Ren::String{"TLAS Shadow"}, Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh2_node_t)));
+        Ren::String{"TLAS Shadow"}, Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_cwbvh_node_t)));
     ren_ctx_.FindOrCreateBufferView(data.rt_tlas_buf[int(eTLASIndex::Shadow)], Ren::eFormat::RGBA32F);
+    data.rt_tlas_leaf_prims_buf[int(eTLASIndex::Shadow)] = ren_ctx_.CreateBuffer(
+        Ren::String{"TLAS Shadow Leaf Prims"}, Ren::eBufType::Storage,
+        uint32_t(MAX_RT_TLAS_NODES * sizeof(uint32_t)));
+    ren_ctx_.FindOrCreateBufferView(data.rt_tlas_leaf_prims_buf[int(eTLASIndex::Shadow)], Ren::eFormat::R32UI);
 
     data.rt_tlas_buf[int(eTLASIndex::Volume)] = ren_ctx_.CreateBuffer(
-        Ren::String{"TLAS Volume"}, Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh2_node_t)));
+        Ren::String{"TLAS Volume"}, Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_cwbvh_node_t)));
     ren_ctx_.FindOrCreateBufferView(data.rt_tlas_buf[int(eTLASIndex::Volume)], Ren::eFormat::RGBA32F);
+    data.rt_tlas_leaf_prims_buf[int(eTLASIndex::Volume)] = ren_ctx_.CreateBuffer(
+        Ren::String{"TLAS Volume Leaf Prims"}, Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(uint32_t)));
+    ren_ctx_.FindOrCreateBufferView(data.rt_tlas_leaf_prims_buf[int(eTLASIndex::Volume)], Ren::eFormat::R32UI);
 
     if (!data.swrt.rt_prim_indices_buf) {
         scene_data_.persistent_data->swrt.rt_prim_indices_buf = std::make_unique<Ren::ResizableBuffer>(
@@ -833,8 +875,14 @@ void Eng::SceneManager::Alloc_SWRT_TLAS() {
     if (!data.swrt.rt_blas_buf) {
         data.swrt.rt_blas_buf = std::make_unique<Ren::ResizableBuffer>(ren_ctx_.api(), "SWRT BLAS",
                                                                        Ren::eBufType::Texture, 16, storages.buffers);
-        data.swrt.rt_blas_buf->Resize(uint32_t(1024 * sizeof(gpu_bvh2_node_t)), ren_ctx_.log());
+        data.swrt.rt_blas_buf->Resize(uint32_t(1024 * sizeof(gpu_cwbvh_node_t)), ren_ctx_.log());
         data.swrt.rt_blas_buf->AddView(Ren::eFormat::RGBA32F);
+    }
+    if (!data.swrt.rt_blas_leaf_prims_buf) {
+        data.swrt.rt_blas_leaf_prims_buf = std::make_unique<Ren::ResizableBuffer>(
+            ren_ctx_.api(), "SWRT BLAS Leaf Prims", Ren::eBufType::Texture, uint32_t(sizeof(uint32_t)), storages.buffers);
+        data.swrt.rt_blas_leaf_prims_buf->Resize(uint32_t(1024 * sizeof(uint32_t)), ren_ctx_.log());
+        data.swrt.rt_blas_leaf_prims_buf->AddView(Ren::eFormat::R32UI);
     }
 }
 
@@ -1188,103 +1236,223 @@ uint32_t Eng::SceneManager::FlattenLightBVH_r(Ren::Span<const gpu_light_bvh_node
     return new_node_index;
 }
 
-uint32_t Eng::SceneManager::ConvertToBVH2(Ren::Span<const gpu_bvh_node_t> nodes,
-                                          std::vector<gpu_bvh2_node_t> &out_nodes) {
-    const uint32_t out_index = uint32_t(out_nodes.size());
+uint32_t Eng::SceneManager::FlattenCompactBVH_r(Ren::Span<const gpu_bvh_node_t> nodes, const uint32_t node_index,
+                                                std::vector<gpu_cwbvh_node_t> &out_nodes,
+                                                std::vector<uint32_t> &out_leaf_prims, const int at_index,
+                                                const uint32_t depth) {
+    using namespace SceneManagerInternal;
 
-    if (nodes.size() == 1) {
-        assert((nodes[0].prim_index & LEAF_NODE_BIT) != 0);
-        gpu_bvh2_node_t root_node = {};
+    const gpu_bvh_node_t &cur_node = nodes[node_index];
 
-        root_node.left_child = nodes[0].prim_index & PRIM_INDEX_BITS;
-        const uint32_t prim_count = std::max(nodes[0].prim_count & PRIM_COUNT_BITS, 2u);
-        assert(prim_count <= 8);
-        root_node.left_child |= (prim_count - 1) << 29;
-        root_node.right_child = root_node.left_child;
+    // The traversal stack holds at most one entry per level of the path - catch too-deep trees
+    // at build time instead of relying on a ray hitting the overflow assert during rendering.
+    assert(depth < uint32_t(MAX_STACK_SIZE) && "cwbvh tree too deep for the traversal stack");
 
-        const gpu_bvh_node_t &ch0 = nodes[0];
-
-        root_node.ch_data0[0] = ch0.bbox_min[0];
-        root_node.ch_data0[1] = ch0.bbox_max[0];
-        root_node.ch_data0[2] = ch0.bbox_min[1];
-        root_node.ch_data0[3] = ch0.bbox_max[1];
-        root_node.ch_data2[0] = ch0.bbox_min[2];
-        root_node.ch_data2[1] = ch0.bbox_max[2];
-
-        out_nodes.push_back(root_node);
-
-        return out_index;
+    // allocate new node (or use the slot pre-reserved by our parent for contiguous children)
+    uint32_t new_node_index;
+    if (at_index >= 0) {
+        new_node_index = uint32_t(at_index);
+    } else {
+        new_node_index = uint32_t(out_nodes.size());
+        out_nodes.emplace_back();
     }
 
-    std::vector<uint32_t> compacted_indices;
-    compacted_indices.resize(nodes.size());
-    uint32_t compacted_count = 0;
-    for (int i = 0; i < int(nodes.size()); ++i) {
-        compacted_indices[i] = compacted_count;
-        if ((nodes[i].prim_index & LEAF_NODE_BIT) == 0) {
-            ++compacted_count;
+    if (cur_node.prim_index & LEAF_NODE_BIT) {
+        // Single leaf tree - wrap it into a regular internal node to make sure root node is never a leaf
+        gpu_cwbvh_node_t &new_node = out_nodes[new_node_index];
+        new_node.child_base_imask = 0;
+        new_node.prim_base = uint32_t(out_leaf_prims.size());
+        out_leaf_prims.push_back(cur_node.prim_index);
+        new_node.meta4[0] = 0x40u; // slot 0: leaf child, rank 0
+        new_node.meta4[1] = 0;
+        new_node.bbox_min = cur_node.bbox_min;
+        { // the whole-box child encoding (0/255) must decode conservatively under the pow2 step
+            float bmin[3], bmax[3];
+            memcpy(bmin, &cur_node.bbox_min[0], 3 * sizeof(float));
+            memcpy(bmax, &cur_node.bbox_max[0], 3 * sizeof(float));
+            pow2Extents(bmin, bmax, new_node.ch_exp);
         }
+        for (int j = 0; j < 3; ++j) {
+            new_node.ch_bbox_min[j][0] = 0;
+            new_node.ch_bbox_max[j][0] = 0xff;
+        }
+        for (int j = 1; j < 8; ++j) {
+            // Init as infinite bounding box
+            new_node.ch_bbox_min[0][j] = new_node.ch_bbox_min[1][j] = new_node.ch_bbox_min[2][j] = 0xff;
+            new_node.ch_bbox_max[0][j] = new_node.ch_bbox_max[1][j] = new_node.ch_bbox_max[2][j] = 0;
+        }
+        return new_node_index;
     }
-    out_nodes.reserve(out_nodes.size() + compacted_count);
 
-    const uint32_t offset = uint32_t(out_nodes.size());
-    for (const gpu_bvh_node_t &n : nodes) {
-        gpu_bvh2_node_t new_node = {};
-        new_node.left_child = n.left_child;
-        new_node.right_child = n.right_child & RIGHT_CHILD_BITS;
-        if ((n.prim_index & LEAF_NODE_BIT) == 0) {
-            const gpu_bvh_node_t &ch0 = nodes[new_node.left_child];
-            const gpu_bvh_node_t &ch1 = nodes[new_node.right_child];
+    // Gather children 2 levels deep
 
-            if ((ch0.prim_index & LEAF_NODE_BIT) != 0) {
-                new_node.left_child = ch0.prim_index & PRIM_INDEX_BITS;
+    uint32_t children[8];
+    int children_count = 0;
 
-                const uint32_t prim_count = std::max(ch0.prim_count & PRIM_COUNT_BITS, 2u);
-                assert(prim_count <= 8);
-                new_node.left_child |= (prim_count - 1) << 29;
-                assert((new_node.left_child & BVH2_PRIM_COUNT_BITS) != 0);
-            } else {
-                new_node.left_child = compacted_indices[new_node.left_child];
-                new_node.left_child += offset;
-                assert((new_node.left_child & BVH2_PRIM_COUNT_BITS) == 0);
-                assert(new_node.left_child < out_nodes.capacity());
-            }
-            if ((ch1.prim_index & LEAF_NODE_BIT) != 0) {
-                new_node.right_child = ch1.prim_index & PRIM_INDEX_BITS;
+    const gpu_bvh_node_t &child0 = nodes[cur_node.left_child];
 
-                const uint32_t prim_count = std::max(ch1.prim_count & PRIM_COUNT_BITS, 2u);
-                assert(prim_count <= 8);
-                new_node.right_child |= (prim_count - 1) << 29;
-                assert((new_node.right_child & BVH2_PRIM_COUNT_BITS) != 0);
-            } else {
-                new_node.right_child = compacted_indices[new_node.right_child];
-                new_node.right_child += offset;
-                assert((new_node.right_child & BVH2_PRIM_COUNT_BITS) == 0);
-                assert(new_node.right_child < out_nodes.capacity());
-            }
+    if (child0.prim_index & LEAF_NODE_BIT) {
+        children[children_count++] = cur_node.left_child & LEFT_CHILD_BITS;
+    } else {
+        const gpu_bvh_node_t &child00 = nodes[child0.left_child];
+        const gpu_bvh_node_t &child01 = nodes[child0.right_child & RIGHT_CHILD_BITS];
 
-            new_node.ch_data0[0] = ch0.bbox_min[0];
-            new_node.ch_data0[1] = ch0.bbox_max[0];
-            new_node.ch_data0[2] = ch0.bbox_min[1];
-            new_node.ch_data0[3] = ch0.bbox_max[1];
+        if (child00.prim_index & LEAF_NODE_BIT) {
+            children[children_count++] = child0.left_child & LEFT_CHILD_BITS;
+        } else {
+            children[children_count++] = child00.left_child;
+            children[children_count++] = child00.right_child & RIGHT_CHILD_BITS;
+        }
 
-            new_node.ch_data1[0] = ch1.bbox_min[0];
-            new_node.ch_data1[1] = ch1.bbox_max[0];
-            new_node.ch_data1[2] = ch1.bbox_min[1];
-            new_node.ch_data1[3] = ch1.bbox_max[1];
-
-            new_node.ch_data2[0] = ch0.bbox_min[2];
-            new_node.ch_data2[1] = ch0.bbox_max[2];
-            new_node.ch_data2[2] = ch1.bbox_min[2];
-            new_node.ch_data2[3] = ch1.bbox_max[2];
-
-            out_nodes.push_back(new_node);
+        if (child01.prim_index & LEAF_NODE_BIT) {
+            children[children_count++] = child0.right_child & RIGHT_CHILD_BITS;
+        } else {
+            children[children_count++] = child01.left_child;
+            children[children_count++] = child01.right_child & RIGHT_CHILD_BITS;
         }
     }
 
-    assert(out_nodes.size() == out_nodes.capacity());
+    const gpu_bvh_node_t &child1 = nodes[cur_node.right_child & RIGHT_CHILD_BITS];
 
-    return out_index;
+    if (child1.prim_index & LEAF_NODE_BIT) {
+        children[children_count++] = cur_node.right_child & RIGHT_CHILD_BITS;
+    } else {
+        const gpu_bvh_node_t &child10 = nodes[child1.left_child];
+        const gpu_bvh_node_t &child11 = nodes[child1.right_child & RIGHT_CHILD_BITS];
+
+        if (child10.prim_index & LEAF_NODE_BIT) {
+            children[children_count++] = child1.left_child & LEFT_CHILD_BITS;
+        } else {
+            children[children_count++] = child10.left_child;
+            children[children_count++] = child10.right_child & RIGHT_CHILD_BITS;
+        }
+
+        if (child11.prim_index & LEAF_NODE_BIT) {
+            children[children_count++] = child1.right_child & RIGHT_CHILD_BITS;
+        } else {
+            children[children_count++] = child11.left_child;
+            children[children_count++] = child11.right_child & RIGHT_CHILD_BITS;
+        }
+    }
+
+    // Sort children in morton order
+    Ren::Vec3f children_centers[8], whole_box_min = {FLT_MAX}, whole_box_max = {-FLT_MAX};
+    for (int i = 0; i < children_count; i++) {
+        children_centers[i] = 0.5f * (nodes[children[i]].bbox_min + nodes[children[i]].bbox_max);
+        whole_box_min = Min(whole_box_min, children_centers[i]);
+        whole_box_max = Max(whole_box_max, children_centers[i]);
+    }
+
+    whole_box_max += Ren::Vec3f{0.001f};
+
+    const Ren::Vec3f scale = 2.0f / (whole_box_max - whole_box_min);
+
+    uint32_t sorted_children[8] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+                                   0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
+    for (int i = 0; i < children_count; i++) {
+        const Ren::Vec3f code = (children_centers[i] - whole_box_min) * scale;
+
+        const auto x = uint32_t(code[0]), y = uint32_t(code[1]), z = uint32_t(code[2]);
+
+        uint32_t mort = (z << 2) | (y << 1) | (x << 0);
+        while (sorted_children[mort] != 0xffffffff) {
+            mort = (mort + 1) % 8;
+        }
+
+        sorted_children[mort] = children[i];
+    }
+
+    // NOTE: 'new_node' must not be held across recursive calls - out_nodes can reallocate!
+    float node_min[3], node_max[3];
+    int8_t node_exp[3];
+    memcpy(node_min, &cur_node.bbox_min[0], 3 * sizeof(float));
+    memcpy(node_max, &cur_node.bbox_max[0], 3 * sizeof(float));
+    pow2Extents(node_min, node_max, node_exp);
+
+    uint8_t new_ch_min[3][8], new_ch_max[3][8];
+
+    // Implicit child addressing (CWBVH paper): pre-reserve contiguous slots for the internal
+    // children, in slot order, so child i resolves to child_base + popc(internal slots below i).
+    uint8_t internal_mask = 0;
+    int internal_count = 0;
+    for (int i = 0; i < 8; i++) {
+        if (sorted_children[i] != 0xffffffff && !(nodes[sorted_children[i]].prim_index & LEAF_NODE_BIT)) {
+            internal_mask |= uint8_t(1 << i);
+            ++internal_count;
+        }
+    }
+    const uint32_t child_base = uint32_t(out_nodes.size());
+    out_nodes.resize(size_t(child_base) + size_t(internal_count));
+
+    // meta4 packing (CWBVH paper): leaf primitive references go to out_leaf_prims, contiguous
+    // per parent in slot order (leaf_prims[prim_base + rank]). Scene leaves are 8-primitive
+    // blocks (primitive_alignment), the payload is the block base.
+    const uint32_t prim_base = uint32_t(out_leaf_prims.size());
+    uint8_t meta_bytes[8] = {};
+    int leaf_rank = 0;
+    for (int i = 0; i < 8; i++) {
+        if (sorted_children[i] == 0xffffffff) {
+            continue;
+        }
+        if (nodes[sorted_children[i]].prim_index & LEAF_NODE_BIT) {
+            assert((nodes[sorted_children[i]].prim_count & PRIM_COUNT_BITS) <= 8);
+            out_leaf_prims.push_back(nodes[sorted_children[i]].prim_index);
+            meta_bytes[i] = uint8_t(0x40 | leaf_rank++);
+        } else {
+            meta_bytes[i] = uint8_t(0x80 | i);
+        }
+    }
+    assert(leaf_rank <= 0x3f);
+
+    for (int i = 0; i < 8; i++) {
+        if (sorted_children[i] == 0xffffffff) {
+            // Init as infinite bounding box
+            new_ch_min[0][i] = new_ch_min[1][i] = new_ch_min[2][i] = 0xff;
+            new_ch_max[0][i] = new_ch_max[1][i] = new_ch_max[2][i] = 0;
+            continue;
+        }
+
+        const gpu_bvh_node_t &child = nodes[sorted_children[i]];
+
+        for (int j = 0; j < 3; ++j) {
+            new_ch_min[j][i] = uint8_t(floorf(quantize(child.bbox_min[j], node_min[j], node_max[j])));
+            new_ch_max[j][i] = uint8_t(ceilf(quantize(child.bbox_max[j], node_min[j], node_max[j])));
+            // valid scene children always have finite boxes - the compacted traversal relies on
+            // this (no degenerate 0xff/0x00 'infinite box' encoding outside the light tree)
+            assert(new_ch_min[j][i] <= new_ch_max[j][i]);
+        }
+    }
+
+    // Recurse after this node's children arrays are laid out; the internal-child slots were
+    // pre-reserved above, so the recursion cannot move them (never hold a reference across it).
+    int child_rank = 0;
+    for (int i = 0; i < 8; i++) {
+        if (sorted_children[i] != 0xffffffff && !(nodes[sorted_children[i]].prim_index & LEAF_NODE_BIT)) {
+            FlattenCompactBVH_r(nodes, sorted_children[i], out_nodes, out_leaf_prims, int(child_base + child_rank),
+                                depth + 1);
+            ++child_rank;
+        }
+    }
+
+    gpu_cwbvh_node_t &new_node = out_nodes[new_node_index];
+    assert(child_rank == internal_count);
+    // child_base lives in the low 24 bits of the packed word
+    assert(child_base < (1u << 24));
+    new_node.child_base_imask = child_base | (uint32_t(internal_mask) << 24);
+    new_node.prim_base = prim_base;
+    new_node.meta4[0] = uint32_t(meta_bytes[0]) | (uint32_t(meta_bytes[1]) << 8) | (uint32_t(meta_bytes[2]) << 16) |
+                        (uint32_t(meta_bytes[3]) << 24);
+    new_node.meta4[1] = uint32_t(meta_bytes[4]) | (uint32_t(meta_bytes[5]) << 8) | (uint32_t(meta_bytes[6]) << 16) |
+                        (uint32_t(meta_bytes[7]) << 24);
+    new_node.bbox_min = Ren::Vec3f{node_min[0], node_min[1], node_min[2]};
+    memcpy(new_node.ch_exp, node_exp, 3);
+    new_node.ch_exp[3] = 0;
+    for (int j = 0; j < 3; ++j) {
+        memcpy(new_node.ch_bbox_min[j], new_ch_min[j], 8);
+        memcpy(new_node.ch_bbox_max[j], new_ch_max[j], 8);
+    }
+
+    return new_node_index;
 }
 
 void Eng::SceneManager::RebuildLightTree() {

@@ -39,6 +39,10 @@ void Eng::Renderer::AddGICachePasses(const PersistentGpuData &persistent_data,
         if (!ctx_.capabilities.hwrt) {
             data->swrt.root_node = acc_structs.swrt.rt_root_node;
             data->swrt.rt_blas = rt_gi_cache.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_buf, stage);
+            data->swrt.blas_leaf_prims =
+                rt_gi_cache.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_leaf_prims, stage);
+            data->swrt.tlas_leaf_prims =
+                rt_gi_cache.AddStorageReadonlyInput(acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Main)], stage);
             data->swrt.prim_ndx = rt_gi_cache.AddStorageReadonlyInput(acc_structs.swrt.rt_prim_indices, stage);
             data->swrt.mesh_instances = rt_gi_cache.AddStorageReadonlyInput(rt_obj_instances_res, stage);
         }
@@ -463,6 +467,10 @@ void Eng::Renderer::AddGICachePasses(const PersistentGpuData &persistent_data,
             data->swrt.root_node = acc_structs.swrt.rt_root_node;
             data->swrt.rt_blas_buf =
                 sample_lights.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_buf, Stg::ComputeShader);
+            data->swrt.blas_leaf_prims =
+                sample_lights.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_leaf_prims, Stg::ComputeShader);
+            data->swrt.tlas_leaf_prims = sample_lights.AddStorageReadonlyInput(
+                acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Main)], Stg::ComputeShader);
             data->swrt.prim_ndx =
                 sample_lights.AddStorageReadonlyInput(acc_structs.swrt.rt_prim_indices, Stg::ComputeShader);
             data->swrt.mesh_instances = sample_lights.AddStorageReadonlyInput(rt_obj_instances_res, Stg::ComputeShader);

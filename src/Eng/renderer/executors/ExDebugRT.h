@@ -37,6 +37,8 @@ class ExDebugRT final : public FgExecutor {
         struct {
             uint32_t root_node = 0xffffffff;
             FgBufROHandle rt_blas;
+            FgBufROHandle blas_leaf_prims;
+            FgBufROHandle tlas_leaf_prims;
             FgBufROHandle prim_ndx;
             FgBufROHandle mesh_instances;
         } swrt;

@@ -64,6 +64,8 @@ void Eng::ExRTSpecular::Execute_SWRT(const FgContext &fg) {
     const Ren::BufferROHandle vtx_buf2 = fg.AccessROBuffer(args_->vtx_buf2);
     const Ren::BufferROHandle ndx_buf = fg.AccessROBuffer(args_->ndx_buf);
     const Ren::BufferROHandle rt_blas = fg.AccessROBuffer(args_->swrt.rt_blas);
+    const Ren::BufferROHandle blas_leaf_prims = fg.AccessROBuffer(args_->swrt.blas_leaf_prims);
+    const Ren::BufferROHandle tlas_leaf_prims = fg.AccessROBuffer(args_->swrt.tlas_leaf_prims);
     const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(args_->shared_data);
     const Ren::ImageROHandle depth = fg.AccessROImage(args_->depth);
     const Ren::ImageROHandle normal = fg.AccessROImage(args_->normal);
@@ -99,6 +101,8 @@ void Eng::ExRTSpecular::Execute_SWRT(const FgContext &fg) {
         {Ren::eBindTarget::SBufRO, RTSpecular::RAY_LIST_SLOT, ray_list},
         {Ren::eBindTarget::UTBuf, RTSpecular::BLAS_BUF_SLOT, rt_blas},
         {Ren::eBindTarget::UTBuf, RTSpecular::TLAS_BUF_SLOT, rt_tlas},
+        {Ren::eBindTarget::UTBuf, RTSpecular::BLAS_LEAF_PRIMS_BUF_SLOT, blas_leaf_prims},
+        {Ren::eBindTarget::UTBuf, RTSpecular::TLAS_LEAF_PRIMS_BUF_SLOT, tlas_leaf_prims},
         {Ren::eBindTarget::UTBuf, RTSpecular::PRIM_NDX_BUF_SLOT, prim_ndx},
         {Ren::eBindTarget::UTBuf, RTSpecular::MESH_INSTANCES_BUF_SLOT, mesh_instances},
         {Ren::eBindTarget::SBufRO, RTSpecular::GEO_DATA_BUF_SLOT, geo_data},

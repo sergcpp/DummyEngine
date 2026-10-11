@@ -1,5 +1,6 @@
 #ifndef SWRT_COMMON_GLSL
 #define SWRT_COMMON_GLSL
+#extension GL_EXT_control_flow_attributes : enable
 
 #include "_cs_common.glsl"
 
@@ -9,6 +10,14 @@
 
 #ifndef SWRT_SUBGROUP
     #define SWRT_SUBGROUP 0
+#endif
+
+#if SWRT_SUBGROUP
+    #define SUBGROUP_ALL(c) subgroupAll(c)
+    #define SUBGROUP_ANY(c) subgroupAny(c)
+#else
+    #define SUBGROUP_ALL(c) (c)
+    #define SUBGROUP_ANY(c) (c)
 #endif
 
 int IntersectTri(vec3 o, vec3 d, vec3 v0, vec3 v1, vec3 v2, out float t, out float u, out float v) {
@@ -87,21 +96,6 @@ const uint SEP_AXIS_BITS = (3u << 30); // 0b11u
 const uint PRIM_COUNT_BITS = ~SEP_AXIS_BITS;
 const uint RIGHT_CHILD_BITS = ~SEP_AXIS_BITS;
 
-const uint BVH2_PRIM_COUNT_BITS = (7u << 29); // 0b111u
-const uint BVH2_PRIM_INDEX_BITS = ~BVH2_PRIM_COUNT_BITS;
-
-struct bvh_node_t {
-    vec4 bbox_min; // w is prim_index/left_child
-    vec4 bbox_max; // w is prim_count/right_child
-};
-
-struct bvh2_node_t {
-    vec4 ch_data0;  // [ ch0.min.x, ch0.max.x, ch0.min.y, ch0.max.y ]
-    vec4 ch_data1;  // [ ch1.min.x, ch1.max.x, ch1.min.y, ch1.max.y ]
-    vec4 ch_data2;  // [ ch0.min.z, ch0.max.z, ch1.min.z, ch1.max.z ]
-    uvec4 ch_data3; // x - left child, y - right child
-};
-
 struct mesh_instance_t {
     vec4 bbox_min; // w is geo_index
     vec4 bbox_max; // w is mesh_index
@@ -118,11 +112,83 @@ struct hit_data_t {
     float tmin, tmax, u, v;
 };
 
-#define near_child(rd, n)   \
-    (rd)[floatBitsToUint(n.bbox_max.w) >> 30] < 0 ? (floatBitsToUint(n.bbox_max.w) & RIGHT_CHILD_BITS) : floatBitsToUint(n.bbox_min.w)
+//
+// Compact (CWBVH-style) node helpers - mirror the CPU side (Renderer_Structs.h)
+//
 
-#define far_child(rd, n)    \
-    (rd)[floatBitsToUint(n.bbox_max.w) >> 30] < 0 ? floatBitsToUint(n.bbox_min.w) : (floatBitsToUint(n.bbox_max.w) & RIGHT_CHILD_BITS)
+// Per-axis quantization step 2^ch_exp[axis] (CWBVH paper trick): sign-extend the stored int8
+// exponent and place it in the float exponent field. ch_exp is always in [-126, 127].
+float cwbvh_step(const uint ch_exp, const uint axis) {
+    const uint b = (ch_exp >> (8u * axis)) & 0xffu;
+    return uintBitsToFloat((((b ^ 0x80u) - 1u) & 0xffu) << 23u);
+}
+
+// meta4 byte of child slot i: 0 = empty slot, 0x40|rank = leaf child, 0x80|i = internal child
+uint cwbvh_meta(const cwbvh_node_t n, const uint i) {
+    return (i < 4u ? n.meta4_0 : n.meta4_1) >> (8u * (i & 3u)) & 0xffu;
+}
+
+// Internal children are stored contiguously - slot i resolves to child_base + popc(internal slots below i)
+uint cwbvh_internal_child(const cwbvh_node_t n, const uint i) {
+    const uint imask = n.child_base_imask >> 24u;
+    return (n.child_base_imask & 0x00ffffffu) + uint(bitCount(imask & ~(0xffu << i)));
+}
+
+cwbvh_node_t FetchCWBVHNode(samplerBuffer nodes_buf, const int li) {
+    cwbvh_node_t ret;
+    const uvec4 data0 = floatBitsToUint(texelFetch(nodes_buf, int(li * int(CWBVH_NODE_BUF_STRIDE) + 0)));
+    ret.bbox_min[0] = uintBitsToFloat(data0.x);
+    ret.bbox_min[1] = uintBitsToFloat(data0.y);
+    ret.bbox_min[2] = uintBitsToFloat(data0.z);
+    ret.ch_bbox_min[0][0] = data0.w;
+    const uvec4 data1 = floatBitsToUint(texelFetch(nodes_buf, int(li * int(CWBVH_NODE_BUF_STRIDE) + 1)));
+    ret.ch_bbox_min[0][1] = data1.x;
+    ret.ch_bbox_min[1][0] = data1.y;
+    ret.ch_bbox_min[1][1] = data1.z;
+    ret.ch_bbox_min[2][0] = data1.w;
+    const uvec4 data2 = floatBitsToUint(texelFetch(nodes_buf, int(li * int(CWBVH_NODE_BUF_STRIDE) + 2)));
+    ret.ch_bbox_min[2][1] = data2.x;
+    ret.ch_bbox_max[0][0] = data2.y;
+    ret.ch_bbox_max[0][1] = data2.z;
+    ret.ch_bbox_max[1][0] = data2.w;
+    const uvec4 data3 = floatBitsToUint(texelFetch(nodes_buf, int(li * int(CWBVH_NODE_BUF_STRIDE) + 3)));
+    ret.ch_bbox_max[1][1] = data3.x;
+    ret.ch_bbox_max[2][0] = data3.y;
+    ret.ch_bbox_max[2][1] = data3.z;
+    ret.ch_exp = data3.w;
+    const uvec4 data4 = floatBitsToUint(texelFetch(nodes_buf, int(li * int(CWBVH_NODE_BUF_STRIDE) + 4)));
+    ret.child_base_imask = data4.x;
+    ret.prim_base = data4.y;
+    ret.meta4_0 = data4.z;
+    ret.meta4_1 = data4.w;
+    return ret;
+}
+
+// The hit mask is in *direction key space* (bit i ^ flip_bits), so draining it with findMSB()
+// visits the octant closest to the ray origin first.
+uint cwbvh_child_hit_mask(const cwbvh_node_t n, vec3 inv_d, vec3 neg_inv_do, float tmin, float tmax,
+                          const uint flip_bits) {
+    const vec3 _step = vec3(cwbvh_step(n.ch_exp, 0u), cwbvh_step(n.ch_exp, 1u), cwbvh_step(n.ch_exp, 2u));
+
+    uint mask = 0u;
+    for (uint i = 0; i < 8; ++i) {
+        // empty slots are marked by a zero meta4 byte; scene children always have finite boxes
+        if (cwbvh_meta(n, i) == 0u) {
+            continue;
+        }
+        const vec3 bbox_min = vec3(n.bbox_min[0] + float((n.ch_bbox_min[0][i / 4u] >> (8u * (i % 4u))) & 0xffu) * _step[0],
+                                   n.bbox_min[1] + float((n.ch_bbox_min[1][i / 4u] >> (8u * (i % 4u))) & 0xffu) * _step[1],
+                                   n.bbox_min[2] + float((n.ch_bbox_min[2][i / 4u] >> (8u * (i % 4u))) & 0xffu) * _step[2]);
+        const vec3 bbox_max = vec3(n.bbox_min[0] + float((n.ch_bbox_max[0][i / 4u] >> (8u * (i % 4u))) & 0xffu) * _step[0],
+                                   n.bbox_min[1] + float((n.ch_bbox_max[1][i / 4u] >> (8u * (i % 4u))) & 0xffu) * _step[1],
+                                   n.bbox_min[2] + float((n.ch_bbox_max[2][i / 4u] >> (8u * (i % 4u))) & 0xffu) * _step[2]);
+
+        if (bbox_test(inv_d, neg_inv_do, tmin, tmax, bbox_min, bbox_max)) {
+            mask |= (1u << (i ^ flip_bits));
+        }
+    }
+    return mask;
+}
 
 void IntersectTris_ClosestHit(samplerBuffer vtx_positions, usamplerBuffer vtx_indices, usamplerBuffer prim_indices,
                               vec3 ro, vec3 rd, int tri_start, int tri_end, uint first_vertex,
@@ -151,141 +217,117 @@ void IntersectTris_ClosestHit(samplerBuffer vtx_positions, usamplerBuffer vtx_in
 }
 
 #ifndef MAX_STACK_SIZE
-    #define MAX_STACK_SIZE 32
+    #define MAX_STACK_SIZE 64
 #endif
 
 shared uint g_stack[64][MAX_STACK_SIZE];
 
-void Traverse_BLAS_WithStack(samplerBuffer blas_nodes, samplerBuffer vtx_positions, usamplerBuffer vtx_indices, usamplerBuffer prim_indices,
+// BLAS leaves reference 8-primitive blocks in prim_indices through blas_leaf_prims
+// (payload = block base, baked with the mesh's prim indices offset)
+void Traverse_BLAS_WithStack(samplerBuffer blas_nodes, usamplerBuffer blas_leaf_prims, samplerBuffer vtx_positions,
+                             usamplerBuffer vtx_indices, usamplerBuffer prim_indices,
                              vec3 ro, vec3 rd, vec3 inv_d, int obj_index, uint node_index,
                              uint first_vertex, uint stack_size, inout hit_data_t inter, uint geo_index_count) {
     const vec3 neg_inv_do = -inv_d * ro;
+    const uint flip_bits = (rd.x < 0.0 ? 1u : 0u) | (rd.y < 0.0 ? 2u : 0u) | (rd.z < 0.0 ? 4u : 0u);
 
     const uint initial_stack_size = stack_size;
-    g_stack[gl_LocalInvocationIndex][stack_size++] = 0x1fffffffu;
+    g_stack[gl_LocalInvocationIndex][stack_size++] = node_index;
 
-    uint cur = node_index;
-    while (stack_size != initial_stack_size) {
-        uint leaf_node = 0;
-        while (stack_size != initial_stack_size && (cur & BVH2_PRIM_COUNT_BITS) == 0) {
-            const vec4 ch_data0 = texelFetch(blas_nodes, int(BVH2_NODE_BUF_STRIDE * cur + 0));
-            const vec4 ch_data1 = texelFetch(blas_nodes, int(BVH2_NODE_BUF_STRIDE * cur + 1));
-            const vec4 ch_data2 = texelFetch(blas_nodes, int(BVH2_NODE_BUF_STRIDE * cur + 2));
-            const uvec4 ch_data3 = floatBitsToUint(texelFetch(blas_nodes, int(BVH2_NODE_BUF_STRIDE * cur + 3)));
+    uint index = 0u;
+    while (true) {
+        while (true) {
+            if ((index & LEAF_NODE_BIT) == 0 && stack_size != initial_stack_size) {
+                index = g_stack[gl_LocalInvocationIndex][--stack_size];
+                [[flatten]] if ((index & LEAF_NODE_BIT) != 0) {
+                    continue;
+                }
 
-            uvec2 children = ch_data3.xy;
+                const cwbvh_node_t n = FetchCWBVHNode(blas_nodes, int(index));
 
-            const vec3 ch0_min = vec3(ch_data0[0], ch_data0[2], ch_data2[0]);
-            const vec3 ch0_max = vec3(ch_data0[1], ch_data0[3], ch_data2[1]);
+                uint mask = cwbvh_child_hit_mask(n, inv_d, neg_inv_do, inter.tmin, inter.tmax, flip_bits);
+                while (mask != 0u) {
+                    const uint key = uint(findMSB(mask));
+                    mask ^= 1u << key;
 
-            const vec3 ch1_min = vec3(ch_data1[0], ch_data1[2], ch_data2[2]);
-            const vec3 ch1_max = vec3(ch_data1[1], ch_data1[3], ch_data2[3]);
-
-            float ch0_dist, ch1_dist;
-            const bool ch0_res = bbox_test(inv_d, neg_inv_do, inter.tmin, inter.tmax, ch0_min, ch0_max, ch0_dist);
-            const bool ch1_res = bbox_test(inv_d, neg_inv_do, inter.tmin, inter.tmax, ch1_min, ch1_max, ch1_dist);
-
-            if (!ch0_res && !ch1_res) {
-                cur = g_stack[gl_LocalInvocationIndex][--stack_size];
-            } else {
-                cur = ch0_res ? children[0] : children[1];
-                if (ch0_res && ch1_res) {
-                    if (ch1_dist < ch0_dist) {
-                        const uint temp = cur;
-                        cur = children[1];
-                        children[1] = temp;
+                    const uint i = key ^ flip_bits;
+                    const uint meta = cwbvh_meta(n, i);
+                    if ((meta & 0x80u) != 0u) {
+                        g_stack[gl_LocalInvocationIndex][stack_size++] = cwbvh_internal_child(n, i);
+                    } else {
+                        // leaf child: meta4 rank -> the parent's payload block (8-primitive block base)
+                        const uint prim_start = (n.prim_base + (meta & 0x3fu)) | LEAF_NODE_BIT;
+                        if ((index & LEAF_NODE_BIT) == 0) {
+                            index = prim_start;
+                        } else {
+                            g_stack[gl_LocalInvocationIndex][stack_size++] = prim_start;
+                        }
                     }
-                    g_stack[gl_LocalInvocationIndex][stack_size++] = children[1];
                 }
             }
-            if ((cur & BVH2_PRIM_COUNT_BITS) != 0 && (leaf_node & BVH2_PRIM_COUNT_BITS) == 0) {
-                leaf_node = cur;
-                cur = g_stack[gl_LocalInvocationIndex][--stack_size];
-            }
-#if SWRT_SUBGROUP
-            if (subgroupAll((leaf_node & BVH2_PRIM_COUNT_BITS) != 0)) {
+
+            if (SUBGROUP_ALL((index & LEAF_NODE_BIT) != 0 || stack_size == initial_stack_size)) {
                 break;
             }
-#else
-            if ((leaf_node & BVH2_PRIM_COUNT_BITS) != 0) {
-                break;
-            }
-#endif
         }
-        while ((leaf_node & BVH2_PRIM_COUNT_BITS) != 0) {
-            const int tri_beg = int(leaf_node & BVH2_PRIM_INDEX_BITS),
-                      tri_end = int(tri_beg + ((leaf_node & BVH2_PRIM_COUNT_BITS) >> 29) + 1);
+
+        if ((index & LEAF_NODE_BIT) != 0) {
+            const int tri_start = int(texelFetch(blas_leaf_prims, int(index & PRIM_INDEX_BITS)).x);
+            index = 0u;
 
             IntersectTris_ClosestHit(vtx_positions, vtx_indices, prim_indices, ro, rd,
-                                     tri_beg, tri_end, first_vertex, obj_index, inter, geo_index_count);
+                                     tri_start, tri_start + 8, first_vertex, obj_index, inter, geo_index_count);
+        }
 
-            leaf_node = cur;
-            if ((cur & BVH2_PRIM_COUNT_BITS) != 0) {
-                cur = g_stack[gl_LocalInvocationIndex][--stack_size];
-            }
+        if (SUBGROUP_ALL((index & LEAF_NODE_BIT) == 0 && stack_size == initial_stack_size)) {
+            break;
         }
     }
 }
 
 
-void Traverse_TLAS_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_nodes, samplerBuffer mesh_instances, samplerBuffer vtx_positions,
-                             usamplerBuffer vtx_indices, usamplerBuffer prim_indices, vec3 orig_ro, vec3 orig_rd, vec3 orig_inv_rd, uint ray_flags, uint node_index,
-                             inout hit_data_t inter) {
+// TLAS leaves reference mesh instances through tlas_leaf_prims
+void Traverse_TLAS_WithStack(samplerBuffer tlas_nodes, usamplerBuffer tlas_leaf_prims, samplerBuffer blas_nodes,
+                             usamplerBuffer blas_leaf_prims, samplerBuffer mesh_instances, samplerBuffer vtx_positions,
+                             usamplerBuffer vtx_indices, usamplerBuffer prim_indices, vec3 orig_ro, vec3 orig_rd,
+                             vec3 orig_inv_rd, uint ray_flags, uint node_index, inout hit_data_t inter) {
     const vec3 orig_neg_inv_do = -orig_inv_rd * orig_ro;
+    const uint flip_bits = (orig_rd.x < 0.0 ? 1u : 0u) | (orig_rd.y < 0.0 ? 2u : 0u) | (orig_rd.z < 0.0 ? 4u : 0u);
 
     uint stack_size = 0;
-    g_stack[gl_LocalInvocationIndex][stack_size++] = 0x1fffffffu;
+    g_stack[gl_LocalInvocationIndex][stack_size++] = node_index;
 
-    uint cur = node_index;
-    while (stack_size != 0) {
-        uint leaf_node = 0;
-        while (stack_size != 0 && (cur & BVH2_PRIM_COUNT_BITS) == 0) {
-            const vec4 ch_data0 = texelFetch(tlas_nodes, int(BVH2_NODE_BUF_STRIDE * cur + 0));
-            const vec4 ch_data1 = texelFetch(tlas_nodes, int(BVH2_NODE_BUF_STRIDE * cur + 1));
-            const vec4 ch_data2 = texelFetch(tlas_nodes, int(BVH2_NODE_BUF_STRIDE * cur + 2));
-            const uvec4 ch_data3 = floatBitsToUint(texelFetch(tlas_nodes, int(BVH2_NODE_BUF_STRIDE * cur + 3)));
+    uint index = 0u;
+    while (true) {
+        while (SUBGROUP_ANY((index & LEAF_NODE_BIT) == 0 && stack_size != 0u)) {
+            if ((index & LEAF_NODE_BIT) == 0 && stack_size != 0u) {
+                index = g_stack[gl_LocalInvocationIndex][--stack_size];
+                [[flatten]] if ((index & LEAF_NODE_BIT) != 0) {
+                    continue;
+                }
 
-            uvec2 children = ch_data3.xy;
+                const cwbvh_node_t n = FetchCWBVHNode(tlas_nodes, int(index));
 
-            const vec3 ch0_min = vec3(ch_data0[0], ch_data0[2], ch_data2[0]);
-            const vec3 ch0_max = vec3(ch_data0[1], ch_data0[3], ch_data2[1]);
+                uint mask = cwbvh_child_hit_mask(n, orig_inv_rd, orig_neg_inv_do, inter.tmin, inter.tmax, flip_bits);
+                while (mask != 0u) {
+                    const uint key = uint(findMSB(mask));
+                    mask ^= 1u << key;
 
-            const vec3 ch1_min = vec3(ch_data1[0], ch_data1[2], ch_data2[2]);
-            const vec3 ch1_max = vec3(ch_data1[1], ch_data1[3], ch_data2[3]);
-
-            float ch0_dist, ch1_dist;
-            const bool ch0_res = bbox_test(orig_inv_rd, orig_neg_inv_do, inter.tmin, inter.tmax, ch0_min, ch0_max, ch0_dist);
-            const bool ch1_res = bbox_test(orig_inv_rd, orig_neg_inv_do, inter.tmin, inter.tmax, ch1_min, ch1_max, ch1_dist);
-
-            if (!ch0_res && !ch1_res) {
-                cur = g_stack[gl_LocalInvocationIndex][--stack_size];
-            } else {
-                cur = ch0_res ? children[0] : children[1];
-                if (ch0_res && ch1_res) {
-                    if (ch1_dist < ch0_dist) {
-                        const uint temp = cur;
-                        cur = children[1];
-                        children[1] = temp;
+                    const uint i = key ^ flip_bits;
+                    const uint meta = cwbvh_meta(n, i);
+                    if ((meta & 0x80u) != 0u) {
+                        g_stack[gl_LocalInvocationIndex][stack_size++] = cwbvh_internal_child(n, i);
+                    } else {
+                        // leaf child: TLAS leaves are single mesh instances (meta4 rank -> payload)
+                        g_stack[gl_LocalInvocationIndex][stack_size++] = (n.prim_base + (meta & 0x3fu)) | LEAF_NODE_BIT;
                     }
-                    g_stack[gl_LocalInvocationIndex][stack_size++] = children[1];
                 }
             }
-            if ((cur & BVH2_PRIM_COUNT_BITS) != 0 && (leaf_node & BVH2_PRIM_COUNT_BITS) == 0) {
-                leaf_node = cur;
-                cur = g_stack[gl_LocalInvocationIndex][--stack_size];
-            }
-#if SWRT_SUBGROUP
-            if (subgroupAll((leaf_node & BVH2_PRIM_COUNT_BITS) != 0)) {
-                break;
-            }
-#else
-            if ((leaf_node & BVH2_PRIM_COUNT_BITS) != 0) {
-                break;
-            }
-#endif
         }
-        while ((leaf_node & BVH2_PRIM_COUNT_BITS) != 0) {
-            const uint mi_index = (leaf_node & BVH2_PRIM_INDEX_BITS);
+
+        if ((index & LEAF_NODE_BIT) != 0) {
+            const uint mi_index = texelFetch(tlas_leaf_prims, int(index & PRIM_INDEX_BITS)).x;
+            index = 0u;
 
             const uvec4 mi_data = floatBitsToUint(texelFetch(mesh_instances, int(SWRT_MESH_INSTANCE_BUF_STRIDE * mi_index + 0)));
             const uint mi_visibility = mi_data.x, mi_node_index = mi_data.y, mi_vindex = mi_data.z, mi_geo_index_count = mi_data.w;
@@ -298,14 +340,13 @@ void Traverse_TLAS_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_nodes,
                 const vec3 rd = (inv_transform * vec4(orig_rd, 0.0)).xyz;
                 const vec3 inv_d = safe_invert(rd);
 
-                Traverse_BLAS_WithStack(blas_nodes, vtx_positions, vtx_indices, prim_indices, ro, rd, inv_d, int(mi_index), mi_node_index, mi_vindex.x,
-                                        stack_size, inter, mi_geo_index_count);
+                Traverse_BLAS_WithStack(blas_nodes, blas_leaf_prims, vtx_positions, vtx_indices, prim_indices, ro, rd, inv_d,
+                                        int(mi_index), mi_node_index, mi_vindex.x, stack_size, inter, mi_geo_index_count);
             }
+        }
 
-            leaf_node = cur;
-            if ((cur & BVH2_PRIM_COUNT_BITS) != 0) {
-                cur = g_stack[gl_LocalInvocationIndex][--stack_size];
-            }
+        if (SUBGROUP_ALL(stack_size == 0u)) {
+            break;
         }
     }
 }

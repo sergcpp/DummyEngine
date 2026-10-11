@@ -137,7 +137,7 @@ const uint MAX_RT_OBJ_INSTANCES_TOTAL = 4096;
 const uint MAX_RT_TLAS_NODES = 8192; // (4096 + 2048 + 1024 + ...)
 
 const uint DECALS_BUF_STRIDE = 7;
-const uint BVH2_NODE_BUF_STRIDE = 4;
+const uint CWBVH_NODE_BUF_STRIDE = 5;  // 80 B compact wide BVH nodes (see Eng::gpu_cwbvh_node_t)
 const uint SWRT_MESH_INSTANCE_BUF_STRIDE = 7;
 const uint HWRT_MESH_INSTANCE_BUF_STRIDE = 4;
 

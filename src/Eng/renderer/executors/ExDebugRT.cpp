@@ -42,6 +42,8 @@ void Eng::ExDebugRT::Execute_SWRT(const FgContext &fg) {
     const Ren::BufferROHandle lights = fg.AccessROBuffer(args_->lights);
     const Ren::BufferROHandle rt_tlas_buf = fg.AccessROBuffer(args_->tlas_buf);
     const Ren::BufferROHandle rt_blas_buf = fg.AccessROBuffer(args_->swrt.rt_blas);
+    const Ren::BufferROHandle blas_leaf_prims = fg.AccessROBuffer(args_->swrt.blas_leaf_prims);
+    const Ren::BufferROHandle tlas_leaf_prims = fg.AccessROBuffer(args_->swrt.tlas_leaf_prims);
     const Ren::BufferROHandle prim_ndx = fg.AccessROBuffer(args_->swrt.prim_ndx);
     const Ren::BufferROHandle mesh_instances = fg.AccessROBuffer(args_->swrt.mesh_instances);
     const Ren::BufferROHandle unif_sh_data = fg.AccessROBuffer(args_->shared_data);
@@ -71,6 +73,8 @@ void Eng::ExDebugRT::Execute_SWRT(const FgContext &fg) {
         {Ren::eBindTarget::UTBuf, RTDebug::NDX_BUF_SLOT, ndx_buf},
         {Ren::eBindTarget::UTBuf, RTDebug::BLAS_BUF_SLOT, rt_blas_buf},
         {Ren::eBindTarget::UTBuf, RTDebug::TLAS_BUF_SLOT, rt_tlas_buf},
+        {Ren::eBindTarget::UTBuf, RTDebug::BLAS_LEAF_PRIMS_BUF_SLOT, blas_leaf_prims},
+        {Ren::eBindTarget::UTBuf, RTDebug::TLAS_LEAF_PRIMS_BUF_SLOT, tlas_leaf_prims},
         {Ren::eBindTarget::UTBuf, RTDebug::PRIM_NDX_BUF_SLOT, prim_ndx},
         {Ren::eBindTarget::UTBuf, RTDebug::MESH_INSTANCES_BUF_SLOT, mesh_instances},
         {Ren::eBindTarget::SBufRO, RTDebug::LIGHTS_BUF_SLOT, lights},

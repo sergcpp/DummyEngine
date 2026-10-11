@@ -21,6 +21,8 @@ class ExVolVoxelize final : public FgExecutor {
         struct {
             uint32_t root_node = 0xffffffff;
             FgBufROHandle rt_blas_buf;
+            FgBufROHandle blas_leaf_prims;
+            FgBufROHandle tlas_leaf_prims;
             FgBufROHandle prim_ndx;
             FgBufROHandle mesh_instances;
             FgBufROHandle vtx_buf1;

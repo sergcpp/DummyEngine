@@ -398,6 +398,10 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Acce
             if (!ctx_.capabilities.hwrt) {
                 data->swrt.root_node = acc_structs.swrt.rt_root_node;
                 data->swrt.rt_blas = rt_spec.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_buf, stage);
+                data->swrt.blas_leaf_prims =
+                    rt_spec.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_leaf_prims, stage);
+                data->swrt.tlas_leaf_prims =
+                    rt_spec.AddStorageReadonlyInput(acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Main)], stage);
                 data->swrt.prim_ndx = rt_spec.AddStorageReadonlyInput(acc_structs.swrt.rt_prim_indices, stage);
                 data->swrt.mesh_instances = rt_spec.AddStorageReadonlyInput(rt_obj_instances_res, stage);
             }

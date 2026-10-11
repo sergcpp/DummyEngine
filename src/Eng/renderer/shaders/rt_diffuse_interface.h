@@ -50,6 +50,8 @@ const uint STOCH_LIGHTS_BUF_SLOT = 28;
 const uint LIGHT_NODES_BUF_SLOT = 29;
 const uint LIGHT_LEAF_PRIMS_BUF_SLOT = 31;
 const uint RAY_HITS_BUF_SLOT = 30;
+const uint BLAS_LEAF_PRIMS_BUF_SLOT = 2;
+const uint TLAS_LEAF_PRIMS_BUF_SLOT = 15;
 
 const uint CACHE_ENTRIES_BUF_SLOT = 25;
 const uint CACHE_VOXELS_BUF_SLOT = 26;

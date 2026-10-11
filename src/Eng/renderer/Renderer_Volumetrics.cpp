@@ -636,6 +636,10 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
         if (!ctx_.capabilities.hwrt) {
             data->swrt.root_node = acc_structs.swrt.rt_root_node;
             data->swrt.rt_blas_buf = voxelize.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_buf, Stg::ComputeShader);
+            data->swrt.blas_leaf_prims =
+                voxelize.AddStorageReadonlyInput(acc_structs.swrt.rt_blas_leaf_prims, Stg::ComputeShader);
+            data->swrt.tlas_leaf_prims = voxelize.AddStorageReadonlyInput(
+                acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Volume)], Stg::ComputeShader);
             data->swrt.prim_ndx =
                 voxelize.AddStorageReadonlyInput(acc_structs.swrt.rt_prim_indices, Stg::ComputeShader);
             data->swrt.mesh_instances = voxelize.AddStorageReadonlyInput(rt_obj_instances_res, Stg::ComputeShader);
