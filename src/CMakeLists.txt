@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 project(_Dummy)
 
-OPTION(ENABLE_GPU_DEBUG "Enable GPU debugging" ON)
+option(ENABLE_GPU_DEBUG "Enable GPU debugging app-wide" ON)
+set(REN_ENABLE_GPU_DEBUG ${ENABLE_GPU_DEBUG} CACHE BOOL "GPU debugging in Ren")
+set(RAY_ENABLE_GPU_DEBUG ${ENABLE_GPU_DEBUG} CACHE BOOL "GPU debugging in Ray")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

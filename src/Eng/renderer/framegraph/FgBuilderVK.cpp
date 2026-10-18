@@ -99,7 +99,7 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             return false;
         }
 
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_BUFFER;
         name_info.objectHandle = uint64_t(new_buf.buf);
@@ -190,7 +190,7 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
                 return false;
             }
 
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
             VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
             name_info.objectType = VK_OBJECT_TYPE_IMAGE;
             name_info.objectHandle = uint64_t(new_img.img);

@@ -166,7 +166,7 @@ bool Ren::Pipeline_Init(const ApiContext &api, const SparseDualStorage<ShaderMai
             log->Error("Failed to create pipeline layout!");
             return false;
         }
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_PIPELINE_LAYOUT;
         name_info.objectHandle = uint64_t(pipeline_main.layout);
@@ -301,7 +301,7 @@ bool Ren::Pipeline_Init(const ApiContext &api, const SparseDualStorage<ShaderMai
         }
     }
 
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
     VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
     name_info.objectType = VK_OBJECT_TYPE_PIPELINE;
     name_info.objectHandle = uint64_t(pipeline_main.pipeline);
@@ -363,7 +363,7 @@ bool Ren::Pipeline_Init(const ApiContext &api, const StoragesRef &storages, Pipe
             log->Error("Failed to create pipeline layout!");
             return false;
         }
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_PIPELINE_LAYOUT;
         name_info.objectHandle = uint64_t(pipeline_main.layout);
@@ -533,7 +533,7 @@ bool Ren::Pipeline_Init(const ApiContext &api, const StoragesRef &storages, Pipe
         }
     }
 
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
     VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
     name_info.objectType = VK_OBJECT_TYPE_PIPELINE;
     name_info.objectHandle = uint64_t(pipeline_main.pipeline);

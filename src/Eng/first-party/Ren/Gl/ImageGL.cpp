@@ -60,7 +60,7 @@ bool Ren::Image_Init(const ApiContext &api, ImageMain &img_main, ImageCold &img_
                                                                        : (p.d ? GL_TEXTURE_3D : GL_TEXTURE_2D)),
                          1, &tex_id);
     }
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, img_cold.name.c_str());
 #endif
     img_main.img = tex_id;
@@ -295,7 +295,7 @@ int Ren::Image_AddView(const ApiContext &api, ImageMain &img_main, ImageCold &im
     glGenTextures(1, &tex_view);
     glTextureView(tex_view, GL_TEXTURE_2D, img_main.img, GLInternalFormatFromFormat(format), mip_level, mip_count,
                   base_layer, layer_count);
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_view, -1, img_cold.name.c_str());
 #endif
     img_main.views.push_back(tex_view);

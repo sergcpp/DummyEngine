@@ -106,7 +106,7 @@ bool Ren::Image_Init(const ApiContext &api, ImageMain &img_main, ImageCold &img_
             return false;
         }
 
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(img_main.img);
@@ -485,7 +485,7 @@ bool Ren::Image_AddDefaultViews(const ApiContext &api, ImageMain &img_main, Imag
             img_main.views.push_back(depth_only_view);
         }
 
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
         for (const VkImageView view : img_main.views) {
             VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
             name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
@@ -526,7 +526,7 @@ int Ren::Image_AddView(const ApiContext &api, ImageMain &img_main, ImageCold &im
         return -1;
     }
 
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
     VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
     name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
     name_info.objectHandle = uint64_t(img_main.views.back());

@@ -50,7 +50,7 @@ bool Ren::Shader_Init(const ApiContext &api, ShaderMain &shader_main, ShaderCold
             log->Error("Failed to create shader module!");
             return false;
         }
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_SHADER_MODULE;
         name_info.objectHandle = uint64_t(shader_main.vk_module);

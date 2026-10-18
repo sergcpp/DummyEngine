@@ -40,7 +40,7 @@ bool Ren::Shader_Init(const ApiContext &, ShaderMain &shader_main, ShaderCold &s
     if (!shader_main.id) {
         return false;
     } else {
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
         glObjectLabel(GL_SHADER, shader_main.id, -1, name.c_str());
 #endif
     }
@@ -68,7 +68,7 @@ bool Ren::Shader_Init(const ApiContext &, ShaderMain &shader_main, ShaderCold &s
     shader_cold.type = type;
     shader_cold.source = eShaderSource::SPIRV;
 
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
     glObjectLabel(GL_SHADER, shader_main.id, -1, name.c_str());
 #endif
 

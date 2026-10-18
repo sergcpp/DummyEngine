@@ -107,7 +107,7 @@ bool Ren::Program_Init(const ApiContext &api, const SparseDualStorage<ShaderMain
             glDeleteProgram(program);
             program = 0;
         } else {
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
             glObjectLabel(GL_PROGRAM, program, -1, prog_name.c_str());
 #endif
         }
@@ -156,7 +156,7 @@ bool Ren::Program_Init(const ApiContext &api, const SparseDualStorage<ShaderMain
             glDeleteProgram(program);
             program = 0;
         } else {
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
             glObjectLabel(GL_PROGRAM, program, -1, shaders[cs].second.name.c_str());
 #endif
         }

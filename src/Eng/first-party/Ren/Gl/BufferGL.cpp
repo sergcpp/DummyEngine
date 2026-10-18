@@ -109,7 +109,7 @@ bool Ren::Buffer_Resize(const ApiContext &api, BufferMain &buf_main, BufferCold 
     GLuint gl_buffer;
     glGenBuffers(1, &gl_buffer);
     glBindBuffer(g_buf_targets_gl[int(buf_cold.type)], gl_buffer);
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
     glObjectLabel(GL_BUFFER, gl_buffer, -1, buf_cold.name.c_str());
 #endif
     glBufferStorage(g_buf_targets_gl[int(buf_cold.type)], buf_cold.size, nullptr, GetGLBufStorageFlags(buf_cold.type));
@@ -145,7 +145,7 @@ bool Ren::Buffer_Resize(const ApiContext &api, BufferMain &buf_main, BufferCold 
 int Ren::Buffer_AddView(const ApiContext &api, BufferMain &buf_main, BufferCold &buf_cold, const eFormat format) {
     GLuint tex_id;
     glCreateTextures(GL_TEXTURE_BUFFER, 1, &tex_id);
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, buf_cold.name.c_str());
 #endif
     glBindTexture(GL_TEXTURE_BUFFER, tex_id);

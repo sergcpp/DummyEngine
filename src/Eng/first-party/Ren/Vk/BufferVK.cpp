@@ -148,7 +148,7 @@ bool Ren::Buffer_Resize(const ApiContext &api, BufferMain &buf_main, BufferCold 
         return false;
     }
 
-#ifdef ENABLE_GPU_DEBUG
+#ifdef REN_ENABLE_GPU_DEBUG
     VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
     name_info.objectType = VK_OBJECT_TYPE_BUFFER;
     name_info.objectHandle = uint64_t(new_buf);
