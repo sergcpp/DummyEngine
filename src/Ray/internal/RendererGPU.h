@@ -157,7 +157,7 @@ class Renderer : public RendererBase {
     bool unet_alias_memory_ = true;
     Buffer unet_tensors_heap_;
     unet_filter_tensors_t unet_tensors_ = {};
-    SmallVector<int, 2> unet_alias_dependencies_[UNetFilterPasses];
+    SmallVector<int, 16> unet_alias_dependencies_[UNetFilterPasses];
     bool InitUNetFilterPipelines(const std::function<void(int, int, ParallelForFunction &&)> &parallel_for);
     void UpdateUNetFilterMemory(CommandBuffer cmd_buf);
 
@@ -621,9 +621,11 @@ Ray::NS::Renderer::InitUNetFilter(const bool alias_memory,
 
     unet_filter_properties_t out_props;
     out_props.pass_count = UNetFilterPasses;
+    constexpr size_t dep_slots = std::size(out_props.alias_dependencies[0]);
     for (int i = 0; i < UNetFilterPasses; ++i) {
-        std::fill(&out_props.alias_dependencies[i][0], &out_props.alias_dependencies[i][0] + 4, -1);
-        for (int j = 0; j < int(unet_alias_dependencies_[i].size()); ++j) {
+        assert(unet_alias_dependencies_[i].size() <= dep_slots);
+        std::fill(&out_props.alias_dependencies[i][0], &out_props.alias_dependencies[i][0] + dep_slots, -1);
+        for (int j = 0; j < int(unet_alias_dependencies_[i].size()) && j < int(dep_slots); ++j) {
             out_props.alias_dependencies[i][j] = unet_alias_dependencies_[i][j];
         }
     }

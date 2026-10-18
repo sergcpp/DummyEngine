@@ -2,10 +2,16 @@
 
 #include "../Types.h"
 
+#include <cmath>
+
 #pragma warning(push)
 #pragma warning(disable : 6294) // Ill-defined for-loop
 
 namespace Ray::NS {
+using std::pow;
+using std::exp;
+using std::log;
+
 void ClearBorders(const rect_t &rect, const int w, const int h, const bool downscaled, const int out_channels,
                   float output[]) {
     if (!downscaled) {
@@ -83,9 +89,9 @@ template <ePreOp PreOp> force_inline float input(const float val) {
         if (val <= y0) {
             return a * val * norm_scale;
         } else if (val <= y1) {
-            return (b * powf(val, c) + d) * norm_scale;
+            return (b * pow(val, c) + d) * norm_scale;
         } else {
-            return (e * logf(val + f) + g) * norm_scale;
+            return (e * log(val + f) + g) * norm_scale;
         }
     } else if (PreOp == ePreOp::PositiveNormalize) {
         return 0.5f * val + 0.5f;
@@ -102,9 +108,9 @@ template <ePostOp PostOp> force_inline float output(float val) {
         if (val <= x0) {
             return val / a;
         } else if (val <= x1) {
-            return powf((val - d) / b, 1.0f / c);
+            return pow((val - d) / b, 1.0f / c);
         } else {
-            return expf((val - g) / e) - f;
+            return exp((val - g) / e) - f;
         }
     } else if (PostOp == ePostOp::PositiveNormalize) {
         return 2.0f * val - 1.0f;
@@ -123,7 +129,7 @@ void Convolution3x3(const float *restrict data, const rect_t &rect, const int w,
     const int RoundedTriple = 8 * ((3 * InChannels + 7) / 8); // stride and offset must be aligned
 
 #define C_ROWS 4
-#define C_COLS 8
+#define C_COLS 16
 
     for (int y = rect.y; y < rect.y + rect.h; y += 2) {
         for (int x = rect.x; x < rect.x + rect.w; x += C_ROWS) {
@@ -166,16 +172,17 @@ void Convolution3x3(const float *restrict data, const rect_t &rect, const int w,
                         _C0[k][di] = hsum(C0[k][di]);
                         _C1[k][di] = hsum(C1[k][di]);
                         if (Activation == eActivation::ReLU) {
-                            _C0[k][di] = fmaxf(0.0f, _C0[k][di]);
-                            _C1[k][di] = fmaxf(0.0f, _C1[k][di]);
+                            _C0[k][di] = std::max(0.0f, _C0[k][di]);
+                            _C1[k][di] = std::max(0.0f, _C1[k][di]);
                         }
                     }
                 }
                 if (PostOp == ePostOp::Downsample) {
                     for (int k = 0; k < C_ROWS; k += 2) {
                         for (int di = 0; di < C_COLS; ++di) {
-                            _C0[k][di] = fmaxf(fmaxf(_C0[k][di], _C0[k + 1][di]), fmaxf(_C1[k][di], _C1[k + 1][di]));
-                            _C0[k][di] = fmaxf(_C0[k][di], 0.0f);
+                            _C0[k][di] =
+                                std::max(std::max(_C0[k][di], _C0[k + 1][di]), std::max(_C1[k][di], _C1[k + 1][di]));
+                            _C0[k][di] = std::max(0.0f, _C0[k][di]);
                         }
                     }
                     for (int xx = x; xx < std::min(x + C_ROWS, rect.x + rect.w); xx += 2) {
@@ -204,19 +211,19 @@ void Convolution3x3(const float *restrict data, const rect_t &rect, const int w,
 #undef C_COLS
 }
 
-template <int S, int InChannels1, int InChannels2, int InChannels3, int PxPitch, int OutChannels, ePreOp PreOp1,
-          ePreOp PreOp2, ePreOp PreOp3, ePostOp PostOp, eActivation Activation>
-void Convolution3x3(const float *restrict data1, const float *restrict data2, const float *restrict data3,
-                    const rect_t &rect, const int in_w, const int in_h, const int w, const int h, const int stride,
-                    const float *restrict weights, const float *restrict biases, float *restrict output,
-                    const int output_stride, aligned_vector<float, 64> &temp_data) {
+// Staging for the 3-input Convolution3x3 below: gathers the rect + 1px halo window of the three
+// inputs into temp_data as one InChannels123-channel tensor (pre-ops applied, out-of-bounds
+// pixels zero, tail padded to RoundedTriple for the final S-wide window). Split out so the
+// generated asm walk (CoreSIMD.h pass-0 hook) can reuse the exact same staged buffer.
+template <int InChannels1, int InChannels2, int InChannels3, int PxPitch, ePreOp PreOp1, ePreOp PreOp2,
+          ePreOp PreOp3>
+void StageConv3x3(const float *restrict data1, const float *restrict data2, const float *restrict data3,
+                  const rect_t &rect, const int in_w, const int in_h, const int stride,
+                  aligned_vector<float, 64> &temp_data) {
     const int InChannels123 = (InChannels1 + InChannels2 + InChannels3);
-
     const int RoundedTriple = 8 * ((3 * InChannels123 + 7) / 8); // stride and offset must be aligned
-
-    // Preload data
     const int stride123 = rect.w + 2, req_size = InChannels123 * stride123 * (rect.h + 2);
-    temp_data.resize(req_size + 16);
+    temp_data.resize(req_size + RoundedTriple);
     float *data123 = temp_data.data();
     int index = 0;
     for (int y = rect.y - 1; y < rect.y + rect.h + 1; ++y) {
@@ -241,9 +248,25 @@ void Convolution3x3(const float *restrict data1, const float *restrict data2, co
     while (index < temp_data.size()) {
         data123[index++] = 0.0f;
     }
+}
+
+template <int S, int InChannels1, int InChannels2, int InChannels3, int PxPitch, int OutChannels, ePreOp PreOp1,
+          ePreOp PreOp2, ePreOp PreOp3, ePostOp PostOp, eActivation Activation>
+void Convolution3x3(const float *restrict data1, const float *restrict data2, const float *restrict data3,
+                    const rect_t &rect, const int in_w, const int in_h, const int w, const int h, const int stride,
+                    const float *restrict weights, const float *restrict biases, float *restrict output,
+                    const int output_stride, aligned_vector<float, 64> &temp_data) {
+    const int InChannels123 = (InChannels1 + InChannels2 + InChannels3);
+
+    const int RoundedTriple = 8 * ((3 * InChannels123 + 7) / 8); // stride and offset must be aligned
+    const int stride123 = rect.w + 2;
+
+    StageConv3x3<InChannels1, InChannels2, InChannels3, PxPitch, PreOp1, PreOp2, PreOp3>(
+        data1, data2, data3, rect, in_w, in_h, stride, temp_data);
+    float *data123 = temp_data.data();
 
 #define C_ROWS 4
-#define C_COLS 8
+#define C_COLS 16
 
     for (int y = rect.y; y < rect.y + rect.h; y += 2) {
         for (int x = rect.x; x < rect.x + rect.w; x += C_ROWS) {
@@ -288,8 +311,8 @@ void Convolution3x3(const float *restrict data1, const float *restrict data2, co
                         _C0[k][di] = hsum(C0[k][di]);
                         _C1[k][di] = hsum(C1[k][di]);
                         if (Activation == eActivation::ReLU) {
-                            _C0[k][di] = fmaxf(0.0f, _C0[k][di]);
-                            _C1[k][di] = fmaxf(0.0f, _C1[k][di]);
+                            _C0[k][di] = std::max(0.0f, _C0[k][di]);
+                            _C1[k][di] = std::max(0.0f, _C1[k][di]);
                         }
                     }
                 }
@@ -325,7 +348,7 @@ void ConvolutionConcat3x3(const float *restrict data1, const float *restrict dat
 #define index2(y, x) InChannels2 *((y) * stride2 + (x))
 
 #define C_ROWS 4
-#define C_COLS 8
+#define C_COLS 16
 
     for (int y = rect.y; y < rect.y + rect.h; y += 2) {
         for (int x = rect.x; x < rect.x + rect.w; x += C_ROWS) {
@@ -408,8 +431,8 @@ void ConvolutionConcat3x3(const float *restrict data1, const float *restrict dat
                         _C0[k][di] = hsum(C0[k][di]);
                         _C1[k][di] = hsum(C1[k][di]);
                         if (Activation == eActivation::ReLU) {
-                            _C0[k][di] = fmaxf(0.0f, _C0[k][di]);
-                            _C1[k][di] = fmaxf(0.0f, _C1[k][di]);
+                            _C0[k][di] = std::max(0.0f, _C0[k][di]);
+                            _C1[k][di] = std::max(0.0f, _C1[k][di]);
                         }
                     }
                 }
@@ -434,23 +457,19 @@ void ConvolutionConcat3x3(const float *restrict data1, const float *restrict dat
 #undef index2
 }
 
-template <int S, int InChannels1, int InChannels2, int InChannels3, int InChannels4, int PxPitch234, int OutChannels,
-          ePreOp PreOp1, ePreOp PreOp2, ePreOp PreOp3, ePreOp PreOp4, ePostOp PostOp, eActivation Activation>
-void ConvolutionConcat3x3(const float *restrict data1, const float *restrict data2, const float *restrict data3,
-                          const float *restrict data4, const rect_t &rect, const int w, const int h, const int w234,
-                          const int h234, const int stride1, const int stride234, const float *restrict weights,
-                          const float *restrict biases, float *restrict output, int output_stride,
-                          aligned_vector<float, 64> &temp_data) {
+// Staging for the 4-input ConvolutionConcat3x3 below: gathers the rect + 1px halo window of the
+// three aux inputs into temp_data as one InChannels234-channel tensor (pre-ops applied,
+// out-of-bounds pixels zero, tail padded to RoundedTriple2 for the final S-wide window). Split
+// out so the generated asm walk (CoreSIMD.h pass-13 hook) can reuse the exact same staged buffer.
+template <int InChannels2, int InChannels3, int InChannels4, int PxPitch234, ePreOp PreOp2, ePreOp PreOp3,
+          ePreOp PreOp4>
+void StageConvConcat3x3(const float *restrict data2, const float *restrict data3, const float *restrict data4,
+                        const rect_t &rect, const int w234, const int h234, const int stride234,
+                        aligned_vector<float, 64> &temp_data) {
     const int InChannels234 = (InChannels2 + InChannels3 + InChannels4);
-
-    const int RoundedTriple1 = 8 * ((3 * InChannels1 + 7) / 8),
-              RoundedTriple2 = 8 * ((3 * InChannels234 + 7) / 8); // stride and offset must be aligned
-
-#define index1(y, x) InChannels1 *((y) * stride1 + (x))
-
-    // Preload data
+    const int RoundedTriple2 = 8 * ((3 * InChannels234 + 7) / 8); // stride and offset must be aligned
     const int _stride234 = rect.w + 2, req_size = InChannels234 * _stride234 * (rect.h + 2);
-    temp_data.resize(req_size + 16);
+    temp_data.resize(req_size + RoundedTriple2);
     float *data234 = temp_data.data();
     int index = 0;
     for (int y = rect.y - 1; y < rect.y + rect.h + 1; ++y) {
@@ -475,9 +494,29 @@ void ConvolutionConcat3x3(const float *restrict data1, const float *restrict dat
     while (index < temp_data.size()) {
         data234[index++] = 0.0f;
     }
+}
+
+template <int S, int InChannels1, int InChannels2, int InChannels3, int InChannels4, int PxPitch234, int OutChannels,
+          ePreOp PreOp1, ePreOp PreOp2, ePreOp PreOp3, ePreOp PreOp4, ePostOp PostOp, eActivation Activation>
+void ConvolutionConcat3x3(const float *restrict data1, const float *restrict data2, const float *restrict data3,
+                          const float *restrict data4, const rect_t &rect, const int w, const int h, const int w234,
+                          const int h234, const int stride1, const int stride234, const float *restrict weights,
+                          const float *restrict biases, float *restrict output, int output_stride,
+                          aligned_vector<float, 64> &temp_data) {
+    const int InChannels234 = (InChannels2 + InChannels3 + InChannels4);
+
+    const int RoundedTriple1 = 8 * ((3 * InChannels1 + 7) / 8),
+              RoundedTriple2 = 8 * ((3 * InChannels234 + 7) / 8); // stride and offset must be aligned
+
+#define index1(y, x) InChannels1 *((y) * stride1 + (x))
+
+    const int _stride234 = rect.w + 2;
+    StageConvConcat3x3<InChannels2, InChannels3, InChannels4, PxPitch234, PreOp2, PreOp3, PreOp4>(
+        data2, data3, data4, rect, w234, h234, stride234, temp_data);
+    float *data234 = temp_data.data();
 
 #define C_ROWS 4
-#define C_COLS 8
+#define C_COLS 16
 
     for (int y = rect.y; y < rect.y + rect.h; y += 2) {
         for (int x = rect.x; x < rect.x + rect.w; x += C_ROWS) {
@@ -561,8 +600,8 @@ void ConvolutionConcat3x3(const float *restrict data1, const float *restrict dat
                         _C0[k][di] = hsum(C0[k][di]);
                         _C1[k][di] = hsum(C1[k][di]);
                         if (Activation == eActivation::ReLU) {
-                            _C0[k][di] = fmaxf(0.0f, _C0[k][di]);
-                            _C1[k][di] = fmaxf(0.0f, _C1[k][di]);
+                            _C0[k][di] = std::max(0.0f, _C0[k][di]);
+                            _C1[k][di] = std::max(0.0f, _C1[k][di]);
                         }
                     }
                 }

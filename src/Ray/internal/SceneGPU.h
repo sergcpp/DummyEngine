@@ -144,7 +144,8 @@ class Scene : public SceneCommon {
     void PrepareEnvMapQTree_nolock(const std::function<void(int, int, ParallelForFunction &&)> &parallel_for);
     void GenerateTextureMips_nolock();
     void PrepareBindlessTextures_nolock();
-    std::pair<uint32_t, uint32_t> Build_HWRT_BLAS_nolock(uint32_t vert_index, uint32_t vert_count);
+    std::pair<uint32_t, uint32_t> Build_HWRT_BLAS_nolock(uint32_t vert_index, uint32_t vert_count,
+                                                         eBVHBuildQuality quality);
     void Rebuild_HWRT_TLAS_nolock();
 
     TextureHandle AddAtlasTexture_nolock(const tex_desc_t &t);
@@ -957,12 +958,7 @@ inline Ray::MeshHandle Ray::NS::Scene::AddMesh(const mesh_desc_t &_m) {
     std::vector<uint32_t> new_tri_indices;
     std::vector<uint32_t> new_vtx_indices;
 
-    bvh_settings_t s;
-    s.oversplit_threshold = -1.0f;
-    s.allow_spatial_splits = _m.allow_spatial_splits;
-    s.use_fast_bvh_build = _m.use_fast_bvh_build;
-    s.min_primitives_in_leaf = 8;
-    s.primitive_alignment = 8;
+    const bvh_settings_t s = mesh_bvh_settings(_m.bvh_quality);
 
     fvec4 bbox_min{FLT_MAX}, bbox_max{-FLT_MAX};
 
@@ -983,9 +979,12 @@ inline Ray::MeshHandle Ray::NS::Scene::AddMesh(const mesh_desc_t &_m) {
             bbox_max = max(bbox_max, max(p[0], max(p[1], p[2])));
         }
     } else {
+        const uint64_t t1 = GetTimeMs();
         aligned_vector<mtri_accel_t> _unused;
         PreprocessMesh(_m.vtx_positions, _m.vtx_indices, _m.base_vertex, s, new_nodes, new_tris, new_tri_indices,
                        _unused);
+        log_->Info("Ray: Mesh \'%s\' preprocessed in %lldms", !_m.name.empty() ? _m.name.data() : "(unknown)",
+                   (long long)(GetTimeMs() - t1));
 
         memcpy(value_ptr(bbox_min), new_nodes[0].bbox_min, 3 * sizeof(float));
         memcpy(value_ptr(bbox_max), new_nodes[0].bbox_max, 3 * sizeof(float));
@@ -1098,7 +1097,7 @@ inline Ray::MeshHandle Ray::NS::Scene::AddMesh(const mesh_desc_t &_m) {
     std::pair<uint32_t, uint32_t> leaf_prims_index = {0xffffffff, 0xffffffff};
     if (use_hwrt_) {
         tris_index = trimat_index;
-        nodes_index = Build_HWRT_BLAS_nolock(vtx_indices_index.first, uint32_t(new_vtx_indices.size()));
+        nodes_index = Build_HWRT_BLAS_nolock(vtx_indices_index.first, uint32_t(new_vtx_indices.size()), _m.bvh_quality);
     } else {
         tris_index = tris_.Allocate(&new_tris[0], uint32_t(new_tris.size()));
         tri_indices_index = tri_indices_.Allocate(&new_tri_indices[0], uint32_t(new_tri_indices.size()));

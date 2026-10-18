@@ -635,6 +635,9 @@ void setup_test_scene(ThreadPool &threads, Ray::SceneBase &scene, const int min_
         }
         env_mesh_desc.groups = groups;
 
+        // Spatial-split coverage: the room shell has large straddling triangles
+        env_mesh_desc.bvh_quality = eBVHBuildQuality::HighQuality;
+
         env_mesh = scene.AddMesh(env_mesh_desc);
 
         // Add mesh one more time to test compaction later
@@ -699,6 +702,9 @@ void setup_test_scene(ThreadPool &threads, Ray::SceneBase &scene, const int min_
         const mat_group_desc_t groups[] = {{glassball_mat0, glassball_groups[0], glassball_groups[1]},
                                            {glassball_mat1, glassball_groups[2], glassball_groups[3]}};
         glassball_mesh_desc.groups = groups;
+
+        // HLBVH coverage: curved mesh, no coplanar ties, big enough for a real LBVH hierarchy
+        glassball_mesh_desc.bvh_quality = eBVHBuildQuality::FastBuild;
 
         glassball_mesh = scene.AddMesh(glassball_mesh_desc);
     }

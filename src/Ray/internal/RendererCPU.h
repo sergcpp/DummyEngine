@@ -201,6 +201,7 @@ template <typename SIMDPolicy> class Renderer : public RendererBase, private SIM
     std::mutex mtx_;
 
     stats_t stats_ = {0};
+    unsigned long long denoise_span_start_us_ = ~0ull, denoise_span_end_us_ = 0;
     int w_ = 0, h_ = 0;
 
     ePixelFilter filter_table_filter_ = ePixelFilter(-1);
@@ -234,7 +235,7 @@ template <typename SIMDPolicy> class Renderer : public RendererBase, private SIM
         float *dec_conv1a = nullptr;
         float *dec_conv1b = nullptr;
     } unet_tensors_;
-    SmallVector<int, 2> unet_alias_dependencies_[UNetFilterPasses];
+    SmallVector<int, 16> unet_alias_dependencies_[UNetFilterPasses];
     void UpdateUNetFilterMemory();
 
   public:
@@ -312,7 +313,11 @@ template <typename SIMDPolicy> class Renderer : public RendererBase, private SIM
                            const std::function<void(int, int, ParallelForFunction &&)> &parallel_for) override;
 
     void GetStats(stats_t &st) override { st = stats_; }
-    void ResetStats() override { stats_ = {0}; }
+    void ResetStats() override {
+        stats_ = {0};
+        denoise_span_start_us_ = ~0ull;
+        denoise_span_end_us_ = 0;
+    }
 
     unet_filter_properties_t
     InitUNetFilter(bool alias_memory,
@@ -946,6 +951,14 @@ template <typename SIMDPolicy> void Ray::Cpu::Renderer<SIMDPolicy>::DenoiseImage
     {
         std::lock_guard<std::mutex> _(mtx_);
         stats_.time_denoise_us += (unsigned long long)duration<double, std::micro>{denoise_end - denoise_start}.count();
+        const auto start_us =
+            (unsigned long long)duration<double, std::micro>{denoise_start.time_since_epoch()}.count();
+        const auto end_us = (unsigned long long)duration<double, std::micro>{denoise_end.time_since_epoch()}.count();
+        denoise_span_start_us_ = std::min(denoise_span_start_us_, start_us);
+        denoise_span_end_us_ = std::max(denoise_span_end_us_, end_us);
+        if (denoise_span_end_us_ > denoise_span_start_us_) {
+            stats_.time_denoise_span_us = denoise_span_end_us_ - denoise_span_start_us_;
+        }
     }
 }
 
@@ -958,6 +971,8 @@ void Ray::Cpu::Renderer<SIMDPolicy>::DenoiseImage(const int pass, const RegionCo
     const int h_rounded = round_up(h_, 16);
 
     rect_t r = region.rect();
+    assert((r.x & 1) == 0 && (r.y & 1) == 0);
+    assert((r.x + r.w == w_ || (r.w & 1) == 0) && (r.y + r.h == h_ || (r.h & 1) == 0));
     if (pass < 15) {
         r.w = round_up(r.w, 16);
         r.h = round_up(r.h, 16);
@@ -1166,6 +1181,14 @@ void Ray::Cpu::Renderer<SIMDPolicy>::DenoiseImage(const int pass, const RegionCo
     {
         std::lock_guard<std::mutex> _(mtx_);
         stats_.time_denoise_us += (unsigned long long)duration<double, std::micro>{denoise_end - denoise_start}.count();
+        const auto start_us =
+            (unsigned long long)duration<double, std::micro>{denoise_start.time_since_epoch()}.count();
+        const auto end_us = (unsigned long long)duration<double, std::micro>{denoise_end.time_since_epoch()}.count();
+        denoise_span_start_us_ = std::min(denoise_span_start_us_, start_us);
+        denoise_span_end_us_ = std::max(denoise_span_end_us_, end_us);
+        if (denoise_span_end_us_ > denoise_span_start_us_) {
+            stats_.time_denoise_span_us = denoise_span_end_us_ - denoise_span_start_us_;
+        }
     }
 }
 
@@ -1207,17 +1230,17 @@ void Ray::Cpu::Renderer<SIMDPolicy>::UpdateSpatialCache(const SceneBase &scene, 
                                   s.materials_.empty() ? nullptr : &s.materials_[0],
                                   {s.lights_.data(), s.lights_.capacity()},
                                   {s.li_indices_},
-                                  {},
+                                  {s.dir_lights_},
                                   s.visible_lights_count_,
                                   s.blocker_lights_count_,
                                   {s.light_nodes_},
                                   {s.light_cwnodes_},
-                                  {},
-                                  {},
-                                  {},
+                                  {s.light_leaf_prims_},
+                                  {s.sky_transmittance_lut_},
+                                  {s.sky_multiscatter_lut_},
                                   cache_grid_params,
-                                  {},
-                                  {}};
+                                  {s.spatial_cache_entries_},
+                                  {s.spatial_cache_voxels_prev_}};
 
     const uint32_t tlas_root = s.tlas_root_;
 
@@ -1435,9 +1458,11 @@ Ray::unet_filter_properties_t Ray::Cpu::Renderer<SIMDPolicy>::InitUNetFilter(
 
     unet_filter_properties_t out_props;
     out_props.pass_count = UNetFilterPasses;
+    constexpr size_t dep_slots = std::size(out_props.alias_dependencies[0]);
     for (int i = 0; i < UNetFilterPasses; ++i) {
-        std::fill(&out_props.alias_dependencies[i][0], &out_props.alias_dependencies[i][0] + 4, -1);
-        for (int j = 0; j < int(unet_alias_dependencies_[i].size()); ++j) {
+        assert(unet_alias_dependencies_[i].size() <= dep_slots);
+        std::fill(&out_props.alias_dependencies[i][0], &out_props.alias_dependencies[i][0] + dep_slots, -1);
+        for (int j = 0; j < int(unet_alias_dependencies_[i].size()) && j < int(dep_slots); ++j) {
             out_props.alias_dependencies[i][j] = unet_alias_dependencies_[i][j];
         }
     }

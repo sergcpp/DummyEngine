@@ -268,6 +268,8 @@ void Ray::NS::Renderer::kernel_Convolution(CommandBuffer cmd_buf, int in_channel
                                            const Buffer &weights, uint32_t weights_offset, uint32_t biases_offset,
                                            const Buffer &out_buf, uint32_t output_offset, int output_stride,
                                            const Image &out_debug_img) {
+    assert(rect.x == 0 && rect.y == 0);
+
     const TransitionInfo res_transitions[] = {{&img_buf1, eResState::ShaderResource},
                                               {&img_buf2, eResState::ShaderResource},
                                               {&img_buf3, eResState::ShaderResource},
@@ -331,6 +333,7 @@ void Ray::NS::Renderer::kernel_Convolution(CommandBuffer cmd_buf, int in_channel
                                            uint32_t weights_offset, uint32_t biases_offset, const Buffer &out_buf,
                                            uint32_t output_offset, int output_stride, const bool downsample,
                                            const Image &out_debug_img) {
+    assert(rect.x == 0 && rect.y == 0); // see note in the img-input kernel: shader ignores rect.x/y
     const TransitionInfo res_transitions[] = {{&out_buf, eResState::UnorderedAccess},
                                               {&out_debug_img, eResState::UnorderedAccess}};
     TransitionResourceStates(cmd_buf, AllStages, AllStages, res_transitions);
@@ -338,7 +341,7 @@ void Ray::NS::Renderer::kernel_Convolution(CommandBuffer cmd_buf, int in_channel
     const int el_sz = use_fp16_ ? sizeof(uint16_t) : sizeof(float);
     const uint32_t weights_size = out_channels * 3 * round_up(3 * in_channels, 8) * el_sz;
     const uint32_t biases_size = out_channels * el_sz;
-    const uint32_t output_size = output_stride * (h + 2) * out_channels * el_sz;
+    const uint32_t output_size = output_stride * ((downsample ? h / 2 : h) + 2) * out_channels * el_sz;
 
     SmallVector<Binding, 16> bindings = {
         {eBindTarget::SBufRO, Convolution::IN_BUF1_SLOT, input_offset, input_buf},
@@ -401,6 +404,7 @@ void Ray::NS::Renderer::kernel_Convolution(CommandBuffer cmd_buf, int in_channel
                                            const float inv_gamma, const rect_t &rect, int w, int h,
                                            const Buffer &weights, uint32_t weights_offset, uint32_t biases_offset,
                                            const Image &out_img, const Image &out_tonemapped_img) {
+    assert(rect.x == 0 && rect.y == 0); // see note in the img-input kernel: shader ignores rect.x/y
     const TransitionInfo res_transitions[] = {{&input_buf, eResState::ShaderResource},
                                               {&out_img, eResState::UnorderedAccess},
                                               {&out_tonemapped_img, eResState::UnorderedAccess}};
@@ -452,6 +456,7 @@ void Ray::NS::Renderer::kernel_ConvolutionConcat(CommandBuffer cmd_buf, int in_c
                                                  int h, const Buffer &weights, uint32_t weights_offset,
                                                  uint32_t biases_offset, const Buffer &out_buf, uint32_t output_offset,
                                                  int output_stride, const Image &out_debug_img) {
+    assert(rect.x == 0 && rect.y == 0); // see note in the img-input kernel: shader ignores rect.x/y
     const TransitionInfo res_transitions[] = {{&out_buf, eResState::UnorderedAccess},
                                               {&out_debug_img, eResState::UnorderedAccess}};
     TransitionResourceStates(cmd_buf, AllStages, AllStages, res_transitions);
@@ -510,6 +515,7 @@ void Ray::NS::Renderer::kernel_ConvolutionConcat(CommandBuffer cmd_buf, int in_c
                                                  uint32_t weights_offset, uint32_t biases_offset, const Buffer &out_buf,
                                                  uint32_t output_offset, int output_stride,
                                                  const Image &out_debug_img) {
+    assert(rect.x == 0 && rect.y == 0); // see note in the img-input kernel: shader ignores rect.x/y
     const TransitionInfo res_transitions[] = {{&img_buf1, eResState::ShaderResource},
                                               {&img_buf2, eResState::ShaderResource},
                                               {&out_buf, eResState::UnorderedAccess},

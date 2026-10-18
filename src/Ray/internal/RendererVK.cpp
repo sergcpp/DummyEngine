@@ -825,6 +825,7 @@ void Ray::Vk::Renderer::DenoiseImage(const RegionContext &region) {
 
     stats_.time_denoise_us = ctx_->GetTimestampIntervalDurationUs(timestamps_[ctx_->backend_frame].denoise[0],
                                                                   timestamps_[ctx_->backend_frame].denoise[1]);
+    stats_.time_denoise_span_us = stats_.time_denoise_us;
 
 #if RUN_IN_LOCKSTEP
     cmd_buf = BegSingleTimeCommands(ctx_->api(), ctx_->device(), ctx_->temp_command_pool());
@@ -936,6 +937,7 @@ void Ray::Vk::Renderer::DenoiseImage(const int pass, const RegionContext &region
 
         stats_.time_denoise_us = ctx_->GetTimestampIntervalDurationUs(timestamps_[ctx_->backend_frame].denoise[0],
                                                                       timestamps_[ctx_->backend_frame].denoise[1]);
+        stats_.time_denoise_span_us = stats_.time_denoise_us;
 
 #if RUN_IN_LOCKSTEP
         cmd_buf = BegSingleTimeCommands(ctx_->api(), ctx_->device(), ctx_->temp_command_pool());
@@ -951,7 +953,7 @@ void Ray::Vk::Renderer::DenoiseImage(const int pass, const RegionContext &region
         if (reset_queries) {
             ctx_->api().vkCmdResetQueryPool(cmd_buf, ctx_->query_pool(ctx_->backend_frame), 0, MaxTimestampQueries);
         }
-#ifdef ENABLE_GPU_DEBUG
+#ifdef RAY_ENABLE_GPU_DEBUG
         VkDebugUtilsLabelEXT label = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
         label.pLabelName = "Ray::DenoiseImage";
         label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1.0f;
@@ -1182,7 +1184,7 @@ void Ray::Vk::Renderer::DenoiseImage(const int pass, const RegionContext &region
     if (pass == 15) {
         timestamps_[ctx_->backend_frame].denoise[1] = ctx_->WriteTimestamp(cmd_buf, false);
 
-#ifdef ENABLE_GPU_DEBUG
+#ifdef RAY_ENABLE_GPU_DEBUG
         ctx_->api().vkCmdEndDebugUtilsLabelEXT(cmd_buf);
 #endif
 
