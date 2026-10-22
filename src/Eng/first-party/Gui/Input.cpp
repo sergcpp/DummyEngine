@@ -13,6 +13,22 @@ char Gui::CharFromKeycode(const uint32_t key_code) {
         return ' ';
     } else if (key_code == eKey::Period) {
         return '.';
+    } else if (key_code == eKey::Comma) {
+        return ',';
+    } else if (key_code == eKey::Slash) {
+        return '/';
+    } else if (key_code == eKey::Backslash || key_code == eKey::KeyNonUSBackslash) {
+        return '\\';
+    } else if (key_code == eKey::Equals) {
+        return '=';
+    } else if (key_code == eKey::LeftBracket) {
+        return '[';
+    } else if (key_code == eKey::RightBracket) {
+        return ']';
+    } else if (key_code == eKey::Semicolon) {
+        return ';';
+    } else if (key_code == eKey::Quote) {
+        return '\'';
     }
     return 0;
 }

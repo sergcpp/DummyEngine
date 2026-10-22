@@ -7,6 +7,7 @@ void test_signal();
 void test_small_vector();
 void test_span();
 void test_unicode();
+void test_input();
 void test_widgets();
 
 int main() {
@@ -17,6 +18,7 @@ int main() {
     test_small_vector();
     test_span();
     test_unicode();
+    test_input();
     test_widgets();
 }
 

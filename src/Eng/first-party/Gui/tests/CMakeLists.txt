@@ -18,6 +18,7 @@ add_executable(test_Gui main.cpp
                         test_small_vector.cpp
                         test_span.cpp
                         test_unicode.cpp
+                        test_input.cpp
                         test_widgets.cpp)
 
 target_link_libraries(test_Gui Gui ${LIBS})

@@ -16,6 +16,14 @@
 void Eng::Renderer::InitSkyResources() {
     if (p_list_->env.env_map_name != "physical_sky") {
         // release resources
+        ctx_.ReleaseImage(sky_transmittance_lut_);
+        ctx_.ReleaseImage(sky_multiscatter_lut_);
+        ctx_.ReleaseImage(sky_moon_);
+        ctx_.ReleaseImage(sky_weather_);
+        ctx_.ReleaseImage(sky_cirrus_);
+        ctx_.ReleaseImage(sky_curl_);
+        ctx_.ReleaseImage(sky_noise3d_);
+
         sky_transmittance_lut_ = {};
         sky_multiscatter_lut_ = {};
         sky_moon_ = {};

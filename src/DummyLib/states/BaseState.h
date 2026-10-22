@@ -98,6 +98,11 @@ class BaseState : public Eng::ViewerState {
     Ren::Vec3f sun_dir_ = Ren::Vec3f{0, -1, 0}, prev_sun_dir_;
     Ray::LightHandle pt_sun_light_ = Ray::InvalidLightHandle;
 
+    // Sun parameters of the scene with disabled sun, kept while the physical sky model replaces them
+    bool phys_sky_sun_replaced_ = false;
+    Ren::Vec3f phys_sky_prev_sun_col_ = Ren::Vec3f{0, 0, 0};
+    float phys_sky_prev_sun_angle_ = 0.0f;
+
     bool use_pt_ = false, use_lm_ = false;
     bool invalidate_view_ = true;
 
@@ -140,6 +145,8 @@ class BaseState : public Eng::ViewerState {
 
     void InitRenderer_PT();
     void InitScene_PT();
+    void InitEnvironment_PT();
+    void UpdateEnv_PT();
     Ray::TextureHandle LoadTexture_PT(std::string_view name, bool is_srgb, bool is_YCoCg, bool use_mips);
     void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up, float fov);
     void Clear_PT();

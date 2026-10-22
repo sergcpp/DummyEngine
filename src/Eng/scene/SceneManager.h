@@ -88,6 +88,8 @@ class SceneManager {
 
     const PersistentGpuData &persistent_data() const { return *scene_data_.persistent_data; }
 
+    const path_config_t &paths() const { return paths_; }
+
     void set_tex_memory_limit(const size_t limit) { tex_memory_limit_ = limit; }
 
     void set_load_flags(const Ren::Bitmask<eSceneLoadFlags> load_flags) { scene_data_.load_flags = load_flags; }
@@ -113,6 +115,9 @@ class SceneManager {
 
     void LoadEnvMap();
     void ReleaseEnvMap(bool immediately = false);
+
+    bool SetEnvMap(std::string_view name);
+    static std::string EnvMapFileName(std::string_view name, std::string_view ext);
 
     void AllocGICache();
     void ReleaseGICache(bool immediately = false);

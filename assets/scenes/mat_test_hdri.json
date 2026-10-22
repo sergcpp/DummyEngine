@@ -11,7 +11,7 @@
             0,
             0
         ],
-        "sun_angle" : 10.0,
+        "sun_angle" : 0.526,
         "sun_shadow_bias" : [ 0.0, 0.0 ],
         "env_col" : [ 1.0, 1.0, 1.0 ],
         "env_map" : "env/meadow_2k.hdr",
@@ -195,7 +195,7 @@
         "view_target" : [ -0.000594, 0.047674, 0.00025 ],
         "fwd_speed" : 0.005,
         "fov" : 18.1806,
-        "min_exposure" : 0,
-        "max_exposure" : 0
+        "min_exposure" : -14.0,
+        "max_exposure" : 8.0
     }
 }

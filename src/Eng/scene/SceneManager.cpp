@@ -837,6 +837,56 @@ void Eng::SceneManager::ReleaseEnvMap(const bool immediately) {
     scene_data_.env.env_map = {};
 }
 
+std::string Eng::SceneManager::EnvMapFileName(const std::string_view name, const std::string_view ext) {
+    std::string result{name};
+
+    const size_t ext_pos = result.find_last_of('.');
+    const size_t path_pos = result.find_last_of("/\\");
+    if (ext_pos == std::string::npos || (path_pos != std::string::npos && ext_pos < path_pos)) {
+        result += ".";
+        result += ext;
+    } else {
+        result.replace(ext_pos + 1, std::string::npos, ext);
+    }
+
+    return result;
+}
+
+bool Eng::SceneManager::SetEnvMap(std::string_view name) {
+    // "none" drops env map, the scene is lit by env color only
+    std::string env_map_name = (name == "none") ? std::string{} : std::string{name};
+    if (env_map_name != "physical_sky" && !env_map_name.empty()) {
+        // Env maps are stored as converted cubemaps in the platform specific texture folder
+        env_map_name = EnvMapFileName(env_map_name, "dds");
+
+        const std::string full_name = std::string{paths_.textures_path} + env_map_name;
+        Sys::AssetFile in_file(full_name);
+        if (!in_file) {
+            ren_ctx_.log()->Error("Failed to load env map %s", full_name.c_str());
+            return false;
+        }
+    }
+
+    std::string prev_env_map_name;
+    if (!scene_data_.env.env_map_name.empty()) {
+        prev_env_map_name = scene_data_.env.env_map_name.c_str();
+    }
+    if (env_map_name == prev_env_map_name) {
+        return true;
+    }
+
+    // Renderer holds references to the old image, make sure it's not in use anymore
+    ren_ctx_.WaitIdle();
+    ReleaseEnvMap(true /* immediately */);
+
+    scene_data_.env.env_map_name = Ren::String{env_map_name};
+    LoadEnvMap();
+
+    // Force full env cube regeneration
+    scene_data_.env.generation = 0xfffffffe;
+    return true;
+}
+
 void Eng::SceneManager::AllocGICache() {
     float probe_volume_spacing = 0.5f;
     for (uint32_t i = 0; i < PROBE_VOLUMES_COUNT; ++i) {

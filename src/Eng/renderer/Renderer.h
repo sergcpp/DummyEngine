@@ -47,6 +47,8 @@ class Renderer {
     int accumulated_frames() const { return accumulated_frames_; }
     void reset_accumulation() { frame_index_ = view_state_.frame_index = accumulated_frames_ = 0; }
 
+    void invalidate_framegraph() { cached_settings_ = {}; }
+
     float readback_exposure() const {
         if (ex_read_exposure_.exposure() > 0.0f) {
             return std::min(std::max(ex_read_exposure_.exposure(), min_exposure_), max_exposure_);

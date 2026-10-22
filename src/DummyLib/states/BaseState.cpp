@@ -2,10 +2,12 @@
 
 #include <cctype>
 
+#include <filesystem>
 #include <fstream>
 #include <future>
 #include <map>
 #include <memory>
+#include <stdexcept>
 
 #include <optick/optick.h>
 #if !defined(RELEASE_FINAL) && !defined(__ANDROID__)
@@ -53,6 +55,11 @@ extern const int TaaSampleCountStatic;
 
 namespace BaseStateInternal {
 const bool USE_TWO_THREADS = true;
+
+// The physical sky model is lit by the sun which is disabled in a lot of scenes. These are the
+// values used by the scenes that do have it (bistro, sponza)
+const Ren::Vec3f PHYS_SKY_SUN_COL{144809.867f, 129443.618f, 127098.894f};
+const float PHYS_SKY_SUN_ANGLE = 0.526f;
 
 Ren::eResState to_ren_state(const Ray::eGPUResState state) {
     switch (state) {
@@ -472,6 +479,82 @@ void BaseState::Enter() {
         return true;
     });
 
+    cmdline_ui_->RegisterCommand("env", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        if (args.size() < 2) {
+            const Eng::SceneData &scene_data = scene_manager_->scene_data();
+            log_->Info("Current env map: %s",
+                       scene_data.env.env_map_name.empty() ? "<none>" : scene_data.env.env_map_name.c_str());
+            log_->Info("Usage: env [phys|none|<env map name>]");
+
+            std::error_code ec;
+            for (const auto &entry :
+                 std::filesystem::directory_iterator(std::string{scene_manager_->paths().textures_path} + "env", ec)) {
+                if (entry.path().extension() == ".dds") {
+                    log_->Info("\tenv/%s", entry.path().filename().string().c_str());
+                }
+            }
+            return true;
+        }
+
+        std::string_view env_name = args[1].str;
+        if (env_name == "phys" || env_name == "physical" || env_name == "sky") {
+            env_name = "physical_sky";
+        }
+
+        // Env map image is referenced by draw lists, so the same synchronization as during
+        // scene reload is required
+        if (USE_TWO_THREADS) {
+            std::unique_lock<std::mutex> lock(mtx_);
+            while (notified_) {
+                thr_done_.wait(lock);
+            }
+        }
+
+        if (scene_manager_->SetEnvMap(env_name)) {
+            Eng::SceneData &scene_data = scene_manager_->scene_data();
+            if (scene_data.env.env_map_name == "physical_sky") {
+                if (!(Length2(scene_data.env.sun_col) > FLT_EPSILON)) {
+                    // Sky model has no light source without the sun
+                    phys_sky_prev_sun_col_ = scene_data.env.sun_col;
+                    phys_sky_prev_sun_angle_ = scene_data.env.sun_angle;
+                    scene_data.env.sun_col = PHYS_SKY_SUN_COL;
+                    scene_data.env.sun_angle = PHYS_SKY_SUN_ANGLE;
+                    phys_sky_sun_replaced_ = true;
+
+                    log_->Info("Sun was disabled in the scene, using (%f, %f, %f) with %f deg angular size."
+                               " Use r_sunDir to move it.",
+                               scene_data.env.sun_col[0], scene_data.env.sun_col[1], scene_data.env.sun_col[2],
+                               scene_data.env.sun_angle);
+                }
+            } else if (phys_sky_sun_replaced_) {
+                scene_data.env.sun_col = phys_sky_prev_sun_col_;
+                scene_data.env.sun_angle = phys_sky_prev_sun_angle_;
+                phys_sky_sun_replaced_ = false;
+                log_->Info("Scene sun parameters restored");
+            }
+
+            main_view_lists_[0].Clear();
+            main_view_lists_[1].Clear();
+
+            renderer_->invalidate_framegraph();
+            scene_manager_->ClearGICache(ren_ctx_->current_cmd_buf());
+
+            if (use_pt_) {
+                UpdateEnv_PT();
+            }
+            invalidate_view_ = true;
+
+            log_->Info("Env map set to %s",
+                       scene_data.env.env_map_name.empty() ? "<none>" : scene_data.env.env_map_name.c_str());
+        }
+
+        if (USE_TWO_THREADS) {
+            notified_ = true;
+            thr_notify_.notify_one();
+        }
+        return true;
+    });
+
     /*cmdline_ui_->RegisterCommand("r_updateProbes", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         Eng::SceneData &scene_data = scene_manager_->scene_data();
 
@@ -874,6 +957,7 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
     }
 
     sun_dir_ = scene_manager_->scene_data().env.sun_dir;
+    phys_sky_sun_replaced_ = false;
     if (std::abs(viewer_->app_params.sun_dir[0]) > 0 || std::abs(viewer_->app_params.sun_dir[1]) > 0 ||
         std::abs(viewer_->app_params.sun_dir[2]) > 0) {
         sun_dir_[0] = viewer_->app_params.sun_dir[0];
@@ -1505,6 +1589,95 @@ void BaseState::InitRenderer_PT() {
     }
 }
 
+void BaseState::InitEnvironment_PT() {
+    Eng::SceneData &scene_data = scene_manager_->scene_data();
+
+    Ray::environment_desc_t env_desc;
+    env_desc.env_col[0] = env_desc.back_col[0] = scene_data.env.env_col[0];
+    env_desc.env_col[1] = env_desc.back_col[1] = scene_data.env.env_col[1];
+    env_desc.env_col[2] = env_desc.back_col[2] = scene_data.env.env_col[2];
+
+    memcpy(&env_desc.atmosphere, &scene_data.env.atmosphere, sizeof(Ray::atmosphere_params_t));
+    static_assert(sizeof(Ray::atmosphere_params_t) == sizeof(Eng::atmosphere_params_t));
+
+    if (scene_data.env.sun_angle < 0.75) {
+        env_desc.envmap_resolution *= 2;
+    }
+    if (scene_data.env.sun_angle < 0.375) {
+        env_desc.envmap_resolution *= 2;
+    }
+    if (scene_data.env.sun_angle < 0.1875) {
+        env_desc.envmap_resolution *= 2;
+    }
+
+    if (!scene_data.env.env_map_name.empty()) {
+        if (scene_data.env.env_map_name == "physical_sky") {
+            env_desc.back_map = env_desc.env_map = Ray::PhysicalSkyTexture;
+        } else {
+            std::string env_map_path = "assets_pc/textures/";
+            env_map_path += Eng::SceneManager::EnvMapFileName(scene_data.env.env_map_name, "hdr");
+
+            int width = 0, height = 0;
+            std::vector<uint8_t> image_rgbe;
+            try {
+                image_rgbe = Eng::LoadHDR(env_map_path, width, height);
+            } catch (const std::exception &ex) {
+                log_->Error("Failed to load env map for path tracer: %s", ex.what());
+            }
+
+            if (!image_rgbe.empty()) {
+                Ray::tex_desc_t tex_desc;
+                tex_desc.w = width;
+                tex_desc.h = height;
+                tex_desc.data = image_rgbe;
+                tex_desc.format = Ray::eTextureFormat::RGBA8888;
+                tex_desc.is_srgb = false;
+                tex_desc.force_no_compression = true;
+                env_desc.env_map = env_desc.back_map = ray_scene_->AddTexture(tex_desc);
+            }
+        }
+    }
+
+    env_desc.env_map_rotation = env_desc.back_map_rotation = scene_data.env.env_map_rot;
+
+    ray_scene_->SetEnvironment(env_desc);
+}
+
+void BaseState::UpdateEnv_PT() {
+    using namespace std::placeholders;
+    auto parallel_for = std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, threads_, _1, _2, _3);
+
+    Eng::SceneData &scene_data = scene_manager_->scene_data();
+    if (pt_sun_light_ != Ray::InvalidLightHandle) {
+        ray_scene_->RemoveLight(pt_sun_light_);
+        pt_sun_light_ = Ray::InvalidLightHandle;
+    }
+    if (Length2(scene_data.env.sun_col) > 0) {
+        // Re-add sun light with the current parameters
+        Ray::directional_light_desc_t sun_desc;
+        memcpy(sun_desc.color, ValuePtr(scene_data.env.sun_col), 3 * sizeof(float));
+        memcpy(sun_desc.direction, ValuePtr(scene_data.env.sun_dir), 3 * sizeof(float));
+        sun_desc.angle = scene_data.env.sun_angle;
+        pt_sun_light_ = ray_scene_->AddLight(sun_desc);
+        prev_sun_dir_ = scene_data.env.sun_dir;
+    }
+
+    InitEnvironment_PT();
+    // Rebuilds physical sky env map and env light tree
+    ray_scene_->Finalize(parallel_for);
+
+#if defined(REN_VK_BACKEND)
+    if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
+        ray_renderer_->set_command_buffer(
+            Ray::GpuCommandBuffer{ren_ctx_->current_cmd_buf(), ren_ctx_->backend_frame()});
+    }
+#endif
+    ray_renderer_->ResetSpatialCache(*ray_scene_, parallel_for);
+
+    Clear_PT();
+    invalidate_view_ = true;
+}
+
 void BaseState::InitScene_PT() {
     Eng::SceneData &scene_data = scene_manager_->scene_data();
     const Eng::render_settings_t &settings = renderer_->settings;
@@ -1517,51 +1690,7 @@ void BaseState::InitScene_PT() {
     const auto *lights_src = (Eng::LightSource *)scene_data.comp_store[Eng::CompLightSource]->SequentialData();
 
     ray_scene_ = std::unique_ptr<Ray::SceneBase>(ray_renderer_->CreateScene());
-    { // Setup environment
-        Ray::environment_desc_t env_desc;
-        env_desc.env_col[0] = env_desc.back_col[0] = scene_data.env.env_col[0];
-        env_desc.env_col[1] = env_desc.back_col[1] = scene_data.env.env_col[1];
-        env_desc.env_col[2] = env_desc.back_col[2] = scene_data.env.env_col[2];
-
-        memcpy(&env_desc.atmosphere, &scene_data.env.atmosphere, sizeof(Ray::atmosphere_params_t));
-        static_assert(sizeof(Ray::atmosphere_params_t) == sizeof(Eng::atmosphere_params_t));
-
-        if (scene_data.env.sun_angle < 0.75) {
-            env_desc.envmap_resolution *= 2;
-        }
-        if (scene_data.env.sun_angle < 0.375) {
-            env_desc.envmap_resolution *= 2;
-        }
-        if (scene_data.env.sun_angle < 0.1875) {
-            env_desc.envmap_resolution *= 2;
-        }
-
-        if (!scene_data.env.env_map_name.empty()) {
-            if (scene_data.env.env_map_name == "physical_sky") {
-                env_desc.back_map = env_desc.env_map = Ray::PhysicalSkyTexture;
-            } else {
-                std::string env_map_path = "assets_pc/textures/";
-                env_map_path += scene_data.env.env_map_name;
-                env_map_path.replace(env_map_path.length() - 3, 3, "hdr");
-
-                int width, height;
-                const std::vector<uint8_t> image_rgbe = Eng::LoadHDR(env_map_path, width, height);
-
-                Ray::tex_desc_t tex_desc;
-                tex_desc.w = width;
-                tex_desc.h = height;
-                tex_desc.data = image_rgbe;
-                tex_desc.format = Ray::eTextureFormat::RGBA8888;
-                tex_desc.is_srgb = false;
-                tex_desc.force_no_compression = true;
-                env_desc.env_map = env_desc.back_map = ray_scene_->AddTexture(tex_desc);
-            }
-        }
-
-        env_desc.env_map_rotation = env_desc.back_map_rotation = scene_data.env.env_map_rot;
-
-        ray_scene_->SetEnvironment(env_desc);
-    }
+    InitEnvironment_PT();
     { // Add main camera
         Ray::camera_desc_t cam_desc;
         cam_desc.type = Ray::eCamType::Persp;
