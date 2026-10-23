@@ -61,10 +61,11 @@ const bool USE_TWO_THREADS = true;
 const Ren::Vec3f PHYS_SKY_SUN_COL{144809.867f, 129443.618f, 127098.894f};
 const float PHYS_SKY_SUN_ANGLE = 0.526f;
 
-// Ray's camera `fstop` is an aperture coefficient, not a photographic f-stop: the path tracer computes the aperture
-// radius as `0.5 * focal_length / fstop * sensor_height`, while scene assets and the realtime DOF pass use the
-// photographic `0.5 * focal_length / fstop`. Scale the value so that PT and realtime DOF match.
-float ray_fstop_from_eng(const Ren::Camera &cam) { return cam.fstop * cam.sensor_height; }
+// Ray's camera `fstop` is an aperture coefficient, not a photographic f-stop. Ray samples a disc of radius 0.5 and
+// scales it by `0.5 * focal_length / fstop * sensor_height`, so its effective aperture *radius* is
+// `0.25 * focal_length / fstop * sensor_height`. The realtime DOF chain uses the photographic radius
+// `0.5 * focal_length / fstop` - scale accordingly so that PT and realtime get the same physical aperture.
+float ray_fstop_from_eng(const Ren::Camera &cam) { return 0.5f * cam.fstop * cam.sensor_height; }
 
 Ren::eResState to_ren_state(const Ray::eGPUResState state) {
     switch (state) {
