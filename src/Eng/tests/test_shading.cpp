@@ -150,38 +150,30 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
 
     puts(" ---------------");
     // sheen material
-    /*run_image_test(ren_ctx, threads, "sheen_mat0", 46.55, NoShadow);
-    run_image_test(ren_ctx, threads, "sheen_mat0", 36.95, NoGI);
-    run_image_test(ren_ctx, threads, "sheen_mat0", 30.35, MedDiffGI);
-    run_image_test(ren_ctx, threads, "sheen_mat0", 28.85, Full);
-    run_image_test(ren_ctx, threads, "sheen_mat1", 43.85, NoShadow);
-    run_image_test(ren_ctx, threads, "sheen_mat1", 36.55, NoGI);
-    run_image_test(ren_ctx, threads, "sheen_mat1", 27.35, MedDiffGI);
-    run_image_test(ren_ctx, threads, "sheen_mat1", 26.60, Full);
-    run_image_test(ren_ctx, threads, "sheen_mat2", 45.30, NoShadow);
-    run_image_test(ren_ctx, threads, "sheen_mat2", 36.55, NoGI);
-    run_image_test(ren_ctx, threads, "sheen_mat2", 29.55, MedDiffGI);
-    run_image_test(ren_ctx, threads, "sheen_mat2", 27.65, Full);
-    run_image_test(ren_ctx, threads, "sheen_mat3", 43.90, NoShadow);
-    run_image_test(ren_ctx, threads, "sheen_mat3", 35.95, NoGI);
-    run_image_test(ren_ctx, threads, "sheen_mat3", 28.35, MedDiffGI);
-    run_image_test(ren_ctx, threads, "sheen_mat3", 26.40, Full);
-    run_image_test(ren_ctx, threads, "sheen_mat4", 45.20, NoShadow);
-    run_image_test(ren_ctx, threads, "sheen_mat4", 37.10, NoGI);
-    run_image_test(ren_ctx, threads, "sheen_mat4", 25.25, MedDiffGI);
-    run_image_test(ren_ctx, threads, "sheen_mat4", 21.00, Full);
-    run_image_test(ren_ctx, threads, "sheen_mat5", 42.30, NoShadow);
-    run_image_test(ren_ctx, threads, "sheen_mat5", 36.05, NoGI);
-    run_image_test(ren_ctx, threads, "sheen_mat5", 23.35, MedDiffGI);
-    run_image_test(ren_ctx, threads, "sheen_mat5", 20.15, Full);
-    run_image_test(ren_ctx, threads, "sheen_mat6", 44.40, NoShadow);
-    run_image_test(ren_ctx, threads, "sheen_mat6", 36.75, NoGI);
-    run_image_test(ren_ctx, threads, "sheen_mat6", 25.00, MedDiffGI);
-    run_image_test(ren_ctx, threads, "sheen_mat6", 19.90, Full);
-    run_image_test(ren_ctx, threads, "sheen_mat7", 42.70, NoShadow);
-    run_image_test(ren_ctx, threads, "sheen_mat7", 36.35, NoGI);
-    run_image_test(ren_ctx, threads, "sheen_mat7", 24.70, MedDiffGI);
-    run_image_test(ren_ctx, threads, "sheen_mat7", 19.35, Full);*/
+    run_image_test(ren_ctx, threads, "sheen_mat0", 28.65, NoGI);
+    run_image_test(ren_ctx, threads, "sheen_mat0", 25.95, MedDiffGI);
+    run_image_test(ren_ctx, threads, "sheen_mat0", 25.95, Full);
+    run_image_test(ren_ctx, threads, "sheen_mat1", 27.50, NoGI);
+    run_image_test(ren_ctx, threads, "sheen_mat1", 22.85, MedDiffGI);
+    run_image_test(ren_ctx, threads, "sheen_mat1", 22.75, Full);
+    run_image_test(ren_ctx, threads, "sheen_mat2", 27.65, NoGI);
+    run_image_test(ren_ctx, threads, "sheen_mat2", 24.15, MedDiffGI);
+    run_image_test(ren_ctx, threads, "sheen_mat2", 23.65, Full);
+    run_image_test(ren_ctx, threads, "sheen_mat3", 28.00, NoGI);
+    run_image_test(ren_ctx, threads, "sheen_mat3", 26.20, MedDiffGI);
+    run_image_test(ren_ctx, threads, "sheen_mat3", 25.55, Full);
+    run_image_test(ren_ctx, threads, "sheen_mat4", 29.20, NoGI);
+    run_image_test(ren_ctx, threads, "sheen_mat4", 19.90, MedDiffGI);
+    run_image_test(ren_ctx, threads, "sheen_mat4", 18.75, Full);
+    run_image_test(ren_ctx, threads, "sheen_mat5", 28.40, NoGI);
+    run_image_test(ren_ctx, threads, "sheen_mat5", 17.25, MedDiffGI);
+    run_image_test(ren_ctx, threads, "sheen_mat5", 16.50, Full);
+    run_image_test(ren_ctx, threads, "sheen_mat6", 28.40, NoGI);
+    run_image_test(ren_ctx, threads, "sheen_mat6", 19.00, MedDiffGI);
+    run_image_test(ren_ctx, threads, "sheen_mat6", 17.05, Full);
+    run_image_test(ren_ctx, threads, "sheen_mat7", 28.60, NoGI);
+    run_image_test(ren_ctx, threads, "sheen_mat7", 21.55, MedDiffGI);
+    run_image_test(ren_ctx, threads, "sheen_mat7", 18.60, Full);
 
     puts(" ---------------");
     // specular material
@@ -284,30 +276,30 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
 
     puts(" ---------------");
     // tint material
-    run_image_test(ren_ctx, threads, "tint_mat0", 26.70, NoGI);
-    run_image_test(ren_ctx, threads, "tint_mat0", 24.80, NoDiffGI);
-    run_image_test(ren_ctx, threads, "tint_mat0", 24.70, MedDiffGI);
-    run_image_test(ren_ctx, threads, "tint_mat0", 24.75, Full);
-    run_image_test(ren_ctx, threads, "tint_mat1", 22.85, NoGI);
-    run_image_test(ren_ctx, threads, "tint_mat1", 22.15, NoDiffGI);
-    run_image_test(ren_ctx, threads, "tint_mat1", 21.35, MedDiffGI);
-    run_image_test(ren_ctx, threads, "tint_mat1", 21.40, Full);
-    run_image_test(ren_ctx, threads, "tint_mat2", 22.50, NoGI);
-    run_image_test(ren_ctx, threads, "tint_mat2", 22.35, NoDiffGI);
-    run_image_test(ren_ctx, threads, "tint_mat2", 24.40, MedDiffGI);
-    run_image_test(ren_ctx, threads, "tint_mat2", 24.70, Full);
-    run_image_test(ren_ctx, threads, "tint_mat3", 28.25, NoGI);
-    run_image_test(ren_ctx, threads, "tint_mat3", 24.50, NoDiffGI);
-    run_image_test(ren_ctx, threads, "tint_mat3", 21.40, MedDiffGI);
-    run_image_test(ren_ctx, threads, "tint_mat3", 19.60, Full);
-    run_image_test(ren_ctx, threads, "tint_mat4", 23.55, NoGI);
-    run_image_test(ren_ctx, threads, "tint_mat4", 22.75, NoDiffGI);
-    run_image_test(ren_ctx, threads, "tint_mat4", 19.20, MedDiffGI);
-    run_image_test(ren_ctx, threads, "tint_mat4", 17.90, Full);
-    run_image_test(ren_ctx, threads, "tint_mat5", 23.95, NoGI);
-    run_image_test(ren_ctx, threads, "tint_mat5", 23.95, NoDiffGI);
-    run_image_test(ren_ctx, threads, "tint_mat5", 22.00, MedDiffGI);
-    run_image_test(ren_ctx, threads, "tint_mat5", 18.85, Full);
+    run_image_test(ren_ctx, threads, "tint_mat0", 28.40, NoGI);
+    run_image_test(ren_ctx, threads, "tint_mat0", 28.15, NoDiffGI);
+    run_image_test(ren_ctx, threads, "tint_mat0", 31.00, MedDiffGI);
+    run_image_test(ren_ctx, threads, "tint_mat0", 31.15, Full);
+    run_image_test(ren_ctx, threads, "tint_mat1", 27.85, NoGI);
+    run_image_test(ren_ctx, threads, "tint_mat1", 27.55, NoDiffGI);
+    run_image_test(ren_ctx, threads, "tint_mat1", 27.50, MedDiffGI);
+    run_image_test(ren_ctx, threads, "tint_mat1", 27.25, Full);
+    run_image_test(ren_ctx, threads, "tint_mat2", 28.50, NoGI);
+    run_image_test(ren_ctx, threads, "tint_mat2", 28.50, NoDiffGI);
+    run_image_test(ren_ctx, threads, "tint_mat2", 30.45, MedDiffGI);
+    run_image_test(ren_ctx, threads, "tint_mat2", 28.80, Full);
+    run_image_test(ren_ctx, threads, "tint_mat3", 28.80, NoGI);
+    run_image_test(ren_ctx, threads, "tint_mat3", 28.00, NoDiffGI);
+    run_image_test(ren_ctx, threads, "tint_mat3", 25.40, MedDiffGI);
+    run_image_test(ren_ctx, threads, "tint_mat3", 21.90, Full);
+    run_image_test(ren_ctx, threads, "tint_mat4", 27.50, NoGI);
+    run_image_test(ren_ctx, threads, "tint_mat4", 26.85, NoDiffGI);
+    run_image_test(ren_ctx, threads, "tint_mat4", 23.95, MedDiffGI);
+    run_image_test(ren_ctx, threads, "tint_mat4", 20.60, Full);
+    run_image_test(ren_ctx, threads, "tint_mat5", 29.00, NoGI);
+    run_image_test(ren_ctx, threads, "tint_mat5", 28.95, NoDiffGI);
+    run_image_test(ren_ctx, threads, "tint_mat5", 25.65, MedDiffGI);
+    run_image_test(ren_ctx, threads, "tint_mat5", 19.90, Full);
 
     puts(" ---------------");
     // clearcoat material

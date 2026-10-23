@@ -17,6 +17,7 @@
 #include "brdf_principledDiffuse.h"
 #include "brdf_principledSheen.h"
 #include "brdf_principledSpecular.h"
+#include "brdf_sheenLTC.h"
 
 #include "nelder_mead.h"
 
@@ -355,10 +356,11 @@ int main(int argc, char *argv[]) {
     //BrdfDisneyDiffuse brdf;
     //BrdfPrincipledDiffuse brdf;
     //BrdfPrincipledSheen brdf;
+    BrdfSheenLTC brdf;
     //BrdfPrincipledSpecular brdf;
     //BrdfPrincipledClearcoat brdf;
     //BrdfOrenNayar brdf;
-    BrdfGGX_EnergyPreserving brdf;
+    //BrdfGGX_EnergyPreserving brdf;
 
     // allocate data
     Mat3f *tab = new Mat3f[N * N];

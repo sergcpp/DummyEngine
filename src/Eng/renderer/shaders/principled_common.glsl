@@ -192,7 +192,6 @@ int cubemap_face(vec3 _dir, vec3 f, vec3 u, vec3 v) {
     #define ENABLE_DIFFUSE 1
 #endif
 #ifndef ENABLE_SHEEN
-    // NOTE: Sheen is disabled as it requires different LTC implementation
     #define ENABLE_SHEEN 0
 #endif
 #ifndef ENABLE_SPECULAR

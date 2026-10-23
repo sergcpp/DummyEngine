@@ -10,6 +10,7 @@
     #define subgroupMin(x) (x)
 #endif
 
+#define ENABLE_SHEEN 1
 #if defined(SHADOW_JITTER)
     #define SIMPLIFIED_LTC_DIFFUSE 0
 #endif
@@ -188,7 +189,7 @@ void main() {
 
     const float base_color_lum = lum(base_color);
     if (base_color_lum > 0.0) {
-        tint_color = base_color / base_color_lum;
+        tint_color = saturate(base_color / base_color_lum);
     }
 
     vec4 mat_params0, mat_params1;
