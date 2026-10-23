@@ -61,6 +61,11 @@ const bool USE_TWO_THREADS = true;
 const Ren::Vec3f PHYS_SKY_SUN_COL{144809.867f, 129443.618f, 127098.894f};
 const float PHYS_SKY_SUN_ANGLE = 0.526f;
 
+// Ray's camera `fstop` is an aperture coefficient, not a photographic f-stop: the path tracer computes the aperture
+// radius as `0.5 * focal_length / fstop * sensor_height`, while scene assets and the realtime DOF pass use the
+// photographic `0.5 * focal_length / fstop`. Scale the value so that PT and realtime DOF match.
+float ray_fstop_from_eng(const Ren::Camera &cam) { return cam.fstop * cam.sensor_height; }
+
 Ren::eResState to_ren_state(const Ray::eGPUResState state) {
     switch (state) {
     case Ray::eGPUResState::RenderTarget:
@@ -1713,7 +1718,7 @@ void BaseState::InitScene_PT() {
         cam_desc.shift[1] = scene_manager_->main_cam().sensor_shift()[1];
         cam_desc.sensor_height = scene_manager_->main_cam().sensor_height;
         cam_desc.focus_distance = scene_manager_->main_cam().focus_distance;
-        cam_desc.fstop = scene_manager_->main_cam().fstop;
+        cam_desc.fstop = BaseStateInternal::ray_fstop_from_eng(scene_manager_->main_cam());
         cam_desc.lens_rotation = scene_manager_->main_cam().lens_rotation;
         cam_desc.lens_ratio = scene_manager_->main_cam().lens_ratio;
         cam_desc.lens_blades = scene_manager_->main_cam().lens_blades;
@@ -2070,7 +2075,7 @@ void BaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, co
     cam_desc.fov = fov;
     cam_desc.sensor_height = scene_manager_->main_cam().sensor_height;
     cam_desc.focus_distance = scene_manager_->main_cam().focus_distance;
-    cam_desc.fstop = scene_manager_->main_cam().fstop;
+    cam_desc.fstop = BaseStateInternal::ray_fstop_from_eng(scene_manager_->main_cam());
     cam_desc.lens_rotation = scene_manager_->main_cam().lens_rotation;
     cam_desc.lens_ratio = scene_manager_->main_cam().lens_ratio;
     cam_desc.lens_blades = scene_manager_->main_cam().lens_blades;
