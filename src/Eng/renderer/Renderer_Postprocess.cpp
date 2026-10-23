@@ -303,7 +303,12 @@ Eng::FgImgRWHandle Eng::Renderer::AddDofPasses(FgImgROHandle input, const Common
     base_params.img_size = Ren::Vec4f{};
     base_params.depth_size = Ren::Vec4f{float(frame_textures.depth_desc.w), float(frame_textures.depth_desc.h), 0.0f,
                                         0.0f};
-    base_params.clip_info = view_state_.clip_info;
+    // NOTE: view_state_.clip_info is only written by the shared-data update pass, which may not have run yet when
+    // this function builds the graph (it is zero on the first frame) - compute the same value from the camera.
+    {
+        const float near = cam.near(), far = cam.far();
+        base_params.clip_info = Ren::Vec4f{near * far, near, far, std::log2(1.0f + far / near)};
+    }
     base_params.rot = Ren::Vec4f{1.0f, 0.0f, 0.0f, 1.0f};
     base_params.rot_angle = golden_angle(fi * 0.6180339887498948482f);
     base_params.seed = seed;
