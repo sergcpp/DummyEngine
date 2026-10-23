@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = env_cmd
-	commit = f8492eab29d9594fc964af3957acd9ea7f3e77d8
+	branch = shading_update
+	commit = a8791c64f5ccf4013e95f8c75027fb1e59fe1ae1
 	method = merge
 	cmdver = 0.4.9
-	parent = 34e01e6939333c3eb1ee35a8bfaee51e437d3b44
+	parent = 2503f1eecb11d2e7f619418de4929ee2b3b13ecd
