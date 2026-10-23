@@ -316,8 +316,8 @@
         "fwd_speed" : 0.005,
         "fov" : 18.1806,
         "sensor_height" : 0.036,
-        "focus_distance" : 0.445,
-        "fstop" : 2.8,
+        "focus_distance" : 0.43,
+        "fstop" : 32,
         "min_exposure" : 0,
         "max_exposure" : 0
     }
