@@ -286,9 +286,13 @@ Eng::FgImgRWHandle Eng::Renderer::AddDofPasses(FgImgROHandle input, const Common
     const float full_w = float(view_state_.out_res[0]), full_h = float(view_state_.out_res[1]);
 
     // COC radius of the farthest out-of-focus pixel, in halfres pixels
+    // COC radius of the farthest out-of-focus pixel, in halfres pixels.
+    // NOTE: `cam.angle()`/`cam.sensor_height` describe the *vertical* extent (see Ren::Camera::focal_length and
+    // PerspectiveProjection), so the sensor->pixel scale must use the image height. Using the width inflates the CoC
+    // by the aspect ratio and makes the realtime DOF stronger than the traced one in PT mode.
     constexpr float MAX_SCREEN_FRACTION = 0.01f;
     const float focal_len = cam.focal_length();
-    const float coc_factor = full_w / 2.0f * focal_len * (0.5f * focal_len / cam.fstop) / cam.sensor_height;
+    const float coc_factor = full_h / 2.0f * focal_len * (0.5f * focal_len / cam.fstop) / cam.sensor_height;
     const float max_kernel_radius = std::min(MAX_SCREEN_FRACTION * full_w / 2.0f, float(4 * TILE_RES));
 
     // Per-frame rotation of the sampling patterns (different sequences per pass to avoid correlations)
