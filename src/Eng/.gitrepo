@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = shading_update
-	commit = a8791c64f5ccf4013e95f8c75027fb1e59fe1ae1
+	branch = dof
+	commit = eb92f95bcc97161788cd5fd645bea6c9aebb0c7e
 	method = merge
 	cmdver = 0.4.9
-	parent = 2503f1eecb11d2e7f619418de4929ee2b3b13ecd
+	parent = 5906c45b8a7aff97c0bcaa29554f5d4c7c54a48f
