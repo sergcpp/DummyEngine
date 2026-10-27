@@ -426,6 +426,7 @@ void main() {
     }
 
     out_color /= RAD_CACHE_RADIANCE_COMPRESSION;
+    out_color = clamp(out_color, vec3(-65504.0), vec3(65504.0));
 
 #if 1
     g_inout_voxels[2 * cache_entry + 0] = packHalf2x16(out_color.xy);

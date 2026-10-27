@@ -603,7 +603,7 @@ vec3 get_volume_irradiance_sep(const uint volume_index, sampler2DArray irradianc
     }
 
     indoor_irradiance /= max(indoor_weight, 0.001);
-    outdoor_irradiance /= max(outdoor_weight, 0.001)
+    outdoor_irradiance /= max(outdoor_weight, 0.001);
 
     const float k = linstep(0.6, 1.0, outdoor_weight / (indoor_weight + outdoor_weight));
     vec3 irradiance = mix(indoor_irradiance, outdoor_irradiance, k);

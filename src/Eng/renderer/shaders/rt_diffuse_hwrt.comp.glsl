@@ -82,8 +82,8 @@ bool hash_map_find(const uint hash_key, inout uint cache_entry, out uint bucket_
     return false;
 }
 
-uint find_entry(const vec3 p, const bool backfacing, const vec3 cam_pos) {
-    const uint hash_key = compute_hash(p, backfacing, cam_pos);
+uint find_entry(const vec3 p, const bool backfacing, const vec3 cam_pos, const vec3 scroll) {
+    const uint hash_key = compute_hash(p, backfacing, cam_pos, scroll);
     uint cache_entry = HASH_GRID_INVALID_CACHE_ENTRY, collisions_count;
     hash_map_find(hash_key, cache_entry, collisions_count);
     return cache_entry;
@@ -205,7 +205,7 @@ void main() {
         const bool use_cache = 0.5 * hit_t > voxel_size;
 #endif
         if (use_cache) {
-            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_rad.xyz);
+            const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_rad.xyz, g_shrd_data.gi_cache_scroll.xyz);
             if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
                 vec4 out_color = vec4(0.0);
 

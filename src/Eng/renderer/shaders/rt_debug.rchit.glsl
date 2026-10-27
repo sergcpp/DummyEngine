@@ -81,8 +81,8 @@ bool hash_map_find(const uint hash_key, inout uint cache_entry, out uint bucket_
     return false;
 }
 
-uint find_entry(const vec3 p, const bool backfacing, const vec3 cam_pos) {
-    const uint hash_key = compute_hash(p, backfacing, cam_pos);
+uint find_entry(const vec3 p, const bool backfacing, const vec3 cam_pos, const vec3 scroll) {
+    const uint hash_key = compute_hash(p, backfacing, cam_pos, scroll);
     uint cache_entry = HASH_GRID_INVALID_CACHE_ENTRY, collisions_count;
     hash_map_find(hash_key, cache_entry, collisions_count);
     return cache_entry;
@@ -298,7 +298,7 @@ void main() {
     } else if (SHADING_MODE == 2) {
         light_total = emission_color = vec3(0.0);
 
-        const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_rad.xyz);
+        const uint cache_entry = find_entry(P, backfacing, g_shrd_data.cam_pos_rad.xyz, g_shrd_data.gi_cache_scroll.xyz);
         if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
             light_total = abs(vec3(
                 unpackHalf2x16(g_cache_voxels[2 * cache_entry + 0]),

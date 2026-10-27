@@ -37,8 +37,8 @@ bool hash_map_find(const uint hash_key, inout uint cache_entry, out uint bucket_
     return false;
 }
 
-uint find_entry(const vec3 p, const bool backfacing, const vec3 cam_pos) {
-    const uint hash_key = compute_hash(p, backfacing, cam_pos);
+uint find_entry(const vec3 p, const bool backfacing, const vec3 cam_pos, const vec3 scroll) {
+    const uint hash_key = compute_hash(p, backfacing, cam_pos, scroll);
     uint cache_entry = HASH_GRID_INVALID_CACHE_ENTRY, collisions_count;
     hash_map_find(hash_key, cache_entry, collisions_count);
     return cache_entry;
@@ -47,12 +47,15 @@ uint find_entry(const vec3 p, const bool backfacing, const vec3 cam_pos) {
 layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
-    const uvec2 px_coords = gl_GlobalInvocationID.xy;
+    uvec2 px_coords = gl_GlobalInvocationID.xy;
     if (px_coords.x >= g_params.img_size.x || px_coords.y >= g_params.img_size.y) {
         return;
     }
 
     const uint linear_index = px_coords.y * g_params.img_size.x + px_coords.x;
+#ifndef VULKAN
+    px_coords.y = g_params.img_size.y - 1 - px_coords.y;
+#endif
     if (linear_index < HASH_GRID_CACHE_ENTRIES_COUNT) {
         const uint hash = g_cache_entries[linear_index];
         if (hash != HASH_GRID_INVALID_HASH_KEY) {
@@ -78,9 +81,9 @@ void main() {
     const vec4 normal_ws = UnpackNormalAndRoughness(texelFetch(g_normal_tex, ivec2(ucoord), 0).x);
     const vec3 view_ray_vs = normalize(pos_ws - g_shrd_data.cam_pos_and_exp.xyz);
 
-    const uint cache_entry = find_entry(pos_ws, false, g_shrd_data.cam_pos_rad.xyz);
+    const uint cache_entry = find_entry(pos_ws, false, g_shrd_data.cam_pos_rad.xyz, g_shrd_data.gi_cache_scroll.xyz);
     if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
-        const vec3 debug_color = hash_grid_debug(pos_ws, false, g_shrd_data.cam_pos_rad.xyz);
+        const vec3 debug_color = hash_grid_debug(pos_ws, false, g_shrd_data.cam_pos_rad.xyz, g_shrd_data.gi_cache_scroll.xyz);
         imageStore(g_out_img, ivec2(px_coords), vec4(debug_color, 1.0));
     } else {
         imageStore(g_out_img, ivec2(px_coords), vec4(0.0, 0.0, 0.0, 1.0));

@@ -265,6 +265,7 @@ struct PersistentGpuData {
 
     // Radiance cache
     mutable Ren::Vec3f cam_pos_rad;
+    mutable Ren::Vec3f gi_cache_scroll;
     Ren::BufferHandle spatial_cache_entries;
     Ren::BufferHandle spatial_cache_voxels;
 

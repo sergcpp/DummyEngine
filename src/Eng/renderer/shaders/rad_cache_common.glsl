@@ -24,14 +24,14 @@ float calc_voxel_size(const uint grid_level) {
     return pow(RAD_CACHE_GRID_LOG_BASE, grid_level) / (RAD_CACHE_GRID_SCALE * pow(RAD_CACHE_GRID_LOG_BASE, HASH_GRID_LEVEL_BIAS));
 }
 
-ivec4 calc_grid_position_log(vec3 p, const vec3 cam_pos) {
+ivec4 calc_grid_position_log(vec3 p, const vec3 cam_pos, const vec3 scroll) {
     // NOTE: Bias down on Y axis because of sun leaking
     p += vec3(HASH_GRID_POSITION_BIAS, -HASH_GRID_POSITION_BIAS, HASH_GRID_POSITION_BIAS);
 
     const uint grid_level = calc_grid_level(p, cam_pos);
     const float voxel_size = calc_voxel_size(grid_level);
     ivec4 grid_position;
-    grid_position.xyz = ivec3(floor(p / voxel_size));
+    grid_position.xyz = ivec3(floor((p + scroll) / voxel_size));
     grid_position.w = int(grid_level);
     return grid_position;
 }
@@ -43,8 +43,8 @@ uint hash_map_base_slot(const uint hash_key) {
     return min(slot, HASH_GRID_CACHE_ENTRIES_COUNT - HASH_GRID_HASH_MAP_BUCKET_SIZE);
 }
 
-uint compute_hash(const vec3 p, const bool backfacing, const vec3 cam_pos) {
-    const uvec4 grid_pos = uvec4(calc_grid_position_log(p, cam_pos));
+uint compute_hash(const vec3 p, const bool backfacing, const vec3 cam_pos, const vec3 scroll) {
+    const uvec4 grid_pos = uvec4(calc_grid_position_log(p, cam_pos, scroll));
 
     uint hash_key =
         ((grid_pos.x & HASH_GRID_POSITION_BIT_MASK) << (HASH_GRID_POSITION_BIT_NUM * 0)) |
@@ -65,8 +65,8 @@ vec3 GetColorFromHash32(const uint hash) {
     return color;
 }
 
-vec3 hash_grid_debug(const vec3 p, const bool backfacing, const vec3 cam_pos) {
-    const uint hash_key = compute_hash(p, backfacing, cam_pos);
+vec3 hash_grid_debug(const vec3 p, const bool backfacing, const vec3 cam_pos, const vec3 scroll) {
+    const uint hash_key = compute_hash(p, backfacing, cam_pos, scroll);
     return GetColorFromHash32(hash_jenkins32(hash_key));
 }
 

@@ -16,6 +16,7 @@ enum eImgTest {
     NoDiffGI_RTShadow,
     MedDiffGI,
     MedDiffGI_Dynamic,
+    MedDiffGI_RadCacheDbg,
     Full,
     Full_Dynamic,
     Full_Ultra,

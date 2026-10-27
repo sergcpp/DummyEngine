@@ -535,6 +535,13 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     if (view_state_.prev_world_origin != list.world_origin) {
         const Ren::Vec3f origin_diff = Ren::Vec3f(list.world_origin - view_state_.prev_world_origin);
 
+        persistent_data.gi_cache_scroll += origin_diff;
+        persistent_data.cam_pos_rad -= origin_diff;
+        // 2^15 m folds by an exact multiple of 512 cells (pitch 2^L/30) at every level L <= 7; L >= 8 keys re-derive on next insert
+        for (int i = 0; i < 3; ++i) {
+            persistent_data.gi_cache_scroll[i] = std::fmod(persistent_data.gi_cache_scroll[i], 32768.0f);
+        }
+
         view_state_.prev_view_from_world = Translate(view_state_.prev_view_from_world, origin_diff);
         view_state_.prev_clip_from_world = Translate(view_state_.prev_clip_from_world, origin_diff);
 

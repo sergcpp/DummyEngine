@@ -54,6 +54,8 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
         test_postfix = "_nodiffgirt";
     } else if (img_test == eImgTest::MedDiffGI || img_test == eImgTest::MedDiffGI_Dynamic) {
         test_postfix = "_meddiffgi";
+    } else if (img_test == eImgTest::MedDiffGI_RadCacheDbg) {
+        test_postfix = "_radcachedbg";
     } else if (img_test == eImgTest::Full_Ultra || img_test == eImgTest::Full_Ultra_Dynamic) {
         test_postfix = "_ultra";
     }
@@ -125,6 +127,10 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
         } else if (img_test == eImgTest::MedDiffGI || img_test == eImgTest::MedDiffGI_Dynamic) {
             renderer->settings.gi_quality = eGIQuality::Medium;
             renderer->settings.sky_quality = eSkyQuality::Medium;
+        } else if (img_test == eImgTest::MedDiffGI_RadCacheDbg) {
+            renderer->settings.gi_quality = eGIQuality::Medium;
+            renderer->settings.sky_quality = eSkyQuality::Medium;
+            renderer->settings.debug_rad_cache = true;
         } else if (img_test == eImgTest::Full_Ultra || img_test == eImgTest::Full_Ultra_Dynamic) {
             renderer->settings.shadows_quality = eShadowsQuality::Raytraced;
             renderer->settings.reflections_quality = eReflectionsQuality::Raytraced_High;
@@ -634,7 +640,10 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
             end_frame();
         }
 
-        renderer->reset_accumulation();
+        if (img_test != eImgTest::MedDiffGI_RadCacheDbg) {
+            // RadCacheDbg keeps frame_index continuous: post-warmup reset would wrap the (fi - stamp) & 0xffff eviction and wipe the warm cache
+            renderer->reset_accumulation();
+        }
 
         //
         // Main capture
@@ -668,6 +677,7 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
                                           draw_list);
 
                 begin_frame();
+                scene_manager.Serve(); // Flushes instance-buffer updates queued by world scrolling (production frame loop does this)
                 renderer->ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
                 end_frame();
 
@@ -695,5 +705,17 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
 void test_empty_scene(Sys::ThreadPool &threads) {
     LogErr log;
     TestContext ren_ctx(512, 512, g_device_name, g_validation_level, g_nohwrt, g_nosubgroup, &log);
-    run_image_test(ren_ctx, threads, "empty", INFINITY, Full);
+    run_image_test(ren_ctx, threads, "empty_scene", INFINITY, Full);
+}
+
+void test_scroll_scene(Sys::ThreadPool &threads) {
+    LogErr log;
+    // 1024x1024 == HASH_GRID_CACHE_ENTRIES_COUNT: the debug view is only the hash-table dump; the compiler-dependent surface-lookup band region is empty
+    TestContext ren_ctx(1024, 1024, g_device_name, g_validation_level, g_nohwrt, g_nosubgroup, &log);
+
+    // Jump/settle frames at 4.25 km; the 34 km stop crosses the 2^15 m fold and the return trip folds back to zero
+    run_image_test(ren_ctx, threads, "scroll_scene_dyn",
+                   std::vector<double>{45.10, 45.10, 43.85, 43.55, 43.55, 43.50, 43.50, 43.50, 43.35, 42.70, //
+                                       42.45, 42.45, 42.25, 42.25, 41.80, 41.80, 41.80, 41.80, 41.80, 41.80, 41.80},
+                   MedDiffGI_RadCacheDbg);
 }

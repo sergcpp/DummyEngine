@@ -55,8 +55,8 @@ bool hash_map_insert(const uint hash_key, out uint cache_entry) {
     return false;
 }
 
-uint insert_entry(const vec3 p, const bool backfacing, const vec3 cam_pos) {
-    const uint hash_key = compute_hash(p, backfacing, cam_pos);
+uint insert_entry(const vec3 p, const bool backfacing, const vec3 cam_pos, const vec3 scroll) {
+    const uint hash_key = compute_hash(p, backfacing, cam_pos, scroll);
     uint cache_entry = HASH_GRID_INVALID_CACHE_ENTRY;
     hash_map_insert(hash_key, cache_entry);
     return cache_entry;
@@ -113,7 +113,7 @@ void main() {
 
     const vec3 P = probe_pos + probe_ray_dir * hit_t;
 
-    const uint cache_entry = insert_entry(P, backfacing, g_shrd_data.cam_pos_and_exp.xyz);
+    const uint cache_entry = insert_entry(P, backfacing, g_shrd_data.cam_pos_and_exp.xyz, g_shrd_data.gi_cache_scroll.xyz);
     if (cache_entry != HASH_GRID_INVALID_CACHE_ENTRY) {
         const uint frame_new = g_params.pass_hash << 16u;
         const uint frame_old = atomicExchange(g_inout_voxels[2 * cache_entry + 1], frame_new);

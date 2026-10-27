@@ -2199,6 +2199,9 @@ void Eng::SceneManager::ClearGICache(Ren::CommandBuffer _cmd_buf) {
     ren_ctx_.CmdClearBuffer(scene_data_.persistent_data->spatial_cache_entries, 0, cmd_buf);
     ren_ctx_.CmdClearBuffer(scene_data_.persistent_data->spatial_cache_voxels, 0, cmd_buf);
 
+    // Cache is empty now, restart the scroll accumulator in lockstep with it
+    scene_data_.persistent_data->gi_cache_scroll = Ren::Vec3f{};
+
     if (!_cmd_buf) {
         ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
     }
