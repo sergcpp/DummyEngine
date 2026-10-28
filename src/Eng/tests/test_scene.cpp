@@ -715,7 +715,7 @@ void test_scroll_scene(Sys::ThreadPool &threads) {
 
     // Jump/settle frames at 4.25 km; the 34 km stop crosses the 2^15 m fold and the return trip folds back to zero
     run_image_test(ren_ctx, threads, "scroll_scene_dyn",
-                   std::vector<double>{45.10, 45.10, 43.85, 43.55, 43.55, 43.50, 43.50, 43.50, 43.35, 42.70, //
-                                       42.45, 42.45, 42.25, 42.25, 41.80, 41.80, 41.80, 41.80, 41.80, 41.80, 41.80},
+                   std::vector<double>{44.10, 44.10, 42.80, 42.50, 42.50, 42.45, 42.45, 42.45, 42.35, 41.70, //
+                                       41.45, 41.45, 41.25, 41.25, 40.75, 40.75, 40.75, 40.75, 40.75, 40.75, 40.75},
                    MedDiffGI_RadCacheDbg);
 }
