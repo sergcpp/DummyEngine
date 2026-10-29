@@ -39,7 +39,10 @@ extern int g_validation_level;
 extern bool g_nohwrt, g_nosubgroup;
 
 void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_view test_name,
-                    Ren::Span<const double> min_psnr, const eImgTest img_test, const float res_scale) {
+                    const std::variant<Ren::Span<const double>, Ren::Span<const int>> &thresholds,
+                    const eImgTest img_test, const float res_scale) {
+    const auto *min_psnr = std::get_if<Ren::Span<const double>>(&thresholds);
+    const auto *fireflies_max = std::get_if<Ren::Span<const int>>(&thresholds);
     using namespace std::chrono;
     using namespace Eng;
 
@@ -284,7 +287,7 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
         }
 
         if (!cam_frames.empty()) {
-            require_return(min_psnr.size() == cam_frames.size());
+            require_return(std::visit([](const auto &v) { return v.size(); }, thresholds) == cam_frames.size());
             // Switch to dynamic mode
             renderer->settings.taa_mode = eTAAMode::Dynamic;
             renderer->settings.enable_shadow_jitter = false;
@@ -549,6 +552,10 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
             })
 
             double mse = 0.0;
+            int fireflies_cnt = 0;
+
+            // Firefly = pixel differing from reference by >32 in any channel
+            const int diff_thres = 32;
 
             const bool flip_y =
 #if defined(REN_GL_BACKEND)
@@ -586,6 +593,10 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
                     mse += diff_r * diff_r;
                     mse += diff_g * diff_g;
                     mse += diff_b * diff_b;
+
+                    if (diff_r > diff_thres || diff_g > diff_thres || diff_b > diff_thres) {
+                        ++fireflies_cnt;
+                    }
                 }
             }
 
@@ -599,10 +610,17 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
                 duration<double>(high_resolution_clock::now() - start_time).count() * 1000.0;
 
             const std::string combined_test_name = std::string(test_name) + index_str + test_postfix;
-            printf("Test %-36s (PSNR: %.2f/%.2f dB, Time: %.2fms)\n", combined_test_name.c_str(), psnr,
-                   min_psnr[std::max(frame_index, 0)], test_duration_ms);
-            fflush(stdout);
-            require(psnr >= min_psnr[std::max(frame_index, 0)]);
+            if (fireflies_max) {
+                printf("Test %-36s (Fireflies: %d/%d, Time: %.2fms)\n", combined_test_name.c_str(), fireflies_cnt,
+                       (*fireflies_max)[std::max(frame_index, 0)], test_duration_ms);
+                fflush(stdout);
+                require(fireflies_cnt <= (*fireflies_max)[std::max(frame_index, 0)]);
+            } else {
+                printf("Test %-36s (PSNR: %.2f/%.2f dB, Time: %.2fms)\n", combined_test_name.c_str(), psnr,
+                       (*min_psnr)[std::max(frame_index, 0)], test_duration_ms);
+                fflush(stdout);
+                require(psnr >= (*min_psnr)[std::max(frame_index, 0)]);
+            }
 
             const std::string out_name =
                 "assets_pc/references/" + std::string(test_name) + "/out" + index_str + test_postfix + ".png";
@@ -714,8 +732,9 @@ void test_scroll_scene(Sys::ThreadPool &threads) {
     TestContext ren_ctx(1024, 1024, g_device_name, g_validation_level, g_nohwrt, g_nosubgroup, &log);
 
     // Jump/settle frames at 4.25 km; the 34 km stop crosses the 2^15 m fold and the return trip folds back to zero
+    // Per-frame caps ~2x the worst measured mismatch noise (HWRT 78-350 px, SWRT/cross-pipeline 177-473 px; bug reproductions are 126k+)
     run_image_test(ren_ctx, threads, "scroll_scene_dyn",
-                   std::vector<double>{44.10, 44.10, 42.80, 42.50, 42.50, 42.45, 42.45, 42.45, 42.35, 41.70, //
-                                       41.45, 41.45, 41.25, 41.25, 40.75, 40.75, 40.75, 40.75, 40.75, 40.75, 40.75},
+                   std::vector<int>{450, 450, 600, 660, 650, 660, 660, 660, 715, 780, 830, 830, 860, 860, 1000,
+                                    1000, 1000, 1000, 1000, 1000, 1000},
                    MedDiffGI_RadCacheDbg);
 }
