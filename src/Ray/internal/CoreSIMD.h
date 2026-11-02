@@ -5,9 +5,12 @@
 //  Template parameter S defines width of vectors used. Usualy it is equal to ray packet size.
 
 #include <array>
+#include <type_traits>
 #include <vector>
 
+#include <cassert>
 #include <cfloat>
+#include <cstdlib>
 
 #include "simd/simd.h"
 
@@ -31,93 +34,87 @@ extern const float ggx_Eavg_glass[][16];
 extern const float ggx_Eavg_glass_inv[][16];
 
 #if defined(RAY_ENABLE_ASM_CONV)
-// generated kernels (scripts/gen_conv_asm.py): all 16 denoise passes, bit-identical to the C++ path
-// (pass 10 reuses conv6; 7/9/11/13 are the concat kernels; 0/13 walk C++-staged buffers)
+// generated kernels (scripts/gen_conv_asm.py): all 16 passes; fp32 x86 bit-identical to the C++
+// path, NEON + AVX512-FP16 GPU-parity (f16 tensors/weights/accumulation).
 #define RAY_ASM_CONV_DECL(sym)                                                                                         \
     extern "C" void sym(const float *data, int rect_x, int rect_y, int rect_w, int rect_h, int stride,                 \
                         const float *weights, const float *biases, float *output, int output_stride);
-// 2-input concat kernels (passes 7/9/11, PreOp1=Upsample), bit-identical to ConvolutionConcat3x3
+#define RAY_ASM_CONV_DECL16(sym)                                                                                       \
+    extern "C" void sym(const uint16_t *data, int rect_x, int rect_y, int rect_w, int rect_h, int stride,              \
+                        const uint16_t *weights, const uint16_t *biases, uint16_t *output, int output_stride);
+// pass 0: fp32 staged network input, fp16 tensor output
+#define RAY_ASM_CONV_DECL_F16OUT(sym)                                                                                  \
+    extern "C" void sym(const float *data, int rect_x, int rect_y, int rect_w, int rect_h, int stride,                 \
+                        const uint16_t *weights, const uint16_t *biases, uint16_t *output, int output_stride);
+// pass 15: fp16 tensor input, fp32 output (final denoised image)
+#define RAY_ASM_CONV_DECL_F16IN(sym)                                                                                   \
+    extern "C" void sym(const uint16_t *data, int rect_x, int rect_y, int rect_w, int rect_h, int stride,              \
+                        const uint16_t *weights, const uint16_t *biases, float *output, int output_stride);
+// 2-input concat kernels (passes 7/9/11/13, PreOp1=Upsample)
 #define RAY_ASM_CC2_DECL(sym)                                                                                          \
     extern "C" void sym(const float *data1, const float *data2, int rect_x, int rect_y, int rect_w, int rect_h,        \
                         int stride1, int stride2, const float *weights, const float *biases, float *output,            \
                         int output_stride);
-RAY_ASM_CONV_DECL(ray_conv0_avx2)
-RAY_ASM_CONV_DECL(ray_conv1_avx2)
-RAY_ASM_CONV_DECL(ray_conv2_avx2)
-RAY_ASM_CONV_DECL(ray_conv3_avx2)
-RAY_ASM_CONV_DECL(ray_conv4_avx2)
-RAY_ASM_CONV_DECL(ray_conv5_avx2)
-RAY_ASM_CONV_DECL(ray_conv6_avx2)
-RAY_ASM_CONV_DECL(ray_conv8_avx2)
-RAY_ASM_CONV_DECL(ray_conv12_avx2)
-RAY_ASM_CONV_DECL(ray_conv14_avx2)
-RAY_ASM_CONV_DECL(ray_conv15_avx2)
-RAY_ASM_CONV_DECL(ray_conv0_avx1)
-RAY_ASM_CONV_DECL(ray_conv1_avx1)
-RAY_ASM_CONV_DECL(ray_conv2_avx1)
-RAY_ASM_CONV_DECL(ray_conv3_avx1)
-RAY_ASM_CONV_DECL(ray_conv4_avx1)
-RAY_ASM_CONV_DECL(ray_conv5_avx1)
-RAY_ASM_CONV_DECL(ray_conv6_avx1)
-RAY_ASM_CONV_DECL(ray_conv8_avx1)
-RAY_ASM_CONV_DECL(ray_conv12_avx1)
-RAY_ASM_CONV_DECL(ray_conv14_avx1)
-RAY_ASM_CONV_DECL(ray_conv15_avx1)
-RAY_ASM_CONV_DECL(ray_conv0_sse41)
-RAY_ASM_CONV_DECL(ray_conv1_sse41)
-RAY_ASM_CONV_DECL(ray_conv2_sse41)
-RAY_ASM_CONV_DECL(ray_conv3_sse41)
-RAY_ASM_CONV_DECL(ray_conv4_sse41)
-RAY_ASM_CONV_DECL(ray_conv5_sse41)
-RAY_ASM_CONV_DECL(ray_conv6_sse41)
-RAY_ASM_CONV_DECL(ray_conv8_sse41)
-RAY_ASM_CONV_DECL(ray_conv12_sse41)
-RAY_ASM_CONV_DECL(ray_conv14_sse41)
-RAY_ASM_CONV_DECL(ray_conv15_sse41)
-RAY_ASM_CONV_DECL(ray_conv0_avx512)
-RAY_ASM_CONV_DECL(ray_conv1_avx512)
-RAY_ASM_CONV_DECL(ray_conv2_avx512)
-RAY_ASM_CONV_DECL(ray_conv3_avx512)
-RAY_ASM_CONV_DECL(ray_conv4_avx512)
-RAY_ASM_CONV_DECL(ray_conv5_avx512)
-RAY_ASM_CONV_DECL(ray_conv6_avx512)
-RAY_ASM_CONV_DECL(ray_conv8_avx512)
-RAY_ASM_CONV_DECL(ray_conv12_avx512)
-RAY_ASM_CONV_DECL(ray_conv14_avx512)
-RAY_ASM_CONV_DECL(ray_conv15_avx512)
-RAY_ASM_CC2_DECL(ray_conv7_avx2)
-RAY_ASM_CC2_DECL(ray_conv9_avx2)
-RAY_ASM_CC2_DECL(ray_conv11_avx2)
-RAY_ASM_CC2_DECL(ray_conv13_avx2)
-RAY_ASM_CC2_DECL(ray_conv7_avx1)
-RAY_ASM_CC2_DECL(ray_conv9_avx1)
-RAY_ASM_CC2_DECL(ray_conv11_avx1)
-RAY_ASM_CC2_DECL(ray_conv13_avx1)
-RAY_ASM_CC2_DECL(ray_conv7_sse41)
-RAY_ASM_CC2_DECL(ray_conv9_sse41)
-RAY_ASM_CC2_DECL(ray_conv11_sse41)
-RAY_ASM_CC2_DECL(ray_conv13_sse41)
-RAY_ASM_CC2_DECL(ray_conv7_avx512)
-RAY_ASM_CC2_DECL(ray_conv9_avx512)
-RAY_ASM_CC2_DECL(ray_conv11_avx512)
-RAY_ASM_CC2_DECL(ray_conv13_avx512)
-RAY_ASM_CONV_DECL(ray_conv0_neon)
-RAY_ASM_CONV_DECL(ray_conv1_neon)
-RAY_ASM_CONV_DECL(ray_conv2_neon)
-RAY_ASM_CONV_DECL(ray_conv3_neon)
-RAY_ASM_CONV_DECL(ray_conv4_neon)
-RAY_ASM_CONV_DECL(ray_conv5_neon)
-RAY_ASM_CONV_DECL(ray_conv6_neon)
-RAY_ASM_CONV_DECL(ray_conv8_neon)
-RAY_ASM_CONV_DECL(ray_conv12_neon)
-RAY_ASM_CONV_DECL(ray_conv14_neon)
-RAY_ASM_CONV_DECL(ray_conv15_neon)
-RAY_ASM_CC2_DECL(ray_conv7_neon)
-RAY_ASM_CC2_DECL(ray_conv9_neon)
-RAY_ASM_CC2_DECL(ray_conv11_neon)
-RAY_ASM_CC2_DECL(ray_conv13_neon)
+#define RAY_ASM_CC2_DECL16(sym)                                                                                        \
+    extern "C" void sym(const uint16_t *data1, const uint16_t *data2, int rect_x, int rect_y, int rect_w, int rect_h,  \
+                        int stride1, int stride2, const uint16_t *weights, const uint16_t *biases, uint16_t *output,   \
+                        int output_stride);
+// pass 13: fp16 tensor data1 + C++-staged fp32 aux (3+3+3ch)
+#define RAY_ASM_CC2_DECL_MIX(sym)                                                                                      \
+    extern "C" void sym(const uint16_t *data1, const float *data2, int rect_x, int rect_y, int rect_w, int rect_h,     \
+                        int stride1, int stride2, const uint16_t *weights, const uint16_t *biases, uint16_t *output,   \
+                        int output_stride);
+// clang-format off
+#define RAY_ASM_F16_SET(isa)                                                                                           \
+    RAY_ASM_CONV_DECL_F16OUT(ray_conv0_##isa##_f16)                                                                     \
+    RAY_ASM_CONV_DECL16(ray_conv1_##isa##_f16)                                                                         \
+    RAY_ASM_CONV_DECL16(ray_conv2_##isa##_f16)                                                                         \
+    RAY_ASM_CONV_DECL16(ray_conv3_##isa##_f16)                                                                         \
+    RAY_ASM_CONV_DECL16(ray_conv4_##isa##_f16)                                                                         \
+    RAY_ASM_CONV_DECL16(ray_conv5_##isa##_f16)                                                                         \
+    RAY_ASM_CONV_DECL16(ray_conv6_##isa##_f16)                                                                         \
+    RAY_ASM_CONV_DECL16(ray_conv8_##isa##_f16)                                                                         \
+    RAY_ASM_CONV_DECL16(ray_conv12_##isa##_f16)                                                                        \
+    RAY_ASM_CONV_DECL16(ray_conv14_##isa##_f16)                                                                        \
+    RAY_ASM_CONV_DECL_F16IN(ray_conv15_##isa##_f16)                                                                    \
+    RAY_ASM_CC2_DECL16(ray_conv7_##isa##_f16)                                                                          \
+    RAY_ASM_CC2_DECL16(ray_conv9_##isa##_f16)                                                                          \
+    RAY_ASM_CC2_DECL16(ray_conv11_##isa##_f16)                                                                         \
+    RAY_ASM_CC2_DECL_MIX(ray_conv13_##isa##_f16)
+// fp32 tensor family (all x86 archs: tensor_t = float there, no native FP16 FMA)
+#define RAY_ASM_F32_SET(isa)                                                                                           \
+    RAY_ASM_CONV_DECL(ray_conv0_##isa)                                                                                 \
+    RAY_ASM_CONV_DECL(ray_conv1_##isa)                                                                                 \
+    RAY_ASM_CONV_DECL(ray_conv2_##isa)                                                                                 \
+    RAY_ASM_CONV_DECL(ray_conv3_##isa)                                                                                 \
+    RAY_ASM_CONV_DECL(ray_conv4_##isa)                                                                                 \
+    RAY_ASM_CONV_DECL(ray_conv5_##isa)                                                                                 \
+    RAY_ASM_CONV_DECL(ray_conv6_##isa)                                                                                 \
+    RAY_ASM_CONV_DECL(ray_conv8_##isa)                                                                                 \
+    RAY_ASM_CONV_DECL(ray_conv12_##isa)                                                                                \
+    RAY_ASM_CONV_DECL(ray_conv14_##isa)                                                                                \
+    RAY_ASM_CONV_DECL(ray_conv15_##isa)                                                                                \
+    RAY_ASM_CC2_DECL(ray_conv7_##isa)                                                                                  \
+    RAY_ASM_CC2_DECL(ray_conv9_##isa)                                                                                  \
+    RAY_ASM_CC2_DECL(ray_conv11_##isa)                                                                                 \
+    RAY_ASM_CC2_DECL(ray_conv13_##isa)
+RAY_ASM_F32_SET(avx2)
+RAY_ASM_F32_SET(avx512)
+RAY_ASM_F32_SET(avx1)
+RAY_ASM_F32_SET(sse41)
+RAY_ASM_F16_SET(neon)
+// AVX512-FP16 renderer kernels: ray_conv<N>_avx512_f16 symbols (generated ISA name avx512f16)
+RAY_ASM_F16_SET(avx512)
+#undef RAY_ASM_F16_SET
+#undef RAY_ASM_F32_SET
+// clang-format on
 #undef RAY_ASM_CONV_DECL
+#undef RAY_ASM_CONV_DECL16
+#undef RAY_ASM_CONV_DECL_F16OUT
+#undef RAY_ASM_CONV_DECL_F16IN
 #undef RAY_ASM_CC2_DECL
+#undef RAY_ASM_CC2_DECL16
+#undef RAY_ASM_CC2_DECL_MIX
 #endif
 
 //
@@ -129,7 +126,6 @@ RAY_ASM_CC2_DECL(ray_conv13_neon)
 // #define FORCE_TEXTURE_LOD 0
 #define USE_STOCH_TEXTURE_FILTERING 1
 #define USE_SPHERICAL_AREA_LIGHT_SAMPLING 1
-#define USE_SAFE_MATH 1
 
 namespace Cpu {
 class TexStorageBase;
@@ -639,6 +635,26 @@ class SIMDPolicyBase {
     using ShadowRayType = shadow_ray_t<RPSize>;
     using HitDataType = hit_data_t<RPSize>;
     using RayHashType = ivec<RPSize>;
+    // UNet tensor storage: f16 on aarch64 NEON + AVX512-FP16 (GPU-parity f16 conv); plain x86
+    // stays fp32 - F16C is convert-only, f16 walks measured 3-21% slower than fp32 on SKX.
+#if defined(RAY_ENABLE_ASM_CONV) && defined(USE_NEON) && (defined(__aarch64__) || defined(_M_ARM64))
+    using tensor_t = uint16_t;
+#elif defined(RAY_NEON_FP16_CONV) && defined(__aarch64__)
+    using tensor_t = uint16_t;
+#elif defined(USE_AVX512_FP16)
+    using tensor_t = uint16_t;
+#else
+    using tensor_t = float;
+#endif
+    // conv weights+biases element type: f16 exactly where the conv consumers take f16
+    using unet_w_t = tensor_t;
+    // pass 0/13 staging buffer element type: the asm kernels pack f32->f16 in-kernel, the C++
+    // f16 path wants pre-rounded f16 staging
+#if defined(RAY_ENABLE_ASM_CONV)
+    using unet_stage_t = float;
+#else
+    using unet_stage_t = tensor_t;
+#endif
 
   protected:
     static force_inline void GeneratePrimaryRays(const camera_t &cam, const rect_t &r, const int w, const int h,
@@ -738,17 +754,19 @@ class SIMDPolicyBase {
     }
 
     template <int InChannels, int OutChannels, int OutPxPitch = OutChannels, ePostOp PostOp = ePostOp::None,
-              eActivation Activation = eActivation::ReLU>
-    static force_inline void Convolution3x3(const float data[], const rect_t &rect, const int w, const int h,
-                                            const int stride, const float weights[], const float biases[],
-                                            float output[], const int output_stride) {
-// asm kernels are AVX2/AVX1/SSE41/AVX512/NEON prototypes - every SIMD arch whose TU includes this
-// header; REF stays on the C++ kernel. The chain below has an explicit branch per arch, so a future
-// arch without kernels fails to compile instead of silently binding a kernel family.
+              eActivation Activation = eActivation::ReLU, class TD, class TO, class TW>
+    static force_inline void Convolution3x3(const TD data[], const rect_t &rect, const int w, const int h,
+                                            const int stride, const TW weights[], const TW biases[], TO output[],
+                                            const int output_stride) {
+// asm kernels: explicit per-arch branch below so an arch without kernels fails to compile rather
+// than bind another arch's family; AVX512-FP16/NEON kernels are GPU-parity (not bit-identical).
 #if defined(RAY_ENABLE_ASM_CONV)
 #define RAY_ASM_CAT2(a, b) a##b
 #define RAY_ASM_CAT(a, b) RAY_ASM_CAT2(a, b)
-#if defined(USE_AVX512)
+#if defined(USE_AVX512_FP16)
+#define RAY_ASM_CONV_RP 16
+#define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _avx512_f16)
+#elif defined(USE_AVX512)
 #define RAY_ASM_CONV_RP 16
 #define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _avx512)
 #elif defined(USE_AVX2)
@@ -759,7 +777,7 @@ class SIMDPolicyBase {
 #define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _avx1)
 #elif defined(USE_NEON)
 #define RAY_ASM_CONV_RP 4
-#define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _neon)
+#define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _neon), _f16)
 #elif defined(USE_SSE41)
 #define RAY_ASM_CONV_RP 4
 #define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _sse41)
@@ -770,20 +788,25 @@ class SIMDPolicyBase {
         RAY_ASM_CONV(n)(data, rect.x, rect.y, rect.w, rect.h, stride, weights, biases, output, output_stride);         \
         return;                                                                                                        \
     }
-        if constexpr (RPSize == RAY_ASM_CONV_RP && PostOp == ePostOp::None && Activation == eActivation::ReLU) {
+        // the generated kernels match each policy's tensor storage (tensor_t: uint16_t on the f16
+        // archs, where the _f16 symbol family above is bound; float on AVX1/SSE4.1)
+        if constexpr (RPSize == RAY_ASM_CONV_RP && std::is_same_v<TD, tensor_t> && std::is_same_v<TO, tensor_t> &&
+                      PostOp == ePostOp::None && Activation == eActivation::ReLU) {
             RAY_ASM_CONV_CASE(5, 80, 96, 96)    // pass 5
             RAY_ASM_CONV_CASE(6, 96, 96, 96)    // passes 6 and 10 (same channel config)
             RAY_ASM_CONV_CASE(8, 112, 112, 112) // pass 8
             RAY_ASM_CONV_CASE(12, 64, 64, 64)   // pass 12
             RAY_ASM_CONV_CASE(14, 64, 32, 32)   // pass 14
         }
-        if constexpr (RPSize == RAY_ASM_CONV_RP && PostOp == ePostOp::Downsample && Activation == eActivation::ReLU) {
+        if constexpr (RPSize == RAY_ASM_CONV_RP && std::is_same_v<TD, tensor_t> && std::is_same_v<TO, tensor_t> &&
+                      PostOp == ePostOp::Downsample && Activation == eActivation::ReLU) {
             RAY_ASM_CONV_CASE(1, 32, 32, 32) // pass 1
             RAY_ASM_CONV_CASE(2, 32, 48, 48) // pass 2
             RAY_ASM_CONV_CASE(3, 48, 64, 64) // pass 3
             RAY_ASM_CONV_CASE(4, 64, 80, 80) // pass 4
         }
-        if constexpr (RPSize == RAY_ASM_CONV_RP && PostOp == ePostOp::HDRTransfer && Activation == eActivation::ReLU) {
+        if constexpr (RPSize == RAY_ASM_CONV_RP && std::is_same_v<TD, tensor_t> && std::is_same_v<TO, float> &&
+                      PostOp == ePostOp::HDRTransfer && Activation == eActivation::ReLU) {
             RAY_ASM_CONV_CASE(15, 32, 3, 4) // pass 15 (final output, HDR transfer post-op)
         }
 #undef RAY_ASM_CAT2
@@ -792,25 +815,39 @@ class SIMDPolicyBase {
 #undef RAY_ASM_CONV
 #undef RAY_ASM_CONV_CASE
 #endif
-        NS::Convolution3x3<RPSize, InChannels, OutChannels, OutPxPitch, PostOp, Activation>(
-            data, rect, w, h, stride, weights, biases, output, output_stride);
+        // C++ f16 kernels exist only with hw NEON f16 (RAY_NEON_FP16_CONV): an f16-tensor policy
+        // must bind an asm family or the config is broken. TO deduced (pass 15 ends in float).
+        if constexpr (std::is_same_v<TD, float> && std::is_same_v<TO, float>)
+            NS::Convolution3x3<RPSize, InChannels, OutChannels, OutPxPitch, PostOp, Activation>(
+                data, rect, w, h, stride, weights, biases, output, output_stride);
+#if (defined(RAY_NEON_FP16_CONV) || defined(RAY_AVX512_FP16_CONV)) && !defined(RAY_ENABLE_ASM_CONV)
+        else if constexpr (std::is_same_v<TD, tensor_t> && std::is_same_v<TW, unet_w_t>)
+            NS::Convolution3x3<RPSize, InChannels, OutChannels, OutPxPitch, PostOp, Activation, tensor_t, unet_w_t, TO>(
+                data, rect, w, h, stride, weights, biases, output, output_stride);
+#endif
+        else {
+            assert(!"fp16 UNet tensor conv has no matching asm kernel");
+            std::abort();
+        }
     }
 
     template <int InChannels1, int InChannels2, int InChannels3, int PxPitch, int OutChannels,
               ePreOp PreOp1 = ePreOp::None, ePreOp PreOp2 = ePreOp::None, ePreOp PreOp3 = ePreOp::None,
-              ePostOp PostOp = ePostOp::None, eActivation Activation = eActivation::ReLU>
-    static force_inline void Convolution3x3(const float data1[], const float data2[], const float data3[],
-                                            const rect_t &rect, const int in_w, const int in_h, const int w,
-                                            const int h, const int stride, const float weights[], const float biases[],
-                                            float output[], const int output_stride,
-                                            aligned_vector<float, 64> &temp_data) {
+              ePostOp PostOp = ePostOp::None, eActivation Activation = eActivation::ReLU, class TO, class TW>
+    static force_inline void
+    Convolution3x3(const float data1[], const float data2[], const float data3[], const rect_t &rect, const int in_w,
+                   const int in_h, const int w, const int h, const int stride, const TW weights[], const TW biases[],
+                   TO output[], const int output_stride, aligned_vector<unet_stage_t, 64> &temp_data) {
 // pass 0: C++ staging + generated walk over the staged 9-channel buffer (see StageConv3x3). The
 // staged buffer is rect-relative (1px halo); the asm kernel addresses data absolutely, so hand it
 // the base that maps absolute (x,y) onto the halo: staged + In123 * ((1-ry)*s + (1-rx)).
 #if defined(RAY_ENABLE_ASM_CONV)
 #define RAY_ASM_CAT2(a, b) a##b
 #define RAY_ASM_CAT(a, b) RAY_ASM_CAT2(a, b)
-#if defined(USE_AVX512)
+#if defined(USE_AVX512_FP16)
+#define RAY_ASM_CONV_RP 16
+#define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _avx512_f16)
+#elif defined(USE_AVX512)
 #define RAY_ASM_CONV_RP 16
 #define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _avx512)
 #elif defined(USE_AVX2)
@@ -821,15 +858,15 @@ class SIMDPolicyBase {
 #define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _avx1)
 #elif defined(USE_NEON)
 #define RAY_ASM_CONV_RP 4
-#define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _neon)
+#define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _neon), _f16)
 #elif defined(USE_SSE41)
 #define RAY_ASM_CONV_RP 4
 #define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _sse41)
 #endif
-        if constexpr (RPSize == RAY_ASM_CONV_RP && InChannels1 == 3 && InChannels2 == 3 && InChannels3 == 3 &&
-                      PxPitch == 4 && OutChannels == 32 && PreOp1 == ePreOp::HDRTransfer && PreOp2 == ePreOp::None &&
-                      PreOp3 == ePreOp::PositiveNormalize && PostOp == ePostOp::None &&
-                      Activation == eActivation::ReLU) {
+        if constexpr (RPSize == RAY_ASM_CONV_RP && std::is_same_v<TO, tensor_t> && InChannels1 == 3 &&
+                      InChannels2 == 3 && InChannels3 == 3 && PxPitch == 4 && OutChannels == 32 &&
+                      PreOp1 == ePreOp::HDRTransfer && PreOp2 == ePreOp::None && PreOp3 == ePreOp::PositiveNormalize &&
+                      PostOp == ePostOp::None && Activation == eActivation::ReLU) {
             NS::StageConv3x3<InChannels1, InChannels2, InChannels3, PxPitch, PreOp1, PreOp2, PreOp3>(
                 data1, data2, data3, rect, in_w, in_h, stride, temp_data);
             const int In123 = InChannels1 + InChannels2 + InChannels3, s123 = rect.w + 2;
@@ -842,24 +879,38 @@ class SIMDPolicyBase {
 #undef RAY_ASM_CONV_RP
 #undef RAY_ASM_CONV
 #endif
-        NS::Convolution3x3<RPSize, InChannels1, InChannels2, InChannels3, PxPitch, OutChannels, PreOp1, PreOp2, PreOp3,
-                           PostOp, Activation>(data1, data2, data3, rect, in_w, in_h, w, h, stride, weights, biases,
-                                               output, output_stride, temp_data);
+        // inputs are always the C++-staged buffer (float, or pre-rounded f16 in the C++ f16 mode);
+        // only the output tensor type varies
+        if constexpr (std::is_same_v<TO, float>)
+            NS::Convolution3x3<RPSize, InChannels1, InChannels2, InChannels3, PxPitch, OutChannels, PreOp1, PreOp2,
+                               PreOp3, PostOp, Activation>(data1, data2, data3, rect, in_w, in_h, w, h, stride, weights,
+                                                           biases, output, output_stride, temp_data);
+#if (defined(RAY_NEON_FP16_CONV) || defined(RAY_AVX512_FP16_CONV)) && !defined(RAY_ENABLE_ASM_CONV)
+        else if constexpr (std::is_same_v<TO, tensor_t> && std::is_same_v<TW, unet_w_t>)
+            NS::Convolution3x3<RPSize, InChannels1, InChannels2, InChannels3, PxPitch, OutChannels, PreOp1, PreOp2,
+                               PreOp3, PostOp, Activation, unet_w_t, tensor_t, unet_stage_t>(
+                data1, data2, data3, rect, in_w, in_h, w, h, stride, weights, biases, output, output_stride, temp_data);
+#endif
+        else {
+            assert(!"fp16 UNet tensor conv has no matching asm kernel");
+            std::abort();
+        }
     }
 
     template <int InChannels1, int InChannels2, int OutChannels, ePreOp PreOp1 = ePreOp::None,
-              ePostOp PostOp = ePostOp::None, eActivation Activation = eActivation::ReLU>
-    static force_inline void ConvolutionConcat3x3(const float data1[], const float data2[], const rect_t &rect,
-                                                  const int w, const int h, const int stride1, const int stride2,
-                                                  const float weights[], const float biases[], float output[],
-                                                  const int output_stride) {
-// asm kernels are AVX2/AVX1/SSE41/AVX512/NEON prototypes - every SIMD arch whose TU includes this
-// header; REF stays on the C++ kernel. The chain below has an explicit branch per arch, so a future
-// arch without kernels fails to compile instead of silently binding a kernel family.
+              ePostOp PostOp = ePostOp::None, eActivation Activation = eActivation::ReLU, class TD, class TO, class TW>
+    static force_inline void ConvolutionConcat3x3(const TD data1[], const TD data2[], const rect_t &rect, const int w,
+                                                  const int h, const int stride1, const int stride2, const TW weights[],
+                                                  const TW biases[], TO output[], const int output_stride) {
+// asm kernels: explicit per-arch branch below so an arch without kernels fails to compile rather
+// than bind another arch's family; AVX512-FP16/NEON kernels are GPU-parity (not bit-identical).
 #if defined(RAY_ENABLE_ASM_CONV)
 #define RAY_ASM_CAT2(a, b) a##b
 #define RAY_ASM_CAT(a, b) RAY_ASM_CAT2(a, b)
-#if defined(USE_AVX512)
+#if defined(USE_AVX512_FP16)
+#define RAY_ASM_CONV_RP 16
+#define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _avx512_f16)
+#elif defined(USE_AVX512)
 #define RAY_ASM_CONV_RP 16
 #define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _avx512)
 #elif defined(USE_AVX2)
@@ -870,7 +921,7 @@ class SIMDPolicyBase {
 #define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _avx1)
 #elif defined(USE_NEON)
 #define RAY_ASM_CONV_RP 4
-#define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _neon)
+#define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _neon), _f16)
 #elif defined(USE_SSE41)
 #define RAY_ASM_CONV_RP 4
 #define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _sse41)
@@ -882,8 +933,8 @@ class SIMDPolicyBase {
                         output_stride);                                                                                \
         return;                                                                                                        \
     }
-        if constexpr (RPSize == RAY_ASM_CONV_RP && PreOp1 == ePreOp::Upsample && PostOp == ePostOp::None &&
-                      Activation == eActivation::ReLU) {
+        if constexpr (RPSize == RAY_ASM_CONV_RP && std::is_same_v<TD, tensor_t> && std::is_same_v<TO, tensor_t> &&
+                      PreOp1 == ePreOp::Upsample && PostOp == ePostOp::None && Activation == eActivation::ReLU) {
             RAY_ASM_CC2_CASE(7, 96, 64, 112) // pass 7
             RAY_ASM_CC2_CASE(9, 112, 48, 96) // pass 9
             RAY_ASM_CC2_CASE(11, 96, 32, 64) // pass 11
@@ -894,24 +945,39 @@ class SIMDPolicyBase {
 #undef RAY_ASM_CONV
 #undef RAY_ASM_CC2_CASE
 #endif
-        NS::ConvolutionConcat3x3<RPSize, InChannels1, InChannels2, OutChannels, PreOp1, PostOp, Activation>(
-            data1, data2, rect, w, h, stride1, stride2, weights, biases, output, output_stride);
+        if constexpr (std::is_same_v<TD, float> && std::is_same_v<TO, float>)
+            NS::ConvolutionConcat3x3<RPSize, InChannels1, InChannels2, OutChannels, PreOp1, PostOp, Activation>(
+                data1, data2, rect, w, h, stride1, stride2, weights, biases, output, output_stride);
+#if (defined(RAY_NEON_FP16_CONV) || defined(RAY_AVX512_FP16_CONV)) && !defined(RAY_ENABLE_ASM_CONV)
+        else if constexpr (std::is_same_v<TD, tensor_t> && std::is_same_v<TO, tensor_t> && std::is_same_v<TW, unet_w_t>)
+            NS::ConvolutionConcat3x3<RPSize, InChannels1, InChannels2, OutChannels, PreOp1, PostOp, Activation,
+                                     tensor_t, tensor_t, unet_w_t, tensor_t>(data1, data2, rect, w, h, stride1, stride2,
+                                                                             weights, biases, output, output_stride);
+#endif
+        else {
+            assert(!"fp16 UNet tensor conv has no matching asm kernel");
+            std::abort();
+        }
     }
 
     template <int InChannels1, int InChannels2, int InChannels3, int InChannels4, int PxPitch2, int OutChannels,
               ePreOp PreOp1 = ePreOp::None, ePreOp PreOp2 = ePreOp::None, ePreOp PreOp3 = ePreOp::None,
-              ePreOp PreOp4 = ePreOp::None, ePostOp PostOp = ePostOp::None, eActivation Activation = eActivation::ReLU>
-    static force_inline void ConvolutionConcat3x3(const float data1[], const float data2[], const float data3[],
-                                                  const float data4[], const rect_t &rect, const int w, const int h,
-                                                  const int w2, const int h2, const int stride1, const int stride2,
-                                                  const float weights[], const float biases[], float output[],
-                                                  const int output_stride, aligned_vector<float, 64> &temp_data) {
+              ePreOp PreOp4 = ePreOp::None, ePostOp PostOp = ePostOp::None, eActivation Activation = eActivation::ReLU,
+              class TD, class TO, class TW>
+    static force_inline void
+    ConvolutionConcat3x3(const TD data1[], const float data2[], const float data3[], const float data4[],
+                         const rect_t &rect, const int w, const int h, const int w2, const int h2, const int stride1,
+                         const int stride2, const TW weights[], const TW biases[], TO output[], const int output_stride,
+                         aligned_vector<unet_stage_t, 64> &temp_data) {
 // pass 13: C++ staging of the three aux inputs + generated concat walk (data1 with Upsample
 // addressing + the staged 9-channel buffer via the absolute base pointer, see the pass-0 hook).
 #if defined(RAY_ENABLE_ASM_CONV)
 #define RAY_ASM_CAT2(a, b) a##b
 #define RAY_ASM_CAT(a, b) RAY_ASM_CAT2(a, b)
-#if defined(USE_AVX512)
+#if defined(USE_AVX512_FP16)
+#define RAY_ASM_CONV_RP 16
+#define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _avx512_f16)
+#elif defined(USE_AVX512)
 #define RAY_ASM_CONV_RP 16
 #define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _avx512)
 #elif defined(USE_AVX2)
@@ -922,14 +988,15 @@ class SIMDPolicyBase {
 #define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _avx1)
 #elif defined(USE_NEON)
 #define RAY_ASM_CONV_RP 4
-#define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _neon)
+#define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _neon), _f16)
 #elif defined(USE_SSE41)
 #define RAY_ASM_CONV_RP 4
 #define RAY_ASM_CONV(n) RAY_ASM_CAT(RAY_ASM_CAT(ray_conv, n), _sse41)
 #endif
-        if constexpr (RPSize == RAY_ASM_CONV_RP && InChannels1 == 64 && InChannels2 == 3 && InChannels3 == 3 &&
-                      InChannels4 == 3 && PxPitch2 == 4 && OutChannels == 64 && PreOp1 == ePreOp::Upsample &&
-                      PostOp == ePostOp::None && Activation == eActivation::ReLU) {
+        if constexpr (RPSize == RAY_ASM_CONV_RP && std::is_same_v<TD, tensor_t> && std::is_same_v<TO, tensor_t> &&
+                      InChannels1 == 64 && InChannels2 == 3 && InChannels3 == 3 && InChannels4 == 3 && PxPitch2 == 4 &&
+                      OutChannels == 64 && PreOp1 == ePreOp::Upsample && PostOp == ePostOp::None &&
+                      Activation == eActivation::ReLU) {
             NS::StageConvConcat3x3<InChannels2, InChannels3, InChannels4, PxPitch2, PreOp2, PreOp3, PreOp4>(
                 data2, data3, data4, rect, w2, h2, stride2, temp_data);
             const int In234 = InChannels2 + InChannels3 + InChannels4, s234 = rect.w + 2;
@@ -943,14 +1010,26 @@ class SIMDPolicyBase {
 #undef RAY_ASM_CONV_RP
 #undef RAY_ASM_CONV
 #endif
-        NS::ConvolutionConcat3x3<RPSize, InChannels1, InChannels2, InChannels3, InChannels4, PxPitch2, OutChannels,
-                                 PreOp1, PreOp2, PreOp3, PreOp4, PostOp, Activation>(
-            data1, data2, data3, data4, rect, w, h, w2, h2, stride1, stride2, weights, biases, output, output_stride,
-            temp_data);
+        if constexpr (std::is_same_v<TD, float> && std::is_same_v<TO, float>)
+            NS::ConvolutionConcat3x3<RPSize, InChannels1, InChannels2, InChannels3, InChannels4, PxPitch2, OutChannels,
+                                     PreOp1, PreOp2, PreOp3, PreOp4, PostOp, Activation>(
+                data1, data2, data3, data4, rect, w, h, w2, h2, stride1, stride2, weights, biases, output,
+                output_stride, temp_data);
+#if (defined(RAY_NEON_FP16_CONV) || defined(RAY_AVX512_FP16_CONV)) && !defined(RAY_ENABLE_ASM_CONV)
+        else if constexpr (std::is_same_v<TD, tensor_t> && std::is_same_v<TO, tensor_t> && std::is_same_v<TW, unet_w_t>)
+            NS::ConvolutionConcat3x3<RPSize, InChannels1, InChannels2, InChannels3, InChannels4, PxPitch2, OutChannels,
+                                     PreOp1, PreOp2, PreOp3, PreOp4, PostOp, Activation, tensor_t, unet_w_t, tensor_t,
+                                     unet_stage_t>(data1, data2, data3, data4, rect, w, h, w2, h2, stride1, stride2,
+                                                   weights, biases, output, output_stride, temp_data);
+#endif
+        else {
+            assert(!"fp16 UNet tensor conv has no matching asm kernel");
+            std::abort();
+        }
     }
 
     static force_inline void ClearBorders(const rect_t &rect, int w, int h, bool downscaled, int out_channels,
-                                          float output[]) {
+                                          tensor_t output[]) {
         NS::ClearBorders(rect, w, h, downscaled, out_channels, output);
     }
 };
@@ -963,94 +1042,17 @@ class SIMDPolicyBase {
 
 namespace Ray {
 namespace NS {
-template <int S> force_inline fvec<S> safe_inv(const fvec<S> &a) {
-#if USE_SAFE_MATH
-    const fvec<S> denom = select(a != 0.0f, a, fvec<S>{FLT_EPS});
-    return 1.0f / denom;
-#else
-    return 1.0f / a;
-#endif
-}
-
-template <int S> force_inline fvec<S> safe_inv_pos(const fvec<S> &a) {
-#if USE_SAFE_MATH
-    return 1.0f / max(a, FLT_EPS);
-#else
-    return 1.0f / a;
-#endif
-}
-
-template <int S> force_inline fvec<S> safe_div(const fvec<S> &a, const fvec<S> &b) {
-#if USE_SAFE_MATH
-    const fvec<S> denom = select(b != 0.0f, b, copysign(fvec<S>{FLT_EPS}, b));
-    return a / denom;
-#else
-    return a / b;
-#endif
-}
-
-template <int S> force_inline fvec<S> safe_div_pos(const fvec<S> &a, const fvec<S> &b) {
-#if USE_SAFE_MATH
-    return a / max(b, FLT_EPS);
-#else
-    return a / b;
-#endif
-}
-
-template <int S> force_inline fvec<S> safe_div_pos(const float a, const fvec<S> &b) {
-#if USE_SAFE_MATH
-    return a / max(b, FLT_EPS);
-#else
-    return a / b;
-#endif
-}
-
-template <int S> force_inline fvec<S> safe_div_pos(const fvec<S> &a, const float b) {
-#if USE_SAFE_MATH
-    return a / fmaxf(b, FLT_EPS);
-#else
-    return a / b;
-#endif
-}
-
-force_inline float safe_div_pos(const float a, const float b) {
-#if USE_SAFE_MATH
-    return a / fmaxf(b, FLT_EPS);
-#else
-    return a / b;
-#endif
-}
-
-template <int S> force_inline fvec<S> safe_div_neg(const fvec<S> &a, const fvec<S> &b) {
-#if USE_SAFE_MATH
-    return a / min(b, -FLT_EPS);
-#else
-    return a / b;
-#endif
-}
-
-template <int S> force_inline fvec<S> safe_sqrt(const fvec<S> &a) {
-#if USE_SAFE_MATH
-    return sqrt(max(a, 0.0f));
-#else
-    return sqrt(a);
-#endif
-}
+template <int S> force_inline fvec<S> safe_sqrt(const fvec<S> &a) { return sqrt(max(a, 0.0f)); }
 
 template <int S> force_inline void safe_normalize(fvec<S> v[3]) {
     fvec<S> l = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-#if USE_SAFE_MATH
+    // load-bearing: mask-off lanes keep their values; l's eps stub prevents 0/0 on degenerate vectors
     const fvec<S> mask = (l != 0.0f);
     where(~mask, l) = FLT_EPS;
 
     where(mask, v[0]) /= l;
     where(mask, v[1]) /= l;
     where(mask, v[2]) /= l;
-#else
-    v[0] /= l;
-    v[1] /= l;
-    v[2] /= l;
-#endif
 }
 
 template <int S> force_inline fvec<S> safe_sqrtf(const fvec<S> &f) { return sqrt(max(f, 0.0f)); }
@@ -1192,7 +1194,8 @@ bool IntersectTri(const float ro[3], const float rd[3], const mtri_accel_t &tri,
             continue;
         }
 
-        const fvec<S> rdet = safe_inv(det);
+        // det == 0 => lane inactive, but the products below still evaluate: inf denom kills dett * inf INVALID
+        const fvec<S> rdet = fvec<S>{1.0f} / select(det != 0.0f, det, fvec<S>{INFINITY});
 
         ivec<S> prim = -(int(prim_index) + ivec<S>{&ascending_counter[i], vector_aligned}) - 1;
         where(det < 0.0f, prim) = int(prim_index) + ivec<S>{&ascending_counter[i], vector_aligned};
@@ -1273,7 +1276,8 @@ bool IntersectTri<16>(const float ro[3], const float rd[3], const mtri_accel_t &
                 // compare sign bits
                 is_active_lane &= ~srai(simd_cast(detv ^ (det - detu - detv)), 31);
                 if (!is_active_lane.all_zeros()) {
-                    const fvec<8> rdet = safe_inv(det);
+                    // det == 0 => lane inactive, but the products below still evaluate: inf denom kills INVALID
+                    const fvec<8> rdet = fvec<8>{1.0f} / select(det != 0.0f, det, fvec<8>{INFINITY});
 
                     ivec<8> prim = -(int(prim_index) + ivec<8>{&ascending_counter[0], vector_aligned}) - 1;
                     where(det < 0.0f, prim) = int(prim_index) + ivec<8>{&ascending_counter[0], vector_aligned};
@@ -1996,9 +2000,9 @@ force_inline void cross(const float v1[3], const float v2[3], float res[3]) {
 
 template <int S> force_inline fvec<S> normalize(fvec<S> v[3]) {
     const fvec<S> l = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-    v[0] = safe_div_pos(v[0], l);
-    v[1] = safe_div_pos(v[1], l);
-    v[2] = safe_div_pos(v[2], l);
+    v[0] = v[0] / max(l, FLT_EPS);
+    v[1] = v[1] / max(l, FLT_EPS);
+    v[2] = v[2] / max(l, FLT_EPS);
     return l;
 }
 
@@ -2261,6 +2265,9 @@ fvec<S> SampleSphericalTriangle(const fvec<S> P[3], const fvec<S> p1[3], const f
 
     const fvec<S> area = alpha + beta + gamma - PI;
     ivec<S> mask = simd_cast(area > SPHERICAL_AREA_THRESHOLD);
+    // duplicated projected vertices (dup pos or P collinear with an edge) degrade the angle algebra
+    // (area becomes a garbage passing angle), so drop those lanes before the divisions
+    mask &= simd_cast((dot3(A, B) < 1.0f) & (dot3(A, C) < 1.0f) & (dot3(B, C) < 1.0f));
     if (mask.all_zeros()) {
         return 0.0f;
     }
@@ -2287,8 +2294,12 @@ fvec<S> SampleSphericalTriangle(const fvec<S> P[3], const fvec<S> p1[3], const f
 
         // Compute the s coordinate as normalized arc length from A to C_s
         const fvec<S> denom = ((v * p + u * q) * sincos_alpha[0]);
-        const fvec<S> s = safe_div(fvec<S>{1.0f}, b) *
-                          portable_acosf(clamp(safe_div(((v * q - u * p) * sincos_alpha[1] - v), denom), -1.0f, 1.0f));
+        // exact-zero denoms (coplanar/edge degenerates) do occur here: inf denom reproduces the old guarded +-0
+        // quotient
+        const fvec<S> s = fvec<S>{1.0f} / select(mask, b, fvec<S>{1.0f}) *
+                          portable_acosf(clamp(((v * q - u * p) * sincos_alpha[1] - v) /
+                                                   select(denom != 0.0f, denom, fvec<S>{INFINITY}),
+                                               -1.0f, 1.0f));
 
         // Compute the third vertex of the sub - triangle.
         fvec<S> C_s[3];
@@ -2296,13 +2307,15 @@ fvec<S> SampleSphericalTriangle(const fvec<S> P[3], const fvec<S> p1[3], const f
 
         // Compute the t coordinate using C_s and Xi[1]
         const fvec<S> denom2 = portable_acosf(clamp(dot3(C_s, B), -1.0f, 1.0f));
-        const fvec<S> t = safe_div(portable_acosf(clamp(1.0f - Xi[1] * (1.0f - dot3(C_s, B)), -1.0f, 1.0f)), denom2);
+        // C_s landing on B gives denom2 == 0 with an always-0 numerator: predicate the quotient directly
+        const fvec<S> t = portable_acosf(clamp(1.0f - Xi[1] * (1.0f - dot3(C_s, B)), -1.0f, 1.0f)) /
+                          select(denom2 != 0.0f, denom2, fvec<S>{INFINITY});
 
         // Construct the corresponding point on the sphere
         slerp(B, C_s, t, out_dir);
     }
 
-    return select(mask, safe_div_pos(1.0f, area), fvec<S>{0.0f});
+    return select(mask, 1.0f / area, fvec<S>{0.0f});
 }
 
 // "An Area-Preserving Parametrization for Spherical Rectangles"
@@ -2361,7 +2374,8 @@ fvec<S> SampleSphericalRectangle(const fvec<S> P[3], const fvec<S> light_pos[3],
         const fvec<S> au = Xi[0] * area + k;
         fvec<S> sincos_au[2];
         portable_sincos(au, sincos_au[0], sincos_au[1]);
-        const fvec<S> fu = safe_div((sincos_au[1] * b0 - b1), sincos_au[0]);
+        // mask-off (degenerate) lanes still divide: predicate the denominator, their point is dropped at the pdf select
+        const fvec<S> fu = (sincos_au[1] * b0 - b1) / select(mask, sincos_au[0], fvec<S>{1.0f});
         fvec<S> cu = 1.0f / sqrt(fu * fu + b0sq);
         where(fu <= 0.0f, cu) = -cu;
         cu = clamp(cu, -1.0f, 1.0f);
@@ -2377,13 +2391,13 @@ fvec<S> SampleSphericalRectangle(const fvec<S> P[3], const fvec<S> light_pos[3],
         const fvec<S> h1 = y1 / sqrt(d * d + y1sq);
         const fvec<S> hv = h0 + Xi[1] * (h1 - h0), hv2 = hv * hv;
         fvec<S> yv = y1;
-        where(hv2 < 1.0f - 1e-6f, yv) = safe_div_pos(hv * d, sqrt(1.0f - hv2));
+        where(hv2 < 1.0f - 1e-6f, yv) = (hv * d) / sqrt(1.0f - hv2);
 
         // transform (xu, yv, z0) to world coords
         UNROLLED_FOR(i, 3, { out_p[i] = P[i] + xu * x[i] + yv * y[i] + z0 * z[i]; })
     }
 
-    return select(mask, safe_div_pos(1.0f, area), fvec<S>{0.0f});
+    return select(mask, 1.0f / area, fvec<S>{0.0f});
 }
 
 force_inline float floor(float x) { return float(int(x) - (x < 0.0f)); }
@@ -2699,7 +2713,7 @@ template <int S> void EnsureValidReflection(const fvec<S> Ng[3], const fvec<S> I
     // In many cases one can be immediately discarded (if N'.z would be imaginary or larger than
     // one), so check for that first. If no option is viable (might happen in extreme cases like N
     // being in the wrong hemisphere), give up and return Ng.
-    const fvec<S> fac = safe_div(fvec<S>{0.5f}, a);
+    const fvec<S> fac = fvec<S>{0.5f} / select(a != 0.0f, a, copysign(fvec<S>{FLT_EPS}, a));
     const fvec<S> N1_z2 = fac * (b + c), N2_z2 = fac * (-b + c);
 
     ivec<S> valid1 = simd_cast((N1_z2 > 1e-5f) & (N1_z2 <= (1.0f + 1e-5f)));
@@ -2792,7 +2806,7 @@ force_inline std::array<fvec<S>, 2> calc_alpha(const fvec<S> &roughness, const f
 }
 
 template <int S> force_inline fvec<S> F0_from_IOR(const fvec<S> &ior) {
-    const fvec<S> t = safe_div(ior - 1.0f, ior + 1.0f);
+    const fvec<S> t = (ior - 1.0f) / (ior + 1.0f); // ior >= 0 => denom >= 1
     return t * t;
 }
 
@@ -2821,7 +2835,7 @@ template <int S> fvec<S> oren_nayar_G(const fvec<S> &cos_theta) {
     const fvec<S> theta = portable_acosf(clamp(cos_theta, -1.0f, 1.0f));
     const fvec<S> big =
         sin_theta * (theta - 2.0f / 3.0f - sin_theta * cos_theta) +
-        (2.0f / 3.0f) * safe_div_pos(sin_theta, cos_theta) * (1.0f - (sin_theta * sin_theta) * sin_theta);
+        (2.0f / 3.0f) * (sin_theta / max(cos_theta, FLT_EPS)) * (1.0f - (sin_theta * sin_theta) * sin_theta);
     const fvec<S> small = fvec<S>{0.5f * PI - 2.0f / 3.0f} - cos_theta;
     return select(cos_theta < 1e-6f, small, big);
 }
@@ -2864,7 +2878,8 @@ template <int S> void sheen_local_frame(const fvec<S> N[3], const fvec<S> V[3], 
     safe_normalize(fb);
 
     const fvec<S> proj_len = safe_sqrt(len2);
-    UNROLLED_FOR(i, 3, { T[i] = select(len2 > 1e-8f, safe_div_pos(proj[i], proj_len), fb[i]); })
+    UNROLLED_FOR(i, 3,
+                 { T[i] = select(len2 > 1e-8f, proj[i] / select(proj_len != 0.0f, proj_len, fvec<S>{1.0f}), fb[i]); })
     cross(N, T, B);
 }
 
@@ -2911,11 +2926,11 @@ force_inline fvec<S> trilerp_gather(const float *base, const ivec<S> off[8], con
 template <int S> fvec<S> ggx_E_glass_lookup(const fvec<S> &ndotv, const fvec<S> &rough, const fvec<S> &ior_in) {
     const int res = 16;
     fvec<S> ior = ior_in;
-    where(ior_in < 1.0f, ior) = safe_div_pos(fvec<S>{1.0f}, ior_in);
+    where(ior_in < 1.0f, ior) = fvec<S>{1.0f} / max(ior_in, FLT_EPS);
 
     const fvec<S> x = saturate(rough) * float(res - 1);
     const fvec<S> y = saturate(ndotv) * float(res - 1);
-    const fvec<S> z = safe_sqrt(abs(safe_div(ior - 1.0f, ior + 1.0f))) * float(res - 1);
+    const fvec<S> z = safe_sqrt(abs((ior - 1.0f) / (ior + 1.0f))) * float(res - 1); // ior >= 0 => denom >= 1
 
     const ivec<S> x0 = min(ivec<S>(x), res - 1), x1 = min(x0 + 1, res - 1);
     const ivec<S> y0 = min(ivec<S>(y), res - 1), y1 = min(y0 + 1, res - 1);
@@ -2935,10 +2950,10 @@ template <int S> fvec<S> ggx_E_glass_lookup(const fvec<S> &ndotv, const fvec<S> 
 template <int S> fvec<S> ggx_Eavg_glass_lookup(const fvec<S> &rough, const fvec<S> &ior_in) {
     const int res = 16;
     fvec<S> ior = ior_in;
-    where(ior_in < 1.0f, ior) = safe_div_pos(fvec<S>{1.0f}, ior_in);
+    where(ior_in < 1.0f, ior) = fvec<S>{1.0f} / max(ior_in, FLT_EPS);
 
     const fvec<S> x = saturate(rough) * float(res - 1);
-    const fvec<S> z = safe_sqrt(abs(safe_div(ior - 1.0f, ior + 1.0f))) * float(res - 1);
+    const fvec<S> z = safe_sqrt(abs((ior - 1.0f) / (ior + 1.0f))) * float(res - 1); // ior >= 0 => denom >= 1
 
     const ivec<S> x0 = min(ivec<S>(x), res - 1), x1 = min(x0 + 1, res - 1);
     const ivec<S> z0 = min(ivec<S>(z), res - 1), z1 = min(z0 + 1, res - 1);
@@ -2983,8 +2998,10 @@ void SampleVNDF_Hemisphere_CrossSect(const fvec<S> Vh[3], const fvec<S> &U1, con
 
     fvec<S> T1[3] = {{1.0f}, {0.0f}, {0.0f}};
     const fvec<S> denom = safe_sqrt(lensq);
-    where(lensq > 0.0f, T1[0]) = -safe_div_pos(Vh[1], denom);
-    where(lensq > 0.0f, T1[1]) = safe_div_pos(Vh[0], denom);
+    // pred on the denom itself: lensq == 0 implies safe_sqrt gives 0 and Vh.xy == 0 too (0/0)
+    const fvec<S> t1_den = select(denom != 0.0f, denom, fvec<S>{1.0f});
+    where(lensq > 0.0f, T1[0]) = -Vh[1] / t1_den;
+    where(lensq > 0.0f, T1[1]) = Vh[0] / t1_den;
 
     fvec<S> T2[3];
     cross(Vh, T1, T2);
@@ -3075,13 +3092,16 @@ fvec<S> GGX_VNDF_Reflection_Bounded_PDF(const fvec<S> &D, const fvec<S> view_dir
     const fvec<S> len2 = ai[0] * ai[0] + ai[1] * ai[1];
     const fvec<S> t = sqrt(len2 + view_dir_ts[2] * view_dir_ts[2]);
 
-    fvec<S> ret = D * safe_div_pos(t - view_dir_ts[2], 2.0f * len2);
+    fvec<S> ret = D * ((t - view_dir_ts[2]) / max(2.0f * len2, FLT_EPS));
 
     const fvec<S> a = saturate(min(alpha[0], alpha[1]));
     const fvec<S> s = 1.0f + sqrt(view_dir_ts[0] * view_dir_ts[0] + view_dir_ts[1] * view_dir_ts[1]);
     const fvec<S> a2 = a * a, s2 = s * s;
     const fvec<S> k = (1.0f - a2) * s2 / (s2 + a2 * view_dir_ts[2] * view_dir_ts[2]);
-    where(view_dir_ts[2] >= 0.0f, ret) = safe_div(D, 2.0f * (k * view_dir_ts[2] + t));
+    const fvec<S> den2 = 2.0f * (k * view_dir_ts[2] + t);
+    // gate on the denominator, not the vz branch leg: alpha-0 lanes with vz == 0 hit den2 == 0 & D == 0
+    // (REF twin is plain here, so live lanes are provably nonzero - only mask-off lanes take the 1.0)
+    where(view_dir_ts[2] >= 0.0f, ret) = D / select(den2 != 0.0f, den2, fvec<S>{1.0f});
 
     return ret;
 }
@@ -3089,7 +3109,7 @@ fvec<S> GGX_VNDF_Reflection_Bounded_PDF(const fvec<S> &D, const fvec<S> view_dir
 // Smith shadowing function. Takes already-squared alpha (mirrors Ref::G1_lambda)
 template <int S> force_inline fvec<S> G1_lambda(const fvec<S> Ve[3], const fvec<S> &alpha2_x, const fvec<S> &alpha2_y) {
     return (-1.0f +
-            safe_sqrt(1.0f + safe_div_pos(alpha2_x * Ve[0] * Ve[0] + alpha2_y * Ve[1] * Ve[1], Ve[2] * Ve[2]))) /
+            safe_sqrt(1.0f + (alpha2_x * Ve[0] * Ve[0] + alpha2_y * Ve[1] * Ve[1]) / max(Ve[2] * Ve[2], FLT_EPS))) /
            2.0f;
 }
 
@@ -3100,15 +3120,17 @@ template <int S> force_inline fvec<S> G1(const fvec<S> Ve[3], fvec<S> alpha_x, f
 template <int S> fvec<S> D_GTR1(const fvec<S> &NDotH, const fvec<S> &a) {
     const fvec<S> a2 = sqr(a);
     const fvec<S> t = 1.0f + (a2 - 1.0f) * NDotH * NDotH;
-    return select(a < 1.0f, safe_div(a2 - 1.0f, PI * log(a2) * t), fvec<S>{1.0f / PI});
+    const fvec<S> den = PI * log(a2) * t;
+    return select(a < 1.0f, (a2 - 1.0f) / select(den != 0.0f, den, fvec<S>{1.0f}), fvec<S>{1.0f / PI});
 }
 
 template <int S> fvec<S> D_GGX(const fvec<S> H[3], const fvec<S> &alpha_x, const fvec<S> &alpha_y) {
-    const fvec<S> sx = -safe_div(H[0], H[2] * alpha_x);
-    const fvec<S> sy = -safe_div(H[1], H[2] * alpha_y);
+    const fvec<S> sx = -H[0] / select(H[2] * alpha_x != 0.0f, H[2] * alpha_x, fvec<S>{INFINITY});
+    const fvec<S> sy = -H[1] / select(H[2] * alpha_y != 0.0f, H[2] * alpha_y, fvec<S>{INFINITY});
     const fvec<S> s1 = 1.0f + sx * sx + sy * sy;
     const fvec<S> cos_theta_h4 = H[2] * H[2] * H[2] * H[2];
-    return select(H[2] != 0.0f, safe_inv_pos((s1 * s1) * PI * alpha_x * alpha_y * cos_theta_h4), fvec<S>{0.0f});
+    return select(H[2] != 0.0f, fvec<S>{1.0f} / max((s1 * s1) * PI * alpha_x * alpha_y * cos_theta_h4, FLT_EPS),
+                  fvec<S>{0.0f});
 }
 
 template <int S> void create_tbn(const fvec<S> N[3], fvec<S> out_T[3], fvec<S> out_B[3]) {
@@ -3128,11 +3150,13 @@ void map_to_cone(const fvec<S> &r1, const fvec<S> &r2, const fvec<S> N[3], const
 
     UNROLLED_FOR(i, 3, { out_V[i] = N[i]; })
 
+    // offset == 0 (exact rand 0.5s) => REF returns N early: predicated denoms keep both branch legs out of 0/0
+    const ivec<S> off1_nz = simd_cast(offset[1] != 0.0f), off0_nz = simd_cast(offset[0] != 0.0f);
     fvec<S> r = offset[1];
-    fvec<S> theta = 0.5f * PI * (1.0f - 0.5f * safe_div(offset[0], offset[1]));
+    fvec<S> theta = 0.5f * PI * (1.0f - 0.5f * offset[0] / select(off1_nz, offset[1], fvec<S>{1.0f}));
 
     where(abs(offset[0]) > abs(offset[1]), r) = offset[0];
-    where(abs(offset[0]) > abs(offset[1]), theta) = 0.25f * PI * safe_div(offset[1], offset[0]);
+    where(abs(offset[0]) > abs(offset[1]), theta) = 0.25f * PI * offset[1] / select(off0_nz, offset[0], fvec<S>{1.0f});
 
     fvec<S> sincos_theta[2];
     portable_sincos(theta, sincos_theta[0], sincos_theta[1]);
@@ -3158,7 +3182,9 @@ force_inline fvec<S> sphere_intersection(const float center[3], const float radi
     const fvec<S> b = 2 * dot3(oc, rd);
     const fvec<S> c = dot3(oc, oc) - radius * radius;
     const fvec<S> discriminant = b * b - 4 * a * c;
-    return safe_div_pos(-b - safe_sqrt(discriminant), 2 * a);
+    // degenerate lanes exist (shading point on the light sphere => rd == 0 after normalize, num == 0):
+    // keep the old eps floor, verbatim
+    return (-b - safe_sqrt(discriminant)) / max(2 * a, FLT_EPS);
 }
 
 template <int S> force_inline fvec<S> schlick_weight(const fvec<S> &u) {
@@ -3191,8 +3217,10 @@ template <int S> fvec<S> fresnel_dielectric_cos(const fvec<S> &cosi, const fvec<
     const fvec<S> mask = (g > 0.0f);
 
     g = safe_sqrt(g);
-    const fvec<S> A = safe_div(g - c, g + c);
-    const fvec<S> B = safe_div(c * (g + c) - 1, c * (g - c) + 1);
+    // safe_sqrt clamps TIR lanes to g == 0, then c == 1 makes B's denom exact 0/0: predicate off-gate lanes
+    const fvec<S> A = (g - c) / select(g + c != 0.0f, g + c, fvec<S>{1.0f});
+    const fvec<S> Bden = c * (g - c) + 1;
+    const fvec<S> B = (c * (g + c) - 1) / select(Bden != 0.0f, Bden, fvec<S>{1.0f});
 
     return select(mask, 0.5f * A * A * (1 + B * B), fvec<S>{1.0f} /* TIR (no refracted component) */);
 }
@@ -3217,16 +3245,21 @@ void get_lobe_weights(const fvec<S> &base_color_lum, const fvec<S> &sheen_lum, c
     const fvec<S> total_weight =
         out_weights.diffuse + out_weights.sheen + out_weights.specular + out_weights.clearcoat + out_weights.refraction;
 
-    where(total_weight != 0.0f, out_weights.diffuse) = safe_div_pos(out_weights.diffuse, total_weight);
-    where(total_weight != 0.0f, out_weights.sheen) = safe_div_pos(out_weights.sheen, total_weight);
-    where(total_weight != 0.0f, out_weights.specular) = safe_div_pos(out_weights.specular, total_weight);
-    where(total_weight != 0.0f, out_weights.clearcoat) = safe_div_pos(out_weights.clearcoat, total_weight);
-    where(total_weight != 0.0f, out_weights.refraction) = safe_div_pos(out_weights.refraction, total_weight);
+    // mirror the GPU lobe gate (shade.comp if (total != 0)): mask-off lanes divide, but total == 0 means
+    // all five numerators are 0 too - denom predication keeps the 0/0 INVALID out, values stay 0 like old guard
+    const ivec<S> total_nonzero = simd_cast(total_weight != 0.0f);
+    const fvec<S> w_denom = select(total_nonzero, total_weight, fvec<S>{1.0f});
+    where(total_nonzero, out_weights.diffuse) = out_weights.diffuse / w_denom;
+    where(total_nonzero, out_weights.sheen) = out_weights.sheen / w_denom;
+    where(total_nonzero, out_weights.specular) = out_weights.specular / w_denom;
+    where(total_nonzero, out_weights.clearcoat) = out_weights.clearcoat / w_denom;
+    where(total_nonzero, out_weights.refraction) = out_weights.refraction / w_denom;
 }
 
 template <int S> force_inline fvec<S> power_heuristic(const fvec<S> &a, const fvec<S> &b) {
+    // load-bearing clamp: both pdfs == 0 (light miss / zero pdfs) is routine, mis_weight must come out 0
     const fvec<S> t = a * a;
-    return safe_div_pos(t, b * b + t);
+    return t / max(b * b + t, FLT_EPS);
 }
 
 template <int S>
@@ -3234,8 +3267,9 @@ force_inline ivec<S> quadratic(const fvec<S> &a, const fvec<S> &b, const fvec<S>
     const fvec<S> d = b * b - 4.0f * a * c;
     const fvec<S> sqrt_d = safe_sqrt(d);
     const fvec<S> q = select(b < 0.0f, -0.5f * (b - sqrt_d), -0.5f * (b + sqrt_d));
-    t0 = safe_div(q, a);
-    t1 = safe_div(c, q);
+    // load-bearing eps sign-preserving guards: degenerate quad (a == 0) and zero root (c == 0 => q == 0)
+    t0 = q / select(a != 0.0f, a, copysign(fvec<S>{FLT_EPS}, a));
+    t1 = c / select(q != 0.0f, q, copysign(fvec<S>{FLT_EPS}, q));
     return simd_cast(d >= 0.0f);
 }
 
@@ -3309,7 +3343,7 @@ template <int S> fvec<S> approx_atan2(const fvec<S> &y, const fvec<S> &x) {
     t1 = abs(y);
     t0 = max(t3, t1);
     t1 = min(t3, t1);
-    t3 = safe_inv(t0);
+    t3 = 1.0f / select(t0 != 0.0f, t0, fvec<S>{FLT_EPS}); // atan2(0,0): t1 * inf would be INVALID
     t3 = t1 * t3;
 
     t4 = t3 * t3;
@@ -3455,14 +3489,14 @@ void calc_lnode_importance(const light_cwbvh_node_t &n, const float bbox_min[3][
             fvec<S> wi[3] = {P[0] - pc[0], P[1] - pc[1], P[2] - pc[2]};
             fvec<S> dist2 = dot3(wi, wi);
             fvec<S> dist = sqrt(dist2);
-            UNROLLED_FOR(j, 3, { wi[j] = safe_div_pos(wi[j], dist); })
+            UNROLLED_FOR(j, 3, { wi[j] = wi[j] / max(dist, FLT_EPS); })
 
             const fvec<S> v_len2 = max(dist2, extent);
 
             const fvec<S> cos_omega_w = dot3(axis.data(), wi);
             const fvec<S> sin_omega_w = safe_sqrt(1.0f - cos_omega_w * cos_omega_w);
 
-            fvec<S> cos_omega_b = safe_sqrt(1.0f - safe_div_pos(extent * extent, dist2));
+            fvec<S> cos_omega_b = safe_sqrt(1.0f - (extent * extent) / max(dist2, FLT_EPS));
             where(dist2 < extent * extent, cos_omega_b) = -1.0f;
             const fvec<S> sin_omega_b = sqrt(1.0f - cos_omega_b * cos_omega_b);
 
@@ -3513,14 +3547,14 @@ template <int S> void calc_lnode_importance(const light_cwbvh_node_t &n, const f
             fvec<S> wi[3] = {P[0] - pc[0], P[1] - pc[1], P[2] - pc[2]};
             const fvec<S> dist2 = dot3(wi, wi);
             const fvec<S> dist = sqrt(dist2);
-            UNROLLED_FOR(j, 3, { wi[j] = safe_div_pos(wi[j], dist); })
+            UNROLLED_FOR(j, 3, { wi[j] = wi[j] / max(dist, FLT_EPS); })
 
             const fvec<S> v_len2 = max(dist2, extent);
 
             const fvec<S> cos_omega_w = dot3(value_ptr(axis), wi);
             const fvec<S> sin_omega_w = safe_sqrt(1.0f - cos_omega_w * cos_omega_w);
 
-            fvec<S> cos_omega_b = safe_sqrt(1.0f - safe_div_pos(extent * extent, dist2));
+            fvec<S> cos_omega_b = safe_sqrt(1.0f - (extent * extent) / max(dist2, FLT_EPS));
             where(dist2 < extent * extent, cos_omega_b) = -1.0f;
             const fvec<S> sin_omega_b = sqrt(1.0f - cos_omega_b * cos_omega_b);
 
@@ -3533,7 +3567,7 @@ template <int S> void calc_lnode_importance(const light_cwbvh_node_t &n, const f
                 sin_sub_clamped(sin_omega_w, cos_omega_w, fvec<S>{sin_omega_n}, fvec<S>{cos_omega_ne.get<0>()});
             const fvec<S> cos_omega = cos_sub_clamped(sin_omega_x, cos_omega_x, sin_omega_b, cos_omega_b);
 
-            imp *= select(cos_omega > cos_omega_ne.get<1>(), safe_div_pos(cos_omega, v_len2), fvec<S>{0.0f});
+            imp *= select(cos_omega > cos_omega_ne.get<1>(), cos_omega / max(v_len2, FLT_EPS), fvec<S>{0.0f});
         }
 
         importance[i] = imp;
@@ -3547,16 +3581,19 @@ template <int S> uvec<S> calc_grid_level(const fvec<S> p[3], const cache_grid_pa
     return uvec<S>(ret);
 }
 
+// guard is semantic, not exception-only: dot == +-0 must clamp, else spread_attenuation gets -inf -> inf attenuation
 template <int S> fvec<S> tan_angle(const fvec<S> a[3], const fvec<S> b[3]) {
     fvec<S> temp[3];
     cross(a, b, temp);
-    return safe_div(length(temp), dot3(a, b));
+    const fvec<S> d = dot3(a, b);
+    return length(temp) / select(d != 0.0f, d, copysign(fvec<S>{FLT_EPS}, d));
 }
 
 template <int S> fvec<S> tan_angle(const fvec<S> a[3], const float b[3]) {
     fvec<S> temp[3];
     cross(a, b, temp);
-    return safe_div(length(temp), dot3(a, b));
+    const fvec<S> d = dot3(a, b);
+    return length(temp) / select(d != 0.0f, d, copysign(fvec<S>{FLT_EPS}, d));
 }
 
 template <int S>
@@ -3654,9 +3691,12 @@ void Ray::NS::GeneratePrimaryRays(const camera_t &cam, const rect_t &rect, int w
                 offset[0] = 2.0f * lens_rand[0] - 1.0f;
                 offset[1] = 2.0f * lens_rand[1] - 1.0f;
 
-                fvec<S> r = offset[1], theta = 0.5f * PI - 0.25f * PI * safe_div(offset[0], offset[1]);
+                const ivec<S> off1_nz = simd_cast(offset[1] != 0.0f), off0_nz = simd_cast(offset[0] != 0.0f);
+                fvec<S> r = offset[1],
+                        theta = 0.5f * PI - 0.25f * PI * offset[0] / select(off1_nz, offset[1], fvec<S>{1.0f});
                 where(abs(offset[0]) > abs(offset[1]), r) = offset[0];
-                where(abs(offset[0]) > abs(offset[1]), theta) = 0.25f * PI * safe_div(offset[1], offset[0]);
+                where(abs(offset[0]) > abs(offset[1]), theta) =
+                    0.25f * PI * offset[1] / select(off0_nz, offset[0], fvec<S>{1.0f});
 
                 if (cam.lens_blades) {
                     r *= ngon_rad(theta, float(cam.lens_blades));
@@ -5009,7 +5049,7 @@ template <int S>
 void Ray::NS::Evaluate_OrenDiffuse_BSDF(const fvec<S> V[3], const fvec<S> N[3], const fvec<S> L[3],
                                         const fvec<S> &roughness, const fvec<S> base_color[3], fvec<S> out_color[4]) {
     const fvec<S> sigma = roughness;
-    const fvec<S> a = safe_div_pos(fvec<S>{1.0f}, PI + sigma * (0.5f * PI - 2.0f / 3.0f));
+    const fvec<S> a = fvec<S>{1.0f} / (PI + sigma * (0.5f * PI - 2.0f / 3.0f));
     const fvec<S> b = sigma * a;
 
     const fvec<S> nl = max(dot3(N, L), 0.0f);
@@ -5021,12 +5061,14 @@ void Ray::NS::Evaluate_OrenDiffuse_BSDF(const fvec<S> V[3], const fvec<S> N[3], 
     const fvec<S> E1 = a * PI + b * oren_nayar_G(nl);
 
     fvec<S> t = dot3(L, V) - nl * nv;
-    where(t > 0.0f, t) = safe_div_pos(t, max(nl, nv) + FLT_MIN);
+    where(t > 0.0f, t) = t / (max(nl, nv) + FLT_MIN);
     const fvec<S> single_scatter = a + b * t;
 
     UNROLLED_FOR(i, 3, {
-        const fvec<S> Ems = (1.0f / PI) * (base_color[i] * base_color[i]) * safe_div_pos(Eavg, 1.0f - Eavg) *
-                            safe_div_pos(fvec<S>{1.0f}, 1.0f - base_color[i] * (1.0f - Eavg));
+        // b == 0 (sigma 0) => Eavg == 1.0 exactly: predicated denom keeps mask-off Lambert lanes out of inf * 0 NaN
+        const fvec<S> Ems = (1.0f / PI) * (base_color[i] * base_color[i]) *
+                            (Eavg / select(b > 0.0f, max(fvec<S>{1.0f} - Eavg, FLT_EPS), fvec<S>{1.0f})) *
+                            (fvec<S>{1.0f} / max(1.0f - base_color[i] * (1.0f - Eavg), FLT_EPS));
         const fvec<S> multi_scatter = Ems * (1.0f - Ev) * (1.0f - E1);
         fvec<S> col = base_color[i] * nl * (single_scatter + multi_scatter);
         // roughness == 0 (b <= 0): plain Lambert
@@ -5130,7 +5172,10 @@ void Ray::NS::Evaluate_PrincipledSheen_BSDF(const fvec<S> V[3], const fvec<S> N[
     tangent_from_world(T, B, N, L, local_L);
 
     const fvec<S> lenSqr = sqr(ab[0] * local_L[0] + ab[1] * local_L[2]) + sqr(ab[0] * local_L[1]) + sqr(local_L[2]);
-    const fvec<S> val = (1.0f / PI) * max(local_L[2], 0.0f) * sqr(safe_div_pos(ab[0], lenSqr));
+    // lenSqr == 0 requires ab[0] == 0 => invalid mask covers it: keep max() clamp for live lanes, 1.0 for the exact-0
+    // lane
+    const fvec<S> val =
+        (1.0f / PI) * max(local_L[2], 0.0f) * sqr(ab[0] / select(lenSqr != 0.0f, max(lenSqr, FLT_EPS), fvec<S>{1.0f}));
 
     UNROLLED_FOR(i, 3, { out_color[i] = select(invalid, fvec<S>{0.0f}, val * ab[2]); })
     out_color[3] = select(invalid, fvec<S>{0.0f}, val);
@@ -5160,7 +5205,8 @@ void Ray::NS::Sample_PrincipledSheen_BSDF(const fvec<S> N[3], const fvec<S> I[3]
     world_from_tangent(T, B, N, local_L, out_V);
 
     const fvec<S> lenSqr = sqr(ab[0] * local_L[0] + ab[1] * local_L[2]) + sqr(ab[0] * local_L[1]) + sqr(local_L[2]);
-    const fvec<S> val = (1.0f / PI) * local_L[2] * sqr(safe_div_pos(ab[0], lenSqr));
+    const fvec<S> val =
+        (1.0f / PI) * local_L[2] * sqr(ab[0] / select(lenSqr != 0.0f, max(lenSqr, FLT_EPS), fvec<S>{1.0f}));
 
     UNROLLED_FOR(i, 3, { out_color[i] = select(invalid, fvec<S>{0.0f}, val * ab[2]); })
     out_color[3] = select(invalid, fvec<S>{0.0f}, val);
@@ -5195,17 +5241,19 @@ void Ray::NS::Evaluate_GGXSpecular_BSDF(const fvec<S> view_dir_ts[3], const fvec
     }
 
     const fvec<S> denom = 4.0f * abs(view_dir_ts[2] * reflected_dir_ts[2]);
-    UNROLLED_FOR(i, 3, { F[i] = select(denom != 0.0f, F[i] * safe_div_pos(D * G, denom), fvec<S>{0.0f}); })
+    UNROLLED_FOR(i, 3, {
+        F[i] = select(denom != 0.0f, F[i] * ((D * G) / select(denom != 0.0f, denom, fvec<S>{1.0f})), fvec<S>{0.0f});
+    })
     UNROLLED_FOR(i, 3, { F[i] *= max(reflected_dir_ts[2], 0.0f); })
 
     { // energy compensation (Kulla & Conty)
         const fvec<S> rough = sqrt(sqrt(alpha[0] * alpha[1]));
         const fvec<S> E = ggx_E_lookup(max(view_dir_ts[2], 0.0f), rough);
         const fvec<S> Eavg = ggx_Eavg_lookup(rough);
-        const fvec<S> missing = safe_div_pos(1.0f - E, E);
+        const fvec<S> missing = (1.0f - E) / E;
         UNROLLED_FOR(i, 3, {
             const fvec<S> Fss = clamp(mix(spec_col[i], metallic_f0[i], metallic), 0.0f, 0.999f);
-            const fvec<S> Fms = safe_div_pos(Fss * Eavg, 1.0f - Fss * (1.0f - Eavg));
+            const fvec<S> Fms = Fss * Eavg / (1.0f - Fss * (1.0f - Eavg));
             F[i] *= 1.0f + Fms * missing;
         })
     }
@@ -5291,24 +5339,26 @@ void Ray::NS::Evaluate_GGXRefractionSpecular_BSDF(const fvec<S> view_dir_ts[3], 
     UNROLLED_FOR(i, 3, { F[i] *= fr; })
 
     const fvec<S> denom = 4.0f * abs(view_dir_ts[2] * reflected_dir_ts[2]);
-    UNROLLED_FOR(i, 3, { F[i] = select(denom != 0.0f, F[i] * safe_div_pos(D * G, denom), fvec<S>{0.0f}); })
+    UNROLLED_FOR(i, 3, {
+        F[i] = select(denom != 0.0f, F[i] * ((D * G) / select(denom != 0.0f, denom, fvec<S>{1.0f})), fvec<S>{0.0f});
+    })
     UNROLLED_FOR(i, 3, { F[i] *= max(reflected_dir_ts[2], 0.0f); })
 
     { // glass energy compensation (Kulla & Conty)
         const fvec<S> rough = sqrt(sqrt(alpha[0] * alpha[1]));
         const fvec<S> E = ggx_E_glass_lookup(max(view_dir_ts[2], 0.0f), rough, spec_ior);
         const fvec<S> Eavg = ggx_Eavg_glass_lookup(rough, spec_ior);
-        const fvec<S> missing = safe_div_pos(1.0f - E, E);
+        const fvec<S> missing = (1.0f - E) / E;
         UNROLLED_FOR(i, 3, {
             const fvec<S> Fss = clamp(spec_col[i], 0.0f, 0.999f);
-            const fvec<S> Fms = safe_div_pos(Fss * Eavg, 1.0f - Fss * (1.0f - Eavg));
+            const fvec<S> Fms = Fss * Eavg / (1.0f - Fss * (1.0f - Eavg));
             F[i] *= 1.0f + Fms * missing;
         })
     }
 
-    fvec<S> pdf = safe_div_pos(D * max(cos_theta_i, 0.0f), abs(view_dir_ts[2]) * (1.0f + G1i_lambda));
+    fvec<S> pdf = (D * max(cos_theta_i, 0.0f)) / max(abs(view_dir_ts[2]) * (1.0f + G1i_lambda), FLT_EPS);
     const fvec<S> div = 4.0f * cos_theta_i;
-    where(div != 0.0f, pdf) = safe_div(pdf, div);
+    where(div != 0.0f, pdf) = pdf / select(div != 0.0f, div, fvec<S>{1.0f});
 
     UNROLLED_FOR(i, 3, { out_color[i] = F[i]; })
     out_color[3] = pdf;
@@ -5376,29 +5426,29 @@ void Ray::NS::Evaluate_GGXRefraction_BSDF(const fvec<S> view_dir_ts[3], const fv
     const fvec<S> G1i_lambda = G1_lambda(view_dir_ts, alpha2_x, alpha2_y);
 
     const fvec<S> denom = LoH + eta * VoH;
-    const fvec<S> jacobian = safe_div_pos(-LoH, denom * denom);
+    const fvec<S> jacobian = -LoH / max(denom * denom, FLT_EPS);
 
     fvec<S> F = 0.0f;
     if (fresnel) {
-        F = fresnel_dielectric_cos(VoH, safe_div_pos(fvec<S>{1.0f}, eta));
+        F = fresnel_dielectric_cos(VoH, fvec<S>{1.0f} / max(eta, FLT_EPS));
     }
 
     const fvec<S> common = D * VoH * jacobian;
-    const fvec<S> bsdf = safe_div((1.0f - F) * common, Vz * (1.0f + G1o_lambda + G1i_lambda));
-    const fvec<S> pdf = safe_div(common, Vz * (1.0f + G1i_lambda));
+    const fvec<S> bsdf = (1.0f - F) * common / select(Vz != 0.0f, Vz * (1.0f + G1o_lambda + G1i_lambda), fvec<S>{1.0f});
+    const fvec<S> pdf = common / select(Vz != 0.0f, Vz * (1.0f + G1i_lambda), fvec<S>{1.0f});
 
     fvec<S> ret[3];
     UNROLLED_FOR(i, 3, { ret[i] = bsdf * refr_col[i]; })
 
     if (preserve_energy) {
         const fvec<S> rough = sqrt(sqrt(alpha[0] * alpha[1]));
-        const fvec<S> ior = safe_div_pos(fvec<S>{1.0f}, eta);
+        const fvec<S> ior = fvec<S>{1.0f} / max(eta, FLT_EPS);
         const fvec<S> E = ggx_E_glass_lookup(max(Vz, 0.0f), rough, ior);
         const fvec<S> Eavg = ggx_Eavg_glass_lookup(rough, ior);
-        const fvec<S> missing = safe_div_pos(1.0f - E, E);
+        const fvec<S> missing = (1.0f - E) / E;
         UNROLLED_FOR(i, 3, {
             const fvec<S> Fss = clamp(refr_col[i], 0.0f, 0.999f);
-            const fvec<S> Fms = safe_div_pos(Fss * Eavg, 1.0f - Fss * (1.0f - Eavg));
+            const fvec<S> Fms = Fss * Eavg / (1.0f - Fss * (1.0f - Eavg));
             ret[i] *= 1.0f + Fms * missing;
         })
     }
@@ -5423,7 +5473,7 @@ void Ray::NS::Sample_GGXRefraction_BSDF(const fvec<S> T[3], const fvec<S> B[3], 
 
         fvec<S> F = 0.0f;
         if (fresnel) {
-            F = fresnel_dielectric_cos(cosi, safe_div_pos(fvec<S>{1.0f}, eta));
+            F = fresnel_dielectric_cos(cosi, fvec<S>{1.0f} / max(eta, FLT_EPS));
         }
 
         out_V[3] = m;
@@ -5484,7 +5534,7 @@ void Ray::NS::Evaluate_PrincipledClearcoat_BSDF(const fvec<S> view_dir_ts[3], co
     fvec<S> F = mix(clearcoat_F0, fvec<S>{1.0f}, FH);
 
     const fvec<S> denom = 4.0f * abs(view_dir_ts[2]) * abs(reflected_dir_ts[2]);
-    F = select(denom != 0.0f, safe_div_pos(F * D * G, denom), fvec<S>{0.0f});
+    F = select(denom != 0.0f, (F * D * G) / select(denom != 0.0f, denom, fvec<S>{1.0f}), fvec<S>{0.0f});
     F *= max(reflected_dir_ts[2], 0.0f);
 
     const fvec<S> pdf = GGX_VNDF_Reflection_Bounded_PDF(D, view_dir_ts, alpha);
@@ -6110,10 +6160,10 @@ void Ray::NS::IntersectScene(ray_data_t<S> &r, const int min_transp_depth, const
 
                             if (mix_term_rand[0][i] > mix_val) {
                                 mat_index.set(i, mat->textures[MIX_MAT1]);
-                                mix_term_rand[0].set(i, safe_div_pos(mix_term_rand[0][i] - mix_val, 1.0f - mix_val));
+                                mix_term_rand[0].set(i, (mix_term_rand[0][i] - mix_val) / (1.0f - mix_val));
                             } else {
                                 mat_index.set(i, mat->textures[MIX_MAT2]);
-                                mix_term_rand[0].set(i, safe_div_pos(mix_term_rand[0][i], mix_val));
+                                mix_term_rand[0].set(i, mix_term_rand[0][i] / mix_val);
                             }
 
                             if (first_mi == 0xffff) {
@@ -6155,7 +6205,9 @@ void Ray::NS::IntersectScene(ray_data_t<S> &r, const int min_transp_depth, const
 
                     UNROLLED_FOR(i, 3, {
                         where(ray_queue[index] & _terminate, r.c[i]) = 0.0f;
-                        where(ray_queue[index] & ~_terminate, r.c[i]) *= safe_div_pos(mat->base_color[i], 1.0f - q);
+                        // q == 1 only on terminate lanes (lum == 0): predicate denom, discarded anyway
+                        where(ray_queue[index] & ~_terminate, r.c[i]) *=
+                            mat->base_color[i] / select(_terminate, fvec<S>{1.0f}, 1.0f - q);
                     })
 
                     keep_going &= ~_terminate;
@@ -6213,7 +6265,7 @@ void Ray::NS::TraceShadowRays(Span<const shadow_ray_t<S>> rays, int max_transp_d
             UNROLLED_FOR(j, 3, { rc[j] *= k; })
         }
         const fvec<S> sum = rc[0] + rc[1] + rc[2];
-        UNROLLED_FOR(j, 3, { where(sum > limit, rc[j]) = safe_div_pos(rc[j] * limit, sum); })
+        UNROLLED_FOR(j, 3, { where(sum > limit, rc[j]) = (rc[j] * limit) / max(sum, FLT_EPS); })
 
         const uvec<S> x = sh_r.xy >> 16, y = sh_r.xy & 0x0000FFFF;
 
@@ -6418,7 +6470,7 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
                 }
 
                 fvec<S> factors[8];
-                UNROLLED_FOR(j, 8, { factors[j] = safe_div_pos(importance[j], total_importance); })
+                UNROLLED_FOR(j, 8, { factors[j] = importance[j] / max(total_importance, FLT_EPS); })
 
                 fvec<S> factors_cdf[9] = {};
                 UNROLLED_FOR(j, 8, { factors_cdf[j + 1] = factors_cdf[j] + factors[j]; })
@@ -6440,7 +6492,8 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
                     queue[num++] = {diff_next, i};
                 }
 
-                where(queue[index].mask, ri) = fract(safe_div_pos(ri - factors_cdf[first_next], factors[first_next]));
+                where(queue[index].mask, ri) =
+                    fract((ri - factors_cdf[first_next]) / max(factors[first_next], FLT_EPS));
                 where(queue[index].mask, factor) *= factors[first_next];
 
                 const uint32_t meta = (n.meta4[first_next >> 2] >> (8 * (first_next & 3))) & 0xFFu;
@@ -6529,7 +6582,7 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
                 const fvec<S> cos_theta = dot3(sampled_dir, light_normal);
 
                 UNROLLED_FOR(i, 3, { where(ray_queue[index], ls.lp[i]) = lp_biased[i]; })
-                where(ray_queue[index], ls.pdf) = safe_div_pos(disk_dist * disk_dist, sampled_area * cos_theta);
+                where(ray_queue[index], ls.pdf) = (disk_dist * disk_dist) / max(sampled_area * cos_theta, FLT_EPS);
             } else {
                 UNROLLED_FOR(i, 3, { where(ray_queue[index], ls.lp[i]) = center[i]; })
                 where(ray_queue[index], ls.pdf) = (disk_dist * disk_dist) / PI;
@@ -6574,7 +6627,7 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
                 where(ray_queue[index], ls.area) = PI * radius * radius;
 
                 const fvec<S> cos_theta = dot3(ls.L, l.dir.dir);
-                where(ray_queue[index], ls.pdf) = safe_div_pos(1.0f, ls.area * cos_theta);
+                where(ray_queue[index], ls.pdf) = fvec<S>{1.0f} / max(ls.area * cos_theta, FLT_EPS);
             }
             UNROLLED_FOR(i, 3, { where(ray_queue[index], ls.lp[i]) = P[i] + ls.L[i]; })
             where(ray_queue[index], ls.ray_flags) = l.ray_visibility;
@@ -6617,7 +6670,7 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
 
             const fvec<S> cos_theta =
                 -ls.L[0] * light_forward[0] - ls.L[1] * light_forward[1] - ls.L[2] * light_forward[2];
-            where(invalid_pdf, pdf) = safe_div_pos(ls_dist * ls_dist, ls.area * cos_theta);
+            where(invalid_pdf, pdf) = (ls_dist * ls_dist) / max(ls.area * cos_theta, FLT_EPS);
             where(cos_theta <= 0.0f, pdf) = 0.0f;
             where(ray_queue[index], ls.pdf) = pdf;
 
@@ -6645,10 +6698,13 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
             fvec<S> offset[2] = {2.0f * rand_light_uv[0] - 1.0f, 2.0f * rand_light_uv[1] - 1.0f};
             const ivec<S> mask = simd_cast(offset[0] != 0.0f | offset[1] != 0.0f);
             if (mask.not_all_zeros()) {
-                fvec<S> theta = 0.5f * PI - 0.25f * PI * safe_div(offset[0], offset[1]), r = offset[1];
+                const ivec<S> off1_nz = simd_cast(offset[1] != 0.0f), off0_nz = simd_cast(offset[0] != 0.0f);
+                fvec<S> theta = 0.5f * PI - 0.25f * PI * offset[0] / select(off1_nz, offset[1], fvec<S>{1.0f}),
+                        r = offset[1];
 
                 where(abs(offset[0]) > abs(offset[1]), r) = offset[0];
-                where(abs(offset[0]) > abs(offset[1]), theta) = 0.25f * PI * safe_div(offset[1], offset[0]);
+                where(abs(offset[0]) > abs(offset[1]), theta) =
+                    0.25f * PI * offset[1] / select(off0_nz, offset[0], fvec<S>{1.0f});
 
                 fvec<S> sincos_theta[2];
                 portable_sincos(theta, sincos_theta[0], sincos_theta[1]);
@@ -6679,7 +6735,7 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
 
             const fvec<S> cos_theta =
                 -ls.L[0] * light_forward[0] - ls.L[1] * light_forward[1] - ls.L[2] * light_forward[2];
-            fvec<S> pdf = safe_div_pos(ls_dist * ls_dist, ls.area * cos_theta);
+            fvec<S> pdf = (ls_dist * ls_dist) / max(ls.area * cos_theta, FLT_EPS);
             where(cos_theta <= 0.0f, pdf) = 0.0f;
             where(ray_queue[index], ls.pdf) = pdf;
 
@@ -6743,7 +6799,7 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
             where(ray_queue[index], ls.ray_flags) = l.ray_visibility;
 
             const fvec<S> cos_theta = -dot3(ls.L, normal);
-            fvec<S> pdf = safe_div_pos(ls_dist * ls_dist, light_area * cos_theta);
+            fvec<S> pdf = (ls_dist * ls_dist) / max(light_area * cos_theta, FLT_EPS);
             where(cos_theta <= 0.0f, pdf) = 0.0f;
             where(ray_queue[index], ls.pdf) = pdf;
 
@@ -6796,7 +6852,9 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
                 fvec<S> qvec[3];
                 cross(tvec, e1, qvec);
 
-                const fvec<S> inv_det = safe_div(fvec<S>{1.0f}, dot3(e1, pvec));
+                const fvec<S> det = dot3(e1, pvec);
+                // coplanar P => det == 0: inf denom gives exact-0 inv (old safe_div value), kills 0 * inf INVALID
+                const fvec<S> inv_det = fvec<S>{1.0f} / select(det != 0.0f, det, fvec<S>{INFINITY});
                 const fvec<S> tri_u = dot3(tvec, pvec) * inv_det, tri_v = dot3(dir, qvec) * inv_det;
 
                 UNROLLED_FOR(i, 3, {
@@ -6828,7 +6886,9 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
 
                 UNROLLED_FOR(i, 3, { where(pdf_negative, ls.L[i]) = to_light[i]; })
                 const fvec<S> cos_theta = -dot3(ls.L, light_forward);
-                where(pdf_negative, pdf) = safe_div_pos(ls_dist * ls_dist, ls.area * cos_theta);
+                // old guarded max(fd, FLT_EPS) denom kept: mask-off lanes still divide, ls_dist can be exactly 0
+                where(pdf_negative, pdf) =
+                    (ls_dist * ls_dist) / select(pdf_negative, max(ls.area * cos_theta, FLT_EPS), fvec<S>{1.0f});
             }
 
             fvec<S> cos_theta = -dot3(ls.L, light_forward);
@@ -7064,7 +7124,7 @@ void Ray::NS::IntersectAreaLights(const ray_data_t<S> &r, Span<const light_t> li
                                               (simd_cast(inout_inter.v < 0.0f) | simd_cast(no_shadow));
                         where(imask, inout_inter.v) = 0.0f;
                         where(imask, inout_inter.obj_index) = -light_index - 1;
-                        where(imask, inout_inter.t) = safe_div_pos(1.0f, cos_theta);
+                        where(imask, inout_inter.t) = 1.0f / cos_theta;
                         where(imask, inout_inter.u) = factor;
                         inout_inter.t.store_to(inter_t, vector_aligned);
                     } else if (l.type == LIGHT_TYPE_RECT) {
@@ -7075,7 +7135,8 @@ void Ray::NS::IntersectAreaLights(const ray_data_t<S> &r, Span<const light_t> li
                         const float plane_dist = dot3(light_fwd, l.rect.pos);
 
                         const fvec<S> cos_theta = dot3(r.d, light_fwd);
-                        const fvec<S> t = safe_div_neg(plane_dist - dot3(light_fwd, r.o), cos_theta);
+                        const fvec<S> t =
+                            (plane_dist - dot3(light_fwd, r.o)) / select(cos_theta < 0.0f, cos_theta, fvec<S>{-1.0f});
 
                         const ivec<S> imask =
                             simd_cast((cos_theta < 0.0f) & (t > HIT_EPS) & ((t < inout_inter.t) | no_shadow)) &
@@ -7111,7 +7172,8 @@ void Ray::NS::IntersectAreaLights(const ray_data_t<S> &r, Span<const light_t> li
                         const float plane_dist = dot3(light_fwd, l.disk.pos);
 
                         const fvec<S> cos_theta = dot3(r.d, light_fwd);
-                        const fvec<S> t = safe_div_neg(plane_dist - dot3(light_fwd, r.o), cos_theta);
+                        const fvec<S> t =
+                            (plane_dist - dot3(light_fwd, r.o)) / select(cos_theta < 0.0f, cos_theta, fvec<S>{-1.0f});
 
                         const ivec<S> imask =
                             simd_cast((cos_theta < 0.0f) & (t > HIT_EPS) & ((t < inout_inter.t) | no_shadow)) &
@@ -7288,7 +7350,8 @@ Ray::NS::fvec<S> Ray::NS::IntersectAreaLights(const shadow_ray_t<S> &r, Span<con
                         const float plane_dist = dot3(light_fwd, l.rect.pos);
 
                         const fvec<S> cos_theta = dot3(r.d, light_fwd);
-                        const fvec<S> t = safe_div_neg(plane_dist - dot3(light_fwd, r.o), cos_theta);
+                        const fvec<S> t =
+                            (plane_dist - dot3(light_fwd, r.o)) / select(cos_theta < 0.0f, cos_theta, fvec<S>{-1.0f});
 
                         const ivec<S> imask =
                             simd_cast((cos_theta < 0.0f) & (t > HIT_EPS) & (t < rdist)) & portal_mask & ray_mask;
@@ -7321,7 +7384,8 @@ Ray::NS::fvec<S> Ray::NS::IntersectAreaLights(const shadow_ray_t<S> &r, Span<con
                         const float plane_dist = dot3(light_fwd, l.disk.pos);
 
                         const fvec<S> cos_theta = dot3(r.d, light_fwd);
-                        const fvec<S> t = safe_div_neg(plane_dist - dot3(light_fwd, r.o), cos_theta);
+                        const fvec<S> t =
+                            (plane_dist - dot3(light_fwd, r.o)) / select(cos_theta < 0.0f, cos_theta, fvec<S>{-1.0f});
 
                         const ivec<S> imask =
                             simd_cast((cos_theta < 0.0f) & (t > HIT_EPS) & (t < rdist)) & portal_mask & ray_mask;
@@ -7526,13 +7590,13 @@ void Ray::NS::Evaluate_EnvColor(const ray_data_t<S> &ray, const ivec<S> &mask, c
                 const auto *qtree_mips = reinterpret_cast<const fvec4 *const *>(env.qtree_mips);
 
                 const fvec<S> light_pdf =
-                    safe_div_pos(Evaluate_EnvQTree(env_map_rotation, qtree_mips, env.qtree_levels, ray.d), pdf_factor);
+                    Evaluate_EnvQTree(env_map_rotation, qtree_mips, env.qtree_levels, ray.d) / pdf_factor;
                 const fvec<S> bsdf_pdf = ray.pdf;
 
                 const fvec<S> mis_weight = power_heuristic(bsdf_pdf, light_pdf);
                 UNROLLED_FOR(i, 3, { where(mis_mask, env_col[i]) *= mis_weight; })
             } else {
-                const fvec<S> light_pdf = safe_div_pos(0.5f, PI * pdf_factor);
+                const fvec<S> light_pdf = 0.5f / (PI * pdf_factor);
                 const fvec<S> bsdf_pdf = ray.pdf;
 
                 const fvec<S> mis_weight = power_heuristic(bsdf_pdf, light_pdf);
@@ -7561,7 +7625,9 @@ void Ray::NS::Evaluate_LightColor(const fvec<S> P[3], const ray_data_t<S> &ray, 
                                   const uint32_t lights_count, const Cpu::TexStorageRGBA &tex_storage,
                                   const fvec<S> rand[2], fvec<S> light_col[3]) {
 #if USE_HIERARCHICAL_NEE
-    const fvec<S> pdf_factor = safe_div_pos(1.0f, inter.u);
+    // inter.u == 0 on no-pick lanes: predicated denom keeps pdf_factor finite, IEEE inf would poison cos_theta*pdf
+    // (0*inf)
+    const fvec<S> pdf_factor = 1.0f / select(inter.u > 0.0f, inter.u, fvec<S>{FLT_EPS});
 #else
     const float pdf_factor = float(lights_count);
 #endif
@@ -7608,7 +7674,10 @@ void Ray::NS::Evaluate_LightColor(const fvec<S> P[3], const ray_data_t<S> &ray, 
             const fvec<S> sampled_area = PI * disk_radius * disk_radius;
             const fvec<S> cos_theta = dot3(ray.d, disk_normal);
 
-            const fvec<S> light_pdf = safe_div(disk_dist * disk_dist, sampled_area * cos_theta * pdf_factor);
+            // signed-eps clamp verbatim: cos_theta < 0 is a real backfacing hit, max() would zero mis_weight
+            const fvec<S> pdf_den = sampled_area * cos_theta * pdf_factor;
+            const fvec<S> light_pdf =
+                (disk_dist * disk_dist) / select(pdf_den != 0.0f, pdf_den, copysign(fvec<S>{FLT_EPS}, pdf_den));
             const fvec<S> bsdf_pdf = ray.pdf;
 
             const fvec<S> mis_weight = power_heuristic(bsdf_pdf, light_pdf);
@@ -7636,7 +7705,11 @@ void Ray::NS::Evaluate_LightColor(const fvec<S> P[3], const ray_data_t<S> &ray, 
 
             const fvec<S> cos_theta = dot3(ray.d, l.dir.dir);
 
-            const fvec<S> light_pdf = safe_div(fvec<S>{1.0f}, light_area * cos_theta * pdf_factor);
+            // signed-eps clamp is load-bearing here: at exact cos_theta == 0 the old guard's +-8.5e6 pdf
+            // yields mis_weight ~ bsdf^2/7.2e13 (a real sun contribution); plain inf would zero it
+            const fvec<S> pdf_den = light_area * cos_theta * pdf_factor;
+            const fvec<S> light_pdf =
+                fvec<S>{1.0f} / select(pdf_den != 0.0f, pdf_den, copysign(fvec<S>{FLT_EPS}, pdf_den));
             const fvec<S> bsdf_pdf = ray.pdf;
 
             const fvec<S> mis_weight = power_heuristic(bsdf_pdf, light_pdf);
@@ -7661,7 +7734,9 @@ void Ray::NS::Evaluate_LightColor(const fvec<S> P[3], const ray_data_t<S> &ray, 
                           vv[3] = {l.rect.v[0], l.rect.v[1], l.rect.v[2]};
             light_pdf = SampleSphericalRectangle<S>(ray.o, vp, vu, vv, nullptr, nullptr) / pdf_factor;
 #endif
-            where(light_pdf == 0.0f, light_pdf) = safe_div(inter.t * inter.t, l.rect.area * cos_theta * pdf_factor);
+            const fvec<S> pdf_den = l.rect.area * cos_theta * pdf_factor;
+            where(light_pdf == 0.0f, light_pdf) =
+                (inter.t * inter.t) / select(pdf_den != 0.0f, pdf_den, copysign(fvec<S>{FLT_EPS}, pdf_den));
             const fvec<S> bsdf_pdf = ray.pdf;
 
             const fvec<S> mis_weight = power_heuristic(bsdf_pdf, light_pdf);
@@ -7679,7 +7754,9 @@ void Ray::NS::Evaluate_LightColor(const fvec<S> P[3], const ray_data_t<S> &ray, 
 
             const fvec<S> cos_theta = dot3(ray.d, light_fwd);
 
-            const fvec<S> light_pdf = safe_div(inter.t * inter.t, l.disk.area * cos_theta * pdf_factor);
+            const fvec<S> pdf_den = l.disk.area * cos_theta * pdf_factor;
+            const fvec<S> light_pdf =
+                (inter.t * inter.t) / select(pdf_den != 0.0f, pdf_den, copysign(fvec<S>{FLT_EPS}, pdf_den));
             const fvec<S> bsdf_pdf = ray.pdf;
 
             const fvec<S> mis_weight = power_heuristic(bsdf_pdf, light_pdf);
@@ -7701,7 +7778,9 @@ void Ray::NS::Evaluate_LightColor(const fvec<S> P[3], const ray_data_t<S> &ray, 
 
             const fvec<S> cos_theta = -dot3(ray.d, normal);
 
-            const fvec<S> light_pdf = safe_div(inter.t * inter.t, light_area * cos_theta * pdf_factor);
+            const fvec<S> pdf_den = light_area * cos_theta * pdf_factor;
+            const fvec<S> light_pdf =
+                (inter.t * inter.t) / select(pdf_den != 0.0f, pdf_den, copysign(fvec<S>{FLT_EPS}, pdf_den));
             const fvec<S> bsdf_pdf = ray.pdf;
 
             const fvec<S> mis_weight = power_heuristic(bsdf_pdf, light_pdf);
@@ -7736,7 +7815,7 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_DiffuseNode(const light_sample_t<S> &ls, cons
 
     UNROLLED_FOR(i, 3, { where(mask, sh_r.o[i]) = P_biased[i]; })
     UNROLLED_FOR(i, 3, {
-        const fvec<S> temp = ls.col[i] * diff_col[i] * safe_div_pos(mix_weight * mis_weight, ls.pdf);
+        const fvec<S> temp = ls.col[i] * diff_col[i] * ((mix_weight * mis_weight) / max(ls.pdf, FLT_EPS));
         where(mask, sh_r.c[i]) = temp;
         where(mask & ~ls.cast_shadow, out_col[i]) += temp;
     })
@@ -7798,7 +7877,7 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_GlossyNode(const light_sample_t<S> &ls, const
 
     UNROLLED_FOR(i, 3, { where(mask, sh_r.o[i]) = P_biased[i]; })
     UNROLLED_FOR(i, 3, {
-        const fvec<S> temp = ls.col[i] * spec_col[i] * safe_div_pos(mix_weight * mis_weight, ls.pdf);
+        const fvec<S> temp = ls.col[i] * spec_col[i] * ((mix_weight * mis_weight) / max(ls.pdf, FLT_EPS));
         where(mask, sh_r.c[i]) = temp;
         where(mask & ~ls.cast_shadow, out_col[i]) += temp;
     })
@@ -7826,7 +7905,7 @@ void Ray::NS::Sample_GlossyNode(const ray_data_t<S> &ray, const ivec<S> &mask, c
     UNROLLED_FOR(i, 3, {
         where(mask, new_ray.o[i]) = P_biased[i];
         where(mask, new_ray.d[i]) = V[i];
-        where(mask, new_ray.c[i]) = F[i] * safe_div_pos(mix_weight, F[3]);
+        where(mask, new_ray.c[i]) = F[i] * (mix_weight / max(F[3], FLT_EPS));
     })
     where(mask, new_ray.pdf) = F[3];
     where(mask, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT * min(alpha[0], alpha[1]);
@@ -7862,7 +7941,7 @@ Ray::NS::Evaluate_RefractiveNode(const light_sample_t<S> &ls, const ray_data_t<S
 
     UNROLLED_FOR(i, 3, { where(mask, sh_r.o[i]) = P_biased[i]; })
     UNROLLED_FOR(i, 3, {
-        const fvec<S> temp = ls.col[i] * refr_col[i] * safe_div_pos(mix_weight * mis_weight, ls.pdf);
+        const fvec<S> temp = ls.col[i] * refr_col[i] * ((mix_weight * mis_weight) / max(ls.pdf, FLT_EPS));
         where(mask, sh_r.c[i]) = temp;
         where(mask & ~ls.cast_shadow, out_col[i]) += temp;
     })
@@ -7894,7 +7973,7 @@ void Ray::NS::Sample_RefractiveNode(const ray_data_t<S> &ray, const ivec<S> &mas
     UNROLLED_FOR(i, 3, {
         where(mask, new_ray.o[i]) = P_biased[i];
         where(mask, new_ray.d[i]) = V[i];
-        where(mask, new_ray.c[i]) = F[i] * safe_div_pos(mix_weight, F[3]);
+        where(mask, new_ray.c[i]) = F[i] * (mix_weight / max(F[3], FLT_EPS));
     })
 
     pop_ior_stack(is_backfacing & mask, new_ray.ior);
@@ -7938,13 +8017,15 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_PrincipledNode(
 
         where(eval_diff_lobe, bsdf_pdf) += lobe_weights.diffuse * diff_col[3];
 
-        const fvec<S> FH_sampled = safe_div_pos(
-            fresnel_dielectric_cos(dot3(view_dir_ts, sampled_normal_ts), spec.fresnel_ior) - spec.F0, 1.0f - spec.F0);
+        // spec.F0 is clamped <= 0.9999 => 1-F0 >= 1e-4 (REF twin plain)
+        const fvec<S> FH_sampled =
+            (fresnel_dielectric_cos(dot3(view_dir_ts, sampled_normal_ts), spec.fresnel_ior) - spec.F0) /
+            (1.0f - spec.F0);
         UNROLLED_FOR(i, 3, {
             const fvec<S> spec_col_sampled = mix(spec.tmp_col[i], fvec<S>{1.0f}, FH_sampled);
             const fvec<S> diff_spec_atten_sampled = clamp(1.0f - spec_col_sampled, fvec<S>{0.0f}, fvec<S>{1.0f});
             diff_col[i] *= (1.0f - metallic) * (1.0f - transmission) * diff_spec_atten_sampled;
-            where(eval_diff_lobe, lcol[i]) += safe_div_pos(ls.col[i] * diff_col[i], ls.pdf);
+            where(eval_diff_lobe, lcol[i]) += (ls.col[i] * diff_col[i]) / max(ls.pdf, FLT_EPS);
         })
     }
 
@@ -7957,7 +8038,7 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_PrincipledNode(
         where(eval_sheen_lobe, bsdf_pdf) += lobe_weights.sheen * sheen_col[3];
         UNROLLED_FOR(i, 3, {
             sheen_col[i] *= diff.sheen_color[i];
-            where(eval_sheen_lobe, lcol[i]) += safe_div_pos(ls.col[i] * sheen_col[i], ls.pdf);
+            where(eval_sheen_lobe, lcol[i]) += (ls.col[i] * sheen_col[i]) / max(ls.pdf, FLT_EPS);
         })
     }
 
@@ -7972,7 +8053,7 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_PrincipledNode(
 
         where(eval_spec_lobe, bsdf_pdf) += lobe_weights.specular * spec_col[3];
 
-        UNROLLED_FOR(i, 3, { where(eval_spec_lobe, lcol[i]) += safe_div_pos(ls.col[i] * spec_col[i], ls.pdf); })
+        UNROLLED_FOR(i, 3, { where(eval_spec_lobe, lcol[i]) += (ls.col[i] * spec_col[i]) / max(ls.pdf, FLT_EPS); })
     }
 
     const std::array<fvec<S>, 2> coat_alpha = calc_alpha(coat.roughness, fvec<S>{0.0f}, regularize_alpha);
@@ -7987,7 +8068,7 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_PrincipledNode(
         where(eval_coat_lobe, bsdf_pdf) += lobe_weights.clearcoat * clearcoat_col[3];
 
         UNROLLED_FOR(i, 3, {
-            where(eval_coat_lobe, lcol[i]) += safe_div_pos(coat.weight * ls.col[i] * clearcoat_col[i], ls.pdf);
+            where(eval_coat_lobe, lcol[i]) += (coat.weight * ls.col[i] * clearcoat_col[i]) / max(ls.pdf, FLT_EPS);
         })
     }
 
@@ -8007,7 +8088,7 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_PrincipledNode(
             where(eval_refr_spec_lobe, bsdf_pdf) += lobe_weights.refraction * trans_fresnel * spec_col[3];
 
             UNROLLED_FOR(i, 3,
-                         { where(eval_refr_spec_lobe, lcol[i]) += safe_div_pos(ls.col[i] * spec_col[i], ls.pdf); })
+                         { where(eval_refr_spec_lobe, lcol[i]) += (ls.col[i] * spec_col[i]) / max(ls.pdf, FLT_EPS); })
         }
 
         const ivec<S> eval_refr_trans_lobe =
@@ -8022,7 +8103,7 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_PrincipledNode(
             where(eval_refr_trans_lobe, bsdf_pdf) += lobe_weights.refraction * (1.0f - trans_fresnel) * refr_col[3];
 
             UNROLLED_FOR(i, 3,
-                         { where(eval_refr_trans_lobe, lcol[i]) += safe_div_pos(ls.col[i] * refr_col[i], ls.pdf); })
+                         { where(eval_refr_trans_lobe, lcol[i]) += (ls.col[i] * refr_col[i]) / max(ls.pdf, FLT_EPS); })
         }
     }
 
@@ -8085,8 +8166,10 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
             SampleGGX_VNDF(view_dir_ts, spec_alpha.data(), rand, vndf_n);
             UNROLLED_FOR(i, 3, { where(use_vndf, sampled_normal_ts[i]) = vndf_n[i]; })
         }
-        const fvec<S> FH_sampled = safe_div_pos(
-            fresnel_dielectric_cos(dot3(view_dir_ts, sampled_normal_ts), spec.fresnel_ior) - spec.F0, 1.0f - spec.F0);
+        // spec.F0 is clamped <= 0.9999 => 1-F0 >= 1e-4 (REF twin plain)
+        const fvec<S> FH_sampled =
+            (fresnel_dielectric_cos(dot3(view_dir_ts, sampled_normal_ts), spec.fresnel_ior) - spec.F0) /
+            (1.0f - spec.F0);
 
         UNROLLED_FOR(i, 3, {
             const fvec<S> spec_col_sampled = mix(spec.tmp_col[i], fvec<S>{1.0f}, FH_sampled);
@@ -8104,7 +8187,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
         UNROLLED_FOR(i, 3, {
             where(sample_diff_lobe, new_ray.o[i]) = new_p[i];
             where(sample_diff_lobe, new_ray.d[i]) = V[i];
-            where(sample_diff_lobe, new_ray.c[i]) = safe_div_pos(F[i] * mix_weight, F[3]);
+            where(sample_diff_lobe, new_ray.c[i]) = (F[i] * mix_weight) / max(F[3], FLT_EPS);
         })
         where(sample_diff_lobe, new_ray.pdf) = F[3];
         where(sample_diff_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT;
@@ -8133,7 +8216,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
         UNROLLED_FOR(i, 3, {
             where(sample_sheen_lobe, new_ray.o[i]) = new_p[i];
             where(sample_sheen_lobe, new_ray.d[i]) = V[i];
-            where(sample_sheen_lobe, new_ray.c[i]) = safe_div_pos(F[i] * mix_weight, F[3]);
+            where(sample_sheen_lobe, new_ray.c[i]) = (F[i] * mix_weight) / max(F[3], FLT_EPS);
         })
         where(sample_sheen_lobe, new_ray.pdf) = F[3];
         where(sample_sheen_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT;
@@ -8163,7 +8246,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
         UNROLLED_FOR(i, 3, {
             where(sample_spec_lobe, new_ray.o[i]) = new_p[i];
             where(sample_spec_lobe, new_ray.d[i]) = V[i];
-            where(sample_spec_lobe, new_ray.c[i]) = safe_div_pos(F[i] * mix_weight, F[3]);
+            where(sample_spec_lobe, new_ray.c[i]) = (F[i] * mix_weight) / max(F[3], FLT_EPS);
         })
         where(sample_spec_lobe, new_ray.pdf) = F[3];
         where(sample_spec_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT * min(alpha[0], alpha[1]);
@@ -8195,7 +8278,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
         UNROLLED_FOR(i, 3, {
             where(sample_coat_lobe, new_ray.o[i]) = new_p[i];
             where(sample_coat_lobe, new_ray.d[i]) = V[i];
-            where(sample_coat_lobe, new_ray.c[i]) = coat.weight * F[i] * safe_div_pos(mix_weight, F[3]);
+            where(sample_coat_lobe, new_ray.c[i]) = coat.weight * F[i] * (mix_weight / max(F[3], FLT_EPS));
         })
         where(sample_coat_lobe, new_ray.pdf) = F[3];
         where(sample_coat_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT * min(alpha[0], alpha[1]);
@@ -8224,7 +8307,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
         const fvec<S> trans_fresnel = fresnel_dielectric_cos(dot3(view_dir_ts, sampled_normal_ts), 1.0f / trans.eta);
 
         mix_rand -= lobe_weights.diffuse + lobe_weights.sheen + lobe_weights.specular + lobe_weights.clearcoat;
-        mix_rand = safe_div_pos(mix_rand, lobe_weights.refraction);
+        mix_rand = mix_rand / max(lobe_weights.refraction, FLT_EPS);
 
         const ivec<S> spec_branch = simd_cast(mix_rand < trans_fresnel);
         sample_trans_lobe &=
@@ -8287,7 +8370,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
 
         UNROLLED_FOR(i, 3, {
             where(sample_trans_lobe, new_ray.d[i]) = V[i];
-            where(sample_trans_lobe, new_ray.c[i]) = safe_div_pos(F[i] * mix_weight, F[3]);
+            where(sample_trans_lobe, new_ray.c[i]) = (F[i] * mix_weight) / max(F[3], FLT_EPS);
         })
         where(sample_trans_lobe, new_ray.pdf) = F[3];
 
@@ -8333,7 +8416,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
         fvec<S> env_col[4] = {{1.0f}, {1.0f}, {1.0f}, {1.0f}};
         const fvec<S> pdf_factor = select(total_depth < ps.max_total_depth,
 #if USE_HIERARCHICAL_NEE
-                                          safe_div_pos(1.0f, inter.u),
+                                          1.0f / select(inter.u > 0.0f, inter.u, fvec<S>{FLT_EPS}),
 #else
                                           float(sc.li_indices.size()),
 #endif
@@ -8346,7 +8429,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
 
         const fvec<S> sum = env_col[0] + env_col[1] + env_col[2];
         UNROLLED_FOR(i, 3, {
-            where(sum > limits[0], env_col[i]) = safe_div_pos(env_col[i] * limits[0], sum);
+            where(sum > limits[0], env_col[i]) = (env_col[i] * limits[0]) / max(sum, FLT_EPS);
             where(ino_hit, out_rgba[i]) = env_col[i];
         })
         where(ino_hit, out_rgba[3]) = env_col[3];
@@ -8373,7 +8456,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
 
         const fvec<S> sum = light_col[0] + light_col[1] + light_col[2];
         UNROLLED_FOR(i, 3, {
-            where(sum > limits[0], light_col[i]) = safe_div_pos(light_col[i] * limits[0], sum);
+            where(sum > limits[0], light_col[i]) = (light_col[i] * limits[0]) / max(sum, FLT_EPS);
             where(is_light_hit, out_rgba[i]) = light_col[i];
         })
         where(is_light_hit, out_rgba[3]) = 1.0f;
@@ -8553,7 +8636,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
 
         const fvec<S> ior = gather(iors, mat_index * MatDWORDStride);
 
-        const fvec<S> eta = select(is_backfacing, safe_div_pos(ext_ior, ior), safe_div_pos(ior, ext_ior));
+        const fvec<S> eta = select(is_backfacing, ext_ior / max(ior, FLT_EPS), ior / max(ext_ior, FLT_EPS));
         const fvec<S> RR = select(ior != 0.0f, fresnel_dielectric_cos(dot3(I, surf.N), eta), fvec<S>{1.0f});
 
         mix_val *= saturate(RR);
@@ -8568,13 +8651,13 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
         const ivec<S> mat1_index = gather(&all_mat_textures[MIX_MAT1], mat_index * MatDWORDStride);
         const ivec<S> mat2_index = gather(&all_mat_textures[MIX_MAT2], mat_index * MatDWORDStride);
 
-        where(is_add & use_mat1, mix_weight) = safe_div_pos(mix_weight, 1.0f - mix_val);
+        where(is_add & use_mat1, mix_weight) = mix_weight / max(1.0f - mix_val, FLT_EPS);
         where(use_mat1, mat_index) = mat1_index;
-        where(use_mat1, mix_rand) = safe_div_pos(mix_rand - mix_val, 1.0f - mix_val);
+        where(use_mat1, mix_rand) = (mix_rand - mix_val) / max(1.0f - mix_val, FLT_EPS);
 
-        where(is_add & use_mat2, mix_weight) = safe_div_pos(mix_weight, mix_val);
+        where(is_add & use_mat2, mix_weight) = mix_weight / max(mix_val, FLT_EPS);
         where(use_mat2, mat_index) = mat2_index;
-        where(use_mat2, mix_rand) = safe_div_pos(mix_rand, mix_val);
+        where(use_mat2, mix_rand) = mix_rand / max(mix_val, FLT_EPS);
 
         mat_type =
             gather(reinterpret_cast<const int *>(&sc.materials[0].type), mat_index * sizeof(material_t) / sizeof(int)) &
@@ -8782,7 +8865,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
     fvec<S> tint_color[3] = {{0.0f}, {0.0f}, {0.0f}};
 
     const fvec<S> base_color_lum = lum(base_color);
-    UNROLLED_FOR(i, 3, { where(base_color_lum > 0.0f, tint_color[i]) = safe_div_pos(base_color[i], base_color_lum); })
+    UNROLLED_FOR(i, 3, { where(base_color_lum > 0.0f, tint_color[i]) = base_color[i] / max(base_color_lum, FLT_EPS); })
 
     fvec<S> roughness;
     { // fetch material roughness
@@ -8962,9 +9045,9 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
                         fvec<S> light_pdf =
                             SampleSphericalTriangle<S>(ro_ls, p1, p2, p3, nullptr, nullptr) / pdf_factor;
                         where(light_pdf == 0.0f, light_pdf) =
-                            safe_div_pos(inter.t * inter.t, tri_area * cos_theta * pdf_factor);
+                            (inter.t * inter.t) / max(tri_area * cos_theta * pdf_factor, FLT_EPS);
 #else  // USE_SPHERICAL_AREA_LIGHT_SAMPLING
-                        const fvec<S> light_pdf = safe_div_pos(inter.t * inter.t, tri_area * cos_theta * pdf_factor);
+                        const fvec<S> light_pdf = (inter.t * inter.t) / max(tri_area * cos_theta * pdf_factor, FLT_EPS);
 #endif // USE_SPHERICAL_AREA_LIGHT_SAMPLING
                         const fvec<S> &bsdf_pdf = ray.pdf;
 
@@ -9023,7 +9106,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
                 const fvec<S> base_F0 = fresnel_dielectric_cos(fvec<S>{1.0f}, fvec<S>{mat->ior});
                 spec.F0 = clamp(2.0f * ior_level * base_F0, fvec<S>{0.0f}, fvec<S>{0.9999f});
                 const fvec<S> sqrt_F0 = sqrt(spec.F0);
-                spec.fresnel_ior = safe_div_pos(1.0f + sqrt_F0, 1.0f - sqrt_F0);
+                spec.fresnel_ior = (1.0f + sqrt_F0) / (1.0f - sqrt_F0); // F0 <= 0.9999 => denom >= 1e-4
                 UNROLLED_FOR(i, 3, { spec.tmp_col[i] = mix(spec.F0 * specular_tint[i], base_color[i], metallic); })
                 spec.roughness = roughness;
                 spec.ior = mat->ior;
@@ -9044,7 +9127,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
 
                 // Approximation of FH (using shading normal)
                 const fvec<S> FN =
-                    safe_div_pos(fresnel_dielectric_cos(dot3(I, surf.N), spec.fresnel_ior) - spec.F0, 1.0f - spec.F0);
+                    (fresnel_dielectric_cos(dot3(I, surf.N), spec.fresnel_ior) - spec.F0) / (1.0f - spec.F0);
 
                 fvec<S> approx_spec_col[3];
                 UNROLLED_FOR(i, 3, { approx_spec_col[i] = mix(spec.tmp_col[i], fvec<S>{1.0f}, FN); })
@@ -9092,7 +9175,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
 
     secondary_mask &= simd_cast(p >= q) & simd_cast(lum > 0.0f) & simd_cast(new_ray.pdf > 0.0f);
     if (secondary_mask.not_all_zeros()) {
-        UNROLLED_FOR(i, 3, { new_ray.c[i] = safe_div_pos(new_ray.c[i], 1.0f - q); })
+        UNROLLED_FOR(i, 3, { new_ray.c[i] = new_ray.c[i] / max(1.0f - q, FLT_EPS); })
 
         // TODO: check if this is needed
         new_ray.pdf = min(new_ray.pdf, 1e6f);
@@ -9129,7 +9212,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
 
     const fvec<S> sum = col[0] + col[1] + col[2];
     UNROLLED_FOR(i, 3, {
-        where(sum > limits[1], col[i]) = safe_div_pos(col[i] * limits[1], sum);
+        where(sum > limits[1], col[i]) = (col[i] * limits[1]) / max(sum, FLT_EPS);
         where(is_active_lane, out_rgba[i]) = col[i];
     })
     where(is_active_lane, out_rgba[3]) = 1.0f;
@@ -9268,7 +9351,7 @@ void Ray::NS::ShadeSky(const pass_settings_t &ps, float limit, Span<const hit_da
         fvec<S> pdf_factor = -1.0f;
         where(get_total_depth(r.depth) < ps.max_total_depth, pdf_factor) =
 #if USE_HIERARCHICAL_NEE
-            safe_div_pos(1.0f, inter.u);
+            1.0f / select(inter.u > 0.0f, inter.u, fvec<S>{FLT_EPS});
 #else
             float(sc.li_indices.size());
 #endif
@@ -9282,12 +9365,12 @@ void Ray::NS::ShadeSky(const pass_settings_t &ps, float limit, Span<const hit_da
                 const auto *qtree_mips = reinterpret_cast<const fvec4 *const *>(sc.env.qtree_mips);
 
                 const fvec<S> light_pdf =
-                    safe_div_pos(Evaluate_EnvQTree(env_map_rotation, qtree_mips, sc.env.qtree_levels, r.d), pdf_factor);
+                    Evaluate_EnvQTree(env_map_rotation, qtree_mips, sc.env.qtree_levels, r.d) / pdf_factor;
                 const fvec<S> bsdf_pdf = r.pdf;
 
                 mis_weight = power_heuristic(bsdf_pdf, light_pdf);
             } else {
-                const fvec<S> light_pdf = safe_div_pos(0.5f, PI * pdf_factor);
+                const fvec<S> light_pdf = 0.5f / (PI * pdf_factor);
                 const fvec<S> bsdf_pdf = r.pdf;
 
                 mis_weight = power_heuristic(bsdf_pdf, light_pdf);
@@ -9545,7 +9628,6 @@ void Ray::NS::SpatialCacheUpdate(const cache_grid_params_t &params, Span<const h
 #undef USE_NEE
 #undef USE_PATH_TERMINATION
 #undef FORCE_TEXTURE_LOD
-#undef USE_SAFE_MATH
 #undef USE_STOCH_TEXTURE_FILTERING
 
 #pragma warning(pop)

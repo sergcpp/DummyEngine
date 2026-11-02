@@ -198,7 +198,7 @@ int main(int argc, char *argv[]) {
     // Workaround for Intel SDE crash
     enable_fp_exceptions &= !preferred_arch[0] || strcmp(preferred_arch[0], "AVX") != 0;
     if (enable_fp_exceptions) {
-        _controlfp_s(nullptr, _EM_INEXACT | _EM_UNDERFLOW | _EM_OVERFLOW, _MCW_EM);
+        _controlfp_s(nullptr, _EM_INEXACT | _EM_UNDERFLOW | _EM_OVERFLOW | _EM_ZERODIVIDE, _MCW_EM);
         g_catch_flt_exceptions = true;
     }
 #endif
@@ -226,8 +226,9 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    static const char *ArchListFull[] = {"REF", "SSE41", "AVX", "AVX2", "AVX512", "NEON", "VK", "DX", nullptr};
-    static const char *ArchListFullNoGPU[] = {"REF", "SSE41", "AVX", "AVX2", "AVX512", "NEON", nullptr};
+    static const char *ArchListFull[] = {"REF",         "SSE41", "AVX", "AVX2", "AVX512",
+                                         "AVX512_FP16", "NEON",  "VK",  "DX",   nullptr};
+    static const char *ArchListFullNoGPU[] = {"REF", "SSE41", "AVX", "AVX2", "AVX512", "AVX512_FP16", "NEON", nullptr};
     static const char *ArchListDefault[] = {"AVX2", "NEON", "VK", "DX", nullptr};
 #ifndef __APPLE__
     static const char *ArchListDefaultNoGPU[] = {"AVX2", "NEON", nullptr};
