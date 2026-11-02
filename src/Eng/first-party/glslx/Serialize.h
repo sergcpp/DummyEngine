@@ -41,6 +41,8 @@ class Serialize {
     ast_array_subscript *Deserialize_ArraySubscript(std::istream &in);
     void Serialize_FunctionCall(const ast_function_call *c, std::ostream &out);
     ast_function_call *Deserialize_FunctionCall(std::istream &in);
+    void Serialize_MethodCall(const ast_method_call *c, std::ostream &out);
+    ast_method_call *Deserialize_MethodCall(std::istream &in);
     void Serialize_ConstructorCall(const ast_constructor_call *c, std::ostream &out);
     ast_constructor_call *Deserialize_ConstructorCall(std::istream &in);
     void Serialize_Assignment(const ast_assignment_expression *a, std::ostream &out);

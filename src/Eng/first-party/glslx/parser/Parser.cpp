@@ -1,5 +1,8 @@
 #include "Parser.h"
 
+#include <algorithm>
+
+#include "../LowerHLSL.h"
 #include "../MemBuf.h"
 #include "../Serialize.h"
 #include "Utils.h"
@@ -3585,6 +3588,46 @@ bool is_compatible_type(const ast_type *_type1, const ast_type *_type2) {
     }
     return false;
 }
+
+// GLSL's implicit promotion of the two operand types of an operator, or of a ternary's arms.
+static const ast_type *promote_operand_types(const TrUnit *tu, const ast_type *type1, const ast_type *type2) {
+    if (is_same_type(type1, type2)) {
+        return type1;
+    }
+
+    const ast_type *scalar1 = to_scalar_type(tu, type1);
+    const ast_type *scalar2 = to_scalar_type(tu, type2);
+    const bool flt1 = is_float_type(scalar1), flt2 = is_float_type(scalar2);
+    const bool int1 = is_integer_type(scalar1), int2 = is_integer_type(scalar2);
+
+    if (!((flt1 || int1) && (flt2 || int2))) {
+        return nullptr;
+    }
+
+    // float beats integer
+    if (flt1 != flt2) {
+        return flt1 ? type1 : type2;
+    }
+
+    // larger vector wins
+    const int size1 = get_vector_size(type1), size2 = get_vector_size(type2);
+    if (size1 != size2) {
+        return size1 > size2 ? type1 : type2;
+    }
+
+    // same vector size, both float: higher precision wins
+    if (flt1) {
+        const eKeyword kw1 = static_cast<const ast_builtin *>(scalar1)->type;
+        const eKeyword kw2 = static_cast<const ast_builtin *>(scalar2)->type;
+        return float_precision_rank(kw1) >= float_precision_rank(kw2) ? type1 : type2;
+    }
+
+    // same vector size, both integer: unsigned beats signed
+    if (is_unsigned_type(scalar1) && !is_unsigned_type(scalar2)) {
+        return type1;
+    }
+    return type2;
+}
 } // namespace glslx
 
 const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, const ast_expression *expression,
@@ -3716,47 +3759,38 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
         if (!op1_type || !op2_type) {
             return nullptr;
         }
-
-        if (is_same_type(op1_type, op2_type)) {
-            return op1_type;
+        switch (operation->oper) {
+        case eOperator::less:
+        case eOperator::greater:
+        case eOperator::less_equal:
+        case eOperator::greater_equal:
+        case eOperator::equal:
+        case eOperator::not_equal: {
+            // Comparisons produce bvecN; the builtin table is filled on demand, which the
+            // evaluator's const TrUnit cannot express.
+            const ast_type *bool_type = const_cast<TrUnit *>(tu)->FindOrAddBuiltin(eKeyword::K_bool);
+            const int components = std::max(get_vector_size(op1_type), get_vector_size(op2_type));
+            return to_vector_type(tu, bool_type, components > 1 ? components : 1);
         }
-
-        const ast_type *scalar1 = to_scalar_type(tu, op1_type);
-        const ast_type *scalar2 = to_scalar_type(tu, op2_type);
-        const bool flt1 = is_float_type(scalar1), flt2 = is_float_type(scalar2);
-        const bool int1 = is_integer_type(scalar1), int2 = is_integer_type(scalar2);
-
-        if ((flt1 || int1) && (flt2 || int2)) {
-            // float beats integer
-            if (flt1 != flt2) {
-                return flt1 ? op1_type : op2_type;
-            }
-
-            // larger vector wins
-            const int size1 = get_vector_size(op1_type), size2 = get_vector_size(op2_type);
-            if (size1 != size2) {
-                return size1 > size2 ? op1_type : op2_type;
-            }
-
-            // same vector size, both float: higher precision wins
-            if (flt1) {
-                const eKeyword kw1 = static_cast<const ast_builtin *>(scalar1)->type;
-                const eKeyword kw2 = static_cast<const ast_builtin *>(scalar2)->type;
-                return float_precision_rank(kw1) >= float_precision_rank(kw2) ? op1_type : op2_type;
-            }
-
-            // same vector size, both integer: unsigned beats signed
-            if (is_unsigned_type(scalar1) && !is_unsigned_type(scalar2)) {
-                return op1_type;
-            }
-            return op2_type;
+        case eOperator::logical_and:
+        case eOperator::logical_or:
+        case eOperator::logical_xor:
+            return const_cast<TrUnit *>(tu)->FindOrAddBuiltin(eKeyword::K_bool);
+        default:
+            return promote_operand_types(tu, op1_type, op2_type);
         }
-
-        // return Write_Operation(static_cast<const ast_operation_expression *>(expression), out_stream);
-    } break;
-    case eExprType::Ternary:
-        // return Write_Ternary(static_cast<const ast_ternary_expression *>(expression), out_stream);
-        break;
+    }
+    case eExprType::Ternary: {
+        const auto *ternary = static_cast<const ast_ternary_expression *>(expression);
+        int true_dims = 0, false_dims = 0;
+        const ast_type *true_type = Evaluate_ExpressionResultType(tu, ternary->on_true, true_dims);
+        const ast_type *false_type = Evaluate_ExpressionResultType(tu, ternary->on_false, false_dims);
+        if (!true_type || !false_type) {
+            return nullptr;
+        }
+        array_dims = true_dims;
+        return promote_operand_types(tu, true_type, false_type);
+    }
     case eExprType::ArraySpecifier:
         /*const ast_array_specifier *arr_specifier = static_cast<const ast_array_specifier *>(expression);
         out_stream << "{ ";
@@ -3769,6 +3803,9 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
         out_stream << " }";
         break;*/
         break;
+    case eExprType::MethodCall:
+        // post-lowering HLSL-only node; the pass that creates these calls knows their shapes
+        return Evaluate_HLSLMethodResultType(tu, static_cast<const ast_method_call *>(expression));
     }
     return nullptr;
 }

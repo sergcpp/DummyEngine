@@ -2,6 +2,9 @@
 
 #include <ostream>
 
+#include "Clone.h"
+#include "LowerHLSL.h"
+
 namespace glslx {
 #define X(_0, _1) #_0,
 const char *g_hlsl_keywords[] = {
@@ -38,6 +41,14 @@ bool is_combined_texturesampler(const ast_type *base_type) {
            type == eKeyword::K_usampler2DArray || type == eKeyword::K_usampler2DMS ||
            type == eKeyword::K_usampler2DMSArray || type == eKeyword::K_usamplerCubeArray ||
            is_shadow_sampler(base_type);
+}
+
+bool is_combined_sampler_argument(const ast_expression *expr) {
+    if (expr->type == eExprType::ArraySubscript) {
+        expr = static_cast<const ast_array_subscript *>(expr)->operand;
+    }
+    return expr->type == eExprType::VariableIdentifier &&
+           is_combined_texturesampler(static_cast<const ast_variable_identifier *>(expr)->variable->base_type);
 }
 
 bool is_int_image(const ast_type *base_type) {
@@ -108,86 +119,6 @@ bool requires_template_argument(const ast_type *base_type) {
            type == eKeyword::K_utexture2D || is_combined_texturesampler(base_type);
 }
 
-bool is_scalar_type(const eKeyword type) {
-    switch (type) {
-    case eKeyword::K_int:
-    case eKeyword::K_uint:
-    case eKeyword::K_float:
-    case eKeyword::K_double:
-    case eKeyword::K_bool:
-        return true;
-    default:
-        return false;
-    }
-}
-
-bool is_scalar_type(const ast_type *_type) {
-    if (!_type->builtin) {
-        return false;
-    }
-    return is_scalar_type(static_cast<const ast_builtin *>(_type)->type);
-}
-
-int get_variable_size(const ast_variable *v, const int array_dim) {
-    if ((v->flags & eVariableFlags::Array) && int(v->array_sizes.size()) > array_dim && v->array_sizes[array_dim]) {
-        int count = 0;
-        if (v->array_sizes[array_dim]->type == eExprType::IntConstant) {
-            count = static_cast<ast_int_constant *>(v->array_sizes[array_dim])->value;
-        } else if (v->array_sizes[array_dim]->type == eExprType::UIntConstant) {
-            count = static_cast<ast_uint_constant *>(v->array_sizes[array_dim])->value;
-        } else {
-            assert(false);
-        }
-        int size = 0;
-        for (int i = 0; i < count; ++i) {
-            size += get_variable_size(v, array_dim + 1);
-        }
-        return size;
-    }
-
-    if (v->base_type->builtin) {
-        const auto *type = static_cast<const ast_builtin *>(v->base_type);
-        switch (type->type) {
-        case eKeyword::K_int:
-        case eKeyword::K_uint:
-        case eKeyword::K_float:
-            return 4;
-        case eKeyword::K_double:
-        case eKeyword::K_int64_t:
-        case eKeyword::K_uint64_t:
-            return 8;
-        case eKeyword::K_bool:
-            return 1;
-        case eKeyword::K_float16_t:
-            return 2;
-        case eKeyword::K_ivec2:
-        case eKeyword::K_uvec2:
-        case eKeyword::K_vec2:
-            return 2 * 4;
-        case eKeyword::K_ivec3:
-        case eKeyword::K_uvec3:
-        case eKeyword::K_vec3:
-            return 3 * 4;
-        case eKeyword::K_ivec4:
-        case eKeyword::K_uvec4:
-        case eKeyword::K_vec4:
-            return 4 * 4;
-        case eKeyword::K_mat4x4:
-        case eKeyword::K_mat4:
-            return 16 * 4;
-        default:
-            return -1;
-        }
-    } else {
-        int ret = 0;
-        const auto *type = static_cast<const ast_struct *>(v->base_type);
-        for (const ast_variable *_v : type->fields) {
-            ret += get_variable_size(_v, array_dim);
-        }
-        return ret;
-    }
-}
-
 std::pair<int, int> get_binding_and_set(Span<const ast_layout_qualifier *const> qualifiers) {
     int binding = -1, set = 0;
     for (int i = 0; i < int(qualifiers.size()); ++i) {
@@ -208,37 +139,6 @@ std::pair<int, int> get_binding_and_set(Span<const ast_layout_qualifier *const> 
     }
     return std::make_pair(binding, set);
 }
-
-extern const HashSet32<const char *> g_atomic_functions{
-    {"atomicAdd", "atomicAnd", "atomicOr", "atomicXor", "atomicMin", "atomicMax", "atomicCompSwap", "atomicExchange"}};
-
-const HashMap32<std::string, std::string> g_hlsl_function_mapping{{"intBitsToFloat", "asfloat"},
-                                                                  {"uintBitsToFloat", "asfloat"},
-                                                                  {"floatBitsToInt", "asint"},
-                                                                  {"floatBitsToUint", "asuint"},
-                                                                  {"fract", "frac"},
-                                                                  {"fma", "mad"},
-                                                                  {"inversesqrt", "rsqrt"},
-                                                                  {"mix", "lerp"},
-                                                                  {"barrier", "GroupMemoryBarrierWithGroupSync"},
-                                                                  {"groupMemoryBarrier", "AllMemoryBarrier"},
-                                                                  {"atomicAdd", "InterlockedAdd"},
-                                                                  {"atomicAnd", "InterlockedAnd"},
-                                                                  {"atomicOr", "InterlockedOr"},
-                                                                  {"atomicXor", "InterlockedXor"},
-                                                                  {"atomicMin", "InterlockedMin"},
-                                                                  {"atomicMax", "InterlockedMax"},
-                                                                  {"atomicExchange", "InterlockedExchange"},
-                                                                  {"atomicCompSwap", "InterlockedCompareExchange"},
-                                                                  {"subgroupAll", "WaveActiveAllTrue"},
-                                                                  {"subgroupAny", "WaveActiveAnyTrue"},
-                                                                  {"subgroupAdd", "WaveActiveSum"},
-                                                                  {"subgroupElect", "WaveIsFirstLane"},
-                                                                  {"subgroupExclusiveAdd", "WavePrefixSum"},
-                                                                  {"bitCount", "countbits"},
-                                                                  {"findLSB", "firstbitlow"},
-                                                                  {"findMSB", "firstbithigh"},
-                                                                  {"nonuniformEXT", "NonUniformResourceIndex"}};
 } // namespace glslx
 
 void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, const assoc_t parent,
@@ -275,6 +175,8 @@ void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, const
         return Write_ArraySubscript(static_cast<const ast_array_subscript *>(expression), parent, out_stream);
     case eExprType::FunctionCall:
         return Write_FunctionCall(static_cast<const ast_function_call *>(expression), parent, out_stream);
+    case eExprType::MethodCall:
+        return Write_MethodCall(static_cast<const ast_method_call *>(expression), parent, out_stream);
     case eExprType::ConstructorCall:
         return Write_ConstructorCall(static_cast<const ast_constructor_call *>(expression), parent, out_stream);
     case eExprType::PostIncrement:
@@ -300,24 +202,8 @@ void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, const
         return Write_Assignment(static_cast<const ast_assignment_expression *>(expression), parent, out_stream);
     case eExprType::Sequence:
         return Write_Sequence(static_cast<const ast_sequence_expression *>(expression), parent, out_stream);
-    case eExprType::Operation: {
-        const auto *operation = static_cast<const ast_operation_expression *>(expression);
-        int array_dims = 0;
-        const ast_type *op1_type = Evaluate_ExpressionResultType(tu_, operation->operand1, array_dims);
-        const ast_type *op2_type = Evaluate_ExpressionResultType(tu_, operation->operand2, array_dims);
-
-        if (op1_type && op2_type) {
-            if (operation->oper == eOperator::multiply && is_matrix_type(op1_type) && get_vector_size(op2_type) > 1) {
-                ast_function_call func_call(tu_->alloc.allocator);
-                func_call.name = tu_->makestr("mul");
-                func_call.parameters.push_back(operation->operand2);
-                func_call.parameters.push_back(operation->operand1);
-                return Write_FunctionCall(&func_call, {}, out_stream);
-            }
-        }
-
+    case eExprType::Operation:
         return Write_Operation(static_cast<const ast_operation_expression *>(expression), parent, out_stream);
-    }
     case eExprType::Ternary:
         return Write_Ternary(static_cast<const ast_ternary_expression *>(expression), parent, out_stream);
     case eExprType::ArraySpecifier:
@@ -353,19 +239,8 @@ void glslx::WriterHLSL::Write_Function(const ast_function *function, std::ostrea
 
     Write_Type(function->return_type, out_stream);
     out_stream << " " << function->name << "(";
-    if (tu_->type == eTrUnitType::Compute && strcmp(function->name, "main") == 0) {
-        out_stream << "GLSLX_Input glslx_input";
-        if (!function->parameters.empty()) {
-            out_stream << ", ";
-        }
-    }
     for (int i = 0; i < int(function->parameters.size()); ++i) {
         Write_FunctionParameter(function->parameters[i], out_stream);
-        if (is_combined_texturesampler(function->parameters[i]->base_type)) {
-            out_stream << ", SamplerState ";
-            out_stream << function->parameters[i]->name;
-            out_stream << "_sampler";
-        }
         if (i != int(function->parameters.size()) - 1) {
             out_stream << ", ";
         }
@@ -377,22 +252,6 @@ void glslx::WriterHLSL::Write_Function(const ast_function *function, std::ostrea
     }
     out_stream << " {\n";
     ++nest_level_;
-    if (strcmp(function->name, "main") == 0) {
-        if (tu_->type == eTrUnitType::Compute) {
-            Write_Tabs(out_stream);
-            out_stream << "gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n";
-            Write_Tabs(out_stream);
-            out_stream << "gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n";
-            Write_Tabs(out_stream);
-            out_stream << "gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n";
-            Write_Tabs(out_stream);
-            out_stream << "gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n";
-            Write_Tabs(out_stream);
-            out_stream << "gl_SubgroupSize = WaveGetLaneCount();\n";
-            Write_Tabs(out_stream);
-            out_stream << "gl_SubgroupInvocationID = WaveGetLaneIndex();\n";
-        }
-    }
     for (const ast_statement *statement : function->statements) {
         Write_Statement(statement, out_stream, DefaultOutputFlags);
     }
@@ -431,10 +290,6 @@ void glslx::WriterHLSL::Write_LoopAttributes(ctrl_flow_params_t ctrl_flow, std::
 
 void glslx::WriterHLSL::Write_FunctionVariable(const ast_function_variable *variable, std::ostream &out_stream,
                                                const Bitmask<eOutputFlags> output_flags) {
-    if (variable->initial_value) {
-        Process_AtomicOperations(variable->initial_value, out_stream);
-    }
-
     if (variable->flags & eVariableFlags::Const) {
         out_stream << "const ";
     }
@@ -500,7 +355,6 @@ void glslx::WriterHLSL::Write_DeclarationStatement(const ast_declaration_stateme
 
 void glslx::WriterHLSL::Write_ExpressionStatement(const ast_expression_statement *statement, std::ostream &out_stream,
                                                   const Bitmask<eOutputFlags> output_flags) {
-    Process_AtomicOperations(statement->expression, out_stream);
     Write_Expression(statement->expression, {}, out_stream);
     if (output_flags & eOutputFlags::Semicolon) {
         out_stream << ";";
@@ -510,61 +364,26 @@ void glslx::WriterHLSL::Write_ExpressionStatement(const ast_expression_statement
     }
 }
 
-bool glslx::WriterHLSL::Needs_StatementExpansion(const ast_statement *statement) {
-    // An assignment that targets a byteaddress buffer is rewritten into a temp declaration
-    // plus an offset declaration plus a Store() call, so it can't stay a single statement.
-    if (statement->type != eStatement::Expression) {
-        return false;
-    }
-    const auto *expression_statement = static_cast<const ast_expression_statement *>(statement);
-    if (!expression_statement->expression || expression_statement->expression->type != eExprType::Assign) {
-        return false;
-    }
-    const auto *assignment = static_cast<const ast_assignment_expression *>(expression_statement->expression);
-    global_vector<access_index_t> indices;
-    const auto buf_index = Find_BufferAccessExpression(assignment->operand1, 0, indices).first;
-    return buf_index != -1;
-}
-
-void glslx::WriterHLSL::Write_IfBranch(const ast_statement *statement, std::ostream &out_stream,
-                                       const bool trailing_newline) {
-    const Bitmask<eOutputFlags> flags =
-        trailing_newline ? (DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs})
-                         : (DefaultOutputFlags & ~(Bitmask{eOutputFlags::WriteTabs} | eOutputFlags::NewLine));
-    if (statement->type == eStatement::Compound) {
-        // Write_CompoundStatement supplies its own leading space before '{'
-        Write_Statement(statement, out_stream, flags);
-        return;
-    }
-    if (Needs_StatementExpansion(statement)) {
-        // Wrap in a synthetic compound block
-        out_stream << " {\n";
-        ++nest_level_;
-        Write_Statement(statement, out_stream, DefaultOutputFlags);
-        --nest_level_;
-        Write_Tabs(out_stream);
-        out_stream << "}";
-        if (trailing_newline) {
-            out_stream << "\n";
-        }
-        return;
-    }
-    out_stream << " ";
-    Write_Statement(statement, out_stream, flags);
-}
-
 void glslx::WriterHLSL::Write_IfStatement(const ast_if_statement *statement, std::ostream &out_stream,
                                           Bitmask<eOutputFlags> output_flags) {
     Write_SelectionAttributes(statement->attributes, out_stream);
     out_stream << "if (";
     Write_Expression(statement->condition, {}, out_stream);
     out_stream << ")";
+    if (statement->then_statement->type != eStatement::Compound) {
+        out_stream << " ";
+    }
     if (statement->else_statement) {
-        Write_IfBranch(statement->then_statement, out_stream, false);
+        Write_Statement(statement->then_statement, out_stream,
+                        DefaultOutputFlags & ~(Bitmask{eOutputFlags::WriteTabs} | eOutputFlags::NewLine));
         out_stream << " else";
-        Write_IfBranch(statement->else_statement, out_stream, true);
+        if (statement->else_statement->type != eStatement::Compound) {
+            out_stream << " ";
+        }
+        Write_Statement(statement->else_statement, out_stream, DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
     } else {
-        Write_IfBranch(statement->then_statement, out_stream, true);
+        Write_Statement(statement->then_statement, out_stream,
+                        DefaultOutputFlags & ~(Bitmask{eOutputFlags::WriteTabs}));
     }
 }
 
@@ -901,7 +720,7 @@ void glslx::WriterHLSL::Write_Register(const ast_type *base_type, Span<const ast
         type->type == eKeyword::K_itexture2D || type->type == eKeyword::K_utexture2D ||
         type->type == eKeyword::K_accelerationStructureEXT || is_shadow_sampler(base_type)) {
         out_stream << 't';
-    } else if (type->type == eKeyword::K_sampler) {
+    } else if (type->type == eKeyword::K_sampler || type->type == eKeyword::K_samplerShadow) {
         out_stream << 's';
     } else if (type->type == eKeyword::K_image1D || type->type == eKeyword::K_image2D ||
                type->type == eKeyword::K_image3D || type->type == eKeyword::K_image1DArray ||
@@ -1081,30 +900,6 @@ void glslx::WriterHLSL::Write_GlobalVariable(const ast_global_variable *variable
     }
 
     out_stream << ";\n";
-
-    if (is_combined_texturesampler(variable->base_type)) {
-        if (is_shadow_sampler(variable->base_type)) {
-            out_stream << "SamplerComparisonState ";
-        } else {
-            out_stream << "SamplerState ";
-        }
-        out_stream << variable->name;
-        out_stream << "_sampler";
-        if (variable->flags & eVariableFlags::Array) {
-            for (int i = 0; i < int(variable->array_sizes.size()); ++i) {
-                out_stream << "[";
-                if (variable->array_sizes[i]) {
-                    Write_Expression(variable->array_sizes[i], {}, out_stream);
-                }
-                out_stream << "]";
-            }
-        }
-
-        ast_builtin temp_type(eKeyword::K_sampler);
-        Write_Register(&temp_type, variable->layout_qualifiers, out_stream);
-
-        out_stream << ";\n";
-    }
 }
 
 void glslx::WriterHLSL::Write_VariableIdentifier(const ast_variable_identifier *expression, std::ostream &out_stream) {
@@ -1133,19 +928,6 @@ void glslx::WriterHLSL::Write_FieldOrSwizzle(const ast_field_or_swizzle *express
 
 void glslx::WriterHLSL::Write_ArraySubscript(const ast_array_subscript *expression, const assoc_t parent,
                                              std::ostream &out_stream) {
-    if (expression->operand->type == eExprType::VariableIdentifier) {
-        const auto *var = static_cast<const ast_variable_identifier *>(expression->operand);
-        auto it = std::find_if(byteaddress_bufs_.begin(), byteaddress_bufs_.end(), [var](const byteaddress_buf_t &buf) {
-            return strcmp(buf.name, var->variable->name) == 0;
-        });
-        if (it != byteaddress_bufs_.end()) {
-            out_stream << "__load_" << it->name;
-            out_stream << "(";
-            Write_Expression(expression->index, {}, out_stream);
-            out_stream << ")";
-            return;
-        }
-    }
     const int prec = g_operators[int(eOperator::bracket_begin)].precedence;
     const bool need_parens = parentheses_required(prec, eAssoc::Left, parent);
 
@@ -1163,60 +945,45 @@ void glslx::WriterHLSL::Write_ArraySubscript(const ast_array_subscript *expressi
 
 void glslx::WriterHLSL::Write_FunctionCall(const ast_function_call *expression, const assoc_t parent,
                                            std::ostream &out_stream) {
-    bool is_atomic = false;
-
-    { // Capture atomic operation
-        const auto *p_find = g_atomic_functions.Find(expression->name);
-        if (p_find) {
-            is_atomic = true;
-            if (!atomic_operations_.empty()) {
-                out_stream << atomic_operations_.front().var_name;
-                atomic_operations_.erase(atomic_operations_.begin());
-                return;
-            }
-        }
-    }
-
-    { // Translate call
-        auto *p_find = g_hlsl_function_mapping.Find(expression->name);
-        if (p_find) {
-            out_stream << *p_find;
-        } else {
-            out_stream << expression->name;
-        }
-    }
-    out_stream << "(";
+    out_stream << expression->name << "(";
     for (int i = 0; i < int(expression->parameters.size()); ++i) {
+        // Only user functions may take a combined sampler here; builtins must be lowered to method calls.
+        assert((expression->func && !(expression->func->attributes & eFunctionAttribute::Builtin)) ||
+               !is_combined_sampler_argument(expression->parameters[i]));
         Write_Expression(expression->parameters[i], {}, out_stream);
-        if (expression->parameters[i]->type == eExprType::VariableIdentifier) {
-            const auto *tex_arg = static_cast<ast_variable_identifier *>(expression->parameters[i]);
-            if (is_combined_texturesampler(tex_arg->variable->base_type)) {
-                out_stream << ", ";
-                out_stream << tex_arg->variable->name;
-                out_stream << "_sampler";
-            }
-        } else if (expression->parameters[i]->type == eExprType::ArraySubscript) {
-            const auto *subscript = static_cast<ast_array_subscript *>(expression->parameters[i]);
-            if (subscript->operand->type == eExprType::VariableIdentifier) {
-                const auto *tex_arg = static_cast<ast_variable_identifier *>(subscript->operand);
-                if (is_combined_texturesampler(tex_arg->variable->base_type)) {
-                    out_stream << ", ";
-                    out_stream << tex_arg->variable->name;
-                    out_stream << "_sampler";
-                    out_stream << "[";
-                    Write_Expression(subscript->index, {}, out_stream);
-                    out_stream << "]";
-                }
-            }
-        }
         if (i != int(expression->parameters.size()) - 1) {
             out_stream << ", ";
         }
     }
-    if (is_atomic) {
-        out_stream << ", " << var_to_init_;
+    out_stream << ")";
+}
+
+void glslx::WriterHLSL::Write_MethodCall(const ast_method_call *expression, const assoc_t parent,
+                                         std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::dot)].precedence;
+    const bool need_parens = parentheses_required(prec, eAssoc::Left, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
+    Write_Expression(expression->object, {prec, eAssoc::Left}, out_stream);
+    out_stream << "." << expression->name;
+    if (expression->template_arg) {
+        out_stream << "<";
+        Write_Type(expression->template_arg, out_stream);
+        out_stream << ">";
+    }
+    out_stream << "(";
+    for (int i = 0; i < int(expression->parameters.size()); ++i) {
+        Write_Expression(expression->parameters[i], {}, out_stream);
+        if (i != int(expression->parameters.size()) - 1) {
+            out_stream << ", ";
+        }
     }
     out_stream << ")";
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
 void glslx::WriterHLSL::Write_ConstructorCall(const ast_constructor_call *expression, const assoc_t parent,
@@ -1228,45 +995,28 @@ void glslx::WriterHLSL::Write_ConstructorCall(const ast_constructor_call *expres
         out_stream << "(";
     }
 
-    const bool combined_texturesampler = is_combined_texturesampler(expression->type);
-    if (!combined_texturesampler) {
-        if (!expression->type->builtin) {
-            out_stream << "(";
-        }
-        Write_Type(expression->type, out_stream);
-        if (!expression->type->builtin) {
-            out_stream << ")";
-        }
+    // An inline `sampler2D(tex, samp)` constructor is always consumed by LowerHLSL's
+    // Resolve_TextureArg/Rewrite_SampleCall and must never reach the writer.
+    assert(!is_combined_texturesampler(expression->type) && "combined-sampler ctor must be lowered");
+    if (!expression->type->builtin) {
         out_stream << "(";
+        Write_Type(expression->type, out_stream);
+        out_stream << ")";
+    } else {
+        // `row_major float3x2` is not a valid ctor prefix. The plain ctor fills elements in row-major
+        // order, matching the row_major tag's convention; the receiving variable carries the tag.
+        const char *name = g_hlsl_keywords[int(static_cast<const ast_builtin *>(expression->type)->type)];
+        const char *space = strchr(name, ' ');
+        out_stream << (space ? space + 1 : name);
     }
-    if (expression->parameters.size() == 1) {
-        if (expression->type->builtin) {
-            const auto *expr_type = static_cast<const ast_builtin *>(expression->type);
-            int array_dims = 0;
-            const ast_type *res_type = Evaluate_ExpressionResultType(tu_, expression->parameters[0], array_dims);
-            if (res_type) {
-                const int vec_size = get_vector_size(expr_type->type);
-                if (is_scalar_type(res_type) && vec_size > 1) {
-                    Write_Expression(expression->parameters[0], {}, out_stream);
-                    out_stream << ".";
-                    for (int i = 0; i < vec_size; ++i) {
-                        out_stream << "x";
-                    }
-                    out_stream << ")";
-                    return;
-                }
-            }
-        }
-    }
+    out_stream << "(";
     for (int i = 0; i < int(expression->parameters.size()); ++i) {
         Write_Expression(expression->parameters[i], {}, out_stream);
         if (i != int(expression->parameters.size()) - 1) {
             out_stream << ", ";
         }
     }
-    if (!combined_texturesampler) {
-        out_stream << ")";
-    }
+    out_stream << ")";
 
     if (need_parens) {
         out_stream << ")";
@@ -1395,36 +1145,6 @@ void glslx::WriterHLSL::Write_PrefixDecrement(const ast_prefix_decrement_express
 
 void glslx::WriterHLSL::Write_Assignment(const ast_assignment_expression *expression, const assoc_t parent,
                                          std::ostream &out_stream) {
-    global_vector<access_index_t> indices;
-    const auto [buf_index, buf_offset] = Find_BufferAccessExpression(expression->operand1, 0, indices);
-    if (buf_index != -1) {
-        int array_dims = 0;
-        const ast_type *var_type = Evaluate_ExpressionResultType(tu_, expression->operand2, array_dims);
-        Write_Type(var_type, out_stream);
-        out_stream << " __temp" + std::to_string(temp_var_index_) + " = ";
-        const int prec_assign = g_operators[int(eOperator::assign)].precedence;
-        const int prec_mul = g_operators[int(eOperator::multiply)].precedence;
-        Write_Expression(expression->operand2, {prec_assign, eAssoc::Right, eOperator::assign, true}, out_stream);
-        out_stream << ";\n";
-        Write_Tabs(out_stream);
-        out_stream << "uint __offset" + std::to_string(temp_var_index_) + " = ";
-        for (int i = 0; i < int(indices.size()); ++i) {
-            Write_Expression(indices[i].index, {prec_mul, eAssoc::Left, eOperator::multiply, false}, out_stream);
-            out_stream << " * " << indices[i].multiplier;
-            out_stream << " + ";
-        }
-        out_stream << buf_offset;
-        out_stream << ";\n";
-
-        const byteaddress_buf_t &buf = byteaddress_bufs_[buf_index];
-        Write_ByteaddressBufStores(buf, 0, "__temp" + std::to_string(temp_var_index_), 0, var_type, out_stream);
-
-        // erase the last ";\n"
-        out_stream.seekp(-2, std::ios::cur);
-
-        ++temp_var_index_;
-        return;
-    }
     const int prec = g_operators[int(eOperator::assign)].precedence;
     const bool need_parens = parentheses_required(prec, eAssoc::Right, parent);
 
@@ -1502,6 +1222,9 @@ void glslx::WriterHLSL::Write_Structure(const ast_struct *structure, std::ostrea
     for (int i = 0; i < int(structure->fields.size()); ++i) {
         Write_Tabs(out_stream);
         Write_Variable(structure->fields[i], {}, out_stream);
+        if (structure->fields[i]->semantic) {
+            out_stream << " : " << structure->fields[i]->semantic;
+        }
         out_stream << ";\n";
     }
     --nest_level_;
@@ -1551,43 +1274,6 @@ void glslx::WriterHLSL::Write_InterfaceBlock(const ast_interface_block *block, s
         out_stream << ", space";
         out_stream << set;
         out_stream << ");\n";
-
-        int total_size = 0;
-        for (const ast_variable *f : block->fields) {
-            total_size += get_variable_size(f, 0);
-        }
-        // assert(total_size % 4 == 0);
-
-        byteaddress_buf_t &new_buf = byteaddress_bufs_.emplace_back();
-        new_buf.name = name;
-        new_buf.size = total_size;
-
-        // write accessor functions
-        int offset = 0;
-        for (const ast_variable *f : block->fields) {
-            Write_Type(f->base_type, out_stream);
-            out_stream << " __load_" << name << "(int index) {\n";
-            ++nest_level_;
-            Write_Tabs(out_stream);
-            Write_Type(f->base_type, out_stream);
-            out_stream << " ret;\n";
-            const int size = Write_ByteaddressBufLoads(new_buf, offset, "ret", 0, f, out_stream);
-            Write_Tabs(out_stream);
-            out_stream << "return ret;\n";
-            out_stream << "}\n";
-            --nest_level_;
-            /*if (block_kind == eBlockKind::RWBuffer) {
-                out_stream << "void __store_" << name << "(int index, ";
-                Write_Type(f->base_type, out_stream);
-                out_stream << " val) {\n";
-                ++nest_level_;
-                const int size2 = Write_ByteaddressBufStores(new_buf, offset, "val", 0, f, out_stream);
-                assert(size2 == size);
-                --nest_level_;
-                out_stream << "}\n";
-            }*/
-            offset += size;
-        }
         return;
     } else if (block_kind == eBlockKind::PushConstant || block_kind == eBlockKind::UniformBuffer) {
         out_stream << "cbuffer ";
@@ -1619,7 +1305,7 @@ void glslx::WriterHLSL::Write_InterfaceBlock(const ast_interface_block *block, s
     out_stream << "};\n";
 }
 
-void glslx::WriterHLSL::Write(TrUnit *tu, std::ostream &out_stream) {
+void glslx::WriterHLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
     tu_ = tu;
     ast_function *main_function = nullptr;
     auto *p_find = tu->functions_by_name.Find("main");
@@ -1627,133 +1313,6 @@ void glslx::WriterHLSL::Write(TrUnit *tu, std::ostream &out_stream) {
         assert(p_find->size() == 1);
         main_function = (*p_find)[0];
     }
-    if (main_function) {
-        // TODO: Remove unused
-        out_stream
-            << "uint4 texelFetch(Texture2D<uint4> t, int2 P, int lod) {\n"
-               "    return t.Load(int3(P, lod));\n"
-               "}\n"
-               "float4 texelFetch(Texture2D<float4> t, int2 P, int lod) {\n"
-               "    return t.Load(int3(P, lod));\n"
-               "}\n"
-               "float4 texelFetch(Texture2D<float4> t, SamplerState s, int2 P, int lod) {\n"
-               "    return t.Load(int3(P, lod));\n"
-               "}\n"
-               "float4 texelFetch(Texture2DArray<float4> t, SamplerState s, int3 P, int lod) {\n"
-               "    return t.Load(int4(P, lod));\n"
-               "}\n"
-               "float4 texelFetch(Texture3D<float4> t, SamplerState s, int3 P, int lod) {\n"
-               "    return t.Load(int4(P, lod));\n"
-               "}\n"
-               "float4 textureLod(Texture2D<float4> t, SamplerState s, float2 P, float lod) {\n"
-               "    return t.SampleLevel(s, P, lod);\n"
-               "}\n"
-               "float4 textureLod(Texture3D<float4> t, SamplerState s, float3 P, float lod) {\n"
-               "    return t.SampleLevel(s, P, lod);\n"
-               "}\n"
-               "float4 textureLod(Texture2DArray<float4> t, SamplerState s, float3 P, float lod) {\n"
-               "    return t.SampleLevel(s, P, lod);\n"
-               "}\n"
-               "float4 textureLodOffset(Texture2D<float4> t, SamplerState s, float2 P, float lod, int2 offset) {\n"
-               "    return t.SampleLevel(s, P, lod, offset);\n"
-               "}\n"
-               "int2 textureSize(Texture2D<float4> t, int lod) {\n"
-               "    uint2 ret;\n"
-               "    uint NumberOfLevels;\n"
-               "    t.GetDimensions(lod, ret.x, ret.y, NumberOfLevels);\n"
-               "    return ret;\n"
-               "}\n"
-               "float4 imageLoad(RWTexture2D<float> image, int2 P) { return float4(image[P], 0, 0, 0); }\n"
-               "float4 imageLoad(RWTexture2D<float2> image, int2 P) { return float4(image[P], 0, 0); }\n"
-               "float4 imageLoad(RWTexture2D<float4> image, int2 P) { return image[P]; }\n"
-               "int4 imageLoad(RWTexture2D<int> image, int2 P) { return int4(image[P], 0, 0, 0); }\n"
-               "int4 imageLoad(RWTexture2D<int2> image, int2 P) { return int4(image[P], 0, 0); }\n"
-               "int4 imageLoad(RWTexture2D<int4> image, int2 P) { return image[P]; }\n"
-               "uint4 imageLoad(RWTexture2D<uint> image, int2 P) { return uint4(image[P], 0, 0, 0); }\n"
-               "uint4 imageLoad(RWTexture2D<uint2> image, int2 P) { return uint4(image[P], 0, 0); }\n"
-               "uint4 imageLoad(RWTexture2D<uint4> image, int2 P) { return image[P]; }\n"
-               "void imageStore(RWTexture2D<float> image, int2 P, float4 data) { image[P] = data.x; }\n"
-               "void imageStore(RWTexture2D<float2> image, int2 P, float4 data) { image[P] = data.xy; }\n"
-               "void imageStore(RWTexture2D<float4> image, int2 P, float4 data) { image[P] = data; }\n"
-               "void imageStore(RWTexture2D<int> image, int2 P, int4 data) { image[P] = data.x; }\n"
-               "void imageStore(RWTexture2D<int2> image, int2 P, int4 data) { image[P] = data.xy; }\n"
-               "void imageStore(RWTexture2D<int4> image, int2 P, int4 data) { image[P] = data; }\n"
-               "void imageStore(RWTexture2D<uint> image, int2 P, uint4 data) { image[P] = data.x; }\n"
-               "void imageStore(RWTexture2D<uint2> image, int2 P, uint4 data) { image[P] = data.xy; }\n"
-               "void imageStore(RWTexture2D<uint4> image, int2 P, uint4 data) { image[P] = data; }\n";
-        if (tu->type == eTrUnitType::Compute) {
-            out_stream
-                << "static const uint gl_RayQueryCandidateIntersectionTriangleEXT = CANDIDATE_NON_OPAQUE_TRIANGLE;\n"
-                   "static const uint gl_RayQueryCandidateIntersectionAABBEXT = CANDIDATE_PROCEDURAL_PRIMITIVE;\n"
-                   "static const uint gl_RayQueryCommittedIntersectionNoneEXT = COMMITTED_NOTHING;\n"
-                   "static const uint gl_RayQueryCommittedIntersectionTriangleEXT = COMMITTED_TRIANGLE_HIT;\n"
-                   "static const uint gl_RayQueryCommittedIntersectionGeneratedEXT = "
-                   "COMMITTED_PROCEDURAL_PRIMITIVE_HIT;\n"
-                   "void rayQueryInitializeEXT(RayQuery<RAY_FLAG_NONE> rayQuery,\n"
-                   "                           RaytracingAccelerationStructure topLevel,\n"
-                   "                           uint rayFlags, uint cullMask, float3 origin, float tMin,\n"
-                   "                           float3 direction, float tMax) {\n"
-                   "    RayDesc desc = {origin, tMin, direction, tMax};\n"
-                   "    rayQuery.TraceRayInline(topLevel, rayFlags, cullMask, desc);\n"
-                   "}\n"
-                   "bool rayQueryProceedEXT(RayQuery<RAY_FLAG_NONE> q) {\n"
-                   "    return q.Proceed();\n"
-                   "}\n"
-                   "uint rayQueryGetIntersectionTypeEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-                   "    if (committed) {\n"
-                   "        return q.CommittedStatus();\n"
-                   "    } else {\n"
-                   "        return q.CandidateType();\n"
-                   "    }\n"
-                   "}\n"
-                   "void rayQueryConfirmIntersectionEXT(RayQuery<RAY_FLAG_NONE> q) {\n"
-                   "    q.CommitNonOpaqueTriangleHit();\n"
-                   "}\n"
-                   "int rayQueryGetIntersectionInstanceCustomIndexEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-                   "    if (committed) {\n"
-                   "        return q.CommittedInstanceID();\n"
-                   "    } else {\n"
-                   "        return q.CandidateInstanceID();\n"
-                   "    }\n"
-                   "}\n"
-                   "int rayQueryGetIntersectionInstanceIdEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-                   "    if (committed) {\n"
-                   "        return q.CommittedInstanceIndex();\n"
-                   "    } else {\n"
-                   "        return q.CandidateInstanceIndex();\n"
-                   "    }\n"
-                   "}\n"
-                   "int rayQueryGetIntersectionPrimitiveIndexEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-                   "    if (committed) {\n"
-                   "        return q.CommittedPrimitiveIndex();\n"
-                   "    } else {\n"
-                   "        return q.CandidatePrimitiveIndex();\n"
-                   "    }\n"
-                   "}\n"
-                   "bool rayQueryGetIntersectionFrontFaceEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-                   "    if (committed) {\n"
-                   "        return q.CommittedTriangleFrontFace();\n"
-                   "    } else {\n"
-                   "        return q.CandidateTriangleFrontFace();\n"
-                   "    }\n"
-                   "}\n"
-                   "float2 rayQueryGetIntersectionBarycentricsEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-                   "    if (committed) {\n"
-                   "        return q.CommittedTriangleBarycentrics();\n"
-                   "    } else {\n"
-                   "        return q.CandidateTriangleBarycentrics();\n"
-                   "    }\n"
-                   "}\n"
-                   "float rayQueryGetIntersectionTEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-                   "    if (committed) {\n"
-                   "        return q.CommittedRayT();\n"
-                   "    } else {\n"
-                   "        return q.CandidateTriangleRayT();\n"
-                   "    }\n"
-                   "}\n";
-        }
-    }
-
     for (int i = 0; i < int(tu->globals.size()); ++i) {
         if (!tu->globals[i]->base_type->builtin) {
             continue;
@@ -1764,20 +1323,6 @@ void glslx::WriterHLSL::Write(TrUnit *tu, std::ostream &out_stream) {
     }
     for (int i = 0; i < int(tu->structures.size()); ++i) {
         Write_Structure(tu->structures[i], out_stream);
-    }
-    if (main_function && tu->type == eTrUnitType::Compute) {
-        out_stream << "static uint3 gl_WorkGroupID;\n";
-        out_stream << "static uint3 gl_LocalInvocationID;\n";
-        out_stream << "static uint3 gl_GlobalInvocationID;\n";
-        out_stream << "static uint gl_LocalInvocationIndex;\n";
-        out_stream << "static uint gl_SubgroupSize;\n";
-        out_stream << "static uint gl_SubgroupInvocationID;\n";
-        out_stream << "struct GLSLX_Input {\n";
-        out_stream << "    uint3 gl_WorkGroupID : SV_GroupID;\n";
-        out_stream << "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n";
-        out_stream << "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n";
-        out_stream << "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n";
-        out_stream << "};\n";
     }
     for (int i = 0; i < int(tu->interface_blocks.size()); ++i) {
         const ast_interface_block *block = tu->interface_blocks[i];
@@ -1828,411 +1373,9 @@ void glslx::WriterHLSL::Write(TrUnit *tu, std::ostream &out_stream) {
     }
 }
 
-std::pair<int, int> glslx::WriterHLSL::Find_BufferAccessExpression(const ast_expression *expression, const int offset,
-                                                                   global_vector<access_index_t> &out_indices) {
-    if (expression->type == eExprType::VariableIdentifier) {
-        const auto *var = static_cast<const ast_variable_identifier *>(expression);
-        auto it = std::find_if(byteaddress_bufs_.begin(), byteaddress_bufs_.end(), [var](const byteaddress_buf_t &buf) {
-            return strcmp(var->variable->name, buf.name) == 0;
-        });
-        if (it == byteaddress_bufs_.end()) {
-            return {-1, -1};
-        }
-        return {int(std::distance(byteaddress_bufs_.begin(), it)), offset};
-    } else if (expression->type == eExprType::ArraySubscript) {
-        const auto *subscript = static_cast<const ast_array_subscript *>(expression);
-        int array_dims = 0;
-        const ast_type *operand_type = Evaluate_ExpressionResultType(tu_, subscript->operand, array_dims);
-        const int operand_size = Calc_TypeSize(operand_type);
-        out_indices.push_back({subscript->index, operand_size});
-        return Find_BufferAccessExpression(subscript->operand, offset, out_indices);
-    } else if (expression->type == eExprType::FieldOrSwizzle) {
-        const auto *field = static_cast<const ast_field_or_swizzle *>(expression);
-        int array_dims = 0;
-        const ast_type *operand_type = Evaluate_ExpressionResultType(tu_, field->operand, array_dims);
-        const int field_offset = Calc_FieldOffset(operand_type, field->name);
-        return Find_BufferAccessExpression(field->operand, field_offset, out_indices);
-    }
-    return {-1, -1};
+void glslx::Write_HLSL(const TrUnit *tu, std::ostream &out_stream, writer_config_t config) {
+    std::unique_ptr<TrUnit> owned = Clone().CloneAST(tu);
+    LowerHLSL().Apply(owned.get());
+    WriterHLSL(std::move(config)).Write(owned.get(), out_stream);
 }
 
-void glslx::WriterHLSL::Find_AtomicOperations(const ast_expression *expression,
-                                              global_vector<atomic_operation_t> &out_operations) {
-    switch (expression->type) {
-    case eExprType::FunctionCall: {
-        const auto *call = static_cast<const ast_function_call *>(expression);
-        const auto *p_find = g_atomic_functions.Find(call->name);
-        if (p_find) {
-            out_operations.push_back({expression});
-        }
-    } break;
-    case eExprType::Assign:
-        return Find_AtomicOperations(static_cast<const ast_assignment_expression *>(expression)->operand2,
-                                     out_operations);
-    case eExprType::Sequence: {
-        const auto *sequence = static_cast<const ast_sequence_expression *>(expression);
-        Find_AtomicOperations(sequence->operand1, out_operations);
-        Find_AtomicOperations(sequence->operand2, out_operations);
-    } break;
-    case eExprType::Operation: {
-        const auto *operation = static_cast<const ast_operation_expression *>(expression);
-        Find_AtomicOperations(operation->operand1, out_operations);
-        Find_AtomicOperations(operation->operand2, out_operations);
-        break;
-    }
-    case eExprType::Ternary: {
-        const auto *ternary = static_cast<const ast_ternary_expression *>(expression);
-        Find_AtomicOperations(ternary->condition, out_operations);
-        Find_AtomicOperations(ternary->on_true, out_operations);
-        Find_AtomicOperations(ternary->on_false, out_operations);
-    } break;
-    case eExprType::ArraySpecifier: {
-        const ast_array_specifier *arr_specifier = static_cast<const ast_array_specifier *>(expression);
-        for (int i = 0; i < int(arr_specifier->expressions.size()); ++i) {
-            Find_AtomicOperations(arr_specifier->expressions[i], out_operations);
-        }
-    } break;
-    default:
-        // TODO: report error
-        break;
-    }
-}
-
-void glslx::WriterHLSL::Process_AtomicOperations(const ast_expression *expression, std::ostream &out_stream) {
-    global_vector<atomic_operation_t> atomic_operations;
-    Find_AtomicOperations(expression, atomic_operations);
-
-    for (int i = 0; i < int(atomic_operations.size()); ++i) {
-        int array_dims = 0;
-        const ast_type *temp_type = Evaluate_ExpressionResultType(tu_, atomic_operations[i].expr, array_dims);
-        Write_Type(temp_type, out_stream);
-        atomic_operations[i].var_name = "__temp" + std::to_string(temp_var_index_++ + i);
-        out_stream << " " << atomic_operations[i].var_name << ";\n";
-        Write_Tabs(out_stream);
-        assert(atomic_operations[i].expr->type == eExprType::FunctionCall);
-        const auto *call = static_cast<const ast_function_call *>(atomic_operations[i].expr);
-        if (call->parameters[0]->type == eExprType::ArraySubscript) {
-            const auto *subscript = static_cast<const ast_array_subscript *>(call->parameters[0]);
-            assert(subscript->operand->type == eExprType::VariableIdentifier);
-            const auto *var = static_cast<const ast_variable_identifier *>(subscript->operand);
-            auto buf_it =
-                std::find_if(byteaddress_bufs_.begin(), byteaddress_bufs_.end(), [var](const byteaddress_buf_t &buf) {
-                    return strcmp(buf.name, var->variable->name) == 0;
-                });
-            if (buf_it != byteaddress_bufs_.end()) {
-                const char *func_name = call->name;
-                auto *p_find = g_hlsl_function_mapping.Find(call->name);
-                if (p_find) {
-                    func_name = p_find->c_str();
-                }
-                if (strcmp(func_name, "InterlockedCompareExchange") == 0 && temp_type->builtin &&
-                    static_cast<const ast_builtin *>(temp_type)->type == eKeyword::K_uint64_t) {
-                    func_name = "InterlockedCompareExchange64";
-                }
-                out_stream << var->variable->name << "." << func_name << "(";
-                out_stream << buf_it->size << " * ";
-                const int prec = g_operators[int(eOperator::multiply)].precedence;
-                Write_Expression(subscript->index, {prec, eAssoc::Left, eOperator::multiply, true}, out_stream);
-                out_stream << ", ";
-                for (int j = 1; j < int(call->parameters.size()); ++j) {
-                    Write_Expression(call->parameters[j], {}, out_stream);
-                    out_stream << ", ";
-                }
-                out_stream << atomic_operations[i].var_name;
-                out_stream << ")";
-            } else {
-                var_to_init_ = atomic_operations[i].var_name;
-                Write_Expression(atomic_operations[i].expr, {0, eAssoc::Left, eOperator::none, false}, out_stream);
-            }
-        } else {
-            var_to_init_ = atomic_operations[i].var_name;
-            Write_Expression(atomic_operations[i].expr, {0, eAssoc::Left, eOperator::none, false}, out_stream);
-        }
-        out_stream << ";\n";
-        Write_Tabs(out_stream);
-    }
-
-    atomic_operations_.insert(atomic_operations_.end(), atomic_operations.begin(), atomic_operations.end());
-}
-
-int glslx::WriterHLSL::Calc_FieldOffset(const ast_type *type, const char *field_name) {
-    if (type->builtin) {
-        if (field_name[0] == 'x') {
-            return 0;
-        } else if (field_name[0] == 'y') {
-            return 4;
-        } else if (field_name[0] == 'z') {
-            return 8;
-        } else {
-            return 12;
-        }
-    } else {
-        const auto *struct_type = static_cast<const ast_struct *>(type);
-        int offset = 0;
-        for (const ast_variable *v : struct_type->fields) {
-            if (strcmp(v->name, field_name) == 0) {
-                return offset;
-            }
-            offset += Calc_VariableSize(v);
-        }
-        return -1;
-    }
-}
-
-int glslx::WriterHLSL::Calc_TypeSize(const ast_type *type) {
-    int total_size = 0;
-    if (type->builtin) {
-        const auto *builtin_type = static_cast<const ast_builtin *>(type);
-        switch (builtin_type->type) {
-        case eKeyword::K_int:
-        case eKeyword::K_uint:
-        case eKeyword::K_float:
-            total_size = 4;
-            break;
-        case eKeyword::K_int64_t:
-        case eKeyword::K_uint64_t:
-        case eKeyword::K_double:
-            total_size = 8;
-            break;
-        case eKeyword::K_float16_t:
-            total_size = 2;
-            break;
-        case eKeyword::K_ivec2:
-        case eKeyword::K_uvec2:
-        case eKeyword::K_vec2:
-            total_size = 8;
-            break;
-        case eKeyword::K_ivec4:
-        case eKeyword::K_uvec4:
-        case eKeyword::K_vec4:
-            total_size = 16;
-            break;
-        case eKeyword::K_mat4x4:
-        case eKeyword::K_mat4:
-            total_size = 16 * 4;
-            break;
-        default:
-            // TODO: report error
-            break;
-        }
-    } else {
-        const auto *struct_type = static_cast<const ast_struct *>(type);
-        for (const ast_variable *v : struct_type->fields) {
-            total_size += Calc_VariableSize(v);
-        }
-    }
-    return total_size;
-}
-
-int glslx::WriterHLSL::Calc_VariableSize(const ast_variable *v) {
-    int total_size = Calc_TypeSize(v->base_type);
-    if (v->flags & eVariableFlags::Array) {
-        for (int i = 0; i < int(v->array_sizes.size()) && v->array_sizes[i]; ++i) {
-            const ast_constant_expression *sz = v->array_sizes[i];
-            if (sz->type == eExprType::IntConstant) {
-                total_size *= static_cast<const ast_int_constant *>(sz)->value;
-            } else if (sz->type == eExprType::UIntConstant) {
-                total_size *= static_cast<const ast_uint_constant *>(sz)->value;
-            }
-        }
-    }
-    return total_size;
-}
-
-int glslx::WriterHLSL::Write_ByteaddressBufLoads(const byteaddress_buf_t &buf, const int offset,
-                                                 const std::string &prefix, int array_dim, const ast_variable *v,
-                                                 std::ostream &out_stream) {
-    if ((v->flags & eVariableFlags::Array) && int(v->array_sizes.size()) > array_dim && v->array_sizes[array_dim]) {
-        int count = 0;
-        if (v->array_sizes[array_dim]->type == eExprType::IntConstant) {
-            count = static_cast<ast_int_constant *>(v->array_sizes[array_dim])->value;
-        } else if (v->array_sizes[array_dim]->type == eExprType::UIntConstant) {
-            count = static_cast<ast_uint_constant *>(v->array_sizes[array_dim])->value;
-        } else {
-            assert(false);
-        }
-        int size = 0;
-        for (int i = 0; i < count; ++i) {
-            const std::string new_prefix = prefix + "[" + std::to_string(i) + "]";
-            size += Write_ByteaddressBufLoads(buf, offset + size, new_prefix, array_dim + 1, v, out_stream);
-        }
-        return size;
-    }
-
-    if (v->base_type->builtin) {
-        const auto *type = static_cast<const ast_builtin *>(v->base_type);
-        switch (type->type) {
-        case eKeyword::K_int:
-        case eKeyword::K_uint:
-            Write_Tabs(out_stream);
-            out_stream << prefix << " = ";
-            out_stream << buf.name << ".Load(index * " << buf.size << " + " << offset << ");\n";
-            return 4;
-        case eKeyword::K_int64_t:
-            Write_Tabs(out_stream);
-            out_stream << prefix << " = ";
-            out_stream << buf.name << ".Load<int64_t>(index * " << buf.size << " + " << offset << ");\n";
-            return 8;
-        case eKeyword::K_uint64_t:
-            Write_Tabs(out_stream);
-            out_stream << prefix << " = ";
-            out_stream << buf.name << ".Load<uint64_t>(index * " << buf.size << " + " << offset << ");\n";
-            return 8;
-        case eKeyword::K_float:
-            Write_Tabs(out_stream);
-            out_stream << prefix << " = asfloat(";
-            out_stream << buf.name << ".Load(index * " << buf.size << " + " << offset << "));\n";
-            return 4;
-        case eKeyword::K_double:
-            assert(false);
-            return 8;
-        case eKeyword::K_float16_t:
-            Write_Tabs(out_stream);
-            out_stream << prefix << " = ";
-            out_stream << buf.name << ".Load<half>(index * " << buf.size << " + " << offset << ");\n";
-            return 2;
-        case eKeyword::K_bool:
-            assert(false);
-            return 1;
-        case eKeyword::K_ivec2:
-        case eKeyword::K_uvec2:
-        case eKeyword::K_vec2: {
-            Write_Tabs(out_stream);
-            out_stream << prefix << " = ";
-            if (type->type == eKeyword::K_vec2) {
-                out_stream << "asfloat(";
-            }
-            out_stream << buf.name << ".Load2(index * " << buf.size << " + " << offset << ")";
-            if (type->type == eKeyword::K_vec2) {
-                out_stream << ")";
-            }
-            out_stream << ";\n";
-            return 2 * 4;
-        }
-        case eKeyword::K_ivec4:
-        case eKeyword::K_uvec4:
-        case eKeyword::K_vec4: {
-            Write_Tabs(out_stream);
-            out_stream << prefix << " = ";
-            if (type->type == eKeyword::K_vec4) {
-                out_stream << "asfloat(";
-            }
-            out_stream << buf.name << ".Load4(index * " << buf.size << " + " << offset << ")";
-            if (type->type == eKeyword::K_vec4) {
-                out_stream << ")";
-            }
-            out_stream << ";\n";
-            return 4 * 4;
-        }
-        case eKeyword::K_mat4x4:
-        case eKeyword::K_mat4: {
-            for (int i = 0; i < 4; ++i) {
-                Write_Tabs(out_stream);
-                out_stream << prefix << "[" << i << "] = ";
-                out_stream << "asfloat(";
-                out_stream << buf.name << ".Load4(index * " << buf.size << " + " << offset + 16 * i << ")";
-                out_stream << ")";
-                out_stream << ";\n";
-            }
-            return 16 * 4;
-        }
-        default:
-            return -1;
-        }
-    } else {
-        int size = 0;
-        const auto *type = static_cast<const ast_struct *>(v->base_type);
-        for (const ast_variable *sub_v : type->fields) {
-            const std::string new_prefix = prefix + "." + sub_v->name;
-            size += Write_ByteaddressBufLoads(buf, offset + size, new_prefix, array_dim, sub_v, out_stream);
-        }
-        return size;
-    }
-}
-
-int glslx::WriterHLSL::Write_ByteaddressBufStores(const byteaddress_buf_t &buf, const int offset,
-                                                  const std::string &prefix, int array_dim, const ast_type *t,
-                                                  std::ostream &out_stream) {
-    if (t->builtin) {
-        const auto *type = static_cast<const ast_builtin *>(t);
-        switch (type->type) {
-        case eKeyword::K_int:
-        case eKeyword::K_uint:
-            Write_Tabs(out_stream);
-            out_stream << buf.name << ".Store(__offset" << temp_var_index_ << " + " << offset << ", " << prefix
-                       << ");\n";
-            return 4;
-        case eKeyword::K_ivec2:
-        case eKeyword::K_uvec2:
-            Write_Tabs(out_stream);
-            out_stream << buf.name << ".Store2(__offset" << temp_var_index_ << " + " << offset << ", " << prefix
-                       << ");\n";
-            return 8;
-        case eKeyword::K_ivec4:
-        case eKeyword::K_uvec4:
-            Write_Tabs(out_stream);
-            out_stream << buf.name << ".Store4(__offset" << temp_var_index_ << " + " << offset << ", " << prefix
-                       << ");\n";
-            return 16;
-        case eKeyword::K_int64_t:
-            Write_Tabs(out_stream);
-            out_stream << buf.name << ".Store<int64_t>(__offset" << temp_var_index_ << " + " << offset << ", " << prefix
-                       << ");\n";
-            return 8;
-        case eKeyword::K_uint64_t:
-            Write_Tabs(out_stream);
-            out_stream << buf.name << ".Store<uint64_t>(__offset" << temp_var_index_ << " + " << offset << ", "
-                       << prefix << ");\n";
-            return 8;
-        case eKeyword::K_float:
-            Write_Tabs(out_stream);
-            out_stream << buf.name << ".Store(__offset" << temp_var_index_ << " + " << offset << ", asuint(" << prefix
-                       << "));\n";
-            return 4;
-        case eKeyword::K_double:
-            assert(false);
-            return 8;
-        case eKeyword::K_bool:
-            assert(false);
-            return 1;
-        case eKeyword::K_float16_t:
-            Write_Tabs(out_stream);
-            out_stream << buf.name << ".Store<half>(__offset" << temp_var_index_ << " + " << offset << ", " << prefix
-                       << ");\n";
-            return 2;
-        default:
-            return -1;
-        }
-    } else {
-        int size = 0;
-        const auto *type = static_cast<const ast_struct *>(t);
-        for (const ast_variable *sub_v : type->fields) {
-            const std::string new_prefix = prefix + "." + sub_v->name;
-            size += Write_ByteaddressBufStores(buf, offset + size, new_prefix, array_dim, sub_v, out_stream);
-        }
-        return size;
-    }
-}
-
-int glslx::WriterHLSL::Write_ByteaddressBufStores(const byteaddress_buf_t &buf, const int offset,
-                                                  const std::string &prefix, int array_dim, const ast_variable *v,
-                                                  std::ostream &out_stream) {
-    if ((v->flags & eVariableFlags::Array) && int(v->array_sizes.size()) > array_dim && v->array_sizes[array_dim]) {
-        int count = 0;
-        if (v->array_sizes[array_dim]->type == eExprType::IntConstant) {
-            count = static_cast<ast_int_constant *>(v->array_sizes[array_dim])->value;
-        } else if (v->array_sizes[array_dim]->type == eExprType::UIntConstant) {
-            count = static_cast<ast_uint_constant *>(v->array_sizes[array_dim])->value;
-        } else {
-            assert(false);
-        }
-        int size = 0;
-        for (int i = 0; i < count; ++i) {
-            const std::string new_prefix = prefix + "[" + std::to_string(i) + "]";
-            size += Write_ByteaddressBufStores(buf, offset + size, new_prefix, array_dim + 1, v, out_stream);
-        }
-        return size;
-    }
-
-    return Write_ByteaddressBufStores(buf, offset, prefix, array_dim, v->base_type, out_stream);
-}

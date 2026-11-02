@@ -94,4 +94,8 @@ class WriterGLSL : public WriterBase {
 
     void Write(const TrUnit *tu, std::ostream &out_stream);
 };
+
+// Symmetrical with Write_HLSL: no lowering pass runs on the GLSL path, so this is a plain
+// wrapper, but callers that target either backend can use Write_GLSL/Write_HLSL uniformly.
+void Write_GLSL(const TrUnit *tu, std::ostream &out_stream, writer_config_t config = {});
 } // namespace glslx

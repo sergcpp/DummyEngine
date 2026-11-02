@@ -176,6 +176,41 @@ glslx::ast_function_call *glslx::Serialize::Deserialize_FunctionCall(std::istrea
     return ret;
 }
 
+void glslx::Serialize::Serialize_MethodCall(const ast_method_call *c, std::ostream &out) {
+    const int32_t name_index = string_index_[c->name];
+    out.write((const char *)&name_index, sizeof(int32_t));
+    Serialize_Expression(c->object, out);
+    int32_t template_arg_index = -1;
+    if (c->template_arg) {
+        template_arg_index = type_index_[c->template_arg];
+    }
+    out.write((const char *)&template_arg_index, sizeof(int32_t));
+    const int32_t params_count = int32_t(c->parameters.size());
+    out.write((const char *)&params_count, sizeof(int32_t));
+    for (const ast_expression *p : c->parameters) {
+        Serialize_Expression(p, out);
+    }
+}
+
+glslx::ast_method_call *glslx::Serialize::Deserialize_MethodCall(std::istream &in) {
+    ast_method_call *ret = dst_->make<ast_method_call>(dst_->alloc.allocator);
+    int32_t name_index = -1;
+    in.read((char *)&name_index, sizeof(int32_t));
+    ret->name = strings_[name_index];
+    ret->object = Deserialize_Expression(in);
+    int32_t template_arg_index = -1;
+    in.read((char *)&template_arg_index, sizeof(int32_t));
+    if (template_arg_index != -1) {
+        ret->template_arg = types_[template_arg_index];
+    }
+    int32_t params_count = -1;
+    in.read((char *)&params_count, sizeof(int32_t));
+    for (int32_t i = 0; i < params_count; ++i) {
+        ret->parameters.push_back(Deserialize_Expression(in));
+    }
+    return ret;
+}
+
 void glslx::Serialize::Serialize_ConstructorCall(const ast_constructor_call *c, std::ostream &out) {
     const int32_t type_index = type_index_[c->type];
     out.write((const char *)&type_index, sizeof(int32_t));
@@ -335,6 +370,8 @@ void glslx::Serialize::Serialize_Expression(const ast_expression *e, std::ostrea
         return Serialize_Ternary(static_cast<const ast_ternary_expression *>(e), out);
     case eExprType::ArraySpecifier:
         return Serialize_ArraySpecifier(static_cast<const ast_array_specifier *>(e), out);
+    case eExprType::MethodCall:
+        return Serialize_MethodCall(static_cast<const ast_method_call *>(e), out);
     }
 }
 
@@ -400,6 +437,8 @@ glslx::ast_expression *glslx::Serialize::Deserialize_Expression(std::istream &in
         return Deserialize_Ternary(in);
     case eExprType::ArraySpecifier:
         return Deserialize_ArraySpecifier(in);
+    case eExprType::MethodCall:
+        return Deserialize_MethodCall(in);
     }
     return nullptr;
 }

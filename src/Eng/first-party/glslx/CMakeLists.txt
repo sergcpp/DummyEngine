@@ -21,6 +21,8 @@ set(SOURCE_FILES AlignedAlloc.h
                  Clone.cpp
                  Fixup.h
                  Fixup.cpp
+                 LowerHLSL.h
+                 LowerHLSL.cpp
                  glslx.h
                  glslx.cpp
                  HashMap32.h

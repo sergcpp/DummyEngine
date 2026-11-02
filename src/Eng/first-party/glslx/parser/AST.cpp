@@ -288,6 +288,10 @@ int glslx::Compare(const ast_variable *lhs, const ast_variable *rhs) {
     if (name_cmp != 0) {
         return name_cmp;
     }
+    const int semantic_cmp = str_compare(lhs->semantic, rhs->semantic);
+    if (semantic_cmp != 0) {
+        return semantic_cmp;
+    }
     const int type_cmp = Compare(lhs->base_type, rhs->base_type);
     if (type_cmp != 0) {
         return type_cmp;
@@ -720,6 +724,22 @@ int glslx::Compare(const ast_expression *lhs, const ast_expression *rhs) {
         const auto *_lhs = static_cast<const ast_array_specifier *>(lhs),
                    *_rhs = static_cast<const ast_array_specifier *>(rhs);
         return Compare_PointerSpans<ast_expression *>(_lhs->expressions, _rhs->expressions);
+    }
+    case eExprType::MethodCall: {
+        const auto *_lhs = static_cast<const ast_method_call *>(lhs), *_rhs = static_cast<const ast_method_call *>(rhs);
+        const int name_cmp = str_compare(_lhs->name, _rhs->name);
+        if (name_cmp != 0) {
+            return name_cmp;
+        }
+        const int object_cmp = Compare(_lhs->object, _rhs->object);
+        if (object_cmp != 0) {
+            return object_cmp;
+        }
+        const int template_arg_cmp = Compare(_lhs->template_arg, _rhs->template_arg);
+        if (template_arg_cmp != 0) {
+            return template_arg_cmp;
+        }
+        return Compare_PointerSpans<ast_expression *>(_lhs->parameters, _rhs->parameters);
     }
     }
     return 0;

@@ -178,10 +178,10 @@ int main(int argc, char *argv[]) {
 
         if (strcmp(target, "GLSL") == 0) {
             std::ofstream out_file(output_name, std::ios::binary);
-            glslx::WriterGLSL().Write(tu.get(), out_file);
+            glslx::Write_GLSL(tu.get(), out_file);
         } else if (strcmp(target, "HLSL") == 0) {
             std::ofstream out_file(output_name, std::ios::binary);
-            glslx::WriterHLSL().Write(tu.get(), out_file);
+            glslx::Write_HLSL(tu.get(), out_file);
         } else {
             printf("Unsupported target %s\n", target);
         }

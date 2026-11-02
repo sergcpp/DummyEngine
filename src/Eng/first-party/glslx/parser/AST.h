@@ -314,6 +314,7 @@ struct ast_variable : ast_node<ast_variable> {
     ePrecision precision = ePrecision::None;
 
     char *name = nullptr;
+    char *semantic = nullptr; // HLSL-only; set by lowering, printed as `name : semantic`
     ast_type *base_type = nullptr;
     local_vector<ast_constant_expression *> array_sizes;
 
@@ -576,7 +577,8 @@ enum class eExprType : uint8_t {
     Assign,
     Operation,
     Ternary,
-    ArraySpecifier
+    ArraySpecifier,
+    MethodCall
 };
 
 struct ast_expression : ast_node<ast_expression> {
@@ -684,6 +686,17 @@ struct ast_function_call : ast_expression {
     explicit ast_function_call(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_expression(eExprType::FunctionCall), parameters(_alloc) {}
     OPERATOR_NEW(ast_function_call)
+};
+
+struct ast_method_call : ast_expression {
+    ast_expression *object = nullptr;
+    char *name = nullptr;
+    ast_type *template_arg = nullptr;
+    local_vector<ast_expression *> parameters;
+
+    explicit ast_method_call(MultiPoolAllocator<char> &_alloc) noexcept
+        : ast_expression(eExprType::MethodCall), parameters(_alloc) {}
+    OPERATOR_NEW(ast_method_call)
 };
 
 struct ast_constructor_call : ast_expression {

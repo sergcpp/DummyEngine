@@ -6,22 +6,8 @@
 
 namespace glslx {
 class WriterHLSL : public WriterBase {
-    // TODO: make this const
-    TrUnit *tu_ = nullptr;
+    const TrUnit *tu_ = nullptr;
     int compute_group_sizes_[3] = {1, 1, 1};
-    int temp_var_index_ = 0;
-
-    struct byteaddress_buf_t {
-        const char *name;
-        int size;
-    };
-    global_vector<byteaddress_buf_t> byteaddress_bufs_;
-    struct atomic_operation_t {
-        const ast_expression *expr = nullptr;
-        std::string var_name;
-    };
-    std::string var_to_init_;
-    global_vector<atomic_operation_t> atomic_operations_;
 
     void Write_Builtin(const ast_builtin *builtin, std::ostream &out_stream);
     void Write_Type(const ast_type *type, std::ostream &out_stream);
@@ -40,6 +26,7 @@ class WriterHLSL : public WriterBase {
     void Write_FieldOrSwizzle(const ast_field_or_swizzle *expression, assoc_t parent, std::ostream &out_stream);
     void Write_ArraySubscript(const ast_array_subscript *expression, assoc_t parent, std::ostream &out_stream);
     void Write_FunctionCall(const ast_function_call *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_MethodCall(const ast_method_call *expression, assoc_t parent, std::ostream &out_stream);
     void Write_ConstructorCall(const ast_constructor_call *expression, assoc_t parent, std::ostream &out_stream);
     void Write_PostIncrement(const ast_post_increment_expression *expression, assoc_t parent, std::ostream &out_stream);
     void Write_PostDecrement(const ast_post_decrement_expression *expression, assoc_t parent, std::ostream &out_stream);
@@ -77,8 +64,6 @@ class WriterHLSL : public WriterBase {
                                    Bitmask<eOutputFlags> output_flags);
     void Write_IfStatement(const ast_if_statement *statement, std::ostream &out_stream,
                            Bitmask<eOutputFlags> output_flags);
-    bool Needs_StatementExpansion(const ast_statement *statement);
-    void Write_IfBranch(const ast_statement *statement, std::ostream &out_stream, bool trailing_newline);
     void Write_SwitchStatement(const ast_switch_statement *statement, std::ostream &out_stream,
                                Bitmask<eOutputFlags> output_flags);
     void Write_CaseLabelStatement(const ast_case_label_statement *statement, std::ostream &out_stream,
@@ -101,28 +86,14 @@ class WriterHLSL : public WriterBase {
                                 Bitmask<eOutputFlags> output_flags);
     void Write_Statement(const ast_statement *statement, std::ostream &out_stream, Bitmask<eOutputFlags> output_flags);
 
-    // Byteaddress buffer access
-    struct access_index_t {
-        const ast_expression *index = nullptr;
-        int multiplier = 0;
-    };
-    std::pair<int, int> Find_BufferAccessExpression(const ast_expression *expression, int offset,
-                                                    global_vector<access_index_t> &out_indices);
-    void Find_AtomicOperations(const ast_expression *expression, global_vector<atomic_operation_t> &out_operations);
-    void Process_AtomicOperations(const ast_expression *expression, std::ostream &out_stream);
-    int Calc_FieldOffset(const ast_type *type, const char *field_name);
-    int Calc_TypeSize(const ast_type *type);
-    int Calc_VariableSize(const ast_variable *type);
-    int Write_ByteaddressBufLoads(const byteaddress_buf_t &buf, int offset, const std::string &prefix, int array_dim,
-                                  const ast_variable *v, std::ostream &out_stream);
-    int Write_ByteaddressBufStores(const byteaddress_buf_t &buf, int offset, const std::string &prefix, int array_dim,
-                                   const ast_type *t, std::ostream &out_stream);
-    int Write_ByteaddressBufStores(const byteaddress_buf_t &buf, int offset, const std::string &prefix, int array_dim,
-                                   const ast_variable *v, std::ostream &out_stream);
-
   public:
     explicit WriterHLSL(writer_config_t config = {}) : WriterBase(std::move(config)) {}
 
-    void Write(TrUnit *tu, std::ostream &out_stream);
+    void Write(const TrUnit *tu, std::ostream &out_stream);
 };
+
+// Runs the LowerHLSL AST pass on a clone of `tu` and prints the result with WriterHLSL.
+// Use this (not WriterHLSL::Write directly) whenever the tree may contain byteaddress-buffer
+// stores: WriterHLSL itself is a near-1:1 printer and no longer rewrites those while printing.
+void Write_HLSL(const TrUnit *tu, std::ostream &out_stream, writer_config_t config = {});
 } // namespace glslx

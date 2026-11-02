@@ -1,9 +1,23 @@
 #include "test_common.h"
 
 #include <iostream>
+#include <memory>
 #include <sstream>
+#include <string>
 
 #include "../WriterHLSL.h"
+
+// Parses, lowers and writes in one go. Keeping the Parser and the stringstream out of
+// test_hlsl_writer's frame is what keeps /analyze's stack estimate under its budget (C6262).
+static std::string Write_HLSL_Text(const char *source, const char *name) {
+    auto parser = std::make_unique<glslx::Parser>(source, name);
+    std::unique_ptr<glslx::TrUnit> tr_unit = parser->Parse(glslx::eTrUnitType::Compute);
+    require_fatal(tr_unit != nullptr);
+
+    std::stringstream ss;
+    glslx::Write_HLSL(tr_unit.get(), ss);
+    return ss.str();
+}
 
 void test_hlsl_writer() {
     using namespace glslx;
@@ -26,13 +40,7 @@ void test_hlsl_writer() {
                                       "static const uint test_uint = 2147483648u;\n"
                                       "static const uint test_bitneg = 2147483647u;\n";
 
-        Parser parser(source, "constants.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "constants.glsl") == expected);
     }
     { // continuations (comma-separated declarations)
         static const char source[] = "mat4 model, view, projection;\n"
@@ -48,13 +56,7 @@ void test_hlsl_writer() {
                                       "static foo c;\n"
                                       "static foo d;\n";
 
-        Parser parser(source, "continuations.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "continuations.glsl") == expected);
     }
     { // builtin types
         static const char source[] =
@@ -301,13 +303,7 @@ void test_hlsl_writer() {
             "TextureCubeArray<uint4> test_usamplerCubeArray : register(t59, space0);\n"
             "SamplerState test_usamplerCubeArray_sampler : register(s59, space0);\n";
 
-        Parser parser(source, "builtins.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "builtins.glsl") == expected);
     }
     { // booleans
         static const char source[] = "void test() {\n"
@@ -322,13 +318,7 @@ void test_hlsl_writer() {
                                      "}\n";
         static const char *expected = source;
 
-        Parser parser(source, "booleans.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "booleans.glsl") == expected);
     }
     { // int literals
         static const char source[] = "void test(int a, int b) {\n"
@@ -370,9 +360,9 @@ void test_hlsl_writer() {
                                        "    uint test_hex_suffix_mixed = 255u;\n"
                                        "    int test_negative = -1;\n"
                                        "    uint test_octal = 511;\n"
-                                       "    short test_int16 = 42s;\n"
-                                       "    ushort test_uint16_lower = 42us;\n"
-                                       "    ushort test_uint16_upper = 42us;\n"
+                                       "    int16_t test_int16 = 42s;\n"
+                                       "    uint16_t test_uint16_lower = 42us;\n"
+                                       "    uint16_t test_uint16_upper = 42us;\n"
                                        "    int test_int32 = 42;\n"
                                        "    uint test_uint32_lower = 42u;\n"
                                        "    uint test_uint32_upper = 42u;\n"
@@ -382,13 +372,7 @@ void test_hlsl_writer() {
                                        "    uint64_t test_uint64_upper = 42ul;\n"
                                        "}\n";
 
-        Parser parser(source, "int_literals.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "int_literals.glsl") == expected);
     }
     { // float literals
         static const char source[] = "void test() {\n"
@@ -422,13 +406,7 @@ void test_hlsl_writer() {
                                        "    half test_f16_hf_upper = 1.5hf;\n"
                                        "}\n";
 
-        Parser parser(source, "float_literals.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "float_literals.glsl") == expected);
     }
     { // structures
         static const char source[] = "struct foo\n"
@@ -491,13 +469,7 @@ void test_hlsl_writer() {
                                        "    e = d = 1.0;\n"
                                        "}\n";
 
-        Parser parser(source, "structures.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "structures.glsl") == expected);
     }
     { // arrays
         static const char source[] = "float a[1];\n"
@@ -547,13 +519,7 @@ void test_hlsl_writer() {
                                        "    foo1 bb[1];\n"
                                        "}\n";
 
-        Parser parser(source, "arrays.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "arrays.glsl") == expected);
     }
     { // if statement
         static const char source[] = "void test() {\n"
@@ -567,13 +533,7 @@ void test_hlsl_writer() {
                                        "    }\n"
                                        "}\n";
 
-        Parser parser(source, "if_statement.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "if_statement.glsl") == expected);
     }
     { // do statement
         static const char source[] = "void test() {\n"
@@ -588,13 +548,7 @@ void test_hlsl_writer() {
                                        "    while (true);\n"
                                        "}\n";
 
-        Parser parser(source, "do_statement.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "do_statement.glsl") == expected);
     }
     { // while statement
         static const char source[] = "void test() {\n"
@@ -610,13 +564,7 @@ void test_hlsl_writer() {
                                        "    }\n"
                                        "}\n";
 
-        Parser parser(source, "while_statement.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "while_statement.glsl") == expected);
     }
     { // for statement
         static const char source[] = "void func_main() {\n"
@@ -641,13 +589,7 @@ void test_hlsl_writer() {
                                        "    }\n"
                                        "}\n";
 
-        Parser parser(source, "for_statement.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "for_statement.glsl") == expected);
     }
     { // ternary
         static const char source[] = "void func_main() {\n"
@@ -666,13 +608,7 @@ void test_hlsl_writer() {
                                        "    float z = a ? (b ? c : d) : w;\n"
                                        "}\n";
 
-        Parser parser(source, "ternary.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "ternary.glsl") == expected);
     }
     { // switch
         static const char source[] = "void test() {\n"
@@ -718,13 +654,7 @@ void test_hlsl_writer() {
                                        "    }\n"
                                        "}\n";
 
-        Parser parser(source, "switch.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "switch.glsl") == expected);
     }
     { // vector stuff
         static const char source[] = "const vec4 g = {1.0, 2.0, 3.0, 4.0};\n"
@@ -745,13 +675,7 @@ void test_hlsl_writer() {
             "    return 0.212670997 * color[0] + 0.715160012 * color.y + 0.0721689984 * color.z;\n"
             "}\n";
 
-        Parser parser(source, "vector.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "vector.glsl") == expected);
     }
     { // push constant
         static const char source[] = "struct Params {\n"
@@ -775,13 +699,7 @@ void test_hlsl_writer() {
                                        "    Params g_params : packoffset(c0);\n"
                                        "};\n";
 
-        Parser parser(source, "push_constant.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "push_constant.glsl") == expected);
     }
     { // uniform buffer
         static const char source[] = "struct atmosphere_params_t {\n"
@@ -803,138 +721,13 @@ void test_hlsl_writer() {
                                        "    atmosphere_params_t g_atmosphere_params : packoffset(c0);\n"
                                        "};\n";
 
-        Parser parser(source, "push_constant.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "push_constant.glsl") == expected);
     }
     { // compute shader variables
         static const char source[] = "layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;\n"
                                      "void main() {\n"
                                      "}\n";
         static const char expected[] =
-            "uint4 texelFetch(Texture2D<uint4> t, int2 P, int lod) {\n"
-            "    return t.Load(int3(P, lod));\n"
-            "}\n"
-            "float4 texelFetch(Texture2D<float4> t, int2 P, int lod) {\n"
-            "    return t.Load(int3(P, lod));\n"
-            "}\n"
-            "float4 texelFetch(Texture2D<float4> t, SamplerState s, int2 P, int lod) {\n"
-            "    return t.Load(int3(P, lod));\n"
-            "}\n"
-            "float4 texelFetch(Texture2DArray<float4> t, SamplerState s, int3 P, int lod) {\n"
-            "    return t.Load(int4(P, lod));\n"
-            "}\n"
-            "float4 texelFetch(Texture3D<float4> t, SamplerState s, int3 P, int lod) {\n"
-            "    return t.Load(int4(P, lod));\n"
-            "}\n"
-            "float4 textureLod(Texture2D<float4> t, SamplerState s, float2 P, float lod) {\n"
-            "    return t.SampleLevel(s, P, lod);\n"
-            "}\n"
-            "float4 textureLod(Texture3D<float4> t, SamplerState s, float3 P, float lod) {\n"
-            "    return t.SampleLevel(s, P, lod);\n"
-            "}\n"
-            "float4 textureLod(Texture2DArray<float4> t, SamplerState s, float3 P, float lod) {\n"
-            "    return t.SampleLevel(s, P, lod);\n"
-            "}\n"
-            "float4 textureLodOffset(Texture2D<float4> t, SamplerState s, float2 P, float lod, int2 offset) {\n"
-            "    return t.SampleLevel(s, P, lod, offset);\n"
-            "}\n"
-            "int2 textureSize(Texture2D<float4> t, int lod) {\n"
-            "    uint2 ret;\n"
-            "    uint NumberOfLevels;\n"
-            "    t.GetDimensions(lod, ret.x, ret.y, NumberOfLevels);\n"
-            "    return ret;\n"
-            "}\n"
-            "float4 imageLoad(RWTexture2D<float> image, int2 P) { return float4(image[P], 0, 0, 0); }\n"
-            "float4 imageLoad(RWTexture2D<float2> image, int2 P) { return float4(image[P], 0, 0); }\n"
-            "float4 imageLoad(RWTexture2D<float4> image, int2 P) { return image[P]; }\n"
-            "int4 imageLoad(RWTexture2D<int> image, int2 P) { return int4(image[P], 0, 0, 0); }\n"
-            "int4 imageLoad(RWTexture2D<int2> image, int2 P) { return int4(image[P], 0, 0); }\n"
-            "int4 imageLoad(RWTexture2D<int4> image, int2 P) { return image[P]; }\n"
-            "uint4 imageLoad(RWTexture2D<uint> image, int2 P) { return uint4(image[P], 0, 0, 0); }\n"
-            "uint4 imageLoad(RWTexture2D<uint2> image, int2 P) { return uint4(image[P], 0, 0); }\n"
-            "uint4 imageLoad(RWTexture2D<uint4> image, int2 P) { return image[P]; }\n"
-            "void imageStore(RWTexture2D<float> image, int2 P, float4 data) { image[P] = data.x; }\n"
-            "void imageStore(RWTexture2D<float2> image, int2 P, float4 data) { image[P] = data.xy; }\n"
-            "void imageStore(RWTexture2D<float4> image, int2 P, float4 data) { image[P] = data; }\n"
-            "void imageStore(RWTexture2D<int> image, int2 P, int4 data) { image[P] = data.x; }\n"
-            "void imageStore(RWTexture2D<int2> image, int2 P, int4 data) { image[P] = data.xy; }\n"
-            "void imageStore(RWTexture2D<int4> image, int2 P, int4 data) { image[P] = data; }\n"
-            "void imageStore(RWTexture2D<uint> image, int2 P, uint4 data) { image[P] = data.x; }\n"
-            "void imageStore(RWTexture2D<uint2> image, int2 P, uint4 data) { image[P] = data.xy; }\n"
-            "void imageStore(RWTexture2D<uint4> image, int2 P, uint4 data) { image[P] = data; }\n"
-            "static const uint gl_RayQueryCandidateIntersectionTriangleEXT = CANDIDATE_NON_OPAQUE_TRIANGLE;\n"
-            "static const uint gl_RayQueryCandidateIntersectionAABBEXT = CANDIDATE_PROCEDURAL_PRIMITIVE;\n"
-            "static const uint gl_RayQueryCommittedIntersectionNoneEXT = COMMITTED_NOTHING;\n"
-            "static const uint gl_RayQueryCommittedIntersectionTriangleEXT = COMMITTED_TRIANGLE_HIT;\n"
-            "static const uint gl_RayQueryCommittedIntersectionGeneratedEXT = "
-            "COMMITTED_PROCEDURAL_PRIMITIVE_HIT;\n"
-            "void rayQueryInitializeEXT(RayQuery<RAY_FLAG_NONE> rayQuery,\n"
-            "                           RaytracingAccelerationStructure topLevel,\n"
-            "                           uint rayFlags, uint cullMask, float3 origin, float tMin,\n"
-            "                           float3 direction, float tMax) {\n"
-            "    RayDesc desc = {origin, tMin, direction, tMax};\n"
-            "    rayQuery.TraceRayInline(topLevel, rayFlags, cullMask, desc);\n"
-            "}\n"
-            "bool rayQueryProceedEXT(RayQuery<RAY_FLAG_NONE> q) {\n"
-            "    return q.Proceed();\n"
-            "}\n"
-            "uint rayQueryGetIntersectionTypeEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-            "    if (committed) {\n"
-            "        return q.CommittedStatus();\n"
-            "    } else {\n"
-            "        return q.CandidateType();\n"
-            "    }\n"
-            "}\n"
-            "void rayQueryConfirmIntersectionEXT(RayQuery<RAY_FLAG_NONE> q) {\n"
-            "    q.CommitNonOpaqueTriangleHit();\n"
-            "}\n"
-            "int rayQueryGetIntersectionInstanceCustomIndexEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-            "    if (committed) {\n"
-            "        return q.CommittedInstanceID();\n"
-            "    } else {\n"
-            "        return q.CandidateInstanceID();\n"
-            "    }\n"
-            "}\n"
-            "int rayQueryGetIntersectionInstanceIdEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-            "    if (committed) {\n"
-            "        return q.CommittedInstanceIndex();\n"
-            "    } else {\n"
-            "        return q.CandidateInstanceIndex();\n"
-            "    }\n"
-            "}\n"
-            "int rayQueryGetIntersectionPrimitiveIndexEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-            "    if (committed) {\n"
-            "        return q.CommittedPrimitiveIndex();\n"
-            "    } else {\n"
-            "        return q.CandidatePrimitiveIndex();\n"
-            "    }\n"
-            "}\n"
-            "bool rayQueryGetIntersectionFrontFaceEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-            "    if (committed) {\n"
-            "        return q.CommittedTriangleFrontFace();\n"
-            "    } else {\n"
-            "        return q.CandidateTriangleFrontFace();\n"
-            "    }\n"
-            "}\n"
-            "float2 rayQueryGetIntersectionBarycentricsEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-            "    if (committed) {\n"
-            "        return q.CommittedTriangleBarycentrics();\n"
-            "    } else {\n"
-            "        return q.CandidateTriangleBarycentrics();\n"
-            "    }\n"
-            "}\n"
-            "float rayQueryGetIntersectionTEXT(RayQuery<RAY_FLAG_NONE> q, bool committed) {\n"
-            "    if (committed) {\n"
-            "        return q.CommittedRayT();\n"
-            "    } else {\n"
-            "        return q.CandidateTriangleRayT();\n"
-            "    }\n"
-            "}\n"
             "static uint3 gl_WorkGroupID;\n"
             "static uint3 gl_LocalInvocationID;\n"
             "static uint3 gl_GlobalInvocationID;\n"
@@ -957,13 +750,7 @@ void test_hlsl_writer() {
             "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
             "}\n";
 
-        Parser parser(source, "compute.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "compute.glsl") == expected);
     }
     { // RO buffer
         static const char source[] = "layout(std430, binding = 0) readonly buffer Test {\n"
@@ -999,45 +786,13 @@ void test_hlsl_writer() {
                                        "    data_t s;\n"
                                        "};\n"
                                        "ByteAddressBuffer g_test : register(t0, space0);\n"
-                                       "uint __load_g_test(int index) {\n"
-                                       "    uint ret;\n"
-                                       "    ret = g_test.Load(index * 4 + 0);\n"
-                                       "    return ret;\n"
-                                       "}\n"
                                        "ByteAddressBuffer g_test2 : register(t1, space0);\n"
-                                       "data2_t __load_g_test2(int index) {\n"
-                                       "    data2_t ret;\n"
-                                       "    ret.arr[0] = asfloat(g_test2.Load(index * 64 + 0));\n"
-                                       "    ret.arr[1] = asfloat(g_test2.Load(index * 64 + 4));\n"
-                                       "    ret.arr[2] = asfloat(g_test2.Load(index * 64 + 8));\n"
-                                       "    ret.i = g_test2.Load(index * 64 + 12);\n"
-                                       "    ret.h[0] = g_test2.Load<half>(index * 64 + 16);\n"
-                                       "    ret.h[1] = g_test2.Load<half>(index * 64 + 18);\n"
-                                       "    ret.h[2] = g_test2.Load<half>(index * 64 + 20);\n"
-                                       "    ret.h[3] = g_test2.Load<half>(index * 64 + 22);\n"
-                                       "    ret.h[4] = g_test2.Load<half>(index * 64 + 24);\n"
-                                       "    ret.h[5] = g_test2.Load<half>(index * 64 + 26);\n"
-                                       "    ret.h[6] = g_test2.Load<half>(index * 64 + 28);\n"
-                                       "    ret.h[7] = g_test2.Load<half>(index * 64 + 30);\n"
-                                       "    ret.s.arr[0] = asfloat(g_test2.Load(index * 64 + 32));\n"
-                                       "    ret.s.arr[1] = asfloat(g_test2.Load(index * 64 + 36));\n"
-                                       "    ret.s.arr[2] = asfloat(g_test2.Load(index * 64 + 40));\n"
-                                       "    ret.s.i = g_test2.Load(index * 64 + 44);\n"
-                                       "    ret.s.v = asfloat(g_test2.Load4(index * 64 + 48));\n"
-                                       "    return ret;\n"
-                                       "}\n"
                                        "void test() {\n"
-                                       "    uint t = __load_g_test(42);\n"
-                                       "    float f = __load_g_test2(24).s.arr[1];\n"
+                                       "    uint t = g_test.Load(42 * 4 + 0);\n"
+                                       "    float f = asfloat(g_test2.Load(1 * 4 + 24 * 64 + 32));\n"
                                        "}\n";
 
-        Parser parser(source, "readonly_buffer.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "readonly_buffer.glsl") == expected);
     }
     { // RW buffer
         static const char source[] = "layout(std430, binding = 0) buffer Test {\n"
@@ -1072,49 +827,18 @@ void test_hlsl_writer() {
                                        "    data_t s;\n"
                                        "};\n"
                                        "RWByteAddressBuffer g_test : register(u0, space0);\n"
-                                       "uint __load_g_test(int index) {\n"
-                                       "    uint ret;\n"
-                                       "    ret = g_test.Load(index * 4 + 0);\n"
-                                       "    return ret;\n"
-                                       "}\n"
                                        "RWByteAddressBuffer g_test2 : register(u1, space0);\n"
-                                       "data2_t __load_g_test2(int index) {\n"
-                                       "    data2_t ret;\n"
-                                       "    ret.arr[0] = asfloat(g_test2.Load(index * 48 + 0));\n"
-                                       "    ret.arr[1] = asfloat(g_test2.Load(index * 48 + 4));\n"
-                                       "    ret.arr[2] = asfloat(g_test2.Load(index * 48 + 8));\n"
-                                       "    ret.i = g_test2.Load(index * 48 + 12);\n"
-                                       "    ret.h[0] = g_test2.Load<half>(index * 48 + 16);\n"
-                                       "    ret.h[1] = g_test2.Load<half>(index * 48 + 18);\n"
-                                       "    ret.h[2] = g_test2.Load<half>(index * 48 + 20);\n"
-                                       "    ret.h[3] = g_test2.Load<half>(index * 48 + 22);\n"
-                                       "    ret.h[4] = g_test2.Load<half>(index * 48 + 24);\n"
-                                       "    ret.h[5] = g_test2.Load<half>(index * 48 + 26);\n"
-                                       "    ret.h[6] = g_test2.Load<half>(index * 48 + 28);\n"
-                                       "    ret.h[7] = g_test2.Load<half>(index * 48 + 30);\n"
-                                       "    ret.s.arr[0] = asfloat(g_test2.Load(index * 48 + 32));\n"
-                                       "    ret.s.arr[1] = asfloat(g_test2.Load(index * 48 + 36));\n"
-                                       "    ret.s.arr[2] = asfloat(g_test2.Load(index * 48 + 40));\n"
-                                       "    ret.s.i = g_test2.Load(index * 48 + 44);\n"
-                                       "    return ret;\n"
-                                       "}\n"
                                        "void test() {\n"
-                                       "    uint t = __load_g_test(42);\n"
+                                       "    uint t = g_test.Load(42 * 4 + 0);\n"
                                        "    uint __temp0 = t + 1;\n"
                                        "    uint __offset0 = 42 * 4 + 0;\n"
                                        "    g_test.Store(__offset0 + 0, __temp0);\n"
                                        "    uint __temp1 = t + 1;\n"
-                                       "    uint __offset1 = 24 * 48 + 32;\n"
+                                       "    uint __offset1 = 24 * 48 + 44;\n"
                                        "    g_test2.Store(__offset1 + 0, __temp1);\n"
                                        "}\n";
 
-        Parser parser(source, "readwrite_buffer.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "readwrite_buffer.glsl") == expected);
     }
     { // SSBO write in a non-compound if/else body (issue #220)
         static const char source[] = "layout(std430, binding = 0) buffer Test {\n"
@@ -1133,11 +857,6 @@ void test_hlsl_writer() {
                                      "}\n";
         static const char expected[] = "groupshared uint g_shared[16];\n"
                                        "RWByteAddressBuffer g_test : register(u0, space0);\n"
-                                       "uint __load_g_test(int index) {\n"
-                                       "    uint ret;\n"
-                                       "    ret = g_test.Load(index * 4 + 0);\n"
-                                       "    return ret;\n"
-                                       "}\n"
                                        "void test() {\n"
                                        "    uint i = 0;\n"
                                        "    uint n = 0;\n"
@@ -1153,13 +872,7 @@ void test_hlsl_writer() {
                                        "    }\n"
                                        "}\n";
 
-        Parser parser(source, "if_else_ssbo_write.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
-
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "if_else_ssbo_write.glsl") == expected);
     }
     { // atomic operations
         static const char source[] = "layout(std430, binding = 0) buffer Test {\n"
@@ -1174,11 +887,6 @@ void test_hlsl_writer() {
                                      "}\n";
         static const char expected[] = "groupshared uint g_shared[16];\n"
                                        "RWByteAddressBuffer g_test : register(u0, space0);\n"
-                                       "uint __load_g_test(int index) {\n"
-                                       "    uint ret;\n"
-                                       "    ret = g_test.Load(index * 4 + 0);\n"
-                                       "    return ret;\n"
-                                       "}\n"
                                        "void test() {\n"
                                        "    uint __temp0;\n"
                                        "    InterlockedAdd(g_shared[1], 1u, __temp0);\n"
@@ -1187,20 +895,1209 @@ void test_hlsl_writer() {
                                        "    InterlockedAdd(g_shared[2], 2u, __temp1);\n"
                                        "    v = __temp1;\n"
                                        "    uint __temp2;\n"
-                                       "    g_test.InterlockedAdd(4 * 3, 1u, __temp2);\n"
+                                       "    g_test.InterlockedAdd(3 * 4 + 0, 1u, __temp2);\n"
                                        "    uint vv = __temp2;\n"
                                        "    uint __temp3;\n"
-                                       "    g_test.InterlockedAdd(4 * 4, 2u, __temp3);\n"
+                                       "    g_test.InterlockedAdd(4 * 4 + 0, 2u, __temp3);\n"
                                        "    vv = __temp3;\n"
                                        "}\n";
 
-        Parser parser(source, "atomic.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
+        require(Write_HLSL_Text(source, "atomic.glsl") == expected);
+    }
+    { // multi-dim SSBO array leaf reads, stores and atomics index with all dimension strides
+        static const char source[] = "layout(std430, binding = 0) buffer G {\n"
+                                     "    uint grid[][4];\n"
+                                     "};\n"
+                                     "shared uint sh[2][3];\n"
+                                     "void test(uint i, uint j) {\n"
+                                     "    uint v = grid[i][j] + sh[i][j];\n"
+                                     "    grid[i][j] = v;\n"
+                                     "    atomicAdd(grid[i][j], 1u);\n"
+                                     "}\n";
+        static const char expected[] = "groupshared uint sh[2][3];\n"
+                                       "RWByteAddressBuffer grid : register(u0, space0);\n"
+                                       "void test(uint i, uint j) {\n"
+                                       "    uint v = grid.Load(j * 4 + i * 16 + 0) + sh[i][j];\n"
+                                       "    uint __temp0 = v;\n"
+                                       "    uint __offset0 = j * 4 + i * 16 + 0;\n"
+                                       "    grid.Store(__offset0 + 0, __temp0);\n"
+                                       "    uint __temp1;\n"
+                                       "    grid.InterlockedAdd(j * 4 + i * 16 + 0, 1u, __temp1);\n"
+                                       "    __temp1;\n"
+                                       "}\n";
 
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "multidim_ssbo.glsl") == expected);
+    }
+    { // multi-dim SSBO array whole-element reads and stores are aggregate-hoisted
+        static const char source[] = "struct s_t {\n"
+                                     "    uint a;\n"
+                                     "    vec4 b;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 0) buffer G {\n"
+                                     "    s_t arr[][2];\n"
+                                     "};\n"
+                                     "void test(uint i, uint j) {\n"
+                                     "    s_t s = arr[i][j];\n"
+                                     "    arr[i][j] = s;\n"
+                                     "}\n";
+        static const char expected[] = "struct s_t {\n"
+                                       "    uint a;\n"
+                                       "    float4 b;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer arr : register(u0, space0);\n"
+                                       "void test(uint i, uint j) {\n"
+                                       "    uint __offset0 = j * 32 + i * 64 + 0;\n"
+                                       "    s_t __load0;\n"
+                                       "    __load0.a = arr.Load(__offset0 + 0);\n"
+                                       "    __load0.b = asfloat(arr.Load4(__offset0 + 16));\n"
+                                       "    s_t s = __load0;\n"
+                                       "    s_t __temp1 = s;\n"
+                                       "    uint __offset1 = j * 32 + i * 64 + 0;\n"
+                                       "    arr.Store(__offset1 + 0, __temp1.a);\n"
+                                       "    arr.Store4(__offset1 + 16, asuint(__temp1.b));\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "multidim_ssbo_struct.glsl") == expected);
+    }
+    { // short-circuit operators keep hoisted statements inside the skipped operand
+        static const char source[] = "layout(std430, binding = 0) buffer G {\n"
+                                     "    uint vals[];\n"
+                                     "};\n"
+                                     "shared uint sh[16];\n"
+                                     "void test(uint i) {\n"
+                                     "    if (i > 0u && atomicAdd(sh[i], 1u) > 2u) {\n"
+                                     "        vals[i] = 1u;\n"
+                                     "    }\n"
+                                     "    if (i == 0u || atomicAdd(sh[0], 1u) > 0u) {\n"
+                                     "        vals[i] = 2u;\n"
+                                     "    }\n"
+                                     "}\n";
+        static const char expected[] = "groupshared uint sh[16];\n"
+                                       "RWByteAddressBuffer vals : register(u0, space0);\n"
+                                       "void test(uint i) {\n"
+                                       "    bool __sc1 = i > 0u;\n"
+                                       "    if (__sc1) {\n"
+                                       "        uint __temp0;\n"
+                                       "        InterlockedAdd(sh[i], 1u, __temp0);\n"
+                                       "        __sc1 = __temp0 > 2u;\n"
+                                       "    }\n"
+                                       "    if (__sc1) {\n"
+                                       "        uint __temp2 = 1u;\n"
+                                       "        uint __offset2 = i * 4 + 0;\n"
+                                       "        vals.Store(__offset2 + 0, __temp2);\n"
+                                       "    }\n"
+                                       "    bool __sc4 = i == 0u;\n"
+                                       "    if (!__sc4) {\n"
+                                       "        uint __temp3;\n"
+                                       "        InterlockedAdd(sh[0], 1u, __temp3);\n"
+                                       "        __sc4 = __temp3 > 0u;\n"
+                                       "    }\n"
+                                       "    if (__sc4) {\n"
+                                       "        uint __temp5 = 2u;\n"
+                                       "        uint __offset5 = i * 4 + 0;\n"
+                                       "        vals.Store(__offset5 + 0, __temp5);\n"
+                                       "    }\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "short_circuit.glsl") == expected);
+    }
+    { // ternary arms capture their values and hoists into the arm that runs
+        static const char source[] = "shared uint sh[16];\n"
+                                     "layout(binding = 3) uniform sampler2D tex;\n"
+                                     "void test(bool c, uint i) {\n"
+                                     "    uint v = c ? atomicAdd(sh[i], 3u) : 0u;\n"
+                                     "    uint w = c ? 7u : atomicAdd(sh[0], 1u);\n"
+                                     "    uint t = c && textureSize(tex, 0).x > 16 ? 1u : 2u;\n"
+                                     "}\n";
+        static const char expected[] = "groupshared uint sh[16];\n"
+                                       "Texture2D<float4> tex : register(t3, space0);\n"
+                                       "SamplerState tex_sampler : register(s3, space0);\n"
+                                       "void test(bool c, uint i) {\n"
+                                       "    uint __tern1;\n"
+                                       "    if (c) {\n"
+                                       "        uint __temp0;\n"
+                                       "        InterlockedAdd(sh[i], 3u, __temp0);\n"
+                                       "        __tern1 = __temp0;\n"
+                                       "    } else {\n"
+                                       "        __tern1 = 0u;\n"
+                                       "    }\n"
+                                       "    uint v = __tern1;\n"
+                                       "    uint __tern3;\n"
+                                       "    if (c) {\n"
+                                       "        __tern3 = 7u;\n"
+                                       "    } else {\n"
+                                       "        uint __temp2;\n"
+                                       "        InterlockedAdd(sh[0], 1u, __temp2);\n"
+                                       "        __tern3 = __temp2;\n"
+                                       "    }\n"
+                                       "    uint w = __tern3;\n"
+                                       "    bool __sc5 = c;\n"
+                                       "    if (__sc5) {\n"
+                                       "        uint2 __texsize4;\n"
+                                       "        uint __numlevels4;\n"
+                                       "        tex.GetDimensions(0, __texsize4.x, __texsize4.y, __numlevels4);\n"
+                                       "        __sc5 = int2(__texsize4).x > 16;\n"
+                                       "    }\n"
+                                       "    uint t = __sc5 ? 1u : 2u;\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "ternary_hoisting.glsl") == expected);
+    }
+    { // a loop condition's guarded operand runs once per iteration, before the exit check
+        static const char source[] = "shared uint sh[16];\n"
+                                     "void test(uint j) {\n"
+                                     "    while (j < 4u && atomicAdd(sh[1], 1u) < 10u) {\n"
+                                     "        j++;\n"
+                                     "    }\n"
+                                     "}\n";
+        static const char expected[] = "groupshared uint sh[16];\n"
+                                       "void test(uint j) {\n"
+                                       "    while (true) {\n"
+                                       "        bool __sc1 = j < 4u;\n"
+                                       "        if (__sc1) {\n"
+                                       "            uint __temp0;\n"
+                                       "            InterlockedAdd(sh[1], 1u, __temp0);\n"
+                                       "            __sc1 = __temp0 < 10u;\n"
+                                       "        }\n"
+                                       "        if (!__sc1) break;\n"
+                                       "        j++;\n"
+                                       "    }\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "short_circuit_loop.glsl") == expected);
+    }
+    { // atomics in conditions, call arguments, store values, loop conditions and return
+        static const char source[] = "layout(std430, binding = 0) buffer Test {\n"
+                                     "    uint g_test[];\n"
+                                     "};\n"
+                                     "shared uint g_shared[16];\n"
+                                     "uint test() {\n"
+                                     "    if (atomicAdd(g_shared[1], 1u) == 0u) {\n"
+                                     "        g_test[0] = 1u;\n"
+                                     "    }\n"
+                                     "    g_test[1] = atomicAdd(g_shared[2], 2u);\n"
+                                     "    uint m = max(atomicAdd(g_test[2], 1u), 4u);\n"
+                                     "    while (atomicAdd(g_shared[4], 1u) < 8u) {\n"
+                                     "        m++;\n"
+                                     "    }\n"
+                                     "    return atomicAdd(g_shared[3], m);\n"
+                                     "}\n";
+        static const char expected[] = "groupshared uint g_shared[16];\n"
+                                       "RWByteAddressBuffer g_test : register(u0, space0);\n"
+                                       "uint test() {\n"
+                                       "    uint __temp0;\n"
+                                       "    InterlockedAdd(g_shared[1], 1u, __temp0);\n"
+                                       "    if (__temp0 == 0u) {\n"
+                                       "        uint __temp1 = 1u;\n"
+                                       "        uint __offset1 = 0 * 4 + 0;\n"
+                                       "        g_test.Store(__offset1 + 0, __temp1);\n"
+                                       "    }\n"
+                                       "    uint __temp3;\n"
+                                       "    InterlockedAdd(g_shared[2], 2u, __temp3);\n"
+                                       "    uint __temp2 = __temp3;\n"
+                                       "    uint __offset2 = 1 * 4 + 0;\n"
+                                       "    g_test.Store(__offset2 + 0, __temp2);\n"
+                                       "    uint __temp4;\n"
+                                       "    g_test.InterlockedAdd(2 * 4 + 0, 1u, __temp4);\n"
+                                       "    uint m = max(__temp4, 4u);\n"
+                                       "    while (true) {\n"
+                                       "        uint __temp5;\n"
+                                       "        InterlockedAdd(g_shared[4], 1u, __temp5);\n"
+                                       "        if (!(__temp5 < 8u)) break;\n"
+                                       "        m++;\n"
+                                       "    }\n"
+                                       "    uint __temp6;\n"
+                                       "    InterlockedAdd(g_shared[3], m, __temp6);\n"
+                                       "    return __temp6;\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "atomic_positions.glsl") == expected);
+    }
+    { // atomics in for init and step
+        static const char source[] = "shared uint g_shared[16];\n"
+                                     "void test() {\n"
+                                     "    uint m = 0u;\n"
+                                     "    for (uint i = atomicAdd(g_shared[5], 1u); i < 4u; i += atomicAdd(g_shared[6], 1u)) {\n"
+                                     "        m++;\n"
+                                     "    }\n"
+                                     "}\n";
+        static const char expected[] = "groupshared uint g_shared[16];\n"
+                                       "void test() {\n"
+                                       "    uint m = 0u;\n"
+                                       "    uint __temp0;\n"
+                                       "    InterlockedAdd(g_shared[5], 1u, __temp0);\n"
+                                       "    bool __first2 = true;\n"
+                                       "    for (uint i = __temp0;;) {\n"
+                                       "        if (!__first2) {\n"
+                                       "            uint __temp1;\n"
+                                       "            InterlockedAdd(g_shared[6], 1u, __temp1);\n"
+                                       "            i += __temp1;\n"
+                                       "        }\n"
+                                       "        __first2 = false;\n"
+                                       "        if (!(i < 4u)) break;\n"
+                                       "        m++;\n"
+                                       "    }\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "atomic_for.glsl") == expected);
+    }
+    { // leaf-type load inlining coverage (int64_t/uint64_t/vec2/vec4/float16_t)
+        static const char source[] = "struct leaf_t {\n"
+                                     "    int64_t a;\n"
+                                     "    uint64_t b;\n"
+                                     "    vec2 c;\n"
+                                     "    vec4 d;\n"
+                                     "    float16_t e;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 0) buffer Test {\n"
+                                     "    leaf_t g_leaf[];\n"
+                                     "};\n"
+                                     "void test() {\n"
+                                     "    int64_t a = g_leaf[0].a;\n"
+                                     "    uint64_t b = g_leaf[0].b;\n"
+                                     "    vec2 c = g_leaf[0].c;\n"
+                                     "    vec4 d = g_leaf[0].d;\n"
+                                     "    float16_t e = g_leaf[0].e;\n"
+                                     "}\n";
+        static const char expected[] = "struct leaf_t {\n"
+                                       "    int64_t a;\n"
+                                       "    uint64_t b;\n"
+                                       "    float2 c;\n"
+                                       "    float4 d;\n"
+                                       "    half e;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer g_leaf : register(u0, space0);\n"
+                                       "void test() {\n"
+                                       "    int64_t a = g_leaf.Load<int64_t>(0 * 64 + 0);\n"
+                                       "    uint64_t b = g_leaf.Load<uint64_t>(0 * 64 + 8);\n"
+                                       "    float2 c = asfloat(g_leaf.Load2(0 * 64 + 16));\n"
+                                       "    float4 d = asfloat(g_leaf.Load4(0 * 64 + 32));\n"
+                                       "    half e = g_leaf.Load<half>(0 * 64 + 48);\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "leaf_types.glsl") == expected);
+    }
+    { // whole-struct read is hoisted into per-field loads while a leaf read on the same buffer inlines
+        static const char source[] = "struct data2_t {\n"
+                                     "    float arr[3];\n"
+                                     "    uint i;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 0) buffer Test2 {\n"
+                                     "    data2_t g_test2[];\n"
+                                     "};\n"
+                                     "void test() {\n"
+                                     "    uint k = 0;\n"
+                                     "    data2_t d = g_test2[k];\n"
+                                     "    uint t = g_test2[k].i;\n"
+                                     "}\n";
+        static const char expected[] = "struct data2_t {\n"
+                                       "    float arr[3];\n"
+                                       "    uint i;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer g_test2 : register(u0, space0);\n"
+                                       "void test() {\n"
+                                       "    uint k = 0;\n"
+                                       "    uint __offset0 = k * 16 + 0;\n"
+                                       "    data2_t __load0;\n"
+                                       "    __load0.arr[0] = asfloat(g_test2.Load(__offset0 + 0));\n"
+                                       "    __load0.arr[1] = asfloat(g_test2.Load(__offset0 + 4));\n"
+                                       "    __load0.arr[2] = asfloat(g_test2.Load(__offset0 + 8));\n"
+                                       "    __load0.i = g_test2.Load(__offset0 + 12);\n"
+                                       "    data2_t d = __load0;\n"
+                                       "    uint t = g_test2.Load(k * 16 + 12);\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "struct_load.glsl") == expected);
+    }
+    { // nested struct and matrix reads are hoisted; matrix column and vector component strides are exact
+        static const char source[] = "struct inner_t {\n"
+                                     "    vec2 uv;\n"
+                                     "    uint id;\n"
+                                     "};\n"
+                                     "struct node_t {\n"
+                                     "    vec4 pos;\n"
+                                     "    mat4 m;\n"
+                                     "    inner_t inn;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 0) readonly buffer Nodes {\n"
+                                     "    node_t nodes[];\n"
+                                     "};\n"
+                                     "layout(std430, binding = 1) buffer Out {\n"
+                                     "    float outv[];\n"
+                                     "};\n"
+                                     "void test() {\n"
+                                     "    uint k = 0;\n"
+                                     "    mat4 m = nodes[k].m;\n"
+                                     "    inner_t inn = nodes[k + 1].inn;\n"
+                                     "    outv[k] = nodes[k].m[2].x + nodes[k].pos[2];\n"
+                                     "}\n";
+        static const char expected[] = "struct inner_t {\n"
+                                       "    float2 uv;\n"
+                                       "    uint id;\n"
+                                       "};\n"
+                                       "struct node_t {\n"
+                                       "    float4 pos;\n"
+                                       "    row_major float4x4 m;\n"
+                                       "    inner_t inn;\n"
+                                       "};\n"
+                                       "ByteAddressBuffer nodes : register(t0, space0);\n"
+                                       "RWByteAddressBuffer outv : register(u1, space0);\n"
+                                       "void test() {\n"
+                                       "    uint k = 0;\n"
+                                       "    uint __offset0 = k * 96 + 16;\n"
+                                       "    row_major float4x4 __load0;\n"
+                                       "    __load0[0] = asfloat(nodes.Load4(__offset0 + 0));\n"
+                                       "    __load0[1] = asfloat(nodes.Load4(__offset0 + 16));\n"
+                                       "    __load0[2] = asfloat(nodes.Load4(__offset0 + 32));\n"
+                                       "    __load0[3] = asfloat(nodes.Load4(__offset0 + 48));\n"
+                                       "    row_major float4x4 m = __load0;\n"
+                                       "    uint __offset1 = (k + 1) * 96 + 80;\n"
+                                       "    inner_t __load1;\n"
+                                       "    __load1.uv = asfloat(nodes.Load2(__offset1 + 0));\n"
+                                       "    __load1.id = nodes.Load(__offset1 + 8);\n"
+                                       "    inner_t inn = __load1;\n"
+                                       "    float __temp2 = asfloat(nodes.Load(2 * 16 + k * 96 + 16)) + "
+                                       "asfloat(nodes.Load(2 * 4 + k * 96 + 0));\n"
+                                       "    uint __offset2 = k * 4 + 0;\n"
+                                       "    outv.Store(__offset2 + 0, asuint(__temp2));\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "nested_struct_load.glsl") == expected);
+    }
+    { // struct reads in return statements, if conditions and else-if conditions are hoisted
+        static const char source[] = "struct data_t {\n"
+                                     "    uint a;\n"
+                                     "    uint b;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 0) buffer Data {\n"
+                                     "    data_t g_data[];\n"
+                                     "};\n"
+                                     "layout(std430, binding = 1) buffer Idx {\n"
+                                     "    uint g_idx[];\n"
+                                     "};\n"
+                                     "uint use(data_t d) {\n"
+                                     "    return d.a + d.b;\n"
+                                     "}\n"
+                                     "data_t pick(uint k) {\n"
+                                     "    if (g_data[k].a == g_data[0].b) {\n"
+                                     "        return g_data[g_idx[k]];\n"
+                                     "    }\n"
+                                     "    return g_data[1];\n"
+                                     "}\n"
+                                     "void test(uint k) {\n"
+                                     "    uint r = 0;\n"
+                                     "    if (k == 0)\n"
+                                     "        r = 1;\n"
+                                     "    else if (use(g_data[k]) > 0u)\n"
+                                     "        r = 2;\n"
+                                     "}\n";
+        static const char expected[] = "struct data_t {\n"
+                                       "    uint a;\n"
+                                       "    uint b;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer g_data : register(u0, space0);\n"
+                                       "RWByteAddressBuffer g_idx : register(u1, space0);\n"
+                                       "uint use(data_t d) {\n"
+                                       "    return d.a + d.b;\n"
+                                       "}\n"
+                                       "data_t pick(uint k) {\n"
+                                       "    if (g_data.Load(k * 8 + 0) == g_data.Load(0 * 8 + 4)) {\n"
+                                       "        uint __offset0 = g_idx.Load(k * 4 + 0) * 8 + 0;\n"
+                                       "        data_t __load0;\n"
+                                       "        __load0.a = g_data.Load(__offset0 + 0);\n"
+                                       "        __load0.b = g_data.Load(__offset0 + 4);\n"
+                                       "        return __load0;\n"
+                                       "    }\n"
+                                       "    uint __offset1 = 1 * 8 + 0;\n"
+                                       "    data_t __load1;\n"
+                                       "    __load1.a = g_data.Load(__offset1 + 0);\n"
+                                       "    __load1.b = g_data.Load(__offset1 + 4);\n"
+                                       "    return __load1;\n"
+                                       "}\n"
+                                       "void test(uint k) {\n"
+                                       "    uint r = 0;\n"
+                                       "    if (k == 0) r = 1; else {\n"
+                                       "        uint __offset2 = k * 8 + 0;\n"
+                                       "        data_t __load2;\n"
+                                       "        __load2.a = g_data.Load(__offset2 + 0);\n"
+                                       "        __load2.b = g_data.Load(__offset2 + 4);\n"
+                                       "        if (use(__load2) > 0u) r = 2;\n"
+                                       "    }\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "struct_load_contexts.glsl") == expected);
+    }
+    { // struct reads in while and for conditions move into the loop body with an exit check
+        static const char source[] = "struct data_t {\n"
+                                     "    uint a;\n"
+                                     "    uint b;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 0) buffer Data {\n"
+                                     "    data_t g_data[];\n"
+                                     "};\n"
+                                     "uint use(data_t d) {\n"
+                                     "    return d.a + d.b;\n"
+                                     "}\n"
+                                     "void test(uint n) {\n"
+                                     "    uint i = 0;\n"
+                                     "    while (use(g_data[i]) < n) {\n"
+                                     "        ++i;\n"
+                                     "    }\n"
+                                     "    for (uint j = 0; use(g_data[j]) < n; ++j) {\n"
+                                     "        i += j;\n"
+                                     "    }\n"
+                                     "}\n";
+        static const char expected[] = "struct data_t {\n"
+                                       "    uint a;\n"
+                                       "    uint b;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer g_data : register(u0, space0);\n"
+                                       "uint use(data_t d) {\n"
+                                       "    return d.a + d.b;\n"
+                                       "}\n"
+                                       "void test(uint n) {\n"
+                                       "    uint i = 0;\n"
+                                       "    while (true) {\n"
+                                       "        uint __offset0 = i * 8 + 0;\n"
+                                       "        data_t __load0;\n"
+                                       "        __load0.a = g_data.Load(__offset0 + 0);\n"
+                                       "        __load0.b = g_data.Load(__offset0 + 4);\n"
+                                       "        if (!(use(__load0) < n)) break;\n"
+                                       "        ++i;\n"
+                                       "    }\n"
+                                       "    for (uint j = 0;; ++j) {\n"
+                                       "        uint __offset1 = j * 8 + 0;\n"
+                                       "        data_t __load1;\n"
+                                       "        __load1.a = g_data.Load(__offset1 + 0);\n"
+                                       "        __load1.b = g_data.Load(__offset1 + 4);\n"
+                                       "        if (!(use(__load1) < n)) break;\n"
+                                       "        i += j;\n"
+                                       "    }\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "struct_load_loops.glsl") == expected);
+    }
+    { // struct reads in do-while conditions and for steps run at the loop top so continue reaches them
+        static const char source[] = "struct data_t {\n"
+                                     "    uint a;\n"
+                                     "    uint b;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 0) buffer Data {\n"
+                                     "    data_t g_data[];\n"
+                                     "};\n"
+                                     "uint use(data_t d) {\n"
+                                     "    return d.a + d.b;\n"
+                                     "}\n"
+                                     "void test(uint n) {\n"
+                                     "    uint i = 0;\n"
+                                     "    do {\n"
+                                     "        ++i;\n"
+                                     "    } while (use(g_data[i]) < n);\n"
+                                     "    for (uint j = 0; j < n; j += use(g_data[j])) {\n"
+                                     "        i += j;\n"
+                                     "    }\n"
+                                     "}\n";
+        static const char expected[] = "struct data_t {\n"
+                                       "    uint a;\n"
+                                       "    uint b;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer g_data : register(u0, space0);\n"
+                                       "uint use(data_t d) {\n"
+                                       "    return d.a + d.b;\n"
+                                       "}\n"
+                                       "void test(uint n) {\n"
+                                       "    uint i = 0;\n"
+                                       "    bool __first1 = true;\n"
+                                       "    do {\n"
+                                       "        if (!__first1) {\n"
+                                       "            uint __offset0 = i * 8 + 0;\n"
+                                       "            data_t __load0;\n"
+                                       "            __load0.a = g_data.Load(__offset0 + 0);\n"
+                                       "            __load0.b = g_data.Load(__offset0 + 4);\n"
+                                       "            if (!(use(__load0) < n)) break;\n"
+                                       "        }\n"
+                                       "        __first1 = false;\n"
+                                       "        ++i;\n"
+                                       "    }\n"
+                                       "    while (true);\n"
+                                       "    bool __first3 = true;\n"
+                                       "    for (uint j = 0;;) {\n"
+                                       "        if (!__first3) {\n"
+                                       "            uint __offset2 = j * 8 + 0;\n"
+                                       "            data_t __load2;\n"
+                                       "            __load2.a = g_data.Load(__offset2 + 0);\n"
+                                       "            __load2.b = g_data.Load(__offset2 + 4);\n"
+                                       "            j += use(__load2);\n"
+                                       "        }\n"
+                                       "        __first3 = false;\n"
+                                       "        if (!(j < n)) break;\n"
+                                       "        i += j;\n"
+                                       "    }\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "struct_load_do_for.glsl") == expected);
+    }
+    { // std430 layout: vec3 is 16-aligned with a 12-byte size, struct strides are padded to their alignment
+        static const char source[] = "struct a_t {\n"
+                                     "    vec3 a;\n"
+                                     "    float b;\n"
+                                     "    vec3 c;\n"
+                                     "};\n"
+                                     "struct b_t {\n"
+                                     "    vec2 a;\n"
+                                     "    uint b;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 0) buffer A {\n"
+                                     "    a_t g_a[];\n"
+                                     "};\n"
+                                     "layout(std430, binding = 1) buffer B {\n"
+                                     "    b_t g_b[];\n"
+                                     "};\n"
+                                     "layout(std430, binding = 2) buffer C {\n"
+                                     "    uvec3 g_c[];\n"
+                                     "};\n"
+                                     "void test(uint i) {\n"
+                                     "    vec3 x = g_a[i].c;\n"
+                                     "    uint y = g_b[i].b;\n"
+                                     "    uvec3 z = g_c[i];\n"
+                                     "    g_a[i].a = x;\n"
+                                     "}\n";
+        static const char expected[] = "struct a_t {\n"
+                                       "    float3 a;\n"
+                                       "    float b;\n"
+                                       "    float3 c;\n"
+                                       "};\n"
+                                       "struct b_t {\n"
+                                       "    float2 a;\n"
+                                       "    uint b;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer g_a : register(u0, space0);\n"
+                                       "RWByteAddressBuffer g_b : register(u1, space0);\n"
+                                       "RWByteAddressBuffer g_c : register(u2, space0);\n"
+                                       "void test(uint i) {\n"
+                                       "    float3 x = asfloat(g_a.Load3(i * 32 + 16));\n"
+                                       "    uint y = g_b.Load(i * 16 + 8);\n"
+                                       "    uint3 z = g_c.Load3(i * 16 + 0);\n"
+                                       "    float3 __temp0 = x;\n"
+                                       "    uint __offset0 = i * 32 + 0;\n"
+                                       "    g_a.Store3(__offset0 + 0, asuint(__temp0));\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "std430_layout.glsl") == expected);
+    }
+    { // declaration in a while condition becomes a declaration plus an exit check in the loop body
+        static const char source[] = "bool next(uint i) {\n"
+                                     "    return i < 4;\n"
+                                     "}\n"
+                                     "void test() {\n"
+                                     "    uint i = 0;\n"
+                                     "    while (bool ok = next(i)) {\n"
+                                     "        ++i;\n"
+                                     "    }\n"
+                                     "}\n";
+        static const char expected[] = "bool next(uint i) {\n"
+                                       "    return i < 4;\n"
+                                       "}\n"
+                                       "void test() {\n"
+                                       "    uint i = 0;\n"
+                                       "    while (true) {\n"
+                                       "        bool ok = next(i);\n"
+                                       "        if (!ok) break;\n"
+                                       "        ++i;\n"
+                                       "    }\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "while_decl.glsl") == expected);
+    }
+    { // bool members and non-square or non-mat4 matrices follow std430 column strides
+        static const char source[] = "struct s_t {\n"
+                                     "    bool flag;\n"
+                                     "    mat3 m3;\n"
+                                     "    mat2 m2;\n"
+                                     "    mat4x3 m43;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 0) buffer Data {\n"
+                                     "    s_t g_data[];\n"
+                                     "};\n"
+                                     "void test(uint i, bool b, mat3 m) {\n"
+                                     "    bool x = g_data[i].flag;\n"
+                                     "    mat2 y = g_data[i].m2;\n"
+                                     "    g_data[i].flag = b;\n"
+                                     "    g_data[i].m3 = m;\n"
+                                     "}\n";
+        static const char expected[] = "struct s_t {\n"
+                                       "    bool flag;\n"
+                                       "    row_major float3x3 m3;\n"
+                                       "    row_major float2x2 m2;\n"
+                                       "    row_major float4x3 m43;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer g_data : register(u0, space0);\n"
+                                       "void test(uint i, bool b, row_major float3x3 m) {\n"
+                                       "    bool x = g_data.Load(i * 144 + 0) != 0;\n"
+                                       "    uint __offset0 = i * 144 + 64;\n"
+                                       "    row_major float2x2 __load0;\n"
+                                       "    __load0[0] = asfloat(g_data.Load2(__offset0 + 0));\n"
+                                       "    __load0[1] = asfloat(g_data.Load2(__offset0 + 8));\n"
+                                       "    row_major float2x2 y = __load0;\n"
+                                       "    bool __temp1 = b;\n"
+                                       "    uint __offset1 = i * 144 + 0;\n"
+                                       "    g_data.Store(__offset1 + 0, uint(__temp1));\n"
+                                       "    row_major float3x3 __temp2 = m;\n"
+                                       "    uint __offset2 = i * 144 + 16;\n"
+                                       "    g_data.Store3(__offset2 + 0, asuint(__temp2[0]));\n"
+                                       "    g_data.Store3(__offset2 + 16, asuint(__temp2[1]));\n"
+                                       "    g_data.Store3(__offset2 + 32, asuint(__temp2[2]));\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "bool_matrix_layout.glsl") == expected);
+    }
+    { // mat4 and float vector stores are split into per-column Store4 calls
+        static const char source[] = "struct xform_t {\n"
+                                     "    vec4 pos;\n"
+                                     "    mat4 m;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 0) buffer Data {\n"
+                                     "    xform_t g_data[];\n"
+                                     "};\n"
+                                     "void test(uint i, mat4 m, vec4 p) {\n"
+                                     "    g_data[i].m = m;\n"
+                                     "    g_data[i].pos = p;\n"
+                                     "}\n";
+        static const char expected[] = "struct xform_t {\n"
+                                       "    float4 pos;\n"
+                                       "    row_major float4x4 m;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer g_data : register(u0, space0);\n"
+                                       "void test(uint i, row_major float4x4 m, float4 p) {\n"
+                                       "    row_major float4x4 __temp0 = m;\n"
+                                       "    uint __offset0 = i * 80 + 16;\n"
+                                       "    g_data.Store4(__offset0 + 0, asuint(__temp0[0]));\n"
+                                       "    g_data.Store4(__offset0 + 16, asuint(__temp0[1]));\n"
+                                       "    g_data.Store4(__offset0 + 32, asuint(__temp0[2]));\n"
+                                       "    g_data.Store4(__offset0 + 48, asuint(__temp0[3]));\n"
+                                       "    float4 __temp1 = p;\n"
+                                       "    uint __offset1 = i * 80 + 0;\n"
+                                       "    g_data.Store4(__offset1 + 0, asuint(__temp1));\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "mat4_store.glsl") == expected);
+    }
+    { // std430 double/dmat/bvec/64-bit-vec members: typed Load<double>/Store<double> scalars and
+      // component-decomposed aggregate vectors; scalar matrix ctors expand to a diagonal
+        static const char source[] = "struct test_wide_t {\n"
+                                     "    float f;\n"
+                                     "    double d;\n"
+                                     "    bvec3 b;\n"
+                                     "    dmat2 m2;\n"
+                                     "    dvec3 dv;\n"
+                                     "    int64_t i64;\n"
+                                     "    bvec2 bv2;\n"
+                                     "    u64vec4 uv4;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 0) buffer Wide {\n"
+                                     "    test_wide_t test_data[];\n"
+                                     "};\n"
+                                     "layout(std430, binding = 1) buffer Mats {\n"
+                                     "    dmat3x2 test_mats[];\n"
+                                     "};\n"
+                                     "layout(local_size_x = 2, local_size_y = 2) in;\n"
+                                     "void main() {\n"
+                                     "    int i = int(gl_GlobalInvocationID.x);\n"
+                                     "    double a = test_data[i].d;\n"
+                                     "    double y = test_data[i].dv.y;\n"
+                                     "    bool bb = test_data[i].b.z;\n"
+                                     "    test_wide_t w = test_data[0];\n"
+                                     "    dvec3 dv = test_data[1].dv;\n"
+                                     "    dmat2 m2 = test_data[2].m2;\n"
+                                     "    test_data[i].d = a + y + double(bb);\n"
+                                     "    test_data[i].b.x = a > 0.0;\n"
+                                     "    test_data[i].dv = dvec3(1.0, 2.0, 3.0);\n"
+                                     "    test_data[i].m2 = dmat2(4.0);\n"
+                                     "    test_mats[i] = dmat3x2(2.0);\n"
+                                     "    test_data[3] = w;\n"
+                                     "}\n";
+        static const char expected[] = "static uint3 gl_WorkGroupID;\n"
+                                       "static uint3 gl_LocalInvocationID;\n"
+                                       "static uint3 gl_GlobalInvocationID;\n"
+                                       "static uint gl_LocalInvocationIndex;\n"
+                                       "static uint gl_SubgroupSize;\n"
+                                       "static uint gl_SubgroupInvocationID;\n"
+                                       "struct test_wide_t {\n"
+                                       "    float f;\n"
+                                       "    double d;\n"
+                                       "    bool3 b;\n"
+                                       "    row_major double2x2 m2;\n"
+                                       "    double3 dv;\n"
+                                       "    int64_t i64;\n"
+                                       "    bool2 bv2;\n"
+                                       "    uint64_t4 uv4;\n"
+                                       "};\n"
+                                       "struct GLSLX_Input {\n"
+                                       "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+                                       "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+                                       "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+                                       "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer test_data : register(u0, space0);\n"
+                                       "RWByteAddressBuffer test_mats : register(u1, space0);\n"
+                                       "[numthreads(2, 2, 1)]\n"
+                                       "void main(GLSLX_Input glslx_input) {\n"
+                                       "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+                                       "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+                                       "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+                                       "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+                                       "    gl_SubgroupSize = WaveGetLaneCount();\n"
+                                       "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+                                       "    int i = int(gl_GlobalInvocationID.x);\n"
+                                       "    double a = test_data.Load<double>(i * 144 + 8);\n"
+                                       "    double y = test_data.Load<double>(i * 144 + 72);\n"
+                                       "    bool bb = test_data.Load(i * 144 + 24) != 0;\n"
+                                       "    uint __offset0 = 0 * 144 + 0;\n"
+                                       "    test_wide_t __load0;\n"
+                                       "    __load0.f = asfloat(test_data.Load(__offset0 + 0));\n"
+                                       "    __load0.d = test_data.Load<double>(__offset0 + 8);\n"
+                                       "    __load0.b[0] = test_data.Load(__offset0 + 16) != 0;\n"
+                                       "    __load0.b[1] = test_data.Load(__offset0 + 20) != 0;\n"
+                                       "    __load0.b[2] = test_data.Load(__offset0 + 24) != 0;\n"
+                                       "    __load0.m2[0][0] = test_data.Load<double>(__offset0 + 32);\n"
+                                       "    __load0.m2[0][1] = test_data.Load<double>(__offset0 + 40);\n"
+                                       "    __load0.m2[1][0] = test_data.Load<double>(__offset0 + 48);\n"
+                                       "    __load0.m2[1][1] = test_data.Load<double>(__offset0 + 56);\n"
+                                       "    __load0.dv[0] = test_data.Load<double>(__offset0 + 64);\n"
+                                       "    __load0.dv[1] = test_data.Load<double>(__offset0 + 72);\n"
+                                       "    __load0.dv[2] = test_data.Load<double>(__offset0 + 80);\n"
+                                       "    __load0.i64 = test_data.Load<int64_t>(__offset0 + 88);\n"
+                                       "    __load0.bv2[0] = test_data.Load(__offset0 + 96) != 0;\n"
+                                       "    __load0.bv2[1] = test_data.Load(__offset0 + 100) != 0;\n"
+                                       "    __load0.uv4[0] = test_data.Load<uint64_t>(__offset0 + 112);\n"
+                                       "    __load0.uv4[1] = test_data.Load<uint64_t>(__offset0 + 120);\n"
+                                       "    __load0.uv4[2] = test_data.Load<uint64_t>(__offset0 + 128);\n"
+                                       "    __load0.uv4[3] = test_data.Load<uint64_t>(__offset0 + 136);\n"
+                                       "    test_wide_t w = __load0;\n"
+                                       "    uint __offset1 = 1 * 144 + 64;\n"
+                                       "    double3 __load1;\n"
+                                       "    __load1[0] = test_data.Load<double>(__offset1 + 0);\n"
+                                       "    __load1[1] = test_data.Load<double>(__offset1 + 8);\n"
+                                       "    __load1[2] = test_data.Load<double>(__offset1 + 16);\n"
+                                       "    double3 dv = __load1;\n"
+                                       "    uint __offset2 = 2 * 144 + 32;\n"
+                                       "    row_major double2x2 __load2;\n"
+                                       "    __load2[0][0] = test_data.Load<double>(__offset2 + 0);\n"
+                                       "    __load2[0][1] = test_data.Load<double>(__offset2 + 8);\n"
+                                       "    __load2[1][0] = test_data.Load<double>(__offset2 + 16);\n"
+                                       "    __load2[1][1] = test_data.Load<double>(__offset2 + 24);\n"
+                                       "    row_major double2x2 m2 = __load2;\n"
+                                       "    double __temp3 = a + y + double(bb);\n"
+                                       "    uint __offset3 = i * 144 + 8;\n"
+                                       "    test_data.Store<double>(__offset3 + 0, __temp3);\n"
+                                       "    bool __temp4 = a > 0.0;\n"
+                                       "    uint __offset4 = i * 144 + 16;\n"
+                                       "    test_data.Store(__offset4 + 0, uint(__temp4));\n"
+                                       "    double3 __temp5 = double3(1.0, 2.0, 3.0);\n"
+                                       "    uint __offset5 = i * 144 + 64;\n"
+                                       "    test_data.Store<double>(__offset5 + 0, __temp5[0]);\n"
+                                       "    test_data.Store<double>(__offset5 + 8, __temp5[1]);\n"
+                                       "    test_data.Store<double>(__offset5 + 16, __temp5[2]);\n"
+                                       "    row_major double2x2 __temp6 = double2x2(4, 0, 0, 4);\n"
+                                       "    uint __offset6 = i * 144 + 32;\n"
+                                       "    test_data.Store<double>(__offset6 + 0, __temp6[0][0]);\n"
+                                       "    test_data.Store<double>(__offset6 + 8, __temp6[0][1]);\n"
+                                       "    test_data.Store<double>(__offset6 + 16, __temp6[1][0]);\n"
+                                       "    test_data.Store<double>(__offset6 + 24, __temp6[1][1]);\n"
+                                       "    row_major double3x2 __temp7 = double3x2(2, 0, 0, 2, 0, 0);\n"
+                                       "    uint __offset7 = i * 48 + 0;\n"
+                                       "    test_mats.Store<double>(__offset7 + 0, __temp7[0][0]);\n"
+                                       "    test_mats.Store<double>(__offset7 + 8, __temp7[0][1]);\n"
+                                       "    test_mats.Store<double>(__offset7 + 16, __temp7[1][0]);\n"
+                                       "    test_mats.Store<double>(__offset7 + 24, __temp7[1][1]);\n"
+                                       "    test_mats.Store<double>(__offset7 + 32, __temp7[2][0]);\n"
+                                       "    test_mats.Store<double>(__offset7 + 40, __temp7[2][1]);\n"
+                                       "    test_wide_t __temp8 = w;\n"
+                                       "    uint __offset8 = 3 * 144 + 0;\n"
+                                       "    test_data.Store(__offset8 + 0, asuint(__temp8.f));\n"
+                                       "    test_data.Store<double>(__offset8 + 8, __temp8.d);\n"
+                                       "    test_data.Store(__offset8 + 16, uint(__temp8.b[0]));\n"
+                                       "    test_data.Store(__offset8 + 20, uint(__temp8.b[1]));\n"
+                                       "    test_data.Store(__offset8 + 24, uint(__temp8.b[2]));\n"
+                                       "    test_data.Store<double>(__offset8 + 32, __temp8.m2[0][0]);\n"
+                                       "    test_data.Store<double>(__offset8 + 40, __temp8.m2[0][1]);\n"
+                                       "    test_data.Store<double>(__offset8 + 48, __temp8.m2[1][0]);\n"
+                                       "    test_data.Store<double>(__offset8 + 56, __temp8.m2[1][1]);\n"
+                                       "    test_data.Store<double>(__offset8 + 64, __temp8.dv[0]);\n"
+                                       "    test_data.Store<double>(__offset8 + 72, __temp8.dv[1]);\n"
+                                       "    test_data.Store<double>(__offset8 + 80, __temp8.dv[2]);\n"
+                                       "    test_data.Store<int64_t>(__offset8 + 88, __temp8.i64);\n"
+                                       "    test_data.Store(__offset8 + 96, uint(__temp8.bv2[0]));\n"
+                                       "    test_data.Store(__offset8 + 100, uint(__temp8.bv2[1]));\n"
+                                       "    test_data.Store<uint64_t>(__offset8 + 112, __temp8.uv4[0]);\n"
+                                       "    test_data.Store<uint64_t>(__offset8 + 120, __temp8.uv4[1]);\n"
+                                       "    test_data.Store<uint64_t>(__offset8 + 128, __temp8.uv4[2]);\n"
+                                       "    test_data.Store<uint64_t>(__offset8 + 136, __temp8.uv4[3]);\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "double_members.glsl") == expected);
+    }
+    { // scalar-filled matrix constructors expand to the diagonal and print without row_major
+        static const char source[] = "layout(std430, binding = 0) buffer Out {\n"
+                                     "    float outs[];\n"
+                                     "};\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    mat3x2 a = mat3x2(5.0);\n"
+                                     "    mat4 b = mat4(1.0);\n"
+                                     "    dmat2 c = dmat2(0.0);\n"
+                                     "    outs[0] = a[0][0] + b[3][3] + float(c[1][1]);\n"
+                                     "}\n";
+        static const char expected[] = "static uint3 gl_WorkGroupID;\n"
+                                       "static uint3 gl_LocalInvocationID;\n"
+                                       "static uint3 gl_GlobalInvocationID;\n"
+                                       "static uint gl_LocalInvocationIndex;\n"
+                                       "static uint gl_SubgroupSize;\n"
+                                       "static uint gl_SubgroupInvocationID;\n"
+                                       "struct GLSLX_Input {\n"
+                                       "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+                                       "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+                                       "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+                                       "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer outs : register(u0, space0);\n"
+                                       "[numthreads(1, 1, 1)]\n"
+                                       "void main(GLSLX_Input glslx_input) {\n"
+                                       "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+                                       "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+                                       "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+                                       "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+                                       "    gl_SubgroupSize = WaveGetLaneCount();\n"
+                                       "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+                                       "    row_major float3x2 a = float3x2(5.0, 0.0, 0.0, 5.0, 0.0, 0.0);\n"
+                                       "    row_major float4x4 b = float4x4(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,"
+                                       " 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);\n"
+                                       "    row_major double2x2 c = double2x2(0, 0, 0, 0);\n"
+                                       "    float __temp0 = a[0][0] + b[3][3] + float(c[1][1]);\n"
+                                       "    uint __offset0 = 0 * 4 + 0;\n"
+                                       "    outs.Store(__offset0 + 0, asuint(__temp0));\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "matrix_scalar_ctors.glsl") == expected);
+    }
+    { // non-constant scalar/vector/matrix ctors: diagonal expansion, casts to the element type,
+      // identifiers inlined directly, runtime expressions through a hoisted __matN temp
+        static const char source[] =                                      "layout(std430, binding = 0) buffer Out {\n"
+                                     "    float outs[];\n"
+                                     "};\n"
+                                     "layout(std430, binding = 1) buffer DMats {\n"
+                                     "    dmat3x2 dmats[];\n"
+                                     "};\n"
+                                     "layout(std430, binding = 2) buffer Mats {\n"
+                                     "    mat4 mats[];\n"
+                                     "};\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "float diag_sum(mat4 m) {\n"
+                                     "    return m[1][1];\n"
+                                     "}\n"
+                                     "void main() {\n"
+                                     "    int i = int(gl_GlobalInvocationID.x);\n"
+                                     "    float s = outs[i];\n"
+                                     "    float v = s * 2.0;\n"
+                                     "    mat4 a = mat4(v);\n"
+                                     "    mat3x2 b = mat3x2(v + s);\n"
+                                     "    dmat2 c = dmat2(outs[1]);\n"
+                                     "    mat4 d = mat4(int(outs[2]));\n"
+                                     "    mat4 e = (v > 1.0) ? mat4(v) : mat4(0.0);\n"
+                                     "    mat4 f = mat4(2);\n"
+                                     "    vec3 ev = vec3(1.0, 2.0, 3.0);\n"
+                                     "    mat4 g = mat4(ev);\n"
+                                     "    mat4 h = mat4(vec3(s, v, 1.0));\n"
+                                     "    mat3 sm = mat3(2.0);\n"
+                                     "    mat4 i2 = mat4(sm);\n"
+                                     "    outs[10] = a[2][2] + b[2][1] + c[1][1] + d[0][0] + e[1][1] + f[3][3] + g[3][3] + h[2][2] + i2[3][3];\n"
+                                     "    mats[i] = mat4(v);\n"
+                                     "    dmats[i][2] = c[1];\n"
+                                     "    if (v > 0.0 && diag_sum(mat4(v)) > 0.0) {\n"
+                                     "        outs[11] = 1.0;\n"
+                                     "    }\n"
+                                     "}\n";
+        static const char expected[] =                                        "static uint3 gl_WorkGroupID;\n"
+                                       "static uint3 gl_LocalInvocationID;\n"
+                                       "static uint3 gl_GlobalInvocationID;\n"
+                                       "static uint gl_LocalInvocationIndex;\n"
+                                       "static uint gl_SubgroupSize;\n"
+                                       "static uint gl_SubgroupInvocationID;\n"
+                                       "struct GLSLX_Input {\n"
+                                       "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+                                       "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+                                       "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+                                       "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer outs : register(u0, space0);\n"
+                                       "RWByteAddressBuffer dmats : register(u1, space0);\n"
+                                       "RWByteAddressBuffer mats : register(u2, space0);\n"
+                                       "float diag_sum(row_major float4x4 m) {\n"
+                                       "    return m[1][1];\n"
+                                       "}\n"
+                                       "[numthreads(1, 1, 1)]\n"
+                                       "void main(GLSLX_Input glslx_input) {\n"
+                                       "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+                                       "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+                                       "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+                                       "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+                                       "    gl_SubgroupSize = WaveGetLaneCount();\n"
+                                       "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+                                       "    int i = int(gl_GlobalInvocationID.x);\n"
+                                       "    float s = asfloat(outs.Load(i * 4 + 0));\n"
+                                       "    float v = s * 2.0;\n"
+                                       "    row_major float4x4 a = float4x4(v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v);\n"
+                                       "    float __mat0 = v + s;\n"
+                                       "    row_major float3x2 b = float3x2(__mat0, 0.0, 0.0, __mat0, 0.0, 0.0);\n"
+                                       "    double __mat1 = double(asfloat(outs.Load(1 * 4 + 0)));\n"
+                                       "    row_major double2x2 c = double2x2(__mat1, 0, 0, __mat1);\n"
+                                       "    float __mat2 = float(int(asfloat(outs.Load(2 * 4 + 0))));\n"
+                                       "    row_major float4x4 d = float4x4(__mat2, 0.0, 0.0, 0.0, 0.0, __mat2, 0.0, 0.0, 0.0, 0.0, __mat2, 0.0, 0.0, 0.0, 0.0, __mat2);\n"
+                                       "    row_major float4x4 e = v > 1.0 ? float4x4(v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v) : float4x4(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);\n"
+                                       "    row_major float4x4 f = float4x4(2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0);\n"
+                                       "    float3 ev = float3(1.0, 2.0, 3.0);\n"
+                                       "    row_major float4x4 g = float4x4(ev[0], 0.0, 0.0, 0.0, 0.0, ev[1], 0.0, 0.0, 0.0, 0.0, ev[2], 0.0, 0.0, 0.0, 0.0, 0.0);\n"
+                                       "    float3 __mat3 = float3(s, v, 1.0);\n"
+                                       "    row_major float4x4 h = float4x4(__mat3[0], 0.0, 0.0, 0.0, 0.0, __mat3[1], 0.0, 0.0, 0.0, 0.0, __mat3[2], 0.0, 0.0, 0.0, 0.0, 0.0);\n"
+                                       "    row_major float3x3 sm = float3x3(2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 2.0);\n"
+                                       "    row_major float4x4 i2 = float4x4(sm[0][0], 0.0, 0.0, 0.0, 0.0, sm[1][1], 0.0, 0.0, 0.0, 0.0, sm[2][2], 0.0, 0.0, 0.0, 0.0, 0.0);\n"
+                                       "    double __temp4 = a[2][2] + b[2][1] + c[1][1] + d[0][0] + e[1][1] + f[3][3] + g[3][3] + h[2][2] + i2[3][3];\n"
+                                       "    uint __offset4 = 10 * 4 + 0;\n"
+                                       "    outs.Store<double>(__offset4 + 0, __temp4);\n"
+                                       "    row_major float4x4 __temp5 = float4x4(v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v);\n"
+                                       "    uint __offset5 = i * 64 + 0;\n"
+                                       "    mats.Store4(__offset5 + 0, asuint(__temp5[0]));\n"
+                                       "    mats.Store4(__offset5 + 16, asuint(__temp5[1]));\n"
+                                       "    mats.Store4(__offset5 + 32, asuint(__temp5[2]));\n"
+                                       "    mats.Store4(__offset5 + 48, asuint(__temp5[3]));\n"
+                                       "    double2 __temp6 = c[1];\n"
+                                       "    uint __offset6 = 2 * 16 + i * 48 + 0;\n"
+                                       "    dmats.Store<double>(__offset6 + 0, __temp6[0]);\n"
+                                       "    dmats.Store<double>(__offset6 + 8, __temp6[1]);\n"
+                                       "    if (v > 0.0 && diag_sum(float4x4(v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v)) > 0.0) {\n"
+                                       "        float __temp7 = 1.0;\n"
+                                       "        uint __offset7 = 11 * 4 + 0;\n"
+                                       "        outs.Store(__offset7 + 0, asuint(__temp7));\n"
+                                       "    }\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "matrix_runtime_ctors.glsl") == expected);
+    }
+    { // 16-bit scalar/vector members: typed Load/Store<int16_t>/<uint16_t>/<half> leaves,
+      // component-decomposed i16vec/u16vec/f16vec reads and stores, int16_tN/uint16_tN/halfN types
+        static const char source[] =                                      "struct test_w16_t {\n"
+                                     "    int16_t si;\n"
+                                     "    uint16_t us;\n"
+                                     "    float16_t h;\n"
+                                     "    i16vec2 s2;\n"
+                                     "    i16vec3 s3;\n"
+                                     "    i16vec4 s4;\n"
+                                     "    u16vec2 u2;\n"
+                                     "    u16vec3 u3;\n"
+                                     "    u16vec4 u4;\n"
+                                     "    f16vec2 h2;\n"
+                                     "    f16vec3 h3;\n"
+                                     "    f16vec4 h4;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 0) buffer Wide {\n"
+                                     "    test_w16_t test_data[];\n"
+                                     "};\n"
+                                     "layout(std430, binding = 1) buffer HV {\n"
+                                     "    f16vec3 test_hv[];\n"
+                                     "};\n"
+                                     "layout(local_size_x = 2, local_size_y = 2) in;\n"
+                                     "void main() {\n"
+                                     "    int i = int(gl_GlobalInvocationID.x);\n"
+                                     "    int16_t a = test_data[i].si;\n"
+                                     "    uint16_t b = test_data[i].us;\n"
+                                     "    float16_t c = test_data[i].h;\n"
+                                     "    int16_t m = test_data[i].s3.y;\n"
+                                     "    float16_t hv = test_data[i].h3[2];\n"
+                                     "    test_w16_t w = test_data[0];\n"
+                                     "    i16vec3 s3 = test_data[1].s3;\n"
+                                     "    f16vec2 h2 = test_data[2].h2;\n"
+                                     "    f16vec3 arr = test_hv[i];\n"
+                                     "    test_data[i].si = a + m;\n"
+                                     "    test_data[i].us = b + uint16_t(c);\n"
+                                     "    test_data[i].h = c + hv;\n"
+                                     "    test_data[i].s3 = s3;\n"
+                                     "    test_data[i].h2 = h2;\n"
+                                     "    test_hv[i + 1] = arr;\n"
+                                     "    test_data[3] = w;\n"
+                                     "}\n";
+
+        static const char expected[] = "static uint3 gl_WorkGroupID;\n"
+                                       "static uint3 gl_LocalInvocationID;\n"
+                                       "static uint3 gl_GlobalInvocationID;\n"
+                                       "static uint gl_LocalInvocationIndex;\n"
+                                       "static uint gl_SubgroupSize;\n"
+                                       "static uint gl_SubgroupInvocationID;\n"
+                                       "struct test_w16_t {\n"
+                                       "    int16_t si;\n"
+                                       "    uint16_t us;\n"
+                                       "    half h;\n"
+                                       "    int16_t2 s2;\n"
+                                       "    int16_t3 s3;\n"
+                                       "    int16_t4 s4;\n"
+                                       "    uint16_t2 u2;\n"
+                                       "    uint16_t3 u3;\n"
+                                       "    uint16_t4 u4;\n"
+                                       "    half2 h2;\n"
+                                       "    half3 h3;\n"
+                                       "    half4 h4;\n"
+                                       "};\n"
+                                       "struct GLSLX_Input {\n"
+                                       "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+                                       "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+                                       "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+                                       "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer test_data : register(u0, space0);\n"
+                                       "RWByteAddressBuffer test_hv : register(u1, space0);\n"
+                                       "[numthreads(2, 2, 1)]\n"
+                                       "void main(GLSLX_Input glslx_input) {\n"
+                                       "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+                                       "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+                                       "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+                                       "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+                                       "    gl_SubgroupSize = WaveGetLaneCount();\n"
+                                       "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+                                       "    int i = int(gl_GlobalInvocationID.x);\n"
+                                       "    int16_t a = test_data.Load<int16_t>(i * 80 + 0);\n"
+                                       "    uint16_t b = test_data.Load<uint16_t>(i * 80 + 2);\n"
+                                       "    half c = test_data.Load<half>(i * 80 + 4);\n"
+                                       "    int16_t m = test_data.Load<int16_t>(i * 80 + 18);\n"
+                                       "    half hv = test_data.Load<half>(2 * 2 + i * 80 + 64);\n"
+                                       "    uint __offset0 = 0 * 80 + 0;\n"
+                                       "    test_w16_t __load0;\n"
+                                       "    __load0.si = test_data.Load<int16_t>(__offset0 + 0);\n"
+                                       "    __load0.us = test_data.Load<uint16_t>(__offset0 + 2);\n"
+                                       "    __load0.h = test_data.Load<half>(__offset0 + 4);\n"
+                                       "    __load0.s2[0] = test_data.Load<int16_t>(__offset0 + 8);\n"
+                                       "    __load0.s2[1] = test_data.Load<int16_t>(__offset0 + 10);\n"
+                                       "    __load0.s3[0] = test_data.Load<int16_t>(__offset0 + 16);\n"
+                                       "    __load0.s3[1] = test_data.Load<int16_t>(__offset0 + 18);\n"
+                                       "    __load0.s3[2] = test_data.Load<int16_t>(__offset0 + 20);\n"
+                                       "    __load0.s4[0] = test_data.Load<int16_t>(__offset0 + 24);\n"
+                                       "    __load0.s4[1] = test_data.Load<int16_t>(__offset0 + 26);\n"
+                                       "    __load0.s4[2] = test_data.Load<int16_t>(__offset0 + 28);\n"
+                                       "    __load0.s4[3] = test_data.Load<int16_t>(__offset0 + 30);\n"
+                                       "    __load0.u2[0] = test_data.Load<uint16_t>(__offset0 + 32);\n"
+                                       "    __load0.u2[1] = test_data.Load<uint16_t>(__offset0 + 34);\n"
+                                       "    __load0.u3[0] = test_data.Load<uint16_t>(__offset0 + 40);\n"
+                                       "    __load0.u3[1] = test_data.Load<uint16_t>(__offset0 + 42);\n"
+                                       "    __load0.u3[2] = test_data.Load<uint16_t>(__offset0 + 44);\n"
+                                       "    __load0.u4[0] = test_data.Load<uint16_t>(__offset0 + 48);\n"
+                                       "    __load0.u4[1] = test_data.Load<uint16_t>(__offset0 + 50);\n"
+                                       "    __load0.u4[2] = test_data.Load<uint16_t>(__offset0 + 52);\n"
+                                       "    __load0.u4[3] = test_data.Load<uint16_t>(__offset0 + 54);\n"
+                                       "    __load0.h2[0] = test_data.Load<half>(__offset0 + 56);\n"
+                                       "    __load0.h2[1] = test_data.Load<half>(__offset0 + 58);\n"
+                                       "    __load0.h3[0] = test_data.Load<half>(__offset0 + 64);\n"
+                                       "    __load0.h3[1] = test_data.Load<half>(__offset0 + 66);\n"
+                                       "    __load0.h3[2] = test_data.Load<half>(__offset0 + 68);\n"
+                                       "    __load0.h4[0] = test_data.Load<half>(__offset0 + 72);\n"
+                                       "    __load0.h4[1] = test_data.Load<half>(__offset0 + 74);\n"
+                                       "    __load0.h4[2] = test_data.Load<half>(__offset0 + 76);\n"
+                                       "    __load0.h4[3] = test_data.Load<half>(__offset0 + 78);\n"
+                                       "    test_w16_t w = __load0;\n"
+                                       "    uint __offset1 = 1 * 80 + 16;\n"
+                                       "    int16_t3 __load1;\n"
+                                       "    __load1[0] = test_data.Load<int16_t>(__offset1 + 0);\n"
+                                       "    __load1[1] = test_data.Load<int16_t>(__offset1 + 2);\n"
+                                       "    __load1[2] = test_data.Load<int16_t>(__offset1 + 4);\n"
+                                       "    int16_t3 s3 = __load1;\n"
+                                       "    uint __offset2 = 2 * 80 + 56;\n"
+                                       "    half2 __load2;\n"
+                                       "    __load2[0] = test_data.Load<half>(__offset2 + 0);\n"
+                                       "    __load2[1] = test_data.Load<half>(__offset2 + 2);\n"
+                                       "    half2 h2 = __load2;\n"
+                                       "    uint __offset3 = i * 8 + 0;\n"
+                                       "    half3 __load3;\n"
+                                       "    __load3[0] = test_hv.Load<half>(__offset3 + 0);\n"
+                                       "    __load3[1] = test_hv.Load<half>(__offset3 + 2);\n"
+                                       "    __load3[2] = test_hv.Load<half>(__offset3 + 4);\n"
+                                       "    half3 arr = __load3;\n"
+                                       "    int16_t __temp4 = a + m;\n"
+                                       "    uint __offset4 = i * 80 + 0;\n"
+                                       "    test_data.Store<int16_t>(__offset4 + 0, __temp4);\n"
+                                       "    uint16_t __temp5 = b + uint16_t(c);\n"
+                                       "    uint __offset5 = i * 80 + 2;\n"
+                                       "    test_data.Store<uint16_t>(__offset5 + 0, __temp5);\n"
+                                       "    half __temp6 = c + hv;\n"
+                                       "    uint __offset6 = i * 80 + 4;\n"
+                                       "    test_data.Store<half>(__offset6 + 0, __temp6);\n"
+                                       "    int16_t3 __temp7 = s3;\n"
+                                       "    uint __offset7 = i * 80 + 16;\n"
+                                       "    test_data.Store<int16_t>(__offset7 + 0, __temp7[0]);\n"
+                                       "    test_data.Store<int16_t>(__offset7 + 2, __temp7[1]);\n"
+                                       "    test_data.Store<int16_t>(__offset7 + 4, __temp7[2]);\n"
+                                       "    half2 __temp8 = h2;\n"
+                                       "    uint __offset8 = i * 80 + 56;\n"
+                                       "    test_data.Store<half>(__offset8 + 0, __temp8[0]);\n"
+                                       "    test_data.Store<half>(__offset8 + 2, __temp8[1]);\n"
+                                       "    half3 __temp9 = arr;\n"
+                                       "    uint __offset9 = (i + 1) * 8 + 0;\n"
+                                       "    test_hv.Store<half>(__offset9 + 0, __temp9[0]);\n"
+                                       "    test_hv.Store<half>(__offset9 + 2, __temp9[1]);\n"
+                                       "    test_hv.Store<half>(__offset9 + 4, __temp9[2]);\n"
+                                       "    test_w16_t __temp10 = w;\n"
+                                       "    uint __offset10 = 3 * 80 + 0;\n"
+                                       "    test_data.Store<int16_t>(__offset10 + 0, __temp10.si);\n"
+                                       "    test_data.Store<uint16_t>(__offset10 + 2, __temp10.us);\n"
+                                       "    test_data.Store<half>(__offset10 + 4, __temp10.h);\n"
+                                       "    test_data.Store<int16_t>(__offset10 + 8, __temp10.s2[0]);\n"
+                                       "    test_data.Store<int16_t>(__offset10 + 10, __temp10.s2[1]);\n"
+                                       "    test_data.Store<int16_t>(__offset10 + 16, __temp10.s3[0]);\n"
+                                       "    test_data.Store<int16_t>(__offset10 + 18, __temp10.s3[1]);\n"
+                                       "    test_data.Store<int16_t>(__offset10 + 20, __temp10.s3[2]);\n"
+                                       "    test_data.Store<int16_t>(__offset10 + 24, __temp10.s4[0]);\n"
+                                       "    test_data.Store<int16_t>(__offset10 + 26, __temp10.s4[1]);\n"
+                                       "    test_data.Store<int16_t>(__offset10 + 28, __temp10.s4[2]);\n"
+                                       "    test_data.Store<int16_t>(__offset10 + 30, __temp10.s4[3]);\n"
+                                       "    test_data.Store<uint16_t>(__offset10 + 32, __temp10.u2[0]);\n"
+                                       "    test_data.Store<uint16_t>(__offset10 + 34, __temp10.u2[1]);\n"
+                                       "    test_data.Store<uint16_t>(__offset10 + 40, __temp10.u3[0]);\n"
+                                       "    test_data.Store<uint16_t>(__offset10 + 42, __temp10.u3[1]);\n"
+                                       "    test_data.Store<uint16_t>(__offset10 + 44, __temp10.u3[2]);\n"
+                                       "    test_data.Store<uint16_t>(__offset10 + 48, __temp10.u4[0]);\n"
+                                       "    test_data.Store<uint16_t>(__offset10 + 50, __temp10.u4[1]);\n"
+                                       "    test_data.Store<uint16_t>(__offset10 + 52, __temp10.u4[2]);\n"
+                                       "    test_data.Store<uint16_t>(__offset10 + 54, __temp10.u4[3]);\n"
+                                       "    test_data.Store<half>(__offset10 + 56, __temp10.h2[0]);\n"
+                                       "    test_data.Store<half>(__offset10 + 58, __temp10.h2[1]);\n"
+                                       "    test_data.Store<half>(__offset10 + 64, __temp10.h3[0]);\n"
+                                       "    test_data.Store<half>(__offset10 + 66, __temp10.h3[1]);\n"
+                                       "    test_data.Store<half>(__offset10 + 68, __temp10.h3[2]);\n"
+                                       "    test_data.Store<half>(__offset10 + 72, __temp10.h4[0]);\n"
+                                       "    test_data.Store<half>(__offset10 + 74, __temp10.h4[1]);\n"
+                                       "    test_data.Store<half>(__offset10 + 76, __temp10.h4[2]);\n"
+                                       "    test_data.Store<half>(__offset10 + 78, __temp10.h4[3]);\n"
+                                       "}\n";
+
+
+        require(Write_HLSL_Text(source, "vector16_members.glsl") == expected);
+    }
+    { // atomic operation in a non-compound if body (issue #220, atomics variant)
+        static const char source[] = "shared uint g_shared[16];\n"
+                                     "void test() {\n"
+                                     "    uint n = 0;\n"
+                                     "    uint v = 0;\n"
+                                     "    if (n >= 8u)\n"
+                                     "        v = atomicAdd(g_shared[1], 1u);\n"
+                                     "}\n";
+        static const char expected[] = "groupshared uint g_shared[16];\n"
+                                       "void test() {\n"
+                                       "    uint n = 0;\n"
+                                       "    uint v = 0;\n"
+                                       "    if (n >= 8u) {\n"
+                                       "        uint __temp0;\n"
+                                       "        InterlockedAdd(g_shared[1], 1u, __temp0);\n"
+                                       "        v = __temp0;\n"
+                                       "    }\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "if_atomic.glsl") == expected);
     }
     { // matrix multiply
         static const char source[] = "vec3 test(vec3 n, mat4 xform) {\n"
@@ -1210,13 +2107,1299 @@ void test_hlsl_writer() {
                                        "    return mul(float4(n, 0.0), transpose(xform)).xyz;\n"
                                        "}\n";
 
-        Parser parser(source, "atomic.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
-        require_fatal(tr_unit != nullptr);
+        require(Write_HLSL_Text(source, "atomic.glsl") == expected);
+    }
+    { // texelFetch lowering
+        static const char source[] = "layout(binding = 0) uniform sampler2D test_sampler2D;\n"
+                                     "layout(binding = 1) uniform sampler2DArray test_sampler2DArray;\n"
+                                     "layout(binding = 2) uniform sampler3D test_sampler3D;\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    vec4 a = texelFetch(test_sampler2D, ivec2(0, 0), 0);\n"
+                                     "    vec4 b = texelFetch(test_sampler2DArray, ivec3(0, 0, 0), 0);\n"
+                                     "    vec4 c = texelFetch(test_sampler3D, ivec3(0, 0, 0), 0);\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2D : register(t0, space0);\n"
+            "SamplerState test_sampler2D_sampler : register(s0, space0);\n"
+            "Texture2DArray<float4> test_sampler2DArray : register(t1, space0);\n"
+            "SamplerState test_sampler2DArray_sampler : register(s1, space0);\n"
+            "Texture3D<float4> test_sampler3D : register(t2, space0);\n"
+            "SamplerState test_sampler3D_sampler : register(s2, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 a = test_sampler2D.Load(int3(int2(0, 0), 0));\n"
+            "    float4 b = test_sampler2DArray.Load(int4(int3(0, 0, 0), 0));\n"
+            "    float4 c = test_sampler3D.Load(int4(int3(0, 0, 0), 0));\n"
+            "}\n";
 
-        std::stringstream ss;
-        WriterHLSL().Write(tr_unit.get(), ss);
-        require(ss.str() == expected);
+        require(Write_HLSL_Text(source, "texel_fetch.glsl") == expected);
+    }
+    { // textureLod/textureLodOffset lowering
+        static const char source[] = "layout(binding = 0) uniform sampler2D test_sampler2D;\n"
+                                     "layout(binding = 1) uniform sampler3D test_sampler3D;\n"
+                                     "layout(binding = 2) uniform sampler2DArray test_sampler2DArray;\n"
+                                     "layout(binding = 3) uniform sampler2D test_samplers[4];\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    vec4 a = textureLod(test_sampler2D, vec2(0.0, 0.0), 0.0);\n"
+                                     "    vec4 b = textureLod(test_sampler3D, vec3(0.0, 0.0, 0.0), 0.0);\n"
+                                     "    vec4 c = textureLod(test_sampler2DArray, vec3(0.0, 0.0, 0.0), 0.0);\n"
+                                     "    vec4 d = textureLodOffset(test_sampler2D, vec2(0.0, 0.0), 0.0, ivec2(1, 1));\n"
+                                     "    vec4 e = textureLod(test_samplers[2], vec2(0.0, 0.0), 0.0);\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2D : register(t0, space0);\n"
+            "SamplerState test_sampler2D_sampler : register(s0, space0);\n"
+            "Texture3D<float4> test_sampler3D : register(t1, space0);\n"
+            "SamplerState test_sampler3D_sampler : register(s1, space0);\n"
+            "Texture2DArray<float4> test_sampler2DArray : register(t2, space0);\n"
+            "SamplerState test_sampler2DArray_sampler : register(s2, space0);\n"
+            "Texture2D<float4> test_samplers[4] : register(t3, space0);\n"
+            "SamplerState test_samplers_sampler[4] : register(s3, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 a = test_sampler2D.SampleLevel(test_sampler2D_sampler, float2(0.0, 0.0), 0.0);\n"
+            "    float4 b = test_sampler3D.SampleLevel(test_sampler3D_sampler, float3(0.0, 0.0, 0.0), 0.0);\n"
+            "    float4 c = test_sampler2DArray.SampleLevel(test_sampler2DArray_sampler, float3(0.0, 0.0, 0.0), 0.0);\n"
+            "    float4 d = test_sampler2D.SampleLevel(test_sampler2D_sampler, float2(0.0, 0.0), 0.0, int2(1, 1));\n"
+            "    float4 e = test_samplers[2].SampleLevel(test_samplers_sampler[2], float2(0.0, 0.0), 0.0);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_lod.glsl") == expected);
+    }
+    { // texelFetch/textureLod lowering: samplerless separate textures and inline sampler2D(tex, samp)
+        static const char source[] =
+            "layout(binding = 0) uniform texture2D test_texture2d;\n"
+            "layout(binding = 1) uniform utexture2D test_utexture2d;\n"
+            "layout(binding = 2) uniform texture2D test_tex;\n"
+            "layout(binding = 3) uniform sampler test_samp;\n"
+            "layout(binding = 4) uniform texture2D test_bindless_textures[4];\n"
+            "layout(binding = 5) uniform sampler test_bindless_sampler;\n"
+            "layout(local_size_x = 1) in;\n"
+            "void main() {\n"
+            "    vec4 a = texelFetch(test_texture2d, ivec2(0, 0), 0);\n"
+            "    uvec4 b = texelFetch(test_utexture2d, ivec2(0, 0), 0);\n"
+            "    vec4 c = textureLod(sampler2D(test_tex, test_samp), vec2(0.0, 0.0), 0.0);\n"
+            "    vec4 d = textureLodOffset(sampler2D(test_tex, test_samp), vec2(0.0, 0.0), 0.0, ivec2(1, 1));\n"
+            "    vec4 e = texelFetch(sampler2D(test_tex, test_samp), ivec2(0, 0), 0);\n"
+            "    vec4 f = textureLod(sampler2D(test_bindless_textures[2], test_bindless_sampler), vec2(0.0, 0.0), "
+            "0.0);\n"
+            "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_texture2d : register(t0, space0);\n"
+            "Texture2D<uint4> test_utexture2d : register(t1, space0);\n"
+            "Texture2D<float4> test_tex : register(t2, space0);\n"
+            "SamplerState test_samp : register(s3, space0);\n"
+            "Texture2D<float4> test_bindless_textures[4] : register(t4, space0);\n"
+            "SamplerState test_bindless_sampler : register(s5, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 a = test_texture2d.Load(int3(int2(0, 0), 0));\n"
+            "    uint4 b = test_utexture2d.Load(int3(int2(0, 0), 0));\n"
+            "    float4 c = test_tex.SampleLevel(test_samp, float2(0.0, 0.0), 0.0);\n"
+            "    float4 d = test_tex.SampleLevel(test_samp, float2(0.0, 0.0), 0.0, int2(1, 1));\n"
+            "    float4 e = test_tex.Load(int3(int2(0, 0), 0));\n"
+            "    float4 f = test_bindless_textures[2].SampleLevel(test_bindless_sampler, float2(0.0, 0.0), 0.0);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_separate.glsl") == expected);
+    }
+    { // imageLoad/imageStore lowering
+        static const char source[] = "layout(binding = 0, r32f) uniform image2D test_image_r32f;\n"
+                                     "layout(binding = 1, rg32f) uniform image2D test_image_rg32f;\n"
+                                     "layout(binding = 2, rgba32f) uniform image2D test_image_rgba32f;\n"
+                                     "layout(binding = 3, r32i) uniform iimage2D test_iimage_r32i;\n"
+                                     "layout(binding = 4, rgba32ui) uniform uimage2D test_uimage_rgba32ui;\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    float v1 = imageLoad(test_image_r32f, ivec2(0, 0)).x;\n"
+                                     "    vec2 v2 = imageLoad(test_image_rg32f, ivec2(0, 0)).xy;\n"
+                                     "    vec4 v4 = imageLoad(test_image_rgba32f, ivec2(0, 0));\n"
+                                     "    int vi = imageLoad(test_iimage_r32i, ivec2(0, 0)).x;\n"
+                                     "    uvec4 vu = imageLoad(test_uimage_rgba32ui, ivec2(0, 0));\n"
+                                     "    imageStore(test_image_r32f, ivec2(0, 0), vec4(1.0));\n"
+                                     "    imageStore(test_image_rg32f, ivec2(0, 0), vec4(1.0, 2.0, 0.0, 0.0));\n"
+                                     "    imageStore(test_image_rgba32f, ivec2(0, 0), vec4(1.0));\n"
+                                     "    imageStore(test_iimage_r32i, ivec2(0, 0), ivec4(1));\n"
+                                     "    imageStore(test_uimage_rgba32ui, ivec2(0, 0), uvec4(1u));\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "RWTexture2D<float> test_image_r32f : register(u0, space0);\n"
+            "RWTexture2D<float2> test_image_rg32f : register(u1, space0);\n"
+            "RWTexture2D<float4> test_image_rgba32f : register(u2, space0);\n"
+            "RWTexture2D<int> test_iimage_r32i : register(u3, space0);\n"
+            "RWTexture2D<uint4> test_uimage_rgba32ui : register(u4, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float v1 = float4(test_image_r32f[int2(0, 0)], 0, 0, 0).x;\n"
+            "    float2 v2 = float4(test_image_rg32f[int2(0, 0)], 0, 0).xy;\n"
+            "    float4 v4 = test_image_rgba32f[int2(0, 0)];\n"
+            "    int vi = int4(test_iimage_r32i[int2(0, 0)], 0, 0, 0).x;\n"
+            "    uint4 vu = test_uimage_rgba32ui[int2(0, 0)];\n"
+            "    test_image_r32f[int2(0, 0)] = float4(1.0.xxxx).x;\n"
+            "    test_image_rg32f[int2(0, 0)] = float4(1.0, 2.0, 0.0, 0.0).xy;\n"
+            "    test_image_rgba32f[int2(0, 0)] = float4(1.0.xxxx);\n"
+            "    test_iimage_r32i[int2(0, 0)] = int4(1.xxxx).x;\n"
+            "    test_uimage_rgba32ui[int2(0, 0)] = uint4(1u.xxxx);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "image_load_store.glsl") == expected);
+    }
+    { // textureSize lowering
+        static const char source[] = "layout(binding = 0) uniform sampler2D test_sampler2D;\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    ivec2 sz = textureSize(test_sampler2D, 0);\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2D : register(t0, space0);\n"
+            "SamplerState test_sampler2D_sampler : register(s0, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    uint2 __texsize0;\n"
+            "    uint __numlevels0;\n"
+            "    test_sampler2D.GetDimensions(0, __texsize0.x, __texsize0.y, __numlevels0);\n"
+            "    int2 sz = int2(__texsize0);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_size.glsl") == expected);
+    }
+    { // textureSize lowers to GetDimensions for every sampler kind this pass supports
+        static const char source[] = "layout(binding = 0) uniform sampler1D s1d;\n"
+                                     "layout(binding = 1) uniform sampler1DArray s1da;\n"
+                                     "layout(binding = 2) uniform sampler2DArray s2da;\n"
+                                     "layout(binding = 3) uniform sampler3D s3d;\n"
+                                     "layout(binding = 4) uniform samplerCube scube;\n"
+                                     "layout(binding = 5) uniform samplerCubeArrayShadow scsa;\n"
+                                     "layout(binding = 6) uniform usampler2DMS usms;\n"
+                                     "layout(binding = 7) uniform sampler2DMSArray smsa;\n"
+                                     "layout(binding = 8) uniform sampler2D texarr[4];\n"
+                                     "layout(binding = 9) uniform texture2D t2d;\n"
+                                     "void test(uint i) {\n"
+                                     "    int a = textureSize(s1d, 1);\n"
+                                     "    ivec2 b = textureSize(s1da, 0);\n"
+                                     "    ivec3 c = textureSize(s2da, 0);\n"
+                                     "    ivec3 d = textureSize(s3d, i);\n"
+                                     "    ivec2 e = textureSize(scube, 0);\n"
+                                     "    ivec3 f = textureSize(scsa, 0);\n"
+                                     "    ivec2 g = textureSize(usms);\n"
+                                     "    ivec3 h = textureSize(smsa);\n"
+                                     "    ivec2 j = textureSize(texarr[i], 0);\n"
+                                     "    ivec2 k = textureSize(t2d, 0);\n"
+                                     "}\n";
+        static const char expected[] = "Texture1D<float4> s1d : register(t0, space0);\n"
+                                       "SamplerState s1d_sampler : register(s0, space0);\n"
+                                       "Texture1DArray<float4> s1da : register(t1, space0);\n"
+                                       "SamplerState s1da_sampler : register(s1, space0);\n"
+                                       "Texture2DArray<float4> s2da : register(t2, space0);\n"
+                                       "SamplerState s2da_sampler : register(s2, space0);\n"
+                                       "Texture3D<float4> s3d : register(t3, space0);\n"
+                                       "SamplerState s3d_sampler : register(s3, space0);\n"
+                                       "TextureCube<float4> scube : register(t4, space0);\n"
+                                       "SamplerState scube_sampler : register(s4, space0);\n"
+                                       "TextureCubeArray<float4> scsa : register(t5, space0);\n"
+                                       "SamplerComparisonState scsa_sampler : register(s5, space0);\n"
+                                       "Texture2DMS<uint4> usms : register(t6, space0);\n"
+                                       "SamplerState usms_sampler : register(s6, space0);\n"
+                                       "Texture2DMSArray<float4> smsa : register(t7, space0);\n"
+                                       "SamplerState smsa_sampler : register(s7, space0);\n"
+                                       "Texture2D<float4> texarr[4] : register(t8, space0);\n"
+                                       "SamplerState texarr_sampler[4] : register(s8, space0);\n"
+                                       "Texture2D<float4> t2d : register(t9, space0);\n"
+                                       "void test(uint i) {\n"
+                                       "    uint __texsize0;\n"
+                                       "    uint __numlevels0;\n"
+                                       "    s1d.GetDimensions(1, __texsize0, __numlevels0);\n"
+                                       "    int a = int(__texsize0);\n"
+                                       "    uint2 __texsize1;\n"
+                                       "    uint __numlevels1;\n"
+                                       "    s1da.GetDimensions(0, __texsize1.x, __texsize1.y, __numlevels1);\n"
+                                       "    int2 b = int2(__texsize1);\n"
+                                       "    uint3 __texsize2;\n"
+                                       "    uint __numlevels2;\n"
+                                       "    s2da.GetDimensions(0, __texsize2.x, __texsize2.y, __texsize2.z, __numlevels2);\n"
+                                       "    int3 c = int3(__texsize2);\n"
+                                       "    uint3 __texsize3;\n"
+                                       "    uint __numlevels3;\n"
+                                       "    s3d.GetDimensions(i, __texsize3.x, __texsize3.y, __texsize3.z, __numlevels3);\n"
+                                       "    int3 d = int3(__texsize3);\n"
+                                       "    uint2 __texsize4;\n"
+                                       "    uint __numlevels4;\n"
+                                       "    scube.GetDimensions(0, __texsize4.x, __texsize4.y, __numlevels4);\n"
+                                       "    int2 e = int2(__texsize4);\n"
+                                       "    uint3 __texsize5;\n"
+                                       "    uint __numlevels5;\n"
+                                       "    scsa.GetDimensions(0, __texsize5.x, __texsize5.y, __texsize5.z, __numlevels5);\n"
+                                       "    int3 f = int3(__texsize5);\n"
+                                       "    uint2 __texsize6;\n"
+                                       "    uint __numsamples6;\n"
+                                       "    usms.GetDimensions(__texsize6.x, __texsize6.y, __numsamples6);\n"
+                                       "    int2 g = int2(__texsize6);\n"
+                                       "    uint3 __texsize7;\n"
+                                       "    uint __numsamples7;\n"
+                                       "    smsa.GetDimensions(__texsize7.x, __texsize7.y, __texsize7.z, __numsamples7);\n"
+                                       "    int3 h = int3(__texsize7);\n"
+                                       "    uint2 __texsize8;\n"
+                                       "    uint __numlevels8;\n"
+                                       "    texarr[i].GetDimensions(0, __texsize8.x, __texsize8.y, __numlevels8);\n"
+                                       "    int2 j = int2(__texsize8);\n"
+                                       "    uint2 __texsize9;\n"
+                                       "    uint __numlevels9;\n"
+                                       "    t2d.GetDimensions(0, __texsize9.x, __texsize9.y, __numlevels9);\n"
+                                       "    int2 k = int2(__texsize9);\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "texture_size_kinds.glsl") == expected);
+    }
+    { // rayQueryInitializeEXT lowering
+        static const char source[] =
+            "layout(binding = 0) uniform accelerationStructureEXT scene;\n"
+            "layout(local_size_x = 1) in;\n"
+            "void main() {\n"
+            "    rayQueryEXT q;\n"
+            "    rayQueryInitializeEXT(q, scene, 0u, 255u, vec3(1.0, 2.0, 3.0), 0.0, vec3(0.0, 1.0, 0.0), 100.0);\n"
+            "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "RaytracingAccelerationStructure scene : register(t0, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    RayQuery<RAY_FLAG_NONE> q;\n"
+            "    RayDesc __raydesc0 = { float3(1.0, 2.0, 3.0), 0.0, float3(0.0, 1.0, 0.0), 100.0 };\n"
+            "    q.TraceRayInline(scene, 0u, 255u, __raydesc0);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "ray_query_init.glsl") == expected);
+    }
+    { // rayQueryProceedEXT/rayQueryConfirmIntersectionEXT lowering
+        static const char source[] = "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    rayQueryEXT q;\n"
+                                     "    bool proceeding = rayQueryProceedEXT(q);\n"
+                                     "    rayQueryConfirmIntersectionEXT(q);\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    RayQuery<RAY_FLAG_NONE> q;\n"
+            "    bool proceeding = q.Proceed();\n"
+            "    q.CommitNonOpaqueTriangleHit();\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "ray_query_proceed.glsl") == expected);
+    }
+    { // rayQueryGetIntersectionXxxEXT paired accessor: literal true/false select a branch directly,
+      // a non-literal bool falls back to a ternary
+        static const char source[] = "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    rayQueryEXT q;\n"
+                                     "    int a = rayQueryGetIntersectionTypeEXT(q, true);\n"
+                                     "    int b = rayQueryGetIntersectionTypeEXT(q, false);\n"
+                                     "    bool committed = true;\n"
+                                     "    int c = rayQueryGetIntersectionTypeEXT(q, committed);\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    RayQuery<RAY_FLAG_NONE> q;\n"
+            "    int a = q.CommittedStatus();\n"
+            "    int b = q.CandidateType();\n"
+            "    bool committed = true;\n"
+            "    int c = committed ? q.CommittedStatus() : q.CandidateType();\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "ray_query_accessor.glsl") == expected);
+    }
+    { // gl_RayQuery*EXT constant lowered to its HLSL enum name
+        static const char source[] = "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    uint t = gl_RayQueryCommittedIntersectionTriangleEXT;\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    uint t = COMMITTED_TRIANGLE_HIT;\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "ray_query_constant.glsl") == expected);
+    }
+    { // texture() lowering: combined samplers, including bias
+        static const char source[] = "layout(binding = 0) uniform sampler2D test_sampler2D;\n"
+                                     "layout(binding = 1) uniform samplerCube test_samplerCube;\n"
+                                     "layout(binding = 2) uniform sampler3D test_sampler3D;\n"
+                                     "layout(binding = 3) uniform sampler2DArray test_sampler2DArray;\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    vec4 a = texture(test_sampler2D, vec2(0.0, 0.0));\n"
+                                     "    vec4 b = texture(test_samplerCube, vec3(0.0, 0.0, 0.0));\n"
+                                     "    vec4 c = texture(test_sampler3D, vec3(0.0, 0.0, 0.0));\n"
+                                     "    vec4 d = texture(test_sampler2DArray, vec3(0.0, 0.0, 0.0));\n"
+                                     "    vec4 e = texture(test_sampler2D, vec2(0.0, 0.0), 0.5);\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2D : register(t0, space0);\n"
+            "SamplerState test_sampler2D_sampler : register(s0, space0);\n"
+            "TextureCube<float4> test_samplerCube : register(t1, space0);\n"
+            "SamplerState test_samplerCube_sampler : register(s1, space0);\n"
+            "Texture3D<float4> test_sampler3D : register(t2, space0);\n"
+            "SamplerState test_sampler3D_sampler : register(s2, space0);\n"
+            "Texture2DArray<float4> test_sampler2DArray : register(t3, space0);\n"
+            "SamplerState test_sampler2DArray_sampler : register(s3, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 a = test_sampler2D.Sample(test_sampler2D_sampler, float2(0.0, 0.0));\n"
+            "    float4 b = test_samplerCube.Sample(test_samplerCube_sampler, float3(0.0, 0.0, 0.0));\n"
+            "    float4 c = test_sampler3D.Sample(test_sampler3D_sampler, float3(0.0, 0.0, 0.0));\n"
+            "    float4 d = test_sampler2DArray.Sample(test_sampler2DArray_sampler, float3(0.0, 0.0, 0.0));\n"
+            "    float4 e = test_sampler2D.SampleBias(test_sampler2D_sampler, float2(0.0, 0.0), 0.5);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_combined.glsl") == expected);
+    }
+    { // texture() lowering: separate texture + sampler via inline sampler2D(tex, samp) ctor
+        static const char source[] = "layout(binding = 0) uniform texture2D test_tex;\n"
+                                     "layout(binding = 1) uniform sampler test_samp;\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    vec4 a = texture(sampler2D(test_tex, test_samp), vec2(0.0, 0.0));\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_tex : register(t0, space0);\n"
+            "SamplerState test_samp : register(s1, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 a = test_tex.Sample(test_samp, float2(0.0, 0.0));\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_separate_sample.glsl") == expected);
+    }
+    { // textureOffset() lowering: with and without bias (offset always last)
+        static const char source[] = "layout(binding = 0) uniform sampler2D test_sampler2D;\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    vec4 a = textureOffset(test_sampler2D, vec2(0.0, 0.0), ivec2(1, 1));\n"
+                                     "    vec4 b = textureOffset(test_sampler2D, vec2(0.0, 0.0), ivec2(1, 1), 0.5);\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2D : register(t0, space0);\n"
+            "SamplerState test_sampler2D_sampler : register(s0, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 a = test_sampler2D.Sample(test_sampler2D_sampler, float2(0.0, 0.0), int2(1, 1));\n"
+            "    float4 b = test_sampler2D.SampleBias(test_sampler2D_sampler, float2(0.0, 0.0), 0.5, int2(1, 1));\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_offset.glsl") == expected);
+    }
+    { // textureGrad()/textureGradOffset() lowering
+        static const char source[] =
+            "layout(binding = 0) uniform sampler2D test_sampler2D;\n"
+            "layout(local_size_x = 1) in;\n"
+            "void main() {\n"
+            "    vec4 a = textureGrad(test_sampler2D, vec2(0.0, 0.0), vec2(0.25, 0.0), vec2(0.0, 0.25));\n"
+            "    vec4 b = textureGradOffset(test_sampler2D, vec2(0.0, 0.0), vec2(0.25, 0.0), vec2(0.0, 0.25), "
+            "ivec2(1, 1));\n"
+            "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2D : register(t0, space0);\n"
+            "SamplerState test_sampler2D_sampler : register(s0, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 a = test_sampler2D.SampleGrad(test_sampler2D_sampler, float2(0.0, 0.0), float2(0.25, 0.0), float2(0.0, 0.25));\n"
+            "    float4 b = test_sampler2D.SampleGrad(test_sampler2D_sampler, float2(0.0, 0.0), float2(0.25, 0.0), float2(0.0, 0.25), int2(1, 1));\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_grad.glsl") == expected);
+    }
+    { // textureProj() lowering: coordinate divide by last component, per sampler dimension
+        static const char source[] = "layout(binding = 0) uniform sampler2D test_sampler2D;\n"
+                                     "layout(binding = 1) uniform sampler3D test_sampler3D;\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    vec4 a = textureProj(test_sampler2D, vec3(0.0, 0.0, 1.0));\n"
+                                     "    vec4 b = textureProj(test_sampler2D, vec4(0.0, 0.0, 0.0, 1.0));\n"
+                                     "    vec4 c = textureProj(test_sampler3D, vec4(0.0, 0.0, 0.0, 1.0));\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2D : register(t0, space0);\n"
+            "SamplerState test_sampler2D_sampler : register(s0, space0);\n"
+            "Texture3D<float4> test_sampler3D : register(t1, space0);\n"
+            "SamplerState test_sampler3D_sampler : register(s1, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 a = test_sampler2D.Sample(test_sampler2D_sampler, float3(0.0, 0.0, 1.0).xy / float3(0.0, 0.0, 1.0).z);\n"
+            "    float4 b = test_sampler2D.Sample(test_sampler2D_sampler, float4(0.0, 0.0, 0.0, 1.0).xy / float4(0.0, 0.0, 0.0, 1.0).w);\n"
+            "    float4 c = test_sampler3D.Sample(test_sampler3D_sampler, float4(0.0, 0.0, 0.0, 1.0).xyz / float4(0.0, 0.0, 0.0, 1.0).w);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_proj.glsl") == expected);
+    }
+    { // textureGather()/textureGatherOffset()/textureGatherOffsets() lowering
+        static const char source[] =
+            "layout(binding = 0) uniform sampler2D test_sampler2D;\n"
+            "layout(local_size_x = 1) in;\n"
+            "void main() {\n"
+            "    vec4 a = textureGather(test_sampler2D, vec2(0.0, 0.0));\n"
+            "    vec4 b = textureGather(test_sampler2D, vec2(0.0, 0.0), 2);\n"
+            "    vec4 c = textureGatherOffset(test_sampler2D, vec2(0.0, 0.0), ivec2(1, 1));\n"
+            "    ivec2 offs[4] = { ivec2(0, 0), ivec2(1, 0), ivec2(0, 1), ivec2(1, 1) };\n"
+            "    vec4 d = textureGatherOffsets(test_sampler2D, vec2(0.0, 0.0), offs);\n"
+            "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2D : register(t0, space0);\n"
+            "SamplerState test_sampler2D_sampler : register(s0, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 a = test_sampler2D.Gather(test_sampler2D_sampler, float2(0.0, 0.0));\n"
+            "    float4 b = test_sampler2D.GatherBlue(test_sampler2D_sampler, float2(0.0, 0.0));\n"
+            "    float4 c = test_sampler2D.Gather(test_sampler2D_sampler, float2(0.0, 0.0), int2(1, 1));\n"
+            "    int2 offs[4] = { int2(0, 0), int2(1, 0), int2(0, 1), int2(1, 1) };\n"
+            "    float4 d = test_sampler2D.GatherRed(test_sampler2D_sampler, float2(0.0, 0.0), offs[0], offs[1], offs[2], offs[3]);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_gather.glsl") == expected);
+    }
+    { // shadow sampler texture() lowering: SampleCmp, per-keyword coord/compare split
+        static const char source[] =
+            "layout(binding = 0) uniform sampler2DShadow test_sampler2DShadow;\n"
+            "layout(binding = 1) uniform samplerCubeShadow test_samplerCubeShadow;\n"
+            "layout(binding = 2) uniform sampler1DShadow test_sampler1DShadow;\n"
+            "layout(binding = 3) uniform samplerCubeArrayShadow test_samplerCubeArrayShadow;\n"
+            "layout(local_size_x = 1) in;\n"
+            "void main() {\n"
+            "    float a = texture(test_sampler2DShadow, vec3(0.5, 0.5, 0.25));\n"
+            "    float b = texture(test_samplerCubeShadow, vec4(0.0, 0.0, 1.0, 0.25));\n"
+            "    float c = texture(test_sampler1DShadow, vec3(0.5, 0.0, 0.25));\n"
+            "    float d = texture(test_samplerCubeArrayShadow, vec4(0.0, 0.0, 1.0, 0.0), 0.25);\n"
+            "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2DShadow : register(t0, space0);\n"
+            "SamplerComparisonState test_sampler2DShadow_sampler : register(s0, space0);\n"
+            "TextureCube<float4> test_samplerCubeShadow : register(t1, space0);\n"
+            "SamplerComparisonState test_samplerCubeShadow_sampler : register(s1, space0);\n"
+            "Texture1D<float4> test_sampler1DShadow : register(t2, space0);\n"
+            "SamplerComparisonState test_sampler1DShadow_sampler : register(s2, space0);\n"
+            "TextureCubeArray<float4> test_samplerCubeArrayShadow : register(t3, space0);\n"
+            "SamplerComparisonState test_samplerCubeArrayShadow_sampler : register(s3, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float a = test_sampler2DShadow.SampleCmp(test_sampler2DShadow_sampler, float3(0.5, 0.5, 0.25).xy, float3(0.5, 0.5, 0.25).z);\n"
+            "    float b = test_samplerCubeShadow.SampleCmp(test_samplerCubeShadow_sampler, float4(0.0, 0.0, 1.0, 0.25).xyz, float4(0.0, 0.0, 1.0, 0.25).w);\n"
+            "    float c = test_sampler1DShadow.SampleCmp(test_sampler1DShadow_sampler, float3(0.5, 0.0, 0.25).x, float3(0.5, 0.0, 0.25).z);\n"
+            "    float d = test_samplerCubeArrayShadow.SampleCmp(test_samplerCubeArrayShadow_sampler, float4(0.0, 0.0, 1.0, 0.0), 0.25);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_shadow.glsl") == expected);
+    }
+    { // shadow sampler textureGather()/textureGatherOffset() lowering: GatherCmp
+        static const char source[] =
+            "layout(binding = 0) uniform sampler2DShadow test_sampler2DShadow;\n"
+            "layout(local_size_x = 1) in;\n"
+            "void main() {\n"
+            "    vec4 a = textureGather(test_sampler2DShadow, vec2(0.5, 0.5), 0.25);\n"
+            "    vec4 b = textureGatherOffset(test_sampler2DShadow, vec2(0.5, 0.5), 0.25, ivec2(1, 1));\n"
+            "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2DShadow : register(t0, space0);\n"
+            "SamplerComparisonState test_sampler2DShadow_sampler : register(s0, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 a = test_sampler2DShadow.GatherCmp(test_sampler2DShadow_sampler, float2(0.5, 0.5), 0.25);\n"
+            "    float4 b = test_sampler2DShadow.GatherCmp(test_sampler2DShadow_sampler, float2(0.5, 0.5), 0.25, int2(1, 1));\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_gather_shadow.glsl") == expected);
+    }
+    { // textureProj*: a coordinate the divide swizzles twice goes through a temporary unless it is a
+      // plain read
+        static const char source[] = "layout(binding = 0) uniform sampler2D test_sampler2D;\n"
+                                     "vec4 test_proj_coord();\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    vec4 uv = vec4(0.5, 0.25, 0.0, 1.0);\n"
+                                     "    vec4 a = textureProj(test_sampler2D, uv);\n"
+                                     "    vec4 b = textureProj(test_sampler2D, test_proj_coord());\n"
+                                     "    vec4 c = textureProjOffset(test_sampler2D, test_proj_coord(), ivec2(1, 1));\n"
+                                     "    vec4 d = textureProjLod(test_sampler2D, test_proj_coord(), 0.5);\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2D : register(t0, space0);\n"
+            "SamplerState test_sampler2D_sampler : register(s0, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "float4 test_proj_coord();\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 uv = float4(0.5, 0.25, 0.0, 1.0);\n"
+            "    float4 a = test_sampler2D.Sample(test_sampler2D_sampler, uv.xy / uv.w);\n"
+            "    float4 __coord0 = test_proj_coord();\n"
+            "    float4 b = test_sampler2D.Sample(test_sampler2D_sampler, __coord0.xy / __coord0.w);\n"
+            "    float4 __coord1 = test_proj_coord();\n"
+            "    float4 c = test_sampler2D.Sample(test_sampler2D_sampler, __coord1.xy / __coord1.w, int2(1, 1));\n"
+            "    float4 __coord2 = test_proj_coord();\n"
+            "    float4 d = test_sampler2D.SampleLevel(test_sampler2D_sampler, __coord2.xy / __coord2.w, 0.5);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_proj_shared_coord.glsl") == expected);
+    }
+    { // shadow sampling: the coord/compare split swizzles the coordinate twice as well
+        static const char source[] = "layout(binding = 0) uniform sampler2DShadow test_sampler2DShadow;\n"
+                                     "layout(binding = 1) uniform sampler2DArrayShadow test_sampler2DArrayShadow;\n"
+                                     "vec3 test_shadow_coord();\n"
+                                     "vec4 test_shadow_coord4();\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    vec3 sw = vec3(0.5, 0.25, 0.75);\n"
+                                     "    float a = texture(test_sampler2DShadow, sw);\n"
+                                     "    float b = texture(test_sampler2DShadow, test_shadow_coord());\n"
+                                     "    float c = textureOffset(test_sampler2DShadow, test_shadow_coord(), "
+                                     "ivec2(2, 3));\n"
+                                     "    float d = texture(test_sampler2DArrayShadow, test_shadow_coord4());\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2DShadow : register(t0, space0);\n"
+            "SamplerComparisonState test_sampler2DShadow_sampler : register(s0, space0);\n"
+            "Texture2DArray<float4> test_sampler2DArrayShadow : register(t1, space0);\n"
+            "SamplerComparisonState test_sampler2DArrayShadow_sampler : register(s1, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "float3 test_shadow_coord();\n"
+            "float4 test_shadow_coord4();\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float3 sw = float3(0.5, 0.25, 0.75);\n"
+            "    float a = test_sampler2DShadow.SampleCmp(test_sampler2DShadow_sampler, sw.xy, sw.z);\n"
+            "    float3 __coord0 = test_shadow_coord();\n"
+            "    float b = test_sampler2DShadow.SampleCmp(test_sampler2DShadow_sampler, __coord0.xy, __coord0.z);\n"
+            "    float3 __coord1 = test_shadow_coord();\n"
+            "    float c = test_sampler2DShadow.SampleCmp(test_sampler2DShadow_sampler, __coord1.xy, __coord1.z, int2(2, 3));\n"
+            "    float4 __coord2 = test_shadow_coord4();\n"
+            "    float d = test_sampler2DArrayShadow.SampleCmp(test_sampler2DArrayShadow_sampler, __coord2.xyz, __coord2.w);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_shadow_shared_coord.glsl") == expected);
+    }
+    { // a shared coordinate is declared where the sample call runs, so a short-circuited or `?:`-skipped
+      // arm keeps it inside the guard, and atomics inside the coordinate run before it
+        static const char source[] = "layout(std430, binding = 0) buffer test_out {\n"
+                                     "    int vals[];\n"
+                                     "};\n"
+                                     "layout(binding = 0) uniform sampler2D test_sampler2D;\n"
+                                     "layout(binding = 1) uniform sampler2DShadow test_sampler2DShadow;\n"
+                                     "vec3 test_shadow_coord();\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    vec4 a = vec4(0.5, 0.25, 0.0, 1.0);\n"
+                                     "    bool test_c = a.x > 0.5;\n"
+                                     "    float b = test_c && texture(test_sampler2DShadow, test_shadow_coord()) > 0.5 ? "
+                                     "texture(test_sampler2DShadow, test_shadow_coord()) : 0.0;\n"
+                                     "    vec4 d = textureProj(test_sampler2D, vec4(float(atomicAdd(vals[0], 1)), 0.5, "
+                                     "0.0, 1.0));\n"
+                                     "    vals[0] = int(b) + int(d.x);\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_sampler2D : register(t0, space0);\n"
+            "SamplerState test_sampler2D_sampler : register(s0, space0);\n"
+            "Texture2D<float4> test_sampler2DShadow : register(t1, space0);\n"
+            "SamplerComparisonState test_sampler2DShadow_sampler : register(s1, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "RWByteAddressBuffer vals : register(u0, space0);\n"
+            "float3 test_shadow_coord();\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 a = float4(0.5, 0.25, 0.0, 1.0);\n"
+            "    bool test_c = a.x > 0.5;\n"
+            "    bool __sc2 = test_c;\n"
+            "    if (__sc2) {\n"
+            "        float3 __coord0 = test_shadow_coord();\n"
+            "        __sc2 = test_sampler2DShadow.SampleCmp(test_sampler2DShadow_sampler, __coord0.xy, __coord0.z) > 0.5;\n"
+            "    }\n"
+            "    float __tern3;\n"
+            "    if (__sc2) {\n"
+            "        float3 __coord1 = test_shadow_coord();\n"
+            "        __tern3 = test_sampler2DShadow.SampleCmp(test_sampler2DShadow_sampler, __coord1.xy, __coord1.z);\n"
+            "    } else {\n"
+            "        __tern3 = 0.0;\n"
+            "    }\n"
+            "    float b = __tern3;\n"
+            "    int __temp5;\n"
+            "    vals.InterlockedAdd(0 * 4 + 0, 1, __temp5);\n"
+            "    float4 __coord4 = float4(float(__temp5), 0.5, 0.0, 1.0);\n"
+            "    float4 d = test_sampler2D.Sample(test_sampler2D_sampler, __coord4.xy / __coord4.w);\n"
+            "    int __temp6 = int(b) + int(d.x);\n"
+            "    uint __offset6 = 0 * 4 + 0;\n"
+            "    vals.Store(__offset6 + 0, __temp6);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_shared_coord_guarded.glsl") == expected);
+    }
+    { // texture() lowering: array-of-samplers subscript carries through to the companion sampler
+        static const char source[] = "layout(binding = 0) uniform sampler2D test_samplers[4];\n"
+                                     "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    vec4 a = texture(test_samplers[2], vec2(0.0, 0.0));\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> test_samplers[4] : register(t0, space0);\n"
+            "SamplerState test_samplers_sampler[4] : register(s0, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 a = test_samplers[2].Sample(test_samplers_sampler[2], float2(0.0, 0.0));\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "texture_array.glsl") == expected);
+    }
+    { // Builtin function renaming and scalar-to-vector constructor splat
+        static const char source[] = "layout(local_size_x = 1) in;\n"
+                                     "void main() {\n"
+                                     "    float x = 0.5;\n"
+                                     "    float a = fract(x);\n"
+                                     "    vec3 b = mix(vec3(x), vec3(a), 0.5);\n"
+                                     "    vec3 c = vec3(fract(x));\n"
+                                     "    vec2 d = vec2(x + a);\n"
+                                     "    int e = findMSB(int(x));\n"
+                                     "    vec3 f = vec3(1.0, 2.0, 3.0);\n"
+                                     "    f = vec3(mix(x, a, 0.5)) * f;\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float x = 0.5;\n"
+            "    float a = frac(x);\n"
+            "    float3 b = lerp(float3(x.xxx), float3(a.xxx), 0.5);\n"
+            "    float3 c = float3(frac(x).xxx);\n"
+            "    float2 d = float2((x + a).xx);\n"
+            "    int e = firstbithigh(int(x));\n"
+            "    float3 f = float3(1.0, 2.0, 3.0);\n"
+            "    f = float3(lerp(x, a, 0.5).xxx) * f;\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "rename_splat.glsl") == expected);
+    }
+
+    { // Combined-sampler arguments and parameters of user functions get a companion sampler
+        static const char source[] = "layout(local_size_x = 1) in;\n"
+                                     "layout(binding = 0) uniform sampler2D g_tex;\n"
+                                     "layout(binding = 1) uniform sampler2D g_texs[2];\n"
+                                     "vec4 sample_it(vec2 uv, sampler2D t, float s);\n"
+                                     "vec4 sample_it(vec2 uv, sampler2D t, float s) {\n"
+                                     "    return textureLod(t, uv, 0.0) * s;\n"
+                                     "}\n"
+                                     "vec4 sample_two(sampler2D a, sampler2D b) {\n"
+                                     "    return sample_it(vec2(0.5, 0.25), a, 1.0) + sample_it(vec2(0.25, 0.5), b, 2.0);\n"
+                                     "}\n"
+                                     "void main() {\n"
+                                     "    vec4 c = sample_it(vec2(0.5, 0.5), g_tex, 1.0) + sample_it(vec2(0.25, 0.25), g_texs[1], 2.0);\n"
+                                     "    c += sample_two(g_tex, g_texs[0]);\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> g_tex : register(t0, space0);\n"
+            "SamplerState g_tex_sampler : register(s0, space0);\n"
+            "Texture2D<float4> g_texs[2] : register(t1, space0);\n"
+            "SamplerState g_texs_sampler[2] : register(s1, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "float4 sample_it(float2 uv, Texture2D t, SamplerState t_sampler, float s);\n"
+            "float4 sample_it(float2 uv, Texture2D t, SamplerState t_sampler, float s) {\n"
+            "    return t.SampleLevel(t_sampler, uv, 0.0) * s;\n"
+            "}\n"
+            "float4 sample_two(Texture2D a, SamplerState a_sampler, Texture2D b, SamplerState b_sampler) {\n"
+            "    return sample_it(float2(0.5, 0.25), a, a_sampler, 1.0) + sample_it(float2(0.25, 0.5), b, b_sampler, 2.0);\n"
+            "}\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float4 c = sample_it(float2(0.5, 0.5), g_tex, g_tex_sampler, 1.0) + sample_it(float2(0.25, 0.25), g_texs[1], g_texs_sampler[1], 2.0);\n"
+            "    c += sample_two(g_tex, g_tex_sampler, g_texs[0], g_texs_sampler[0]);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "sampler_args.glsl") == expected);
+    }
+
+    { // Shadow-sampler parameters and standalone comparison samplers use SamplerComparisonState
+        static const char source[] = "layout(local_size_x = 1) in;\n"
+                                     "layout(binding = 0) uniform sampler2DShadow g_shadow;\n"
+                                     "layout(binding = 1) uniform texture2D g_tex;\n"
+                                     "layout(binding = 2) uniform samplerShadow g_cmp;\n"
+                                     "float shade(sampler2DShadow s, vec3 p) {\n"
+                                     "    return texture(s, p);\n"
+                                     "}\n"
+                                     "void main() {\n"
+                                     "    float a = shade(g_shadow, vec3(0.5, 0.25, 0.5));\n"
+                                     "    float b = texture(sampler2DShadow(g_tex, g_cmp), vec3(0.5, 0.25, 0.5));\n"
+                                     "}\n";
+        static const char *expected =
+            "static uint3 gl_WorkGroupID;\n"
+            "static uint3 gl_LocalInvocationID;\n"
+            "static uint3 gl_GlobalInvocationID;\n"
+            "static uint gl_LocalInvocationIndex;\n"
+            "static uint gl_SubgroupSize;\n"
+            "static uint gl_SubgroupInvocationID;\n"
+            "Texture2D<float4> g_shadow : register(t0, space0);\n"
+            "SamplerComparisonState g_shadow_sampler : register(s0, space0);\n"
+            "Texture2D<float4> g_tex : register(t1, space0);\n"
+            "SamplerComparisonState g_cmp : register(s2, space0);\n"
+            "struct GLSLX_Input {\n"
+            "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+            "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+            "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+            "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+            "};\n"
+            "float shade(Texture2D s, SamplerComparisonState s_sampler, float3 p) {\n"
+            "    return s.SampleCmp(s_sampler, p.xy, p.z);\n"
+            "}\n"
+            "[numthreads(1, 1, 1)]\n"
+            "void main(GLSLX_Input glslx_input) {\n"
+            "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+            "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+            "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+            "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+            "    gl_SubgroupSize = WaveGetLaneCount();\n"
+            "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+            "    float a = shade(g_shadow, g_shadow_sampler, float3(0.5, 0.25, 0.5));\n"
+            "    float b = g_tex.SampleCmp(g_cmp, float3(0.5, 0.25, 0.5).xy, float3(0.5, 0.25, 0.5).z);\n"
+            "}\n";
+
+        require(Write_HLSL_Text(source, "sampler_shadow_args.glsl") == expected);
+    }
+    { // compute prologue is materialized by lowering: gl_* statics, GLSLX_Input struct
+      // fields with SV semantics, entry parameter, copy-in statements
+        static const char source[] = "layout(std430, binding = 0) buffer Out {\n"
+                                     "    float outs[];\n"
+                                     "};\n"
+                                     "struct Item {\n"
+                                     "    uvec3 id;\n"
+                                     "    float v;\n"
+                                     "};\n"
+                                     "layout(std430, binding = 1) buffer Items {\n"
+                                     "    Item items[];\n"
+                                     "};\n"
+                                     "layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;\n"
+                                     "void main() {\n"
+                                     "    uint idx = gl_LocalInvocationIndex + gl_WorkGroupID.x * 8u + gl_LocalInvocationID.y;\n"
+                                     "    uint gidx = gl_GlobalInvocationID.x;\n"
+                                     "    uint lane = gl_SubgroupInvocationID;\n"
+                                     "    uint lanes = gl_SubgroupSize;\n"
+                                     "    items[idx].v = float(gidx + lane + lanes) + outs[idx];\n"
+                                     "    outs[idx] = float(idx);\n"
+                                     "}\n"
+                                     "\n";
+        static const char expected[] = "static uint3 gl_WorkGroupID;\n"
+                                       "static uint3 gl_LocalInvocationID;\n"
+                                       "static uint3 gl_GlobalInvocationID;\n"
+                                       "static uint gl_LocalInvocationIndex;\n"
+                                       "static uint gl_SubgroupSize;\n"
+                                       "static uint gl_SubgroupInvocationID;\n"
+                                       "struct Item {\n"
+                                       "    uint3 id;\n"
+                                       "    float v;\n"
+                                       "};\n"
+                                       "struct GLSLX_Input {\n"
+                                       "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+                                       "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+                                       "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+                                       "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer outs : register(u0, space0);\n"
+                                       "RWByteAddressBuffer items : register(u1, space0);\n"
+                                       "[numthreads(8, 4, 1)]\n"
+                                       "void main(GLSLX_Input glslx_input) {\n"
+                                       "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+                                       "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+                                       "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+                                       "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+                                       "    gl_SubgroupSize = WaveGetLaneCount();\n"
+                                       "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+                                       "    uint idx = gl_LocalInvocationIndex + gl_WorkGroupID.x * 8u + gl_LocalInvocationID.y;\n"
+                                       "    uint gidx = gl_GlobalInvocationID.x;\n"
+                                       "    uint lane = gl_SubgroupInvocationID;\n"
+                                       "    uint lanes = gl_SubgroupSize;\n"
+                                       "    float __temp0 = float(gidx + lane + lanes) + asfloat(outs.Load(idx * 4 + 0));\n"
+                                       "    uint __offset0 = idx * 16 + 12;\n"
+                                       "    items.Store(__offset0 + 0, asuint(__temp0));\n"
+                                       "    float __temp1 = float(idx);\n"
+                                       "    uint __offset1 = idx * 4 + 0;\n"
+                                       "    outs.Store(__offset1 + 0, asuint(__temp1));\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "compute_prologue.glsl") == expected);
+    }
+    { // unmaterialized gl_* compute builtins: WorkGroupSize from local_size_*, subgroup
+      // masks as lane-bit exprs (unbackable ones assert in lowering)
+        static const char source[] = "layout(std430, binding = 0) buffer Out {\n"
+                                     "    uint outs[];\n"
+                                     "};\n"
+                                     "layout(local_size_x = 8, local_size_y = 4, local_size_z = 2) in;\n"
+                                     "void main() {\n"
+                                     "    uint acc = 0;\n"
+                                     "    uvec3 ws = gl_WorkGroupSize;\n"
+                                     "    acc += ws.x * 100u + ws.y * 10u + ws.z;\n"
+                                     "    acc += uint(gl_WorkGroupSize.x);\n"
+                                     "    uint idx = gl_LocalInvocationIndex;\n"
+                                     "    uvec4 eq = gl_SubgroupEqMask;\n"
+                                     "    uvec4 lt = gl_SubgroupLtMask;\n"
+                                     "    uvec4 le = gl_SubgroupLeMask;\n"
+                                     "    uvec4 ge = gl_SubgroupGeMask;\n"
+                                     "    uvec4 gt = gl_SubgroupGtMask;\n"
+                                     "    uint m = eq.x ^ lt.x ^ le.x ^ ge.x ^ gt.x;\n"
+                                     "    if (m != 0u) {\n"
+                                     "        acc += (gt & ge).x;\n"
+                                     "    }\n"
+                                     "    for (uint i = 0u; i < gl_WorkGroupSize.z; ++i) {\n"
+                                     "        acc += i;\n"
+                                     "    }\n"
+                                     "    outs[idx] = acc;\n"
+                                     "}\n";
+        static const char expected[] = "static uint3 gl_WorkGroupID;\n"
+                                       "static uint3 gl_LocalInvocationID;\n"
+                                       "static uint3 gl_GlobalInvocationID;\n"
+                                       "static uint gl_LocalInvocationIndex;\n"
+                                       "static uint gl_SubgroupSize;\n"
+                                       "static uint gl_SubgroupInvocationID;\n"
+                                       "struct GLSLX_Input {\n"
+                                       "    uint3 gl_WorkGroupID : SV_GroupID;\n"
+                                       "    uint3 gl_LocalInvocationID : SV_GroupThreadID;\n"
+                                       "    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;\n"
+                                       "    uint gl_LocalInvocationIndex : SV_GroupIndex;\n"
+                                       "};\n"
+                                       "RWByteAddressBuffer outs : register(u0, space0);\n"
+                                       "[numthreads(8, 4, 2)]\n"
+                                       "void main(GLSLX_Input glslx_input) {\n"
+                                       "    gl_WorkGroupID = glslx_input.gl_WorkGroupID;\n"
+                                       "    gl_LocalInvocationID = glslx_input.gl_LocalInvocationID;\n"
+                                       "    gl_GlobalInvocationID = glslx_input.gl_GlobalInvocationID;\n"
+                                       "    gl_LocalInvocationIndex = glslx_input.gl_LocalInvocationIndex;\n"
+                                       "    gl_SubgroupSize = WaveGetLaneCount();\n"
+                                       "    gl_SubgroupInvocationID = WaveGetLaneIndex();\n"
+                                       "    uint acc = 0;\n"
+                                       "    uint3 ws = uint3(8u, 4u, 2u);\n"
+                                       "    acc += ws.x * 100u + ws.y * 10u + ws.z;\n"
+                                       "    acc += uint(uint3(8u, 4u, 2u).x);\n"
+                                       "    uint idx = gl_LocalInvocationIndex;\n"
+                                       "    uint4 eq = uint4(WaveGetLaneIndex() >> 5u == 0u ? 1u << (WaveGetLaneIndex() & 31u) : 0u, WaveGetLaneIndex() >> 5u == 1u ? 1u << (WaveGetLaneIndex() & 31u) : 0u, WaveGetLaneIndex() >> 5u == 2u ? 1u << (WaveGetLaneIndex() & 31u) : 0u, WaveGetLaneIndex() >> 5u == 3u ? 1u << (WaveGetLaneIndex() & 31u) : 0u);\n"
+                                       "    uint4 lt = uint4(WaveGetLaneIndex() >> 5u > 0u ? ~0u : WaveGetLaneIndex() >> 5u == 0u ? (1u << (WaveGetLaneIndex() & 31u)) - 1u : 0u, WaveGetLaneIndex() >> 5u > 1u ? ~0u : WaveGetLaneIndex() >> 5u == 1u ? (1u << (WaveGetLaneIndex() & 31u)) - 1u : 0u, WaveGetLaneIndex() >> 5u > 2u ? ~0u : WaveGetLaneIndex() >> 5u == 2u ? (1u << (WaveGetLaneIndex() & 31u)) - 1u : 0u, WaveGetLaneIndex() >> 5u > 3u ? ~0u : WaveGetLaneIndex() >> 5u == 3u ? (1u << (WaveGetLaneIndex() & 31u)) - 1u : 0u);\n"
+                                       "    uint4 le = uint4(WaveGetLaneIndex() >> 5u > 0u ? ~0u : WaveGetLaneIndex() >> 5u == 0u ? (2u << (WaveGetLaneIndex() & 31u)) - 1u : 0u, WaveGetLaneIndex() >> 5u > 1u ? ~0u : WaveGetLaneIndex() >> 5u == 1u ? (2u << (WaveGetLaneIndex() & 31u)) - 1u : 0u, WaveGetLaneIndex() >> 5u > 2u ? ~0u : WaveGetLaneIndex() >> 5u == 2u ? (2u << (WaveGetLaneIndex() & 31u)) - 1u : 0u, WaveGetLaneIndex() >> 5u > 3u ? ~0u : WaveGetLaneIndex() >> 5u == 3u ? (2u << (WaveGetLaneIndex() & 31u)) - 1u : 0u);\n"
+                                       "    uint4 ge = uint4(WaveGetLaneIndex() >> 5u == 0u ? ~((1u << (WaveGetLaneIndex() & 31u)) - 1u) : 0u, WaveGetLaneIndex() >> 5u < 1u ? ~0u : WaveGetLaneIndex() >> 5u == 1u ? ~((1u << (WaveGetLaneIndex() & 31u)) - 1u) : 0u, WaveGetLaneIndex() >> 5u < 2u ? ~0u : WaveGetLaneIndex() >> 5u == 2u ? ~((1u << (WaveGetLaneIndex() & 31u)) - 1u) : 0u, WaveGetLaneIndex() >> 5u < 3u ? ~0u : WaveGetLaneIndex() >> 5u == 3u ? ~((1u << (WaveGetLaneIndex() & 31u)) - 1u) : 0u);\n"
+                                       "    uint4 gt = uint4(WaveGetLaneIndex() >> 5u == 0u ? ~((2u << (WaveGetLaneIndex() & 31u)) - 1u) : 0u, WaveGetLaneIndex() >> 5u < 1u ? ~0u : WaveGetLaneIndex() >> 5u == 1u ? ~((2u << (WaveGetLaneIndex() & 31u)) - 1u) : 0u, WaveGetLaneIndex() >> 5u < 2u ? ~0u : WaveGetLaneIndex() >> 5u == 2u ? ~((2u << (WaveGetLaneIndex() & 31u)) - 1u) : 0u, WaveGetLaneIndex() >> 5u < 3u ? ~0u : WaveGetLaneIndex() >> 5u == 3u ? ~((2u << (WaveGetLaneIndex() & 31u)) - 1u) : 0u);\n"
+                                       "    uint m = eq.x ^ lt.x ^ le.x ^ ge.x ^ gt.x;\n"
+                                       "    if (m != 0u) {\n"
+                                       "        acc += (gt & ge).x;\n"
+                                       "    }\n"
+                                       "    for (uint i = 0u; i < uint3(8u, 4u, 2u).z; ++i) {\n"
+                                       "        acc += i;\n"
+                                       "    }\n"
+                                       "    uint __temp0 = acc;\n"
+                                       "    uint __offset0 = idx * 4 + 0;\n"
+                                       "    outs.Store(__offset0 + 0, __temp0);\n"
+                                       "}\n";
+
+        require(Write_HLSL_Text(source, "gl_special_builtins.glsl") == expected);
     }
 
     printf("OK\n");

@@ -41,8 +41,8 @@ void test_parser() {
                                      "#pragma multi_compile _ NO_SUBGROUP\n";
         static const char *expected = source;
 
-        Parser parser(source, "directives.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "directives.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         require(tr_unit->pragmas.size() == 2);
@@ -68,8 +68,8 @@ void test_parser() {
         static const char expected[] = "uniform float float1;\n"
                                        "uniform float float2 = 10.0;\n";
 
-        Parser parser(source, "uniforms.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "uniforms.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -115,8 +115,8 @@ void test_parser() {
                                       "    float w;\n"
                                       "} buffer_data;\n";
 
-        Parser parser(source, "interface_blocks.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "interface_blocks.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -142,8 +142,8 @@ void test_parser() {
                                       "const uint test_uint = 2147483648u;\n"
                                       "const uint test_bitneg = 2147483647u;\n";
 
-        Parser parser(source, "constants.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "constants.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -167,8 +167,8 @@ void test_parser() {
                                       "foo c;\n"
                                       "foo d;\n";
 
-        Parser parser(source, "continuations.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "continuations.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -202,8 +202,8 @@ void test_parser() {
                                        "    1, 2, 3, 4;\n"
                                        "}\n";
 
-        Parser parser(source, "sequence.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "sequence.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -334,8 +334,8 @@ void test_parser() {
                                      "uimageCubeArray test_uimageCubeArray;\n";
         const char *expected = source;
 
-        Parser parser(source, "builtins.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "builtins.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -357,8 +357,8 @@ void test_parser() {
                                      "int a;\n";
         static const char expected[] = "int a;\n";
 
-        Parser parser(source, "comments.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "comments.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -381,8 +381,8 @@ void test_parser() {
                                      "}\n";
         static const char *expected = source;
 
-        Parser parser(source, "booleans.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "booleans.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -444,8 +444,8 @@ void test_parser() {
                                        "    uint64_t test_uint64_upper = 42ul;\n"
                                        "}\n";
 
-        Parser parser(source, "int_literals.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "int_literals.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -487,8 +487,8 @@ void test_parser() {
                                        "    float16_t test_f16_hf_upper = 1.5hf;\n"
                                        "}\n";
 
-        Parser parser(source, "float_literals.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "float_literals.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -561,8 +561,8 @@ void test_parser() {
                                        "    (e = d) = 2.0;\n"
                                        "}\n";
 
-        Parser parser(source, "structures.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "structures.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -620,8 +620,8 @@ void test_parser() {
                                        "    foo1 bb[1];\n"
                                        "}\n";
 
-        Parser parser(source, "arrays.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "arrays.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -643,8 +643,8 @@ void test_parser() {
                                        "    }\n"
                                        "}\n";
 
-        Parser parser(source, "if_statement.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "if_statement.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -671,8 +671,8 @@ void test_parser() {
                                        "    if (n < 1) a[n] = 1.0; else b[n] = 2.0;\n"
                                        "}\n";
 
-        Parser parser(source, "if_else_non_compound.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "if_else_non_compound.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -695,8 +695,8 @@ void test_parser() {
                                        "    while (true);\n"
                                        "}\n";
 
-        Parser parser(source, "do_statement.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "do_statement.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -720,8 +720,8 @@ void test_parser() {
                                        "    }\n"
                                        "}\n";
 
-        Parser parser(source, "while_statement.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "while_statement.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -754,8 +754,8 @@ void test_parser() {
                                        "    }\n"
                                        "}\n";
 
-        Parser parser(source, "for_statement.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "for_statement.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -782,8 +782,8 @@ void test_parser() {
                                        "    float z = a ? (b ? c : d) : w;\n"
                                        "}\n";
 
-        Parser parser(source, "ternary.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "ternary.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -837,8 +837,8 @@ void test_parser() {
                                        "    }\n"
                                        "}\n";
 
-        Parser parser(source, "switch.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "switch.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -875,8 +875,8 @@ void test_parser() {
             "    return 0.212670997 * color[0] + 0.715160012 * color.y + 0.0721689984 * color.z;\n"
             "}\n";
 
-        Parser parser(source, "vector.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "vector.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -892,8 +892,8 @@ void test_parser() {
                                      "}\n";
         static const char *expected = source;
 
-        Parser parser(source, "assign.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "assign.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -919,8 +919,8 @@ void test_parser() {
             "}\n";
         static const char *expected = source;
 
-        Parser parser(source, "control_flow2.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "control_flow2.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -935,8 +935,8 @@ void test_parser() {
                                      "precision mediump float;\n";
         static const char *expected = source;
 
-        Parser parser(source, "default_precision.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "default_precision.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -953,8 +953,8 @@ void test_parser() {
         static const char *expected = "invariant gl_Position;\n"
                                       "out invariant vec3 Color;\n";
 
-        Parser parser(source, "default_precision.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Vertex);
+        auto parser = std::make_unique<Parser>(source, "default_precision.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Vertex);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -974,8 +974,8 @@ void test_parser() {
                                      "#warning 2222\n"
                                      "#error 3333\n";
 
-        Parser parser(source, "line_directive.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "line_directive.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require(tr_unit == nullptr);
 
         tr_unit = test_clone(tr_unit.get());
@@ -983,10 +983,10 @@ void test_parser() {
         tr_unit = test_serialize(tr_unit.get());
         require_fatal(tr_unit == nullptr);
 
-        require(parser.warnings().size() == 2);
-        require(strcmp(parser.warnings()[0], "line_directive.glsl:42:14: warning: 1111") == 0);
-        require(strcmp(parser.warnings()[1], "path/to\\file.glsl:43:14: warning: 2222") == 0);
-        require(strcmp(parser.error(), "path/to\\file.glsl:44:12: error: 3333") == 0);
+        require(parser->warnings().size() == 2);
+        require(strcmp(parser->warnings()[0], "line_directive.glsl:42:14: warning: 1111") == 0);
+        require(strcmp(parser->warnings()[1], "path/to\\file.glsl:43:14: warning: 2222") == 0);
+        require(strcmp(parser->error(), "path/to\\file.glsl:44:12: error: 3333") == 0);
     }
     { // errors after #line are reported with the mapped file and line
         static const char source[] = "#line 7 \"mapped.glsl\"\n"
@@ -995,21 +995,21 @@ void test_parser() {
                                      "    int x = ;\n"
                                      "}\n";
 
-        Parser parser(source, "line_mapped_error.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "line_mapped_error.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require(tr_unit == nullptr);
-        require(parser.error() != nullptr);
-        require(strstr(parser.error(), "mapped.glsl:9:") != nullptr);
+        require(parser->error() != nullptr);
+        require(strstr(parser->error(), "mapped.glsl:9:") != nullptr);
     }
     { // first character invalid
         const char source[] = "`\n";
 
-        Parser parser(source, "first_character_invalid.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        auto parser = std::make_unique<Parser>(source, "first_character_invalid.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
         require(tr_unit == nullptr);
         tr_unit = test_serialize(tr_unit.get());
         require_fatal(tr_unit == nullptr);
-        require(strcmp(parser.error(), "first_character_invalid.glsl:1:1: error: Invalid character encountered") == 0);
+        require(strcmp(parser->error(), "first_character_invalid.glsl:1:1: error: Invalid character encountered") == 0);
     }
     { // arrayness of redeclared block
         static const char source[] = "in gl_PerVertex {\n"
@@ -1020,8 +1020,8 @@ void test_parser() {
                                      "} gl_in[];\n";
         static const char *expected = source;
 
-        Parser parser(source, "arrayness.glsl");
-        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Geometry);
+        auto parser = std::make_unique<Parser>(source, "arrayness.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Geometry);
         require_fatal(tr_unit != nullptr);
 
         tr_unit = test_clone(tr_unit.get());

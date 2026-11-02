@@ -65,6 +65,10 @@ void glslx::WriterGLSL::Write_Expression(const ast_expression *expression, const
         return Write_Operation(static_cast<const ast_operation_expression *>(expression), parent, out_stream);
     case eExprType::Ternary:
         return Write_Ternary(static_cast<const ast_ternary_expression *>(expression), parent, out_stream);
+    case eExprType::MethodCall:
+        // method calls are post-lowering HLSL-only
+        assert(false);
+        return;
     case eExprType::ArraySpecifier:
         const ast_array_specifier *arr_specifier = static_cast<const ast_array_specifier *>(expression);
         out_stream << "{ ";
@@ -1127,4 +1131,8 @@ void glslx::WriterGLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
     for (int i = 0; i < int(tu->functions.size()); ++i) {
         Write_Function(tu->functions[i], out_stream);
     }
+}
+
+void glslx::Write_GLSL(const TrUnit *tu, std::ostream &out_stream, writer_config_t config) {
+    WriterGLSL(std::move(config)).Write(tu, out_stream);
 }

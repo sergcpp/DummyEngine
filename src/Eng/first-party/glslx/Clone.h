@@ -16,6 +16,7 @@ class Clone {
     ast_field_or_swizzle *Clone_FieldOrSwizzle(const ast_field_or_swizzle *in);
     ast_array_subscript *Clone_ArraySubscript(const ast_array_subscript *in);
     ast_function_call *Clone_FunctionCall(const ast_function_call *in);
+    ast_method_call *Clone_MethodCall(const ast_method_call *in);
     ast_constructor_call *Clone_ConstructorCall(const ast_constructor_call *in);
     ast_assignment_expression *Clone_Assignment(const ast_assignment_expression *in);
     ast_sequence_expression *Clone_Sequence(const ast_sequence_expression *in);

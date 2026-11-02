@@ -63,6 +63,19 @@ glslx::ast_function_call *glslx::Clone::Clone_FunctionCall(const ast_function_ca
     return ret;
 }
 
+glslx::ast_method_call *glslx::Clone::Clone_MethodCall(const ast_method_call *in) {
+    ast_method_call *ret = dst_->make<ast_method_call>(dst_->alloc.allocator);
+    ret->name = *dst_->str.Find(in->name);
+    ret->object = Clone_Expression(in->object);
+    if (in->template_arg) {
+        ret->template_arg = Clone_Type(in->template_arg);
+    }
+    for (const ast_expression *expr : in->parameters) {
+        ret->parameters.push_back(Clone_Expression(expr));
+    }
+    return ret;
+}
+
 glslx::ast_constructor_call *glslx::Clone::Clone_ConstructorCall(const ast_constructor_call *in) {
     ast_constructor_call *ret = dst_->make<ast_constructor_call>(dst_->alloc.allocator);
     if (in->type->builtin) {
@@ -182,6 +195,8 @@ glslx::ast_expression *glslx::Clone::Clone_Expression(const ast_expression *in) 
         return Clone_Ternary(static_cast<const ast_ternary_expression *>(in));
     case eExprType::ArraySpecifier:
         return Clone_ArraySpecifier(static_cast<const ast_array_specifier *>(in));
+    case eExprType::MethodCall:
+        return Clone_MethodCall(static_cast<const ast_method_call *>(in));
     }
     return nullptr;
 }
@@ -219,6 +234,9 @@ glslx::ast_variable *glslx::Clone::Clone_Variable(const ast_variable *in) {
     ret->flags = in->flags;
     ret->precision = in->precision;
     ret->name = *dst_->str.Find(in->name);
+    if (in->semantic) {
+        ret->semantic = *dst_->str.Find(in->semantic);
+    }
     if (in->base_type->builtin) {
         ret->base_type = dst_->FindBuiltin(static_cast<const ast_builtin *>(in->base_type)->type);
     } else {
