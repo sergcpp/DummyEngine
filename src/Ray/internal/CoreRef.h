@@ -119,7 +119,7 @@ struct derivatives_t {
 };
 
 struct light_sample_t {
-    fvec4 col, L, lp;
+    fvec4 col{0.0f}, L{0.0f}, lp{0.0f}; // dot(N, ls.L) runs even when sampling is skipped (emissive / no lights)
     float area = 0, dist_mul = 1, pdf = 0;
     uint32_t cast_shadow : 1;
     uint32_t from_env : 1;
@@ -273,6 +273,7 @@ fvec2 portable_sincos(float a);
 
 float portable_asinf(float x);
 float portable_acosf(float x);
+float portable_atan2f(float y, float x); // y >= 0; (0,0) -> 0
 
 fvec2 get_scrambled_2d_rand(const uint32_t dim, const uint32_t seed, const int sample, const uint32_t rand_seq[]);
 
@@ -280,6 +281,13 @@ float SampleSphericalRectangle(const fvec4 &P, const fvec4 &light_pos, const fve
                                fvec2 Xi, fvec4 *out_p);
 float SampleSphericalTriangle(const fvec4 &P, const fvec4 &p1, const fvec4 &p2, const fvec4 &p3, const fvec2 Xi,
                               fvec4 *out_dir);
+
+// Spread-footprint sampling-domain clamp: shrink rect/disk to the hard-cone footprint circle around P
+// (out = clamped shape/area). Every light_pdf site MUST apply the identical clamp or MIS is biased.
+// false/0 = footprint misses the shape: contribution is exactly zero at P, caller keeps pdf = 0.
+bool spread_clamp_rect(const fvec4 &P, float tan_half_spread, fvec4 &pos, fvec4 &u, fvec4 &v, float &area);
+// Disk modes: 0 miss, 1 keep whole disk, 2 footprint circle, 3 sub-rect covering the lens (uniform sample)
+int spread_clamp_disk(const fvec4 &P, float tan_half_spread, fvec4 &pos, fvec4 &u, fvec4 &v, float &area);
 
 // Generation of rays
 void GeneratePrimaryRays(const camera_t &cam, const rect_t &r, int w, int h, const uint32_t rand_seq[],
@@ -465,9 +473,13 @@ fvec4 IntersectScene(const shadow_ray_t &r, int max_transp_depth, const scene_da
                      const Cpu::TexStorageBase *const textures[]);
 
 // Pick point on any light source for evaluation
-void SampleLightSource(const fvec4 &P, const fvec4 &T, const fvec4 &B, const fvec4 &N, const scene_data_t &sc,
-                       const Cpu::TexStorageBase *const textures[], float rand_pick_light, fvec2 rand_light_uv,
-                       fvec2 rand_tex_uv, light_sample_t &ls);
+void SampleLightSource(const fvec4 &P, const fvec4 &T, const fvec4 &B, const fvec4 &N, uint32_t n_oct,
+                       const scene_data_t &sc, const Cpu::TexStorageBase *const textures[], float rand_pick_light,
+                       fvec2 rand_light_uv, fvec2 rand_tex_uv, light_sample_t &ls);
+
+// Origin normal packing for the light-tree behind-surface cull: bit16 validity + oct8 pair; 0 = cull disabled
+uint32_t encode_n_oct(const fvec4 &N);
+fvec4 decode_n_oct(const uint32_t n_oct);
 
 // Account for visible lights contribution
 void IntersectAreaLights(Span<const ray_data_t> rays, Span<const light_t> lights, Span<const light_cwbvh_node_t> nodes,
@@ -483,7 +495,7 @@ float EvalTriLightFactor(const fvec4 &P, const fvec4 &ro, uint32_t tri_index, Sp
                          Span<const light_bvh_node_t> nodes);
 float EvalTriLightFactor(const fvec4 &P, const fvec4 &ro, uint32_t tri_index, Span<const light_t> lights,
                          Span<const light_wbvh_node_t> nodes);
-float EvalTriLightFactor(const fvec4 &P, const fvec4 &ro, uint32_t tri_index, Span<const light_t> lights,
+float EvalTriLightFactor(const fvec4 &P, uint32_t tri_index, Span<const light_t> lights,
                          Span<const light_cwbvh_node_t> nodes, Span<const uint32_t> leaf_lights);
 
 float Evaluate_EnvQTree(float y_rotation, const fvec4 *const *qtree_mips, int qtree_levels, const fvec4 &L);

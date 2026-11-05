@@ -361,6 +361,12 @@ float SampleSphericalTriangle(const vec3 P, const vec3 p1, const vec3 p2, const 
     // setup spherical triangle
     const vec3 A = normalize(p1 - P), B = normalize(p2 - P), C = normalize(p3 - P);
 
+    // duplicated projected vertices (dup pos or P collinear with an edge) degrade the angle algebra
+    // (area becomes a garbage passing angle) and make the s/t divisions hit exact 0/0
+    if (dot(A, B) >= 1.0 || dot(A, C) >= 1.0 || dot(B, C) >= 1.0) {
+        return 0.0;
+    }
+
     // calculate internal angles of spherical triangle: alpha, beta and gamma
     const vec3 BA = orthogonalize(A, B - A);
     const vec3 CA = orthogonalize(A, C - A);
@@ -373,8 +379,12 @@ float SampleSphericalTriangle(const vec3 P, const vec3 p1, const vec3 p2, const 
     const float beta = angle_between(AB, CB);
     const float gamma = angle_between(BC, AC);
 
-    const float area = alpha + beta + gamma - PI;
-    if (area <= SPHERICAL_AREA_THRESHOLD) {
+    // solid angle: atan2 form; when P ~ in the light plane num/den are cancellation residue -> keep the (exact) excess form
+    const float num = abs(dot(A, cross(B, C)));
+    const float den = 1.0 + dot(A, B) + dot(B, C) + dot(A, C);
+    const float excess = alpha + beta + gamma - PI;
+    const float area = (num * num + den * den >= 1e-6) ? 2.0 * portable_atan2f(num, den) : excess;
+    if (!(area > SPHERICAL_AREA_THRESHOLD)) {
         return 0.0;
     }
 
@@ -397,7 +407,8 @@ float SampleSphericalTriangle(const vec3 P, const vec3 p1, const vec3 p2, const 
 
     // Compute the s coordinate as normalized arc length from A to C_s
     const float denom = (v * p + u * q) * sincos_alpha[0];
-    const float a1 = ((v * q - u * p) * sincos_alpha[1] - v) / denom;
+    // exact-zero denoms (coplanar/edge degenerates) do occur here: ratio 0 reproduces the guarded +-0 quotient
+    const float a1 = denom != 0.0 ? (((v * q - u * p) * sincos_alpha[1] - v) / denom) : 0.0;
     const float s = (1.0 / b) * portable_acosf(clamp(a1, -1.0, 1.0));
 
     // Compute the third vertex of the sub - triangle
@@ -407,7 +418,8 @@ float SampleSphericalTriangle(const vec3 P, const vec3 p1, const vec3 p2, const 
     const float b0 = dot(C_s, B);
     const float denom2 = portable_acosf(clamp(b0, -1.0, 1.0));
     const float c0 = 1.0 - Xi.y * (1.0 - dot(C_s, B));
-    const float t = portable_acosf(clamp(c0, -1.0, 1.0)) / denom2;
+    // C_s landing on B gives denom2 == 0 with an always-0 numerator (portable_acosf(1) == 0): keep t = 0 out of 0/0
+    const float t = denom2 != 0.0 ? portable_acosf(clamp(c0, -1.0, 1.0)) / denom2 : 0.0;
 
     // Construct the corresponding point on the sphere.
     out_dir = slerp(B, C_s, t);
@@ -443,25 +455,27 @@ float SampleSphericalRectangle(const vec3 P, const vec3 light_pos, const vec3 ax
     const vec4 diff = vec4(x0, y1, x1, y0) - vec4(x1, y0, x0, y1);
     vec4 nz = vec4(y0, x1, y1, x0) * diff;
     nz = nz / sqrt(z0 * z0 * diff * diff + nz * nz);
-    const float g0 = portable_acosf(clamp(-nz.x * nz.y, -1.0, 1.0));
-    const float g1 = portable_acosf(clamp(-nz.y * nz.z, -1.0, 1.0));
-    const float g2 = portable_acosf(clamp(-nz.z * nz.w, -1.0, 1.0));
-    const float g3 = portable_acosf(clamp(-nz.w * nz.x, -1.0, 1.0));
+    const float g0 = portable_asinf(clamp(-nz.x * nz.y, -1.0, 1.0));
+    const float g1 = portable_asinf(clamp(-nz.y * nz.z, -1.0, 1.0));
+    const float g2 = portable_asinf(clamp(-nz.z * nz.w, -1.0, 1.0));
+    const float g3 = portable_asinf(clamp(-nz.w * nz.x, -1.0, 1.0));
     // compute predefined constants
     const float b0 = nz.x;
     const float b1 = nz.z;
     const float b0sq = b0 * b0;
-    const float k = 2 * PI - g2 - g3;
-    // compute solid angle from internal angles
-    const float area = g0 + g1 - k;
-    if (area <= SPHERICAL_AREA_THRESHOLD) {
+    // -sum(gamma_asin): acos form subtracts 2*PI from four near-PI/2 angles -> cancellation near the gate
+    const float area = -(g0 + g1 + g2 + g3);
+    // all-|nz| saturated -> grazing (z0 << edge dists): angle algebra garbage even above the area gate
+    const vec4 nzs = nz * nz;
+    if (!(area > SPHERICAL_AREA_THRESHOLD) || min(min(nzs.x, nzs.y), min(nzs.z, nzs.w)) > 0.99999) {
         return 0.0f;
     }
 
     // compute cu
-    const float au = Xi.x * area + k;
+    // au = r*area + g2 + g3 is the old (r*area + 2*PI - g2_acos - g3_acos) - PI: sin/cos flip sign, hence + b1
+    const float au = Xi.x * area + g2 + g3;
     const vec2 sincos_au = portable_sincos(au);
-    const float fu = (sincos_au[1] * b0 - b1) / sincos_au[0];
+    const float fu = (sincos_au[1] * b0 + b1) / sincos_au[0];
     float cu = 1.0 / sqrt(fu * fu + b0sq) * (fu > 0.0 ? 1.0 : -1.0);
     cu = clamp(cu, -1.0, 1.0);
     // compute xu
@@ -757,6 +771,94 @@ float spread_attenuation(const vec3 D, const vec3 light_fwd, const float tan_hal
                          const float spread_normalization) {
     const float tan_a = tan_angle(-D, light_fwd);
     return max((tan_half_spread - tan_a) * spread_normalization, 0.0);
+}
+
+// Spread-footprint sampling-domain clamp (CPU mirror: Ray::Ref::spread_clamp_rect). Shape args are
+// pre-set to the light's own; false = footprint misses the emitter -> contribution is exactly 0.
+bool spread_clamp_rect(const vec3 P, const float tan_half_spread, inout vec3 pos, inout vec3 u, inout vec3 v,
+                       inout float area) {
+    const vec3 fwd = normalize(cross(u, v));
+    const float len_u = length(u), len_v = length(v);
+    const vec3 un = u * (1.0 / len_u), vn = v * (1.0 / len_v);
+    const float t = dot(fwd, P - pos);
+    const vec3 closest = P - t * fwd;
+    const float r = t * tan_half_spread;
+    const float su = dot(un, closest - pos), sv = dot(vn, closest - pos);
+    const float min_u = max(su - r, -0.5 * len_u), max_u = min(su + r, 0.5 * len_u);
+    const float min_v = max(sv - r, -0.5 * len_v), max_v = min(sv + r, 0.5 * len_v);
+    if (min_u >= max_u || min_v >= max_v) {
+        return false;
+    }
+    const float lu = max_u - min_u, lv = max_v - min_v;
+    pos = pos + un * (0.5 * (min_u + max_u)) + vn * (0.5 * (min_v + max_v));
+    u = un * lu;
+    v = vn * lv;
+    area = lu * lv;
+    return true;
+}
+
+// Disk clamp modes: 0 miss, 1 keep whole disk, 2 footprint circle, 3 sub-rect covering the circle-pair lens
+int spread_clamp_disk(const vec3 P, const float tan_half_spread, inout vec3 pos, inout vec3 u, inout vec3 v,
+                      inout float area) {
+    const vec3 fwd = normalize(cross(u, v));
+    const float len_u = length(u), len_v = length(v);
+    const vec3 un = u * (1.0 / len_u), vn = v * (1.0 / len_v);
+    const float t = dot(fwd, P - pos);
+    const vec3 closest = P - t * fwd;
+    const float r = t * tan_half_spread;
+    if (r <= 0.0) {
+        return 0;
+    }
+    bool pick_spread = false;
+    if (len_u == len_v) {
+        const float rr = 0.5 * len_u;
+        const vec3 off = pos - closest;
+        const float dist = length(off);
+        if (dist >= rr + r) {
+            return 0;
+        }
+        pick_spread = (dist <= abs(rr - r)) && (r < rr);
+        if (dist > abs(rr - r)) {
+            const float lu = rr + r - dist;
+            // lens bounding-box transverse extent: chord through both circle centers' frame
+            const float lv = (abs(sqr(rr) - sqr(r)) >= sqr(dist))
+                ? 2.0 * min(rr, r)
+                : sqrt(max(sqr(2.0 * r) - sqr(dist + (sqr(r) - sqr(rr)) / dist), 0.0));
+            if (lu * lv < min(PI * rr * rr, PI * r * r)) {
+                const vec3 au = off * (1.0 / dist), av = cross(fwd, au);
+                pos = 0.5 * (pos + closest + au * (r - rr));
+                u = au * lu;
+                v = av * lv;
+                area = lu * lv;
+                return 3;
+            }
+            pick_spread = (PI * r * r < PI * rr * rr);
+        }
+    } else {
+        const float su = dot(un, closest - pos), sv = dot(vn, closest - pos);
+        const float min_u = max(su - r, -0.5 * len_u), max_u = min(su + r, 0.5 * len_u);
+        const float min_v = max(sv - r, -0.5 * len_v), max_v = min(sv + r, 0.5 * len_v);
+        if (min_u >= max_u || min_v >= max_v) {
+            return 0;
+        }
+        const float lu = max_u - min_u, lv = max_v - min_v;
+        if (lu * lv < min(0.25 * PI * len_u * len_v, PI * r * r)) {
+            pos = pos + un * (0.5 * (min_u + max_u)) + vn * (0.5 * (min_v + max_v));
+            u = un * lu;
+            v = vn * lv;
+            area = lu * lv;
+            return 3;
+        }
+        pick_spread = (PI * r * r < 0.25 * PI * len_u * len_v);
+    }
+    if (pick_spread) {
+        pos = pos + un * dot(un, closest - pos) + vn * dot(vn, closest - pos);
+        u = un * (2.0 * r);
+        v = vn * (2.0 * r);
+        area = PI * r * r;
+        return 2;
+    }
+    return 1;
 }
 
 float BRDF_PrincipledDiffuse(vec3 V, vec3 N, vec3 L, vec3 H, float roughness) {
@@ -1218,7 +1320,7 @@ float sphere_intersection(const vec3 center, const float radius, const vec3 ro, 
     return (-b - sqrt(max(discriminant, 0.0f))) / (2 * a);
 }
 
-void SampleLightSource(vec3 P, vec3 T, vec3 B, vec3 N, const float rand_pick_light, const vec2 rand_light_uv,
+void SampleLightSource(vec3 P, vec3 T, vec3 B, vec3 N, vec3 N_pick, const float rand_pick_light, const vec2 rand_light_uv,
                        const vec2 rand_tex_uv, inout light_sample_t ls) {
     float u1 = rand_pick_light;
 
@@ -1229,7 +1331,7 @@ void SampleLightSource(vec3 P, vec3 T, vec3 B, vec3 N, const float rand_pick_lig
         const light_cwbvh_node_t n = g_light_cwnodes[cur];
 
         float importance[8];
-        const float total_importance = calc_lnode_importance(n, P, importance);
+        const float total_importance = calc_lnode_importance(n, P, N_pick, importance);
         [[dont_flatten]] if (total_importance == 0.0) {
             // failed to find lightsource for sampling
             return;
@@ -1360,16 +1462,27 @@ void SampleLightSource(vec3 P, vec3 T, vec3 B, vec3 N, const float rand_pick_lig
         const vec3 light_u = l.RECT_U, light_v = l.RECT_V;
         const vec3 light_forward = normalize(cross(light_u, light_v));
 
+        vec3 cpos = light_pos, cu = light_u, cv = light_v;
+        float carea = l.RECT_AREA;
+        bool in_cone = true;
+        if (l.RECT_SPREAD_NORMALIZATION > 0.0) {
+            in_cone = spread_clamp_rect(P, l.RECT_TAN_HALF_SPREAD, cpos, cu, cv, carea);
+        }
+
         vec3 lp;
         float pdf = 0.0;
 
+        if (in_cone) {
 #if USE_SPHERICAL_AREA_LIGHT_SAMPLING
-        pdf = SampleSphericalRectangle(P, light_pos, light_u, light_v, rand_light_uv, lp);
-        if (pdf <= 0.0)
+            pdf = SampleSphericalRectangle(P, cpos, cu, cv, rand_light_uv, lp);
+            if (pdf <= 0.0)
 #endif
-        {
-            const float r1 = rand_light_uv.x - 0.5, r2 = rand_light_uv.y - 0.5;
-            lp = light_pos + light_u * r1 + light_v * r2;
+            {
+                const float r1 = rand_light_uv.x - 0.5, r2 = rand_light_uv.y - 0.5;
+                lp = cpos + cu * r1 + cv * r2;
+            }
+        } else {
+            lp = cpos;
         }
 
         float ls_dist;
@@ -1377,10 +1490,10 @@ void SampleLightSource(vec3 P, vec3 T, vec3 B, vec3 N, const float rand_pick_lig
         ls.ray_flags = LIGHT_RAY_VISIBILITY(l);
 
         const float cos_theta = dot(-ls.L, light_forward);
-        if (cos_theta > 0.0) {
+        if (in_cone && cos_theta > 0.0) {
             ls.lp = offset_ray(lp, light_forward);
-            ls.pdf = (pdf > 0.0) ? pdf : (ls_dist * ls_dist) / (l.RECT_AREA * cos_theta);
-            ls.area = l.RECT_AREA;
+            ls.pdf = (pdf > 0.0) ? pdf : (ls_dist * ls_dist) / (carea * cos_theta);
+            ls.area = carea;
             if (!LIGHT_VISIBLE(l)) {
                 ls.area = 0.0;
             }
@@ -1406,24 +1519,40 @@ void SampleLightSource(vec3 P, vec3 T, vec3 B, vec3 N, const float rand_pick_lig
         const vec3 light_u = l.DISK_U;
         const vec3 light_v = l.DISK_V;
 
-        vec2 offset = 2.0 * rand_light_uv - vec2(1.0);
-        if (offset[0] != 0.0 || offset[1] != 0.0) {
-            float theta, r;
-            if (abs(offset[0]) > abs(offset[1])) {
-                r = offset[0];
-                theta = 0.25 * PI * (offset[1] / offset[0]);
-            } else {
-                r = offset[1];
-                theta = 0.5 * PI - 0.25 * PI * (offset[0] / offset[1]);
-            }
-
-            const vec2 sincos_theta = portable_sincos(theta);
-
-            offset[0] = 0.5 * r * sincos_theta[1];
-            offset[1] = 0.5 * r * sincos_theta[0];
+        vec3 cpos = light_pos, cu = light_u, cv = light_v;
+        float carea = l.DISK_AREA;
+        int mode = 1;
+        if (l.DISK_SPREAD_NORMALIZATION > 0.0) {
+            mode = spread_clamp_disk(P, l.DISK_TAN_HALF_SPREAD, cpos, cu, cv, carea);
         }
 
-        const vec3 lp = light_pos + light_u * offset[0] + light_v * offset[1];
+        vec3 lp;
+        if (mode == 3) {
+            lp = cpos + cu * (rand_light_uv.x - 0.5) + cv * (rand_light_uv.y - 0.5);
+        } else {
+            vec2 offset = 2.0 * rand_light_uv - vec2(1.0);
+            if (offset[0] != 0.0 || offset[1] != 0.0) {
+                float theta, r;
+                if (abs(offset[0]) > abs(offset[1])) {
+                    r = offset[0];
+                    theta = 0.25 * PI * (offset[1] / offset[0]);
+                } else {
+                    r = offset[1];
+                    theta = 0.5 * PI - 0.25 * PI * (offset[0] / offset[1]);
+                }
+
+                const vec2 sincos_theta = portable_sincos(theta);
+
+                offset[0] = 0.5 * r * sincos_theta[1];
+                offset[1] = 0.5 * r * sincos_theta[0];
+            }
+
+            lp = cpos + cu * offset[0] + cv * offset[1];
+        }
+        if (mode == 0) {
+            lp = cpos;
+        }
+
         const vec3 light_forward = normalize(cross(light_u, light_v));
 
         ls.lp = offset_ray(lp, light_forward);
@@ -1433,11 +1562,14 @@ void SampleLightSource(vec3 P, vec3 T, vec3 B, vec3 N, const float rand_pick_lig
         ls.ray_flags = LIGHT_RAY_VISIBILITY(l);
 
         const float cos_theta = dot(-ls.L, light_forward);
-        [[flatten]] if (cos_theta > 0.0) {
-            ls.pdf = (ls_dist * ls_dist) / (ls.area * cos_theta);
+        [[flatten]] if (mode != 0 && cos_theta > 0.0) {
+            ls.pdf = (ls_dist * ls_dist) / (carea * cos_theta);
         }
 
         if (!LIGHT_VISIBLE(l)) {
+            ls.area = 0.0;
+        }
+        if (mode == 0) {
             ls.area = 0.0;
         }
 
@@ -1456,6 +1588,18 @@ void SampleLightSource(vec3 P, vec3 T, vec3 B, vec3 N, const float rand_pick_lig
         }
         if (l.DISK_SPREAD_NORMALIZATION > 0.0) {
             ls.col *= spread_attenuation(ls.L, light_forward, l.DISK_TAN_HALF_SPREAD, l.DISK_SPREAD_NORMALIZATION);
+            if (mode != 0) {
+                // sub-rect / circle domains can stick out of the emitter: those points radiate nothing
+                const float len_u = length(light_u), len_v = length(light_v);
+                const vec3 un = light_u * (1.0 / len_u), vn = light_v * (1.0 / len_v);
+                const vec3 inplane = lp - light_pos;
+                const float su = dot(un, inplane), sv = dot(vn, inplane);
+                const float eps_u = (0.5 + 1e-7) * len_u + 1e-6, eps_v = (0.5 + 1e-7) * len_v + 1e-6;
+                if (sqr(su / eps_u) + sqr(sv / eps_v) > 1.0) {
+                    ls.pdf = 0.0;
+                    ls.area = 0.0;
+                }
+            }
         }
     } else [[dont_flatten]] if (l_type == LIGHT_TYPE_LINE) {
         const vec3 light_pos = l.LINE_POS;
@@ -1607,7 +1751,7 @@ uint g_stack_spill[MAX_STACK_SIZE - SM_STACK_SIZE];
 shared float g_stack_factors[LOCAL_GROUP_SIZE_X * LOCAL_GROUP_SIZE_Y][SM_STACK_SIZE];
 float g_stack_factors_spill[MAX_STACK_SIZE - SM_STACK_SIZE];
 
-float EvalTriLightFactor(const vec3 P, const vec3 ro, uint tri_index) {
+float EvalTriLightFactor(const vec3 P, uint tri_index) {
     uint stack_size = 0;
     STACK_PUSH2(0, 1.0);
 
@@ -1620,7 +1764,9 @@ float EvalTriLightFactor(const vec3 P, const vec3 ro, uint tri_index) {
             const light_cwbvh_node_t n = g_light_cwnodes[cur];
 
             float importance[8];
-            const float total_importance = calc_lnode_importance(n, ro, P, importance);
+            // geometry at surf.P (the pick CDF point); unweighted basis - tri-light emission is two-sided,
+            // grazing weights here would inflate BSDF-hit MIS weights
+            const float total_importance = calc_lnode_importance_contained(n, P, P, importance);
 
             // Drain the candidate mask with findLSB() so only the non-zero-importance children are
             // visited (slot order preserved).
@@ -1774,17 +1920,24 @@ vec3 Evaluate_LightColor(const ray_data_t ray, const hit_data_t inter, const vec
             lcol *= spread_attenuation(rd, light_forward, l.RECT_TAN_HALF_SPREAD, l.RECT_SPREAD_NORMALIZATION);
         }
 
-        float light_pdf;
+        vec3 cpos = light_pos, cu = light_u, cv = light_v;
+        float carea = l.RECT_AREA;
+        bool in_cone = true;
+        if (l.RECT_SPREAD_NORMALIZATION > 0.0) {
+            in_cone = spread_clamp_rect(ro, l.RECT_TAN_HALF_SPREAD, cpos, cu, cv, carea);
+        }
+
+        float light_pdf = 0.0;
+        if (in_cone) {
 #if USE_SPHERICAL_AREA_LIGHT_SAMPLING
-        vec3 _unused;
-        light_pdf = SampleSphericalRectangle(ro, light_pos, light_u, light_v, vec2(0.0), _unused) / pdf_factor;
-        if (light_pdf == 0.0)
+            vec3 _unused;
+            light_pdf = SampleSphericalRectangle(ro, cpos, cu, cv, vec2(0.0), _unused) / pdf_factor;
 #endif
-        {
-            const vec3 light_forward = normalize(cross(light_u, light_v));
-            const float light_area = l.RECT_AREA;
-            const float cos_theta = dot(rd, light_forward);
-            light_pdf = (inter.t * inter.t) / (light_area * cos_theta * pdf_factor);
+            if (light_pdf == 0.0) {
+                const float light_area = carea;
+                const float cos_theta = dot(rd, light_forward);
+                light_pdf = (inter.t * inter.t) / (light_area * cos_theta * pdf_factor);
+            }
         }
 
         const float bsdf_pdf = ray.pdf;
@@ -1799,11 +1952,17 @@ vec3 Evaluate_LightColor(const ray_data_t ray, const hit_data_t inter, const vec
             lcol *= spread_attenuation(rd, light_forward, l.DISK_TAN_HALF_SPREAD, l.DISK_SPREAD_NORMALIZATION);
         }
 
-        const float light_area = l.DISK_AREA;
-        const float plane_dist = dot(light_forward, light_pos);
+        vec3 cpos = light_pos, cu = light_u, cv = light_v;
+        float carea = l.DISK_AREA;
+        bool in_cone = true;
+        if (l.DISK_SPREAD_NORMALIZATION > 0.0) {
+            in_cone = (spread_clamp_disk(ro, l.DISK_TAN_HALF_SPREAD, cpos, cu, cv, carea) != 0);
+        }
+
+        const float light_area = carea;
         const float cos_theta = dot(rd, light_forward);
 
-        const float light_pdf = (inter.t * inter.t) / (light_area * cos_theta * pdf_factor);
+        const float light_pdf = in_cone ? (inter.t * inter.t) / (light_area * cos_theta * pdf_factor) : 0.0;
         const float bsdf_pdf = ray.pdf;
 
         const float mis_weight = power_heuristic(bsdf_pdf, light_pdf);
@@ -2586,7 +2745,11 @@ vec3 ShadeSurface(const int ray_index, const hit_data_t inter, const ray_data_t 
         const float rand_pick_light = get_scrambled_2d_rand(rand_dim + RAND_DIM_LIGHT_PICK, rand_hash, g_params.iteration - 1).x;
         const vec2 rand_light_uv = get_scrambled_2d_rand(rand_dim + RAND_DIM_LIGHT, rand_hash, g_params.iteration - 1);
 
-        SampleLightSource(surf.P, surf.T, surf.B, surf.N, rand_pick_light, rand_light_uv, tex_rand, ls);
+        // refractive/Principled-transmissive events legitimately sample behind-surface lights; weight/cull off there
+        const vec3 pick_N = (mat.type == RefractiveNode || (mat.type == PrincipledNode && (mat.metallic_and_transmission >> 16u) != 0u))
+                                ? vec3(0.0)
+                                : surf.N;
+        SampleLightSource(surf.P, surf.T, surf.B, surf.N, pick_N, rand_pick_light, rand_light_uv, tex_rand, ls);
     }
     const float N_dot_L = dot(surf.N, ls.L);
 #endif
@@ -2680,7 +2843,7 @@ vec3 ShadeSurface(const int ray_index, const hit_data_t inter, const ray_data_t 
         [[dont_flatten]] if ((mat.flags & MAT_FLAG_IMP_SAMPLE) != 0) {
 #if USE_HIERARCHICAL_NEE
             // TODO: maybe this can be done more efficiently
-            const float pdf_factor = EvalTriLightFactor(surf.P, ro, tri_index);
+            const float pdf_factor = EvalTriLightFactor(surf.P, tri_index);
 #else
             const float pdf_factor = float(g_params.li_count);
 #endif
