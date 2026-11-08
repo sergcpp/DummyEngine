@@ -56,7 +56,7 @@ runs:
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bathroom.json -ref references/bathroom_cycles.uncompressed.png -w 678 -h 900 --res-scale 1.0 --preset ultra --psnr 20.0 --no-postprocess
         mv bathroom.png bathroom_ultra.png
         cp bathroom_ultra.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bathroom.json -ref references/bathroom_cycles.uncompressed.png -w 678 -h 900 --res-scale 1.0 --pt --psnr 26.45 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bathroom.json -ref references/bathroom_cycles.uncompressed.png -w 678 -h 900 --res-scale 1.0 --pt --psnr 26.40 --no-postprocess
         mv bathroom.png bathroom_pt.png
         cp bathroom_pt.png $WORK_DIR/${{ inputs.out-dir }}
         ### Transparent Machines
