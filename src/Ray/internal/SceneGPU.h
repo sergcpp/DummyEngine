@@ -56,8 +56,16 @@ class Scene : public SceneCommon {
   protected:
     friend class NS::Renderer;
 
+    // ARM GPUs (Apple, Adreno, Mali) lack BC support: all compressed content goes to ASTC there
+    static constexpr bool ARM_PLATFORM =
+#if defined(__aarch64__) || defined(_M_ARM64)
+        true;
+#else
+        false;
+#endif
+
     Context *ctx_;
-    bool use_hwrt_ = false, use_bindless_ = false, use_tex_compression_ = false;
+    bool use_hwrt_ = false, use_bindless_ = false, use_tex_compression_ = false, use_astc_ = false;
 
     SparseStorage<cwbvh_node_t, false /* Replicate */> nodes_;
     SparseStorage<uint32_t, false /* Replicate */> leaf_prims_;
@@ -75,7 +83,7 @@ class Scene : public SceneCommon {
 
     BindlessTexData bindless_tex_data_;
 
-    ImageAtlas tex_atlases_[8];
+    ImageAtlas tex_atlases_[9];
 
     SparseStorage<light_t> lights_;
     Vector<uint32_t> li_indices_;
@@ -155,7 +163,7 @@ class Scene : public SceneCommon {
     void _insert_mem_barrier(void *cmdbuf);
 
     template <typename T, int N>
-    static void WriteTextureMips(const color_t<T, N> data[], const int _res[2], int mip_count, bool compress,
+    static void WriteTextureMips(const color_t<T, N> data[], const int _res[2], int mip_count, eFormat fmt,
                                  uint8_t out_data[], uint32_t out_size[16]);
 
   public:
@@ -239,7 +247,8 @@ int round_up(int v, int align);
 inline Ray::NS::Scene::Scene(Context *ctx, const bool use_hwrt, const bool use_bindless, const bool use_tex_compression,
                              const bool use_spatial_cache)
     : ctx_(ctx), use_hwrt_(use_hwrt), use_bindless_(use_bindless), use_tex_compression_(use_tex_compression),
-      nodes_(ctx, "Nodes"), leaf_prims_(ctx, "Leaf Prims"), tris_(ctx, "Tris"), tri_indices_(ctx, "Tri Indices"),
+      use_astc_(use_tex_compression && ctx->astc_supported() && ARM_PLATFORM), nodes_(ctx, "Nodes"),
+      leaf_prims_(ctx, "Leaf Prims"), tris_(ctx, "Tris"), tri_indices_(ctx, "Tri Indices"),
       tri_materials_(ctx, "Tri Materials"), mesh_instances_(ctx, "Mesh Instances"), vertices_(ctx, "Vertices"),
       vtx_indices_(ctx, "Vtx Indices"), materials_(ctx, "Materials"), atlas_textures_(ctx, "Atlas Textures"),
       bindless_tex_data_{ctx},
@@ -250,7 +259,9 @@ inline Ray::NS::Scene::Scene(Context *ctx, const bool use_hwrt, const bool use_b
                    {ctx, "Atlas BC1", eFormat::BC1, eFilter::Nearest, TEXTURE_ATLAS_SIZE, TEXTURE_ATLAS_SIZE},
                    {ctx, "Atlas BC3", eFormat::BC3, eFilter::Nearest, TEXTURE_ATLAS_SIZE, TEXTURE_ATLAS_SIZE},
                    {ctx, "Atlas BC4", eFormat::BC4, eFilter::Nearest, TEXTURE_ATLAS_SIZE, TEXTURE_ATLAS_SIZE},
-                   {ctx, "Atlas BC5", eFormat::BC5, eFilter::Nearest, TEXTURE_ATLAS_SIZE, TEXTURE_ATLAS_SIZE}},
+                   {ctx, "Atlas BC5", eFormat::BC5, eFilter::Nearest, TEXTURE_ATLAS_SIZE, TEXTURE_ATLAS_SIZE},
+                   {ctx, "Atlas ASTC", ctx->astc_supported() ? eFormat::ASTC_4x4 : eFormat::RGBA8, eFilter::Nearest,
+                    TEXTURE_ATLAS_SIZE, TEXTURE_ATLAS_SIZE}},
       lights_(ctx, "Lights"), li_indices_(ctx, "LI Indices"), light_cwnodes_(ctx, "Light CWNodes"),
       light_leaf_prims_(ctx, "Light Leaf Prims"), spatial_cache_entries_(ctx, "Spatial Cache Entries"),
       spatial_cache_voxels_curr_(ctx, "Spatial Cache Voxels (1/2)"),
@@ -309,11 +320,11 @@ inline Ray::TextureHandle Ray::NS::Scene::AddAtlasTexture_nolock(const tex_desc_
             }
 
             tex_data = repacked_normalmap.get();
-            t.atlas = use_compression ? 7 : 2;
+            t.atlas = use_compression ? (use_astc_ ? 8 : 7) : 2;
         }
     } else if (_t.format == eTextureFormat::RGB888) {
         if (!_t.is_normalmap) {
-            t.atlas = use_compression ? 5 : 1;
+            t.atlas = use_compression ? (use_astc_ ? 8 : 5) : 1;
             t.height |= ATLAS_TEX_YCOCG_BIT;
         } else {
             // TODO: get rid of this allocation
@@ -327,10 +338,10 @@ inline Ray::TextureHandle Ray::NS::Scene::AddAtlasTexture_nolock(const tex_desc_
             }
 
             tex_data = repacked_normalmap.get();
-            t.atlas = use_compression ? 7 : 2;
+            t.atlas = use_compression ? (use_astc_ ? 8 : 7) : 2;
         }
     } else if (_t.format == eTextureFormat::RG88) {
-        t.atlas = use_compression ? 7 : 2;
+        t.atlas = use_compression ? (use_astc_ ? 8 : 7) : 2;
         reconstruct_z = _t.is_normalmap;
 
         const bool invert_y = _t.is_normalmap && (_t.convention == eTextureConvention::DX);
@@ -345,7 +356,7 @@ inline Ray::TextureHandle Ray::NS::Scene::AddAtlasTexture_nolock(const tex_desc_
             tex_data = repacked_normalmap.get();
         }
     } else if (_t.format == eTextureFormat::R8) {
-        t.atlas = use_compression ? 6 : 3;
+        t.atlas = use_compression ? (use_astc_ ? 8 : 6) : 3;
     } else {
         const bool flip_vertical = (_t.convention == eTextureConvention::DX);
         const bool invert_green = (_t.convention == eTextureConvention::DX) && _t.is_normalmap;
@@ -407,9 +418,15 @@ inline Ray::TextureHandle Ray::NS::Scene::AddAtlasTexture_nolock(const tex_desc_
         int page = -1, pos[2] = {};
         if (t.atlas == 0) {
             page = tex_atlases_[0].Allocate<uint8_t, 4>(reinterpret_cast<const color_rgba8_t *>(tex_data), res, pos);
-        } else if (t.atlas == 1 || t.atlas == 5) {
-            page =
-                tex_atlases_[t.atlas].Allocate<uint8_t, 3>(reinterpret_cast<const color_rgb8_t *>(tex_data), res, pos);
+        } else if (t.atlas == 1 || t.atlas == 5 || t.atlas == 8) {
+            if (t.atlas == 8 && _t.format == eTextureFormat::R8) {
+                page = tex_atlases_[8].Allocate<uint8_t, 1>(reinterpret_cast<const color_r8_t *>(tex_data), res, pos);
+            } else if (t.atlas == 8 && (_t.format == eTextureFormat::RG88 || _t.is_normalmap)) {
+                page = tex_atlases_[8].Allocate<uint8_t, 2>(reinterpret_cast<const color_rg8_t *>(tex_data), res, pos);
+            } else {
+                page = tex_atlases_[t.atlas].Allocate<uint8_t, 3>(reinterpret_cast<const color_rgb8_t *>(tex_data), res,
+                                                                  pos);
+            }
         } else if (t.atlas == 2 || t.atlas == 7) {
             page =
                 tex_atlases_[t.atlas].Allocate<uint8_t, 2>(reinterpret_cast<const color_rg8_t *>(tex_data), res, pos);
@@ -437,7 +454,18 @@ inline Ray::TextureHandle Ray::NS::Scene::AddAtlasTexture_nolock(const tex_desc_
         // We have to generate mips here as uncompressed data will be lost
 
         int pages[16], positions[16][2];
-        if (_t.format == eTextureFormat::RGBA8888) {
+        if (t.atlas == 8) { // ASTC atlas: dispatch by packed channel count, data already repacked (YCoCg / RG / R)
+            if (_t.format == eTextureFormat::R8) {
+                tex_atlases_[8].AllocateMips<uint8_t, 1>(reinterpret_cast<const color_r8_t *>(tex_data), res,
+                                                         NUM_MIP_LEVELS - 1, pages, positions);
+            } else if (_t.format == eTextureFormat::RG88 || _t.is_normalmap) {
+                tex_atlases_[8].AllocateMips<uint8_t, 2>(reinterpret_cast<const color_rg8_t *>(tex_data), res,
+                                                         NUM_MIP_LEVELS - 1, pages, positions);
+            } else {
+                tex_atlases_[8].AllocateMips<uint8_t, 3>(reinterpret_cast<const color_rgb8_t *>(tex_data), res,
+                                                         NUM_MIP_LEVELS - 1, pages, positions);
+            }
+        } else if (_t.format == eTextureFormat::RGBA8888) {
             tex_atlases_[t.atlas].AllocateMips<uint8_t, 4>(reinterpret_cast<const color_rgba8_t *>(_t.data.data()), res,
                                                            NUM_MIP_LEVELS - 1, pages, positions);
         } else if (_t.format == eTextureFormat::RGB888) {
@@ -461,10 +489,10 @@ inline Ray::TextureHandle Ray::NS::Scene::AddAtlasTexture_nolock(const tex_desc_
     }
 
     log_->Info("Ray: Texture '%s' loaded (atlas = %i, %ix%i)", _t.name.data(), int(t.atlas), _t.w, _t.h);
-    log_->Info("Ray: Atlasses are (RGBA[%i], RGB[%i], RG[%i], R[%i], BC1[%i], BC3[%i], BC4[%i], BC5[%i])",
+    log_->Info("Ray: Atlasses are (RGBA[%i], RGB[%i], RG[%i], R[%i], BC1[%i], BC3[%i], BC4[%i], BC5[%i], ASTC[%i])",
                tex_atlases_[0].page_count(), tex_atlases_[1].page_count(), tex_atlases_[2].page_count(),
                tex_atlases_[3].page_count(), tex_atlases_[4].page_count(), tex_atlases_[5].page_count(),
-               tex_atlases_[6].page_count(), tex_atlases_[7].page_count());
+               tex_atlases_[6].page_count(), tex_atlases_[7].page_count(), tex_atlases_[8].page_count());
 
     const std::pair<uint32_t, uint32_t> at = atlas_textures_.push(t);
     return TextureHandle{at.first, at.second};
@@ -516,10 +544,17 @@ inline Ray::TextureHandle Ray::NS::Scene::AddBindlessTexture_nolock(const tex_de
 
             if (use_compression) {
                 src_fmt = eFormat::RG8;
-                fmt = eFormat::BC5;
-                data_size[0] = GetRequiredMemory_BC5(_t.w, _t.h, ImageDataPitchAlignment);
-                CompressImage_BC5<2>(&repacked_data[0], _t.w, _t.h, stage_data,
-                                     GetRequiredMemory_BC5(_t.w, 1, ImageDataPitchAlignment));
+                if (use_astc_) {
+                    fmt = eFormat::ASTC_4x4;
+                    data_size[0] = GetRequiredMemory_ASTC4x4(_t.w, _t.h, ImageDataPitchAlignment);
+                    CompressImage_ASTC4x4_RG<2>(&repacked_data[0], _t.w, _t.h, stage_data,
+                                                GetRequiredMemory_ASTC4x4(_t.w, 1, ImageDataPitchAlignment));
+                } else {
+                    fmt = eFormat::BC5;
+                    data_size[0] = GetRequiredMemory_BC5(_t.w, _t.h, ImageDataPitchAlignment);
+                    CompressImage_BC5<2>(&repacked_data[0], _t.w, _t.h, stage_data,
+                                         GetRequiredMemory_BC5(_t.w, 1, ImageDataPitchAlignment));
+                }
             } else {
                 src_fmt = fmt = eFormat::RG8;
                 data_size[0] = round_up(_t.w * 2, ImageDataPitchAlignment) * _t.h;
@@ -537,10 +572,17 @@ inline Ray::TextureHandle Ray::NS::Scene::AddBindlessTexture_nolock(const tex_de
                 auto temp_YCoCg = ConvertRGB_to_CoCgxY(_t.data.data(), _t.w, _t.h);
                 is_YCoCg = true;
                 src_fmt = eFormat::RGB8;
-                fmt = eFormat::BC3;
-                data_size[0] = GetRequiredMemory_BC3(_t.w, _t.h, ImageDataPitchAlignment);
-                CompressImage_BC3<true /* Is_YCoCg */>(temp_YCoCg.get(), _t.w, _t.h, stage_data,
-                                                       GetRequiredMemory_BC3(_t.w, 1, ImageDataPitchAlignment));
+                if (use_astc_) {
+                    fmt = eFormat::ASTC_4x4;
+                    data_size[0] = GetRequiredMemory_ASTC4x4(_t.w, _t.h, ImageDataPitchAlignment);
+                    CompressImage_ASTC4x4_RGBA<4>(temp_YCoCg.get(), _t.w, _t.h, stage_data,
+                                                  GetRequiredMemory_ASTC4x4(_t.w, 1, ImageDataPitchAlignment), true);
+                } else {
+                    fmt = eFormat::BC3;
+                    data_size[0] = GetRequiredMemory_BC3(_t.w, _t.h, ImageDataPitchAlignment);
+                    CompressImage_BC3<true /* Is_YCoCg */>(temp_YCoCg.get(), _t.w, _t.h, stage_data,
+                                                           GetRequiredMemory_BC3(_t.w, 1, ImageDataPitchAlignment));
+                }
             } else if (ctx_->rgb8_unorm_is_supported()) {
                 src_fmt = fmt = eFormat::RGB8;
                 data_size[0] = round_up(_t.w * 3, ImageDataPitchAlignment) * _t.h;
@@ -589,10 +631,17 @@ inline Ray::TextureHandle Ray::NS::Scene::AddBindlessTexture_nolock(const tex_de
 
             if (use_compression) {
                 src_fmt = eFormat::RG8;
-                fmt = eFormat::BC5;
-                data_size[0] = GetRequiredMemory_BC5(_t.w, _t.h, ImageDataPitchAlignment);
-                CompressImage_BC5<2>(&repacked_data[0], _t.w, _t.h, stage_data,
-                                     GetRequiredMemory_BC5(_t.w, 1, ImageDataPitchAlignment));
+                if (use_astc_) {
+                    fmt = eFormat::ASTC_4x4;
+                    data_size[0] = GetRequiredMemory_ASTC4x4(_t.w, _t.h, ImageDataPitchAlignment);
+                    CompressImage_ASTC4x4_RG<2>(&repacked_data[0], _t.w, _t.h, stage_data,
+                                                GetRequiredMemory_ASTC4x4(_t.w, 1, ImageDataPitchAlignment));
+                } else {
+                    fmt = eFormat::BC5;
+                    data_size[0] = GetRequiredMemory_BC5(_t.w, _t.h, ImageDataPitchAlignment);
+                    CompressImage_BC5<2>(&repacked_data[0], _t.w, _t.h, stage_data,
+                                         GetRequiredMemory_BC5(_t.w, 1, ImageDataPitchAlignment));
+                }
             } else {
                 src_fmt = fmt = eFormat::RG8;
                 data_size[0] = round_up(_t.w * 2, ImageDataPitchAlignment) * _t.h;
@@ -625,10 +674,17 @@ inline Ray::TextureHandle Ray::NS::Scene::AddBindlessTexture_nolock(const tex_de
     } else if (_t.format == eTextureFormat::R8) {
         if (use_compression) {
             src_fmt = eFormat::R8;
-            fmt = eFormat::BC4;
-            data_size[0] = GetRequiredMemory_BC4(_t.w, _t.h, ImageDataPitchAlignment);
-            CompressImage_BC4<1>(_t.data.data(), _t.w, _t.h, stage_data,
-                                 GetRequiredMemory_BC4(_t.w, 1, ImageDataPitchAlignment));
+            if (use_astc_) {
+                fmt = eFormat::ASTC_4x4;
+                data_size[0] = GetRequiredMemory_ASTC4x4(_t.w, _t.h, ImageDataPitchAlignment);
+                CompressImage_ASTC4x4_R8<1>(_t.data.data(), _t.w, _t.h, stage_data,
+                                            GetRequiredMemory_ASTC4x4(_t.w, 1, ImageDataPitchAlignment));
+            } else {
+                fmt = eFormat::BC4;
+                data_size[0] = GetRequiredMemory_BC4(_t.w, _t.h, ImageDataPitchAlignment);
+                CompressImage_BC4<1>(_t.data.data(), _t.w, _t.h, stage_data,
+                                     GetRequiredMemory_BC4(_t.w, 1, ImageDataPitchAlignment));
+            }
         } else {
             src_fmt = fmt = eFormat::R8;
             data_size[0] = round_up(_t.w, ImageDataPitchAlignment) * _t.h;
@@ -685,19 +741,19 @@ inline Ray::TextureHandle Ray::NS::Scene::AddBindlessTexture_nolock(const tex_de
         if (src_fmt == eFormat::RGBA8) {
             const auto *rgba_data =
                 reinterpret_cast<const color_rgba8_t *>(repacked_data ? repacked_data.get() : _t.data.data());
-            WriteTextureMips(rgba_data, res, mip_count, use_compression, stage_data, data_size);
+            WriteTextureMips(rgba_data, res, mip_count, fmt, stage_data, data_size);
         } else if (src_fmt == eFormat::RGB8) {
             const auto *rgb_data =
                 reinterpret_cast<const color_rgb8_t *>(repacked_data ? repacked_data.get() : _t.data.data());
-            WriteTextureMips(rgb_data, res, mip_count, use_compression, stage_data, data_size);
+            WriteTextureMips(rgb_data, res, mip_count, fmt, stage_data, data_size);
         } else if (src_fmt == eFormat::RG8) {
             const auto *rg_data =
                 reinterpret_cast<const color_rg8_t *>(repacked_data ? repacked_data.get() : _t.data.data());
-            WriteTextureMips(rg_data, res, mip_count, use_compression, stage_data, data_size);
+            WriteTextureMips(rg_data, res, mip_count, fmt, stage_data, data_size);
         } else if (src_fmt == eFormat::R8) {
             const auto *r_data =
                 reinterpret_cast<const color_r8_t *>(repacked_data ? repacked_data.get() : _t.data.data());
-            WriteTextureMips(r_data, res, mip_count, use_compression, stage_data, data_size);
+            WriteTextureMips(r_data, res, mip_count, fmt, stage_data, data_size);
         }
     }
 
@@ -754,7 +810,9 @@ inline Ray::TextureHandle Ray::NS::Scene::AddBindlessTexture_nolock(const tex_de
 
 template <typename T, int N>
 void Ray::NS::Scene::WriteTextureMips(const color_t<T, N> data[], const int _res[2], const int mip_count,
-                                      const bool compress, uint8_t out_data[], uint32_t out_size[16]) {
+                                      const eFormat fmt, uint8_t out_data[], uint32_t out_size[16]) {
+    const bool compress = Ray::IsCompressedFormat(fmt);
+    assert(!compress || N <= 3);
     int src_res[2] = {_res[0], _res[1]};
 
     // TODO: try to get rid of these allocations
@@ -787,21 +845,41 @@ void Ray::NS::Scene::WriteTextureMips(const color_t<T, N> data[], const int _res
         assert(dst_data.size() == (dst_res[0] * dst_res[1]));
 
         out_data += round_up(out_size[i - 1], 4096);
-        if (compress && N <= 3) {
+        if (compress) {
             if (N == 3) {
                 auto temp_YCoCg = ConvertRGB_to_CoCgxY(&dst_data[0].v[0], dst_res[0], dst_res[1]);
 
-                out_size[i] = GetRequiredMemory_BC3(dst_res[0], dst_res[1], ImageDataPitchAlignment);
-                CompressImage_BC3<true /* Is_YCoCg */>(temp_YCoCg.get(), dst_res[0], dst_res[1], out_data,
-                                                       GetRequiredMemory_BC3(dst_res[0], 1, ImageDataPitchAlignment));
+                if (fmt == eFormat::ASTC_4x4) {
+                    out_size[i] = GetRequiredMemory_ASTC4x4(dst_res[0], dst_res[1], ImageDataPitchAlignment);
+                    CompressImage_ASTC4x4_RGBA<4>(temp_YCoCg.get(), dst_res[0], dst_res[1], out_data,
+                                                  GetRequiredMemory_ASTC4x4(dst_res[0], 1, ImageDataPitchAlignment),
+                                                  true);
+                } else {
+                    out_size[i] = GetRequiredMemory_BC3(dst_res[0], dst_res[1], ImageDataPitchAlignment);
+                    CompressImage_BC3<true /* Is_YCoCg */>(
+                        temp_YCoCg.get(), dst_res[0], dst_res[1], out_data,
+                        GetRequiredMemory_BC3(dst_res[0], 1, ImageDataPitchAlignment));
+                }
             } else if (N == 1) {
-                out_size[i] = GetRequiredMemory_BC4(dst_res[0], dst_res[1], ImageDataPitchAlignment);
-                CompressImage_BC4<N>(&dst_data[0].v[0], dst_res[0], dst_res[1], out_data,
-                                     GetRequiredMemory_BC4(dst_res[0], 1, ImageDataPitchAlignment));
+                if (fmt == eFormat::ASTC_4x4) {
+                    out_size[i] = GetRequiredMemory_ASTC4x4(dst_res[0], dst_res[1], ImageDataPitchAlignment);
+                    CompressImage_ASTC4x4_R8<1>(&dst_data[0].v[0], dst_res[0], dst_res[1], out_data,
+                                                GetRequiredMemory_ASTC4x4(dst_res[0], 1, ImageDataPitchAlignment));
+                } else {
+                    out_size[i] = GetRequiredMemory_BC4(dst_res[0], dst_res[1], ImageDataPitchAlignment);
+                    CompressImage_BC4<N>(&dst_data[0].v[0], dst_res[0], dst_res[1], out_data,
+                                         GetRequiredMemory_BC4(dst_res[0], 1, ImageDataPitchAlignment));
+                }
             } else if (N == 2) {
-                out_size[i] = GetRequiredMemory_BC5(dst_res[0], dst_res[1], ImageDataPitchAlignment);
-                CompressImage_BC5<2>(&dst_data[0].v[0], dst_res[0], dst_res[1], out_data,
-                                     GetRequiredMemory_BC5(dst_res[0], 1, ImageDataPitchAlignment));
+                if (fmt == eFormat::ASTC_4x4) {
+                    out_size[i] = GetRequiredMemory_ASTC4x4(dst_res[0], dst_res[1], ImageDataPitchAlignment);
+                    CompressImage_ASTC4x4_RG<2>(&dst_data[0].v[0], dst_res[0], dst_res[1], out_data,
+                                                GetRequiredMemory_ASTC4x4(dst_res[0], 1, ImageDataPitchAlignment));
+                } else {
+                    out_size[i] = GetRequiredMemory_BC5(dst_res[0], dst_res[1], ImageDataPitchAlignment);
+                    CompressImage_BC5<2>(&dst_data[0].v[0], dst_res[0], dst_res[1], out_data,
+                                         GetRequiredMemory_BC5(dst_res[0], 1, ImageDataPitchAlignment));
+                }
             }
         } else {
             out_size[i] = int(dst_res[1] * round_up(dst_res[0] * sizeof(color_t<T, N>), ImageDataPitchAlignment));
@@ -2079,57 +2157,73 @@ Ray::NS::Scene::PrepareEnvMapQTree_nolock(const std::function<void(int, int, Par
     int cur_res = env_map_qtree_.res;
     float total_lum = 0.0f;
 
-    { // initialize the first quadtree level
+    { // finest quadtree level: exact integral of the bilinearly-filtered env map over each
+      // cell (separable tent-overlap sums; sinθ Jacobian folded into the polar-axis weights)
         env_map_qtree_.mips.emplace_back(cur_res * cur_res / 4, 0.0f);
 
-        static const float FilterWeights[][5] = {{1 / 273.0f, 4 / 273.0f, 7 / 273.0f, 4 / 273.0f, 1 / 273.0f},    //
-                                                 {4 / 273.0f, 16 / 273.0f, 26 / 273.0f, 16 / 273.0f, 4 / 273.0f}, //
-                                                 {7 / 273.0f, 26 / 273.0f, 41 / 273.0f, 26 / 273.0f, 7 / 273.0f}, //
-                                                 {4 / 273.0f, 16 / 273.0f, 26 / 273.0f, 16 / 273.0f, 4 / 273.0f}, //
-                                                 {1 / 273.0f, 4 / 273.0f, 7 / 273.0f, 4 / 273.0f, 1 / 273.0f}};
-        static const float FilterSize = 0.5f;
+        const int tex_w = size.get<0>();
+        const int tex_h = size.get<1>();
+        assert(tex_w >= cur_res && tex_h >= cur_res);
 
-        parallel_for(0, cur_res / 2, [&](const int yy) {
-            for (int qy = 2 * yy; qy < 2 * yy + 2; ++qy) {
-                for (int qx = 0; qx < cur_res; ++qx) {
-                    for (int jj = -2; jj <= 2; ++jj) {
-                        for (int ii = -2; ii <= 2; ++ii) {
-                            const Ref::fvec2 q = {Ref::fract(1.0f + (float(qx) + 0.5f + ii * FilterSize) / cur_res),
-                                                  Ref::fract(1.0f + (float(qy) + 0.5f + jj * FilterSize) / cur_res)};
-                            fvec4 dir;
-                            CanonicalToDir(value_ptr(q), 0.0f, value_ptr(dir));
+        const float kappa = PI / float(tex_h); // texture-space polar coord t = θ*h/π
 
-                            const float theta = acosf(clamp(dir.get<1>(), -1.0f, 1.0f)) / PI;
-                            float phi = atan2f(dir.get<2>(), dir.get<0>());
-                            if (phi < 0) {
-                                phi += 2 * PI;
-                            }
-                            if (phi > 2 * PI) {
-                                phi -= 2 * PI;
-                            }
-
-                            const float u = Ref::fract(0.5f * phi / PI);
-
-                            const fvec2 uvs = fvec2{u, theta} * fvec2(size);
-                            const ivec2 iuvs = clamp(ivec2(uvs), ivec2(0), size - 1);
-
-                            const uint8_t *col_rgbe = &rgbe_data[4 * (iuvs.get<1>() * pitch + iuvs.get<0>())];
-                            fvec4 col_rgb;
-                            rgbe_to_rgb(col_rgbe, value_ptr(col_rgb));
-                            const float cur_lum = (col_rgb.get<0>() + col_rgb.get<1>() + col_rgb.get<2>());
-
-                            int index = 0;
-                            index |= (qx & 1) << 0;
-                            index |= (qy & 1) << 1;
-
-                            const int _qx = (qx / 2);
-                            const int _qy = (qy / 2);
-
-                            auto &qvec = env_map_qtree_.mips[0][_qy * cur_res / 2 + _qx];
-                            qvec.set(index, qvec[index] + cur_lum * FilterWeights[ii + 2][jj + 2]);
-                        }
-                    }
+        // Azimuth-axis weights per qy: ∫ tent_i(s) ds over [qy*w/res, (qy+1)*w/res],
+        // texel indices wrapped mod w - matches the sampler's REPEAT addressing.
+        // Note: CanonicalToDir carries φ as -sinθ·sinφ, so latlong u = fract(-p1) - the
+        // azimuth texel span of canonical cell qy is counted from the far edge (mirrored).
+        std::vector<std::vector<std::pair<int, float>>> acol(cur_res);
+        const float s_step = float(tex_w) / float(cur_res);
+        for (int qy = 0; qy < cur_res; ++qy) {
+            const float s1 = float(cur_res - qy - 1) * s_step;
+            const float s2 = s1 + s_step;
+            for (int i0 = int(std::floor(s1)) - 1; i0 <= int(std::ceil(s2)) + 1; ++i0) {
+                const float wgt = tent_overlap(s1, s2, float(i0));
+                if (wgt <= 0.0f) {
+                    continue;
                 }
+                const int i = i0 < 0 ? i0 + tex_w : (i0 >= tex_w ? i0 - tex_w : i0);
+                acol[qy].emplace_back(i, wgt);
+            }
+        }
+
+        parallel_for(0, cur_res, [&](const int qx) {
+            if (cur_res <= 1) { // degenerate env map (tiny/1x1): mips[0] is empty, nothing to write
+                return;
+            }
+
+            const float polar_lo = std::acos(clamp(2.0f * float(qx + 1) / float(cur_res) - 1.0f, -1.0f, 1.0f)) / kappa;
+            const float polar_hi = std::acos(clamp(2.0f * float(qx) / float(cur_res) - 1.0f, -1.0f, 1.0f)) / kappa;
+
+            // Mrow[x] = Σ_j lum[x, j]·∫_{polar_lo}^{polar_hi} tent_j(t)·sin(κt) dt, rows folded mod h
+            std::vector<float> Mrow(size_t(tex_w), 0.0f);
+            for (int j0 = int(std::floor(polar_lo)) - 1; j0 <= int(std::ceil(polar_hi)) + 1; ++j0) {
+                const float wgt = tent_sin_overlap(polar_lo, polar_hi, float(j0), kappa);
+                if (wgt <= 0.0f) {
+                    continue;
+                }
+                const int j = j0 < 0 ? j0 + tex_h : (j0 >= tex_h ? j0 - tex_h : j0);
+                const uint8_t *row = &rgbe_data[4 * size_t(j) * size_t(pitch)];
+                for (int x = 0; x < tex_w; ++x) {
+                    fvec4 c;
+                    rgbe_to_rgb(&row[4 * x], value_ptr(c));
+                    Mrow[x] += wgt * (c.get<0>() + c.get<1>() + c.get<2>());
+                }
+            }
+
+            // Cell weight = mean radiance over the cell (same units as the old filtered taps)
+            const float norm = PI * float(cur_res) * float(cur_res) / (2.0f * float(tex_w * tex_h));
+            for (int qy = 0; qy < cur_res; ++qy) {
+                float sum = 0.0f;
+                for (const auto &ic : acol[qy]) {
+                    sum += ic.second * Mrow[ic.first];
+                }
+
+                int index = 0;
+                index |= (qx & 1) << 0;
+                index |= (qy & 1) << 1;
+
+                auto &qvec = env_map_qtree_.mips[0][(qy / 2) * cur_res / 2 + (qx / 2)];
+                qvec.set(index, norm * sum);
             }
         });
 
