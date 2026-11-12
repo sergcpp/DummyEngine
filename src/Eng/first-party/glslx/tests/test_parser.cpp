@@ -886,6 +886,49 @@ void test_parser() {
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
+    { // typed array constructor with non-literal size
+        static const char source[] = "const int N = 2;\n"
+                                     "const float a[N] = float[N](0.5, 1.0);\n"
+                                     "const float b[N] = float[N * 1](0.5, 1.0);\n";
+        static const char expected[] = "const int N = 2;\n"
+                                       "const float a[2] = { 0.5, 1.0 };\n"
+                                       "const float b[2] = { 0.5, 1.0 };\n";
+
+        auto parser = std::make_unique<Parser>(source, "array_ctor_size.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = test_clone(tr_unit.get());
+        tr_unit = test_serialize(tr_unit.get());
+
+        std::stringstream ss;
+        WriterGLSL().Write(tr_unit.get(), ss);
+        require(ss.str() == expected);
+    }
+    { // struct constants and typed arrays of structs
+        static const char source[] = "struct In_t { float x, y; };\n"
+                                     "const In_t g_in = In_t(1.0, 2.0);\n"
+                                     "const In_t g_arr[2] = In_t[2](In_t(1.0, 2.0), In_t(3.0, 4.0));\n"
+                                     "const In_t g_arr2[2] = In_t[](In_t(1.0, 2.0), In_t(3.0, 4.0));\n";
+        static const char expected[] = "struct In_t {\n"
+                                       "    float x;\n"
+                                       "    float y;\n"
+                                       "};\n"
+                                       "const In_t g_in = In_t(1.0, 2.0);\n"
+                                       "const In_t g_arr[2] = { In_t(1.0, 2.0), In_t(3.0, 4.0) };\n"
+                                       "const In_t g_arr2[2] = { In_t(1.0, 2.0), In_t(3.0, 4.0) };\n";
+
+        auto parser = std::make_unique<Parser>(source, "struct_const.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser->Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = test_clone(tr_unit.get());
+        tr_unit = test_serialize(tr_unit.get());
+
+        std::stringstream ss;
+        WriterGLSL().Write(tr_unit.get(), ss);
+        require(ss.str() == expected);
+    }
     { // assignment inside of expression
         static const char source[] = "vec3 normalize_len(const vec3 v, out float len) {\n"
                                      "    return v / (len = length(v));\n"

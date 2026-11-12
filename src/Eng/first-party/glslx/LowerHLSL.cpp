@@ -1418,6 +1418,39 @@ bool is_scalar_type(const ast_type *type) {
 
 // All GLSL scalar numeric types, including the 16/64-bit ones; matrix ctors convert them to the
 // matrix element type, unlike the vecN splat path which only covers the core scalars.
+static bool is_struct_constructor(const ast_expression *expr) {
+    return expr->type == eExprType::ConstructorCall && !static_cast<const ast_constructor_call *>(expr)->type->builtin;
+}
+
+static ast_array_specifier *Build_StructInit(TrUnit *tu, ast_constructor_call *call) {
+    auto *init = tu->make<ast_array_specifier>(tu->alloc.allocator);
+    for (ast_expression *p : call->parameters) {
+        init->expressions.push_back(p);
+    }
+    return init;
+}
+
+// HLSL has no struct constructors (`(S)(a, b)` is a cast of a comma expression), so a declaration
+// initializer becomes a brace list, recursing through nested struct ctors and array specifiers.
+static ast_expression *Convert_StructInit(TrUnit *tu, ast_expression *expr) {
+    if (!expr) {
+        return expr;
+    }
+    if (is_struct_constructor(expr)) {
+        auto *call = static_cast<ast_constructor_call *>(expr);
+        for (ast_expression *&p : call->parameters) {
+            p = Convert_StructInit(tu, p);
+        }
+        return Build_StructInit(tu, call);
+    }
+    if (expr->type == eExprType::ArraySpecifier) {
+        for (ast_expression *&e : static_cast<ast_array_specifier *>(expr)->expressions) {
+            e = Convert_StructInit(tu, e);
+        }
+    }
+    return expr;
+}
+
 static bool is_scalar_numeric_type(const ast_type *type) {
     if (!type->builtin) {
         return false;
@@ -2518,7 +2551,7 @@ void glslx::LowerHLSL::Rewrite_SimpleStatement(ast_simple_statement *stmt, globa
         auto *decl = static_cast<ast_declaration_statement *>(stmt);
         for (ast_function_variable *v : decl->variables) {
             if (v->initial_value) {
-                v->initial_value = Rewrite_Hoisting(v->initial_value, pre);
+                v->initial_value = Rewrite_Hoisting(Convert_StructInit(tu_, v->initial_value), pre);
             }
         }
     } else if (stmt->type == eStatement::Expression) {
@@ -2619,6 +2652,17 @@ glslx::ast_expression *glslx::LowerHLSL::Lower_Atomics(ast_expression *expr, glo
         auto *call = static_cast<ast_constructor_call *>(expr);
         for (int i = 0; i < int(call->parameters.size()); ++i) {
             call->parameters[i] = Lower_Atomics(call->parameters[i], pre);
+        }
+        if (!call->type->builtin) {
+            auto *struct_var = tu_->make<ast_function_variable>(tu_->alloc.allocator);
+            struct_var->base_type = const_cast<ast_type *>(call->type);
+            struct_var->name = tu_->makestr(("__struct" + std::to_string(temp_index_++)).c_str());
+            struct_var->initial_value = Build_StructInit(tu_, call);
+
+            auto *struct_decl = tu_->make<ast_declaration_statement>(tu_->alloc.allocator);
+            struct_decl->variables.push_back(struct_var);
+            pre.push_back(struct_decl);
+            return tu_->make<ast_variable_identifier>(struct_var);
         }
         break;
     }
@@ -2938,7 +2982,7 @@ void glslx::LowerHLSL::Lower_StatementReplacements(ast_statement *statement,
         auto *decl = static_cast<ast_declaration_statement *>(statement);
         for (ast_function_variable *v : decl->variables) {
             if (v->initial_value) {
-                v->initial_value = Rewrite_Hoisting(v->initial_value, out_statements);
+                v->initial_value = Rewrite_Hoisting(Convert_StructInit(tu_, v->initial_value), out_statements);
             }
         }
         break;
@@ -3073,6 +3117,9 @@ void glslx::LowerHLSL::Apply(TrUnit *tu) {
     }
     assert(shared_coords_.empty() && "shared texture coordinate never reached the lowering pass");
     shared_coords_.clear();
+    for (ast_global_variable *g : tu->globals) {
+        g->initial_value = Convert_StructInit(tu, g->initial_value);
+    }
     // Deferred like renames: adding parameters would change how calls resolve during type evaluation.
     for (ast_function_call *call : pending_sampler_calls_) {
         for (int i = 0; i < int(call->parameters.size()); ++i) {

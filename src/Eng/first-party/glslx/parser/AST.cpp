@@ -775,9 +775,6 @@ bool glslx::IsConstant(const ast_expression *expression) {
         return IsConstant(static_cast<const ast_unary_expression *>(expression)->operand);
     } else if (expression->type == eExprType::ConstructorCall) {
         const ast_constructor_call *call = static_cast<const ast_constructor_call *>(expression);
-        if (!call->type->builtin) {
-            return false;
-        }
         bool ret = true;
         for (int i = 0; i < int(call->parameters.size()); ++i) {
             ret &= IsConstant(call->parameters[i]);

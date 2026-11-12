@@ -458,7 +458,7 @@ void test_hlsl_writer() {
                                        "static bar b;\n"
                                        "static bar c;\n"
                                        "void func(bar arg) {\n"
-                                       "    ray_hash_t h = (ray_hash_t)(-1, -1);\n"
+                                       "    ray_hash_t h = { -1, -1 };\n"
                                        "}\n"
                                        "void main_func() {\n"
                                        "    bar a;\n"
@@ -3400,6 +3400,58 @@ void test_hlsl_writer() {
                                        "}\n";
 
         require(Write_HLSL_Text(source, "gl_special_builtins.glsl") == expected);
+    }
+    { // struct constructors become brace lists (HLSL `(S)(a, b)` is a cast of a comma expression)
+        static const char source[] = "struct S_t { vec3 c; float a; };\n"
+                                     "struct O_t { S_t s; float z; };\n"
+                                     "const S_t g_s = S_t(vec3(1.0, 2.0, 3.0), 4.0);\n"
+                                     "const S_t g_arr[2] = S_t[2](S_t(vec3(1.0, 2.0, 3.0), 4.0), g_s);\n"
+                                     "float sum(S_t s) { return s.a; }\n"
+                                     "S_t make(S_t s) { return S_t(s.c, 0.5); }\n"
+                                     "void f(bool c) {\n"
+                                     "    S_t s = S_t(vec3(1.0, 2.0, 3.0), 4.0);\n"
+                                     "    O_t o = O_t(S_t(vec3(1.0, 2.0, 3.0), 1.0), 2.0);\n"
+                                     "    S_t t;\n"
+                                     "    t = S_t(vec3(1.0, 2.0, 3.0), 0.5);\n"
+                                     "    float r = sum(S_t(vec3(1.0, 2.0, 3.0), 0.25));\n"
+                                     "    S_t u = c ? S_t(vec3(1.0, 2.0, 3.0), 1.0) : t;\n"
+                                     "}\n";
+        static const char *expected = "struct S_t {\n"
+                                      "    float3 c;\n"
+                                      "    float a;\n"
+                                      "};\n"
+                                      "struct O_t {\n"
+                                      "    S_t s;\n"
+                                      "    float z;\n"
+                                      "};\n"
+                                      "static const S_t g_s = { float3(1.0, 2.0, 3.0), 4.0 };\n"
+                                      "static const S_t g_arr[2] = { { float3(1.0, 2.0, 3.0), 4.0 }, { float3(1.0, 2.0, 3.0), 4.0 } };\n"
+                                      "float sum(S_t s) {\n"
+                                      "    return s.a;\n"
+                                      "}\n"
+                                      "S_t make(S_t s) {\n"
+                                      "    S_t __struct0 = { s.c, 0.5 };\n"
+                                      "    return __struct0;\n"
+                                      "}\n"
+                                      "void f(bool c) {\n"
+                                      "    S_t s = { float3(1.0, 2.0, 3.0), 4.0 };\n"
+                                      "    O_t o = { { float3(1.0, 2.0, 3.0), 1.0 }, 2.0 };\n"
+                                      "    S_t t;\n"
+                                      "    S_t __struct1 = { float3(1.0, 2.0, 3.0), 0.5 };\n"
+                                      "    t = __struct1;\n"
+                                      "    S_t __struct2 = { float3(1.0, 2.0, 3.0), 0.25 };\n"
+                                      "    float r = sum(__struct2);\n"
+                                      "    S_t __tern4;\n"
+                                      "    if (c) {\n"
+                                      "        S_t __struct3 = { float3(1.0, 2.0, 3.0), 1.0 };\n"
+                                      "        __tern4 = __struct3;\n"
+                                      "    } else {\n"
+                                      "        __tern4 = t;\n"
+                                      "    }\n"
+                                      "    S_t u = __tern4;\n"
+                                      "}\n";
+
+        require(Write_HLSL_Text(source, "struct_ctors.glsl") == expected);
     }
 
     printf("OK\n");

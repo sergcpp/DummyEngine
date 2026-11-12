@@ -2109,7 +2109,7 @@ glslx::ast_constant_expression *glslx::Parser::ParseArraySize() {
 
 glslx::ast_expression *glslx::Parser::ParseArraySpecifier(Bitmask<eEndCondition> condition) {
     bool accept_paren = false;
-    if (is_builtin()) {
+    if (is_builtin() || (is_type(eTokType::Identifier) && FindType(tok_.as_identifier))) {
         const token_t &peek = lexer_.Peek();
         if (peek.type == eTokType::Operator && peek.as_operator == eOperator::bracket_begin) {
             if (!next()) {
@@ -2118,11 +2118,8 @@ glslx::ast_expression *glslx::Parser::ParseArraySpecifier(Bitmask<eEndCondition>
             if (!expect(eOperator::bracket_begin)) {
                 return nullptr;
             }
-            if (is_type(eTokType::Const_int)) {
-                // skip array size
-                if (!next()) {
-                    return nullptr;
-                }
+            if (!is_operator(eOperator::bracket_end) && !ParseExpression(eEndCondition::Bracket)) {
+                return nullptr;
             }
             if (!expect(eOperator::bracket_end)) {
                 return nullptr;
