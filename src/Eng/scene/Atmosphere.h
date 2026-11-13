@@ -30,6 +30,7 @@ struct atmosphere_params_t {
     float _unused1 = 0.0f;
     float _unused2 = 0.0f;
     Ren::Vec4f moon_dir = Ren::Vec4f{0.707f, 0.707f, 0.0f, 0.0f};
+    Ren::Vec4f moon_albedo = Ren::Vec4f{0.12f, 0.115f, 0.105f, 0.0f};
     Ren::Vec4f rayleigh_scattering = Ren::Vec4f{5.802f * 1e-6f, 13.558f * 1e-6f, 33.100f * 1e-6f, 0.0f};
     Ren::Vec4f mie_scattering = Ren::Vec4f{3.996f * 1e-6f, 3.996f * 1e-6f, 3.996f * 1e-6f, 0.0f};
     Ren::Vec4f mie_extinction = Ren::Vec4f{4.440f * 1e-6f, 4.440f * 1e-6f, 4.440f * 1e-6f, 0.0f};
