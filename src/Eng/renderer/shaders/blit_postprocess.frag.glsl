@@ -62,7 +62,7 @@ void main() {
     col *= exposure / g_params.pre_exposure;
 
 #ifdef PURKINJE
-    col *= mix(vec3(1.0), vec3(0.8, 0.8, 1.0), g_params.purkinje * saturate(exposure - 12.0));
+    col *= mix(vec3(1.0), vec3(0.8, 0.8, 1.0), g_params.purkinje * saturate(exposure - 4.0));
 #endif
 
 #if defined(LUT)

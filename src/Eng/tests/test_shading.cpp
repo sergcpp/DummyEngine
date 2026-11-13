@@ -70,9 +70,9 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
                                        25.10, 26.10, 26.00, 27.10, 26.70, 28.65, 28.35, 28.65, 29.85, 30.00,
                                        30.25, 30.85, 31.30},
                    Full_Ultra);
-    run_image_test(ren_ctx, threads, "complex_mat2_moon_light", 28.75, MedDiffGI);
-    run_image_test(ren_ctx, threads, "complex_mat2_moon_light", 29.15, Full);
-    run_image_test(ren_ctx, threads, "complex_mat2_moon_light", 30.45, Full_Ultra);
+    run_image_test(ren_ctx, threads, "complex_mat2_moon_light", 22.60, MedDiffGI);
+    run_image_test(ren_ctx, threads, "complex_mat2_moon_light", 22.80, Full);
+    run_image_test(ren_ctx, threads, "complex_mat2_moon_light", 23.15, Full_Ultra);
     run_image_test(ren_ctx, threads, "complex_mat2_hdri_light", 21.20, MedDiffGI);
     run_image_test(ren_ctx, threads, "complex_mat2_hdri_light", 22.90, Full);
     run_image_test(ren_ctx, threads, "complex_mat2_hdri_light", 24.30, Full_Ultra);

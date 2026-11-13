@@ -1,5 +1,7 @@
 #include "Atmosphere.h"
 
+#include <cmath>
+
 #include <Ren/math/Mat.h>
 
 namespace Eng {
@@ -197,6 +199,26 @@ Ren::Vec2f Eng::LutTransmittanceParamsToUv(const atmosphere_params_t &params, co
     return Ren::Vec2f{x_mu, x_r};
 }
 
+// Lambert moon lit by the sun; normalized so a full moon overhead yields albedo * sun_irradiance * 2*r^2/(3*d^2)
+Ren::Vec4f Eng::MoonIrradiance(const atmosphere_params_t &params, const Ren::Vec4f &light_dir,
+                               const Ren::Vec4f &moon_dir, const Ren::Vec4f &sun_irradiance) {
+    if (params.moon_radius <= 0.0f) {
+        return Ren::Vec4f{0.0f};
+    }
+
+    // Phase angle: angle at the moon between the directions to the sun and to earth
+    const float cos_alpha = clamp(-Dot(light_dir, moon_dir), -1.0f, 1.0f);
+    const float alpha = std::acos(cos_alpha);
+
+    // Lambert sphere phase law, normalized to 1.0 at full moon
+    const float lunar_phase = (std::sin(alpha) + (Ren::Pi<float>() - alpha) * cos_alpha) / Ren::Pi<float>();
+
+    const float r = params.moon_radius / params.moon_distance;
+    const float scale = (2.0f / 3.0f) * r * r * lunar_phase;
+
+    return sun_irradiance * params.moon_albedo * scale;
+}
+
 template <bool UniformPhase>
 std::pair<Ren::Vec4f, Ren::Vec4f>
 Eng::IntegrateScatteringMain(const atmosphere_params_t &params, const Ren::Vec4f &ray_start, const Ren::Vec4f &ray_dir,
@@ -263,7 +285,7 @@ Eng::IntegrateScatteringMain(const atmosphere_params_t &params, const Ren::Vec4f
                   multiscattered_lum * medium.scattering) *
                  light_color;
         } else if (params.moon_radius > 0.0f) {
-            // moon reflection contribution  (totally fake)
+            // moon reflection contribution
             const float view_zenith_cos_angle = Dot(moon_dir, up_vector);
             const Ren::Vec2f uv =
                 LutTransmittanceParamsToUv(params, local_height + params.planet_radius, view_zenith_cos_angle);
@@ -281,8 +303,8 @@ Eng::IntegrateScatteringMain(const atmosphere_params_t &params, const Ren::Vec4f
 
             const Ren::Vec4f phase_times_scattering =
                 medium.scattering_ray * moon_phase_r + medium.scattering_mie * moon_phase_m;
-            S += _SKY_MOON_SUN_RELATION *
-                 (light_transmittance * phase_times_scattering + multiscattered_lum * medium.scattering) * light_color;
+            S += MoonIrradiance(params, light_dir, moon_dir, light_color) *
+                 (light_transmittance * phase_times_scattering + multiscattered_lum * medium.scattering);
         }
 
         // 1 is the integration of luminance over the 4pi of a sphere, and assuming an isotropic phase function

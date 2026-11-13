@@ -1606,7 +1606,6 @@ void BaseState::InitEnvironment_PT() {
     env_desc.env_col[2] = env_desc.back_col[2] = scene_data.env.env_col[2];
 
     memcpy(&env_desc.atmosphere, &scene_data.env.atmosphere, sizeof(Ray::atmosphere_params_t));
-    env_desc.atmosphere.moon_distance = 363100000.0f;
     static_assert(sizeof(Ray::atmosphere_params_t) == sizeof(Eng::atmosphere_params_t));
 
     if (scene_data.env.sun_angle < 0.75f) {

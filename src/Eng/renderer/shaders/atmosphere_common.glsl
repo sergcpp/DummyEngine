@@ -82,6 +82,25 @@ vec2 MoonIntersection(const vec3 ray_start, const vec3 ray_dir) {
     return SphereIntersection(ray_start, ray_dir, planet_center, g_shrd_data.atmosphere.moon_radius);
 }
 
+// Lambert moon lit by the sun; normalized so a full moon overhead yields albedo * sun_irradiance * 2*r^2/(3*d^2)
+vec3 MoonIrradiance(const vec3 light_dir, const vec3 moon_dir, const vec3 sun_irradiance) {
+    if (g_shrd_data.atmosphere.moon_radius <= 0.0) {
+        return vec3(0.0);
+    }
+
+    // Phase angle: angle at the moon between the directions to the sun and to earth
+    const float cos_alpha = clamp(-dot(light_dir, moon_dir), -1.0, 1.0);
+    const float alpha = acos(cos_alpha);
+
+    // Lambert sphere phase law, normalized to 1.0 at full moon
+    const float lunar_phase = (sin(alpha) + (M_PI - alpha) * cos_alpha) / M_PI;
+
+    const float r = g_shrd_data.atmosphere.moon_radius / g_shrd_data.atmosphere.moon_distance;
+    const float scale = (2.0 / 3.0) * r * r * lunar_phase;
+
+    return sun_irradiance * g_shrd_data.atmosphere.moon_albedo.rgb * scale;
+}
+
 // Phase functions
 float PhaseRayleigh(const float costh) { return 3 * (1 + costh * costh) / (16 * M_PI); }
 float PhaseMie(const float costh, float g) {
@@ -389,6 +408,8 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
     const float moon_costh = dot(ray_dir, g_shrd_data.atmosphere.moon_dir.xyz);
     const float moon_phase_r = PhaseRayleigh(moon_costh), moon_phase_m = PhaseMie(moon_costh, 0.85);
 
+    const vec3 moon_irradiance = MoonIrradiance(g_shrd_data.sun_dir.xyz, g_shrd_data.atmosphere.moon_dir.xyz, g_shrd_data.sun_col_point.xyz);
+
     vec3 radiance = vec3(0.0), multiscat_as_1 = vec3(0.0);
 
     const float step_size = ray_length / float(sample_count);
@@ -425,7 +446,7 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
         }
 #else
         if (g_shrd_data.atmosphere.moon_radius > 0.0) {
-            // moon reflection contribution  (totally fake)
+            // moon reflection contribution
             const float view_zenith_cos_angle = dot(g_shrd_data.atmosphere.moon_dir.xyz, up_vector);
             const vec2 uv = LutTransmittanceParamsToUv(local_height + g_shrd_data.atmosphere.planet_radius, view_zenith_cos_angle);
             const vec3 light_transmittance = textureLod(transmittance_lut, uv, 0.0).xyz;
@@ -440,7 +461,7 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
             const vec3 multiscattered_lum = textureLod(multiscatter_lut, uv2, 0.0).xyz;
 
             const vec3 phase_times_scattering = medium.scattering_ray * moon_phase_r + medium.scattering_mie * moon_phase_m;
-            S += SKY_MOON_SUN_RELATION * (cloud_shadow * light_transmittance * phase_times_scattering + multiscattered_lum * medium.scattering) * g_shrd_data.sun_col_point.xyz;
+            S += moon_irradiance * (cloud_shadow * light_transmittance * phase_times_scattering + multiscattered_lum * medium.scattering);
         }
 #endif
 
@@ -501,6 +522,7 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
     vec3 moon_dir = g_shrd_data.atmosphere.moon_dir.xyz;
     const vec3 moon_point = moon_dir * g_shrd_data.atmosphere.moon_distance + 0.5 * g_shrd_data.sun_dir.xyz * g_shrd_data.atmosphere.moon_radius;
     moon_dir = normalize(moon_point);
+    const vec3 moon_irradiance = MoonIrradiance(g_shrd_data.sun_dir.xyz, g_shrd_data.atmosphere.moon_dir.xyz, g_shrd_data.sun_col_point.xyz);
 
     const float costh = dot(ray_dir, g_shrd_data.sun_dir.xyz);
     const vec3 phase_w = PhaseWrenninge(costh);
@@ -602,14 +624,14 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
                         clouds += total_transmittance *
                                 (planet_shadow * GetLightEnergy(cloud_shadow, local_density, phase_w) +
                                 ambient_visibility * multiscattered_lum) *
-                                (1.0 - local_transmittance) * light_transmittance;
+                                (1.0 - local_transmittance) * light_transmittance * g_shrd_data.sun_col_point.xyz;
                     }
 #else
                     if (g_shrd_data.atmosphere.moon_radius > 0.0) {
-                        // moon reflection contribution (totally fake)
+                        // moon reflection contribution
                         const float cloud_shadow = TraceCloudShadow(weather_tex, curl_tex, noise3d_tex, moments_b0, moments_b1234, rand_offset_shadow, local_position, moon_dir);
 
-                        clouds += SKY_MOON_SUN_RELATION * total_transmittance *
+                        clouds += moon_irradiance * total_transmittance *
                                 (GetLightEnergy(cloud_shadow, local_density, moon_phase_w) +
                                 ambient_visibility * moon_multiscattered_lum) *
                                 (1.0 - local_transmittance) * moon_transmittance;
@@ -628,7 +650,7 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
             float cloud_blend = linstep(SKY_CLOUDS_HORIZON_CUTOFF + 0.25, SKY_CLOUDS_HORIZON_CUTOFF, ray_dir.y);
             cloud_blend = 1.0 - pow(cloud_blend, 5.0);
 
-            total_radiance += cloud_blend * clouds * g_shrd_data.sun_col_point.xyz;
+            total_radiance += cloud_blend * clouds;
             total_transmittance = mix(transmittance_before, total_transmittance, cloud_blend);
         }
     }
@@ -677,8 +699,8 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
         total_radiance += total_transmittance * GetLightEnergy(0.002, dC, phase_w) * light_transmittance * dC * g_shrd_data.sun_col_point.xyz;
 #else
         if (g_shrd_data.atmosphere.moon_radius > 0.0) {
-            total_radiance += SKY_MOON_SUN_RELATION * total_transmittance * GetLightEnergy(0.002, dC, moon_phase_w) *
-                              moon_transmittance * dC * g_shrd_data.sun_col_point.xyz;
+            total_radiance += moon_irradiance * total_transmittance * GetLightEnergy(0.002, dC, moon_phase_w) *
+                              moon_transmittance * dC;
         }
 #endif
         total_transmittance *= exp(-dC * 0.002 * 1000.0);
@@ -742,7 +764,11 @@ vec3 IntegrateScattering(uvec3 ucoord, vec3 ray_start, const vec3 ray_dir, float
         const vec2 uvs = vec2(u, theta);
         const vec3 albedo = SRGBToLinear(YCoCg_to_RGB(textureLod(moon_tex, uvs, 0.0)));
 
-        total_radiance += total_transmittance * saturate(dot(moon_normal, g_shrd_data.sun_dir.xyz)) * albedo;
+        // Lambert reflection of the sunlight by the lunar surface (the texture is the albedo, scaled to absolute
+        // reflectance): radiance = albedo * sun_irradiance * cos(incidence_angle) / PI
+        const vec3 moon_surface_radiance = g_shrd_data.sun_col_point.xyz * (SKY_MOON_TEX_SCALE / M_PI);
+
+        total_radiance += total_transmittance * saturate(dot(moon_normal, g_shrd_data.sun_dir.xyz)) * albedo * moon_surface_radiance;
     }
 
     return total_radiance;

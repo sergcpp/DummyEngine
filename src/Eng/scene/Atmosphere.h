@@ -25,7 +25,7 @@ struct atmosphere_params_t {
     float atmosphere_density = 1.0f;
     float stars_brightness = 1.0f;
     float moon_radius = 1737400.0f;
-    float moon_distance = 100000000.0f; // 363100000.0f;
+    float moon_distance = 363100000.0f;
     float _unused0 = 0.0f;
     float _unused1 = 0.0f;
     float _unused2 = 0.0f;
@@ -41,7 +41,6 @@ struct atmosphere_params_t {
 
 const int SKY_TRANSMITTANCE_LUT_W = 256;
 const int SKY_TRANSMITTANCE_LUT_H = 64;
-const float _SKY_MOON_SUN_RELATION = 0.0000001f;
 
 inline float clamp(const float val, const float min, const float max) {
     return val < min ? min : (val > max ? max : val);
@@ -64,6 +63,10 @@ Ren::Vec2f LutTransmittanceParamsToUv(const atmosphere_params_t &params, float v
 
 Ren::Vec4f IntegrateOpticalDepth(const atmosphere_params_t &params, const Ren::Vec4f &ray_start,
                                  const Ren::Vec4f &ray_dir);
+
+// Lambert moon lit by the sun; normalized so a full moon overhead yields albedo * sun_irradiance * 2*r^2/(3*d^2)
+Ren::Vec4f MoonIrradiance(const atmosphere_params_t &params, const Ren::Vec4f &light_dir, const Ren::Vec4f &moon_dir,
+                          const Ren::Vec4f &sun_irradiance);
 
 template <bool UniformPhase = false>
 std::pair<Ren::Vec4f, Ren::Vec4f>
