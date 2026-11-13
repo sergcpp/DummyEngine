@@ -29,7 +29,7 @@ std::unique_ptr<uint8_t[]> ConvertRGB_to_CoCgxY(const uint8_t image_data[], int 
 std::unique_ptr<uint8_t[]> ConvertCoCgxY_to_RGB(const uint8_t image_data[], int w, int h);
 
 uint16_t f32_to_f16(float value);
-float f16_to_f32(const uint16_t h);
+float f16_to_f32(uint16_t h);
 
 extern const uint8_t _blank_BC3_block_4x4[];
 extern const int _blank_BC3_block_4x4_len;
@@ -98,7 +98,8 @@ int Preprocess_BCn(const uint8_t in_data[], int tiles_w, int tiles_h, bool flip_
 //
 // ASTC 4x4 compression (GPU texture atlases only: VK; DX stays on BCn)
 // Fixed-layout single-partition emitter (BC3-class: min/max endpoints, one weight per texel):
-// CEM = LDR direct (RGBA / luminance), no partitions, no dual-plane weights, no HDR.
+// CEM = LDR direct (RGBA / luminance), no partitions, no HDR. Dual-plane weights are used only
+// for is_ycocg (Co,Cg,scale + Y planes, BC3-style); everything else is single-plane.
 // Bit layout follows the Khronos ASTC spec (C.2.x).
 //
 
