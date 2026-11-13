@@ -103,6 +103,11 @@ void main() {
     result.g = saturate((b.g * wG + d.g * wG + f.g * wG + h.g * wG + e.g) / (1.0 + 4.0 * wG));
     result.b = saturate((b.b * wB + d.b * wB + f.b * wB + h.b * wB + e.b) / (1.0 + 4.0 * wB));
 
+    if (g_params.sharpness < 0.0) {
+        // disabled
+        result = e;
+    }
+
     result = TonemapInvert(result);
     result = sanitize_fp16(result);
 

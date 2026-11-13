@@ -413,6 +413,7 @@ struct view_state_t {
         prev_view_from_world, prev_clip_from_world, down_buf_view_from_world, prev_clip_from_view;
     mutable Ren::Vec4f clip_info, frustum_info, rand_rotators[2];
     float pre_exposure = 1.0f, prev_pre_exposure = 1.0f;
+    float sharpness = 0.15f;
     Ren::Quatf probe_ray_rotator;
     uint32_t probe_ray_hash = 0;
     uint32_t clouds_shadow_iteration = 0;

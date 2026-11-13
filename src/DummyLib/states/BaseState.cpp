@@ -2311,7 +2311,7 @@ void BaseState::Draw_PT(const Ren::ImageHandle target) {
         img_main.resource_state = to_ren_state(pt_image.state);
         renderer_->BlitImageTonemap(pt_result_, res_x, res_y, Ren::eFormat::RGBA32F, scene_manager_->main_cam().gamma,
                                     scene_manager_->main_cam().min_exposure, scene_manager_->main_cam().max_exposure,
-                                    target, false, true);
+                                    ray_reg_ctx_[0][0].iteration > 1 ? 0.15f : -1.0f, target, false, true);
         ray_renderer_->set_native_raw_pixels_state(to_ray_state(img_main.resource_state));
     } else
 #endif
@@ -2320,7 +2320,7 @@ void BaseState::Draw_PT(const Ren::ImageHandle target) {
         renderer_->BlitPixelsTonemap(reinterpret_cast<const uint8_t *>(pixels.ptr), res_x, res_y, pixels.pitch,
                                      Ren::eFormat::RGBA32F, scene_manager_->main_cam().gamma,
                                      scene_manager_->main_cam().min_exposure, scene_manager_->main_cam().max_exposure,
-                                     target, false, true);
+                                     ray_reg_ctx_[0][0].iteration > 1 ? 0.15f : -1.0f, target, false, true);
     }
 }
 

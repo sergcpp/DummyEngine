@@ -537,7 +537,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         persistent_data.gi_cache_scroll += origin_diff;
         persistent_data.cam_pos_rad -= origin_diff;
-        // 2^15 m folds by an exact multiple of 512 cells (pitch 2^L/30) at every level L <= 7; L >= 8 keys re-derive on next insert
+        // 2^15 m folds by an exact multiple of 512 cells (pitch 2^L/30) at every level L <= 7; L >= 8 keys re-derive on
+        // next insert
         for (int i = 0; i < 3; ++i) {
             persistent_data.gi_cache_scroll[i] = std::fmod(persistent_data.gi_cache_scroll[i], 32768.0f);
         }
@@ -672,6 +673,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     view_state_.env_generation = list.env.generation;
     view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
     // view_state_.prev_pre_exposure = std::min(std::max(view_state_.prev_pre_exposure, min_exposure_), max_exposure_);
+    view_state_.sharpness = 0.15f;
 
     bool has_global_volume = Length2(list.env.fog.scatter_color) != 0.0f;
     has_global_volume |= list.env.fog.absorption != 1.0f;
@@ -1030,8 +1032,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 const FgBufRWHandle rt_sh_tlas_res = acc_structs.rt_tlas_buf[int(eTLASIndex::Shadow)] =
                     build_acc_structs.AddTransferOutput(acc_structs.rt_tlas_buf[int(eTLASIndex::Shadow)]);
                 const FgBufRWHandle rt_sh_tlas_leaf_prims_res =
-                    acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Shadow)] =
-                        build_acc_structs.AddTransferOutput(acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Shadow)]);
+                    acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Shadow)] = build_acc_structs.AddTransferOutput(
+                        acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Shadow)]);
 
                 build_acc_structs.make_executor<ExBuildAccStructures>(
                     p_list_, int(eTLASIndex::Shadow), rt_obj_instances_res[int(eTLASIndex::Shadow)],
@@ -1120,8 +1122,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 const FgBufRWHandle rt_vol_tlas_res = acc_structs.rt_tlas_buf[int(eTLASIndex::Volume)] =
                     build_acc_structs.AddTransferOutput(acc_structs.rt_tlas_buf[int(eTLASIndex::Volume)]);
                 const FgBufRWHandle rt_vol_tlas_leaf_prims_res =
-                    acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Volume)] =
-                        build_acc_structs.AddTransferOutput(acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Volume)]);
+                    acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Volume)] = build_acc_structs.AddTransferOutput(
+                        acc_structs.rt_tlas_leaf_prims_buf[int(eTLASIndex::Volume)]);
 
                 build_acc_structs.make_executor<ExBuildAccStructures>(
                     p_list_, int(eTLASIndex::Volume), rt_obj_instances_res[int(eTLASIndex::Volume)],
@@ -1998,8 +2000,8 @@ void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramHandle prog, const
 
 void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const int h, const int stride,
                                       const Ren::eFormat format, const float gamma, const float min_exposure,
-                                      const float max_exposure, const Ren::ImageHandle target, const bool compressed,
-                                      const bool blit_to_backbuffer) {
+                                      const float max_exposure, const float sharpness, const Ren::ImageHandle target,
+                                      const bool compressed, const bool blit_to_backbuffer) {
     const uint32_t cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
 
@@ -2021,6 +2023,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
         view_state_.out_res = view_state_.ren_res = Ren::Vec2u{cur_scr_w, cur_scr_h};
     }
     view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
+    view_state_.sharpness = sharpness;
 
     const bool rebuild_renderpasses = !cached_settings_.has_value() || (cached_settings_.value() != settings) ||
                                       !fg_builder_.ready() || cached_rp_index_ != 1 || resolution_changed;
@@ -2179,7 +2182,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
 
 void Eng::Renderer::BlitImageTonemap(const Ren::ImageHandle result, const int w, const int h, Ren::eFormat format,
                                      const float gamma, const float min_exposure, const float max_exposure,
-                                     const Ren::ImageHandle target, const bool compressed,
+                                     const float sharpness, const Ren::ImageHandle target, const bool compressed,
                                      const bool blit_to_backbuffer) {
     const uint32_t cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
@@ -2202,6 +2205,7 @@ void Eng::Renderer::BlitImageTonemap(const Ren::ImageHandle result, const int w,
         view_state_.out_res = view_state_.ren_res = Ren::Vec2u{cur_scr_w, cur_scr_h};
     }
     view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
+    view_state_.sharpness = sharpness;
 
     const bool rebuild_renderpasses = !cached_settings_.has_value() || (cached_settings_.value() != settings) ||
                                       !fg_builder_.ready() || cached_rp_index_ != 1 || resolution_changed;

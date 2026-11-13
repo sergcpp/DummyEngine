@@ -257,7 +257,7 @@ Eng::FgImgRWHandle Eng::Renderer::AddSharpenPass(const FgImgROHandle input_tex, 
         Sharpen::Params uniform_params;
         uniform_params.img_size[0] = view_state_.out_res[0];
         uniform_params.img_size[1] = view_state_.out_res[1];
-        uniform_params.sharpness = 0.15f; // hardcoded for now
+        uniform_params.sharpness = view_state_.sharpness;
         uniform_params.pre_exposure = view_state_.pre_exposure;
 
         const Ren::Binding bindings[] = {

@@ -72,10 +72,10 @@ class Renderer {
     void SetTonemapLUT(int res, Ren::eFormat format, Ren::Span<const uint8_t> data);
 
     void BlitPixelsTonemap(const uint8_t *data, int w, int h, int stride, Ren::eFormat format, float gamma,
-                           float min_exposure, float max_exposure, Ren::ImageHandle target, bool compressed,
+                           float min_exposure, float max_exposure, float sharpness, Ren::ImageHandle target, bool compressed,
                            bool blit_to_backbuffer = false);
     void BlitImageTonemap(Ren::ImageHandle result, int w, int h, Ren::eFormat format, float gamma, float min_exposure,
-                          float max_exposure, Ren::ImageHandle target, bool compressed,
+                          float max_exposure, float sharpness, Ren::ImageHandle target, bool compressed,
                           bool blit_to_backbuffer = false);
     render_settings_t settings = {};
 
