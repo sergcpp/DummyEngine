@@ -1606,15 +1606,16 @@ void BaseState::InitEnvironment_PT() {
     env_desc.env_col[2] = env_desc.back_col[2] = scene_data.env.env_col[2];
 
     memcpy(&env_desc.atmosphere, &scene_data.env.atmosphere, sizeof(Ray::atmosphere_params_t));
+    env_desc.atmosphere.moon_distance = 363100000.0f;
     static_assert(sizeof(Ray::atmosphere_params_t) == sizeof(Eng::atmosphere_params_t));
 
-    if (scene_data.env.sun_angle < 0.75) {
+    if (scene_data.env.sun_angle < 0.75f) {
         env_desc.envmap_resolution *= 2;
     }
-    if (scene_data.env.sun_angle < 0.375) {
+    if (scene_data.env.sun_angle < 0.375f) {
         env_desc.envmap_resolution *= 2;
     }
-    if (scene_data.env.sun_angle < 0.1875) {
+    if (scene_data.env.sun_angle < 0.1875f) {
         env_desc.envmap_resolution *= 2;
     }
 
@@ -1720,9 +1721,8 @@ void BaseState::InitScene_PT() {
         cam_desc.shift[1] = scene_manager_->main_cam().sensor_shift()[1];
         cam_desc.sensor_height = scene_manager_->main_cam().sensor_height;
         cam_desc.focus_distance = scene_manager_->main_cam().focus_distance;
-        cam_desc.fstop = viewer_->app_params.postprocess
-                             ? BaseStateInternal::ray_fstop_from_eng(scene_manager_->main_cam())
-                             : 0.0f;
+        cam_desc.fstop =
+            viewer_->app_params.postprocess ? BaseStateInternal::ray_fstop_from_eng(scene_manager_->main_cam()) : 0.0f;
         cam_desc.lens_rotation = scene_manager_->main_cam().lens_rotation;
         cam_desc.lens_ratio = scene_manager_->main_cam().lens_ratio;
         cam_desc.lens_blades = scene_manager_->main_cam().lens_blades;
@@ -2079,8 +2079,8 @@ void BaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, co
     cam_desc.fov = fov;
     cam_desc.sensor_height = scene_manager_->main_cam().sensor_height;
     cam_desc.focus_distance = scene_manager_->main_cam().focus_distance;
-    cam_desc.fstop = viewer_->app_params.postprocess ? BaseStateInternal::ray_fstop_from_eng(scene_manager_->main_cam())
-                                                     : 0.0f;
+    cam_desc.fstop =
+        viewer_->app_params.postprocess ? BaseStateInternal::ray_fstop_from_eng(scene_manager_->main_cam()) : 0.0f;
     cam_desc.lens_rotation = scene_manager_->main_cam().lens_rotation;
     cam_desc.lens_ratio = scene_manager_->main_cam().lens_ratio;
     cam_desc.lens_blades = scene_manager_->main_cam().lens_blades;

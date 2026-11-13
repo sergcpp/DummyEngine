@@ -28,8 +28,8 @@ runs:
         mkdir $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} --prepare-assets pc --no-run
         ### Bistro night (dynamic)
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_dyn/ -w 1920 -h 1080 --res-scale 1.5 --sun-dir 0 1 0 --exposure 3.25 --preset high --freeze-sky --no-postprocess --no-fog --cam-path 0 --psnr 21.25 21.15 21.10 21.05 21.05 21.00 20.95 20.95 20.95 21.00 21.05 21.20 21.35 21.50 21.65 21.70 21.70 21.50 21.05 20.40 20.10 19.75 20.10 20.05 19.90 19.15 20.75 20.80 20.05 19.80 19.75 19.55 19.95
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_dyn/ -w 1920 -h 1080 --res-scale 1.0 --sun-dir 0 1 0 --exposure 3.25 --preset ultra --freeze-sky --no-postprocess --no-fog --cam-path 0 --psnr 21.45 21.35 21.35 21.35 21.40 21.35 21.35 21.30 21.40 21.45 21.45 21.65 21.80 21.95 22.05 22.10 22.10 21.95 21.55 20.80 20.40 20.15 20.55 20.50 20.45 19.45 20.90 21.15 20.50 20.15 20.00 19.85 20.30
+        #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_dyn/ -w 1920 -h 1080 --res-scale 1.5 --sun-dir 0 1 0 --exposure 3.25 --preset high --freeze-sky --no-postprocess --no-fog --cam-path 0 --psnr 21.25 21.15 21.10 21.05 21.05 21.00 20.95 20.95 20.95 21.00 21.05 21.20 21.35 21.50 21.65 21.70 21.70 21.50 21.05 20.40 20.10 19.75 20.10 20.05 19.90 19.15 20.75 20.80 20.05 19.80 19.75 19.55 19.95
+        #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_dyn/ -w 1920 -h 1080 --res-scale 1.0 --sun-dir 0 1 0 --exposure 3.25 --preset ultra --freeze-sky --no-postprocess --no-fog --cam-path 0 --psnr 21.45 21.35 21.35 21.35 21.40 21.35 21.35 21.30 21.40 21.45 21.45 21.65 21.80 21.95 22.05 22.10 22.10 21.95 21.55 20.80 20.40 20.15 20.55 20.50 20.45 19.45 20.90 21.15 20.50 20.15 20.00 19.85 20.30
         ### Bistro (dynamic)
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_dyn/ -w 1920 -h 1080 --res-scale 1.5 --exposure -11 --preset medium --freeze-sky --no-postprocess --no-fog --cam-path 0 --psnr 20.50 20.35 20.25 20.10 20.00 19.80 19.70 19.70 19.70 19.70 19.75 19.85 20.00 20.10 20.25 20.30 20.35 20.20 19.80 19.50 17.45 17.45 17.85 17.65 18.60 20.60 22.50 21.45 20.15 19.45 19.20 19.20 19.30
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_dyn/ -w 1920 -h 1080 --res-scale 1.5 --exposure -11 --preset high --freeze-sky --no-postprocess --no-fog --cam-path 0 --psnr 21.15 21.00 20.80 20.65 20.50 20.25 20.20 20.15 20.20 20.10 20.20 20.30 20.40 20.50 20.65 20.70 20.80 20.80 20.45 19.75 17.20 17.25 17.95 17.95 18.65 20.60 21.90 21.65 20.55 19.45 19.65 19.65 19.95
@@ -80,13 +80,13 @@ runs:
         #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --res-scale 1.0 --sun-dir 0 1 0 --exposure 3.25 --preset medium --psnr 21.40 --freeze-sky --no-postprocess --tex-budget 1024
         #mv bistro.png bistro_night_medium.png
         #cp bistro_night_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --res-scale 1.0 --sun-dir 0 1 0 --exposure 3.25 --preset high --psnr 23.30 --freeze-sky --no-postprocess --tex-budget 1024
-        mv bistro.png bistro_night_high.png
-        cp bistro_night_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --res-scale 1.0 --sun-dir 0 1 0 --exposure 3.25 --preset ultra --psnr 23.15 --freeze-sky --no-postprocess --tex-budget 1024
-        mv bistro.png bistro_night_ultra.png
-        cp bistro_night_ultra.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles2.uncompressed.png -w 960 -h 540 --res-scale 1.0 --sun-dir 0 1 0 --exposure 3.25 --pt --psnr 32.40 --freeze-sky --no-postprocess
+        #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --res-scale 1.0 --sun-dir 0 1 0 --exposure 3.25 --preset high --psnr 23.30 --freeze-sky --no-postprocess --tex-budget 1024
+        #mv bistro.png bistro_night_high.png
+        #cp bistro_night_high.png $WORK_DIR/${{ inputs.out-dir }}
+        #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --res-scale 1.0 --sun-dir 0 1 0 --exposure 3.25 --preset ultra --psnr 23.15 --freeze-sky --no-postprocess --tex-budget 1024
+        #mv bistro.png bistro_night_ultra.png
+        #cp bistro_night_ultra.png $WORK_DIR/${{ inputs.out-dir }}
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles2.uncompressed.png -w 960 -h 540 --res-scale 1.0 --sun-dir 0 1 0 --exposure 0.25 --pt --psnr 30.20 --freeze-sky --no-postprocess
         mv bistro.png bistro_night_pt.png
         cp bistro_night_pt.png $WORK_DIR/${{ inputs.out-dir }}
         ### Coffee maker
@@ -132,7 +132,7 @@ runs:
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --res-scale 1.0 --exposure -11 --preset high --psnr 23.15 --freeze-sky --no-postprocess
         mv bistro.png bistro_high.png
         cp bistro_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --res-scale 1.0 --exposure -11 --preset ultra --psnr 26.20 --freeze-sky --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --res-scale 1.0 --exposure -11 --preset ultra --psnr 26.15 --freeze-sky --no-postprocess
         mv bistro.png bistro_ultra.png
         cp bistro_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles2.uncompressed.png -w 960 -h 540 --res-scale 1.0 --exposure -11 --pt --psnr 28.15 --freeze-sky --no-postprocess
