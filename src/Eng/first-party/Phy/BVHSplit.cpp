@@ -26,6 +26,55 @@ struct bbox_t {
         // return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
     }
 };
+
+static int widest_axis(const bbox_t &box) {
+    const float ext[3] = {box.max[0] - box.min[0], box.max[1] - box.min[1], box.max[2] - box.min[2]};
+    int axis = 0;
+    if (ext[1] > ext[axis])
+        axis = 1;
+    if (ext[2] > ext[axis])
+        axis = 2;
+    return axis;
+}
+
+// Balanced split by position along the widest axis, used when SAH declines any split
+// (degenerate / coincident clusters) so callers' leaf-size contract still holds. Deterministic tie-break.
+static void median_split(const prim_t *primitives, Span<const uint32_t> prim_indices, const bbox_t &whole_box,
+                         std::vector<uint32_t> &out_left, std::vector<uint32_t> &out_right,
+                         bbox_t &out_left_bounds, bbox_t &out_right_bounds) {
+    const int axis = widest_axis(whole_box);
+
+    std::vector<uint32_t> order(prim_indices.size());
+    for (size_t i = 0; i < order.size(); i++) {
+        order[i] = uint32_t(i);
+    }
+    std::sort(order.begin(), order.end(), [&](const uint32_t p1, const uint32_t p2) {
+        const prim_t &a1 = primitives[prim_indices[p1]];
+        const prim_t &a2 = primitives[prim_indices[p2]];
+        const float c1 = (a1.bbox_min[axis] + a1.bbox_max[axis]) * 0.5f;
+        const float c2 = (a2.bbox_min[axis] + a2.bbox_max[axis]) * 0.5f;
+        if (c1 != c2) {
+            return c1 < c2;
+        }
+        return prim_indices[p1] < prim_indices[p2];
+    });
+
+    const size_t half = order.size() / 2;
+    out_left.reserve(half);
+    out_right.reserve(order.size() - half);
+    for (size_t i = 0; i < half; i++) {
+        const prim_t &p = primitives[prim_indices[order[i]]];
+        out_left.push_back(prim_indices[order[i]]);
+        out_left_bounds.min = Min(out_left_bounds.min, p.bbox_min);
+        out_left_bounds.max = Max(out_left_bounds.max, p.bbox_max);
+    }
+    for (size_t i = half; i < order.size(); i++) {
+        const prim_t &p = primitives[prim_indices[order[i]]];
+        out_right.push_back(prim_indices[order[i]]);
+        out_right_bounds.min = Min(out_right_bounds.min, p.bbox_min);
+        out_right_bounds.max = Max(out_right_bounds.max, p.bbox_max);
+    }
+}
 } // namespace Phy
 
 Phy::split_data_t Phy::SplitPrimitives_SAH(const prim_t *primitives, Span<const uint32_t> prim_indices,
@@ -112,6 +161,9 @@ Phy::split_data_t Phy::SplitPrimitives_SAH(const prim_t *primitives, Span<const 
                     res_right_bounds.max = Max(res_right_bounds.max, p.bbox_max);
                 }
             }
+        } else if (prim_count > s.min_primitives_in_leaf) {
+            median_split(primitives, prim_indices, whole_box, left_indices, right_indices, res_left_bounds,
+                         res_right_bounds);
         } else {
             left_indices.assign(prim_indices.begin(), prim_indices.end());
             res_left_bounds = whole_box;
@@ -181,6 +233,9 @@ Phy::split_data_t Phy::SplitPrimitives_SAH(const prim_t *primitives, Span<const 
             for (size_t i = div_index; i < axis_lists[div_axis].size(); i++) {
                 right_indices.push_back(prim_indices[axis_lists[div_axis][i]]);
             }
+        } else if (prim_count > s.min_primitives_in_leaf) {
+            median_split(primitives, prim_indices, whole_box, left_indices, right_indices, res_left_bounds,
+                         res_right_bounds);
         } else {
             left_indices.insert(left_indices.end(), prim_indices.begin(), prim_indices.end());
             res_left_bounds = whole_box;
