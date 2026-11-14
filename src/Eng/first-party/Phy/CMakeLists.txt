@@ -31,6 +31,8 @@ set(SOURCE_FILES    AlignedAlloc.h
                     BVHSplit.h
                     BVHSplit.cpp
                     Core.h
+                    DynBVH.h
+                    DynBVH.cpp
                     Mat.h
                     Phy.h
                     Phy.cpp

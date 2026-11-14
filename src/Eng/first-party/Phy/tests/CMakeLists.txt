@@ -3,6 +3,7 @@ project(test_Phy)
 
 add_executable(test_Phy main.cpp
                         test_bvhsplit.cpp
+                        test_dyn_bvh.cpp
                         test_math.cpp
                         test_small_vector.cpp
                         test_span.cpp

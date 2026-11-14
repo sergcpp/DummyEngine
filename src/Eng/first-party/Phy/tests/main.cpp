@@ -4,6 +4,7 @@
 #include "../Phy.h"
 
 void test_bvhsplit();
+void test_dyn_bvh();
 void test_math();
 void test_span();
 void test_svol();
@@ -16,5 +17,6 @@ int main() {
     test_span();
     test_svol();
     test_bvhsplit();
+    test_dyn_bvh();
 }
 
