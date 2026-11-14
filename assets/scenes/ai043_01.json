@@ -13,9 +13,9 @@
         ],
         "sun_angle": 0.1,
         "env_col": [
-            3.6,
-            3.6,
-            3.6
+            28.8,
+            28.8,
+            28.8
         ]
     },
     "camera": {
@@ -40,8 +40,8 @@
         "filter": "blackman-harris",
         "filter_width": 1.0,
         "gamma": 0.5,
-        "min_exposure": 3.2,
-        "max_exposure": 3.2,
+        "min_exposure": 0.2,
+        "max_exposure": 0.2,
         "fwd_speed": 0.05,
         "shift": [
             0.0867,

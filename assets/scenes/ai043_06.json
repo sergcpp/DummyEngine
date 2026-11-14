@@ -13,9 +13,9 @@
         ],
         "sun_angle": 0.1,
         "env_col": [
-            4.0,
-            4.0,
-            4.0
+            16.0,
+            16.0,
+            16.0
         ]
     },
     "camera": {
@@ -40,8 +40,8 @@
         "filter": "blackman-harris",
         "filter_width": 1.0,
         "gamma": 0.5,
-        "min_exposure": 2.2,
-        "max_exposure": 2.2,
+        "min_exposure": 0.2,
+        "max_exposure": 0.2,
         "fwd_speed": 0.04
     },
     "objects": [
@@ -2435,7 +2435,7 @@
                     0.8478829860687256,
                     0.5898993015289307
                 ],
-                "power": 2.0,
+                "power": 8.0,
                 "radius": 0.029999999329447746,
                 "spot_angle": 139.99999934239548,
                 "spot_blend": 0.15000000596046448,
@@ -2660,7 +2660,7 @@
                     0.5840479731559753,
                     0.3141619861125946
                 ],
-                "power": 0.5,
+                "power": 2.0,
                 "radius": 0.004000000189989805,
                 "cull_offset": 0.01,
                 "cull_radius": 10.0,
