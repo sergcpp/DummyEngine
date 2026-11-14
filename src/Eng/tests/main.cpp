@@ -19,6 +19,7 @@ void test_upscaling(Sys::ThreadPool &threads);
 void test_volumetrics(Sys::ThreadPool &threads);
 void test_motion_blur(Sys::ThreadPool &threads);
 void test_dof(Sys::ThreadPool &threads);
+void test_bvh(Sys::ThreadPool &threads);
 
 bool g_stop_on_fail = false;
 std::atomic_bool g_tests_success{true};
@@ -97,6 +98,8 @@ int main(int argc, char *argv[]) {
     Sys::ThreadPool mt_run_pool(threads_count);
 
     test_empty_scene(mt_run_pool);
+    puts(" ---------------");
+    test_bvh(mt_run_pool);
     puts(" ---------------");
     test_scroll_scene(mt_run_pool);
     puts(" ---------------");

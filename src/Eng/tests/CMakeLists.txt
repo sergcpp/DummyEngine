@@ -17,6 +17,7 @@ endif()
 
 add_executable(test_Eng main.cpp
                         test_common.h
+                        test_bvh.cpp
                         test_dof.cpp
                         test_motion_blur.cpp
                         test_scene.h
