@@ -151,9 +151,6 @@ struct DrawList {
 
     DynArray<ShadReg> cached_shadow_regions;
 
-    // for debugging only, backend does not require nodes for drawing
-    std::vector<bvh_node_t> temp_nodes;
-    uint32_t root_index = 0xffffffff;
     // culling depth buffer
     int depth_w, depth_h;
     std::vector<uint8_t> depth_pixels;

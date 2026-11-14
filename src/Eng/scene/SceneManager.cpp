@@ -734,8 +734,7 @@ void Eng::SceneManager::ClearScene() {
     scene_data_.name_to_object.clear();
     scene_data_.lm_splitter.Clear();
     // scene_data_.probe_storage.Clear();
-    scene_data_.nodes.clear();
-    scene_data_.free_nodes.clear();
+    scene_data_.bvh.Clear();
     scene_data_.update_counter = 0;
 
     for (auto &range : scene_data_.mat_update_ranges) {

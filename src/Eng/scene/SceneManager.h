@@ -221,7 +221,6 @@ class SceneManager {
     void Alloc_SWRT_TLAS();
 
     void RebuildSceneBVH();
-    void RemoveNode(uint32_t node_index);
 
     Ren::Context &ren_ctx_;
     ShaderLoader &sh_;
@@ -293,8 +292,6 @@ class SceneManager {
     static uint32_t FlattenCompactBVH_r(Ren::Span<const gpu_bvh_node_t> nodes, uint32_t node_index,
                                         std::vector<gpu_cwbvh_node_t> &out_nodes,
                                         std::vector<uint32_t> &out_leaf_prims, int at_index = -1, uint32_t depth = 0);
-
-    std::vector<char> temp_buf;
 
     // bool cur_lm_indir_ = false;
     // uint32_t cur_lm_obj_ = 0;

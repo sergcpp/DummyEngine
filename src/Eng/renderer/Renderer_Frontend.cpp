@@ -91,6 +91,8 @@ static const bool EnableSunCulling = true;
 static const uint32_t SkipFrustumCheckBit = (1u << 31u);
 static const uint32_t IndexBits = ~SkipFrustumCheckBit;
 
+static Ren::Vec3f bvh_v3(const Phy::Vec3f &v) { return Ren::Vec3f{v[0], v[1], v[2]}; }
+
 void __push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat4f &world_from_object, Eng::DrawList &list);
 uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, const Eng::AnimState &as, const Ren::MeshMain &mesh_main,
                               const Ren::MeshCold &mesh_cold, Eng::DrawList &list);
@@ -203,15 +205,6 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     // mask render settings with what renderer itself is capable of
     list.render_settings &= settings;
 
-    if (list.render_settings.debug_bvh) {
-        // copy nodes list for debugging
-        list.temp_nodes = scene.nodes;
-        list.root_index = scene.root_node;
-    } else {
-        // free allocated memory
-        list.temp_nodes = {};
-    }
-
     if (list.render_settings.debug_freeze) {
         return;
     }
@@ -243,9 +236,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     }
 
     list.volume_to_update = int(frame_index_ % PROBE_VOLUMES_COUNT);
-    if (scene.root_node != 0xffffffff) {
-        list.bbox_min = scene.nodes[scene.root_node].bbox_min;
-        list.bbox_max = scene.nodes[scene.root_node].bbox_max;
+    if (scene.bvh.root() != Phy::BVH_NO_NODE) {
+        const Phy::dyn_bvh_node_t &root_node = scene.bvh.nodes()[scene.bvh.root()];
+        list.bbox_min = bvh_v3(root_node.bbox_min);
+        list.bbox_max = bvh_v3(root_node.bbox_max);
     }
 
     list.visible_textures.clear();
@@ -336,17 +330,18 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
     const Mat4f &cull_view_from_world = view_from_world, &cull_clip_from_view = list.draw_cam.proj_matrix();
 
-    if (scene.root_node != 0xffffffff) {
+    const auto bvh_nodes = scene.bvh.nodes();
+    if (scene.bvh.root() != Phy::BVH_NO_NODE) {
         // Rasterize occluder meshes
-        stack[stack_size++] = scene.root_node;
+        stack[stack_size++] = scene.bvh.root();
 
         while (stack_size && culling_enabled) {
             const uint32_t cur = stack[--stack_size] & IndexBits;
             uint32_t skip_frustum_check = (stack[stack_size] & SkipFrustumCheckBit);
-            const bvh_node_t *n = &scene.nodes[cur];
+            const Phy::dyn_bvh_node_t *n = &bvh_nodes[cur];
 
             if (!skip_frustum_check) {
-                const eVisResult res = list.draw_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
+                const eVisResult res = list.draw_cam.CheckFrustumVisibility(bvh_v3(n->bbox_min), bvh_v3(n->bbox_max));
                 if (res == eVisResult::Invisible) {
                     continue;
                 } else if (res == eVisResult::FullyVisible) {
@@ -354,11 +349,11 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 }
             }
 
-            if (!n->leaf_node) {
-                stack[stack_size++] = skip_frustum_check | n->left_child;
-                stack[stack_size++] = skip_frustum_check | n->right_child;
+            if (!Phy::bvh_is_leaf(*n)) {
+                stack[stack_size++] = skip_frustum_check | Phy::bvh_left_child(*n);
+                stack[stack_size++] = skip_frustum_check | Phy::bvh_right_child(*n);
             } else {
-                const SceneObject &obj = scene.objects[n->prim_index];
+                const SceneObject &obj = scene.objects[Phy::bvh_prim_id(*n)];
 
                 const uint32_t occluder_flags = CompTransformBit | CompOccluderBit;
                 if ((obj.comp_mask & occluder_flags) == occluder_flags) {
@@ -410,7 +405,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
     const uint64_t main_gather_start = Sys::GetTimeUs();
 
-    if (scene.root_node != 0xffffffff) {
+    if (scene.bvh.root() != Phy::BVH_NO_NODE) {
         Ren::Frustum z_frustums[ITEM_GRID_RES_Z];
         list.draw_cam.ExtractSubFrustums(1, 1, ITEM_GRID_RES_Z, z_frustums);
 
@@ -859,8 +854,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     OPTICK_PUSH("SHADOW GATHERING");
     const uint64_t shadow_gather_start = Sys::GetTimeUs();
 
-    if (lighting_enabled && scene.root_node != 0xffffffff && shadows_enabled && Length2(list.env.sun_dir) > 0.9f &&
-        Length2(list.env.sun_col) > FLT_EPSILON && list.env.sun_dir[1] < 0.0f) {
+    if (lighting_enabled && scene.bvh.root() != Phy::BVH_NO_NODE && shadows_enabled &&
+        Length2(list.env.sun_dir) > 0.9f && Length2(list.env.sun_col) > FLT_EPSILON && list.env.sun_dir[1] < 0.0f) {
+        const Phy::dyn_bvh_node_t &root_node = scene.bvh.nodes()[scene.bvh.root()];
+        const Ren::Vec3f root_min = bvh_v3(root_node.bbox_min), root_max = bvh_v3(root_node.bbox_max);
         // Reserve space for sun shadow
         int sun_shadow_pos[2] = {0, 0};
         int sun_shadow_res[2];
@@ -895,7 +892,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         const Vec3f cam_side = Normalize(Cross(light_dir, cam_up));
         cam_up = Cross(cam_side, light_dir);
 
-        const float max_dist = Distance(scene.nodes[0].bbox_min, scene.nodes[0].bbox_max);
+        const float max_dist = Distance(root_min, root_max);
         const Vec3f view_dir = list.draw_cam.view_dir();
 
         // Gather drawables for each cascade
@@ -904,7 +901,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             Vec3f bounding_center;
             float bounding_radius;
             if (casc == 3) {
-                bounding_center = 0.5f * (scene.nodes[0].bbox_min + scene.nodes[0].bbox_max);
+                bounding_center = 0.5f * (root_min + root_max);
                 bounding_radius = 0.5f * max_dist;
             } else {
                 Camera temp_cam = list.draw_cam;
@@ -921,7 +918,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
                 if (casc == 0 && bounding_radius > 0.5f * max_dist) {
                     // scene is very small, just use the whole bounds
-                    bounding_center = 0.5f * (scene.nodes[0].bbox_min + scene.nodes[0].bbox_max);
+                    bounding_center = 0.5f * (root_min + root_max);
                     bounding_radius = 0.5f * max_dist;
                 }
             }
@@ -949,7 +946,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 object_dim_thres = 2.0f * move_step;
             }
 
-            const Vec3f cam_support1 = FindSupport(scene.nodes[0].bbox_min, scene.nodes[0].bbox_max, light_dir);
+            const Vec3f cam_support1 = FindSupport(root_min, root_max, light_dir);
             const Vec3f cam_center = cam_target + fabsf(Dot(cam_support1 - cam_target, light_dir)) * light_dir;
             const float cam_extents = Distance(cam_center, cam_target) + bounding_radius;
 
@@ -1561,25 +1558,27 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 const uint32_t IndexBits = ~SkipCheckBit;
 
                 stack_size = 0;
-                stack[stack_size++] = scene.root_node;
+                stack[stack_size++] = scene.bvh.root();
 
                 while (stack_size) {
                     const uint32_t cur = stack[--stack_size] & IndexBits;
                     uint32_t skip_check = stack[stack_size] & SkipCheckBit;
-                    const bvh_node_t *n = &scene.nodes[cur];
+                    const Phy::dyn_bvh_node_t *n = &bvh_nodes[cur];
 
-                    const eVisResult res = shadow_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
+                    const eVisResult res =
+                        shadow_cam.CheckFrustumVisibility(bvh_v3(n->bbox_min), bvh_v3(n->bbox_max));
                     if (res == eVisResult::Invisible) {
                         continue;
                     } else if (res == eVisResult::FullyVisible) {
                         skip_check = SkipCheckBit;
                     }
 
-                    if (!n->leaf_node) {
-                        stack[stack_size++] = skip_check | n->left_child;
-                        stack[stack_size++] = skip_check | n->right_child;
+                    if (!Phy::bvh_is_leaf(*n)) {
+                        stack[stack_size++] = skip_check | Phy::bvh_left_child(*n);
+                        stack[stack_size++] = skip_check | Phy::bvh_right_child(*n);
                     } else {
-                        const auto &obj = scene.objects[n->prim_index];
+                        const uint32_t node_obj_index = Phy::bvh_prim_id(*n);
+                        const auto &obj = scene.objects[node_obj_index];
 
                         const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
                         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
@@ -1602,12 +1601,12 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                             const auto &[mesh_main, mesh_cold] = storages.meshes[dr.mesh];
 
-                            if (proc_objects_[n->prim_index].base_vertex == 0xffffffff) {
-                                proc_objects_[n->prim_index].base_vertex = mesh_main.attribs_buf1.sub.offset / 16;
+                            if (proc_objects_[node_obj_index].base_vertex == 0xffffffff) {
+                                proc_objects_[node_obj_index].base_vertex = mesh_main.attribs_buf1.sub.offset / 16;
 
                                 if (obj.comp_mask & CompAnimStateBit) {
                                     const AnimState &as = anims[obj.components[CompAnimState]];
-                                    proc_objects_[n->prim_index].base_vertex =
+                                    proc_objects_[node_obj_index].base_vertex =
                                         __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh_main, mesh_cold, list);
                                 }
                             }
@@ -1649,9 +1648,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 batch.two_sided_bit = simple_twosided ? 1 : 0;
                                 batch.indices_offset =
                                     (mesh_main.indices_buf.sub.offset + grp.byte_offset) / sizeof(uint32_t);
-                                batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
+                                batch.base_vertex = proc_objects_[node_obj_index].base_vertex;
                                 batch.indices_count = grp.num_indices;
-                                batch.instance_index = n->prim_index;
+                                batch.instance_index = node_obj_index;
                                 batch.material_index = ((front_main.flags & eMatFlags::AlphaBlend) ||
                                                         (front_main.flags & eMatFlags::AlphaTest) ||
                                                         (batch.type_bits == basic_draw_batch_t::TypeVege))
@@ -2068,17 +2067,19 @@ void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, cons
     // retrieve pointers to components for fast access
     const auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
 
+    const auto bvh_nodes = scene.bvh.nodes();
+
     uint32_t stack[MAX_STACK_SIZE];
     uint32_t stack_size = 0;
 
     // Gather meshes and lights, skip occluded and frustum culled
     stack_size = 0;
-    stack[stack_size++] = scene.root_node;
+    stack[stack_size++] = scene.bvh.root();
 
     while (stack_size) {
         const uint32_t cur = stack[--stack_size] & IndexBits;
         uint32_t skip_frustum_check = stack[stack_size] & SkipFrustumCheckBit;
-        const bvh_node_t *n = &scene.nodes[cur];
+        const Phy::dyn_bvh_node_t *n = &bvh_nodes[cur];
 
         const float bbox_points[8][3] = {BBOX_POINTS(n->bbox_min, n->bbox_max)};
         eVisResult cam_visibility = eVisResult::PartiallyVisible;
@@ -2117,11 +2118,12 @@ void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, cons
             continue;
         }
 
-        if (!n->leaf_node) {
-            stack[stack_size++] = skip_frustum_check | n->left_child;
-            stack[stack_size++] = skip_frustum_check | n->right_child;
+        if (!Phy::bvh_is_leaf(*n)) {
+            stack[stack_size++] = skip_frustum_check | Phy::bvh_left_child(*n);
+            stack[stack_size++] = skip_frustum_check | Phy::bvh_right_child(*n);
         } else {
-            const SceneObject &obj = scene.objects[n->prim_index];
+            const uint32_t obj_index = Phy::bvh_prim_id(*n);
+            const SceneObject &obj = scene.objects[obj_index];
 
             if (obj.comp_mask & comp_mask) {
                 const Transform &tr = transforms[obj.components[CompTransform]];
@@ -2161,11 +2163,11 @@ void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, cons
                 }
 
                 if (cam_visibility != eVisResult::Invisible) {
-                    const uint8_t mask = proc_objects[n->prim_index].visited_mask.fetch_and(~visit_mask);
+                    const uint8_t mask = proc_objects[obj_index].visited_mask.fetch_and(~visit_mask);
                     if (mask & visit_mask) {
                         VisObjStorage &s = out_visible_objects2[obj.comp_mask & comp_mask];
                         const uint32_t index2 = s.count.fetch_add(1);
-                        s.objects[index2] = {n->prim_index,
+                        s.objects[index2] = {obj_index,
                                              Distance2(cam_pos, 0.5f * (tr.bbox_max_ws + tr.bbox_min_ws))};
                     }
                 }

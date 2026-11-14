@@ -6,8 +6,6 @@
 #include <Phy/BVHSplit.h>
 #include <Ren/Context.h>
 #include <Ren/ResizableBuffer.h>
-#include <Sys/BinaryTree.h>
-#include <Sys/MonoAlloc.h>
 #include <Sys/ScopeExit.h>
 
 #include <optick/optick.h>
@@ -15,55 +13,8 @@
 extern __itt_domain *__g_itt_domain;
 
 namespace Eng::SceneManagerInternal {
+// Leaf-bounds hysteresis as a fraction of the prim extent, passed to Phy::DynBVH
 const float BoundsMargin = 0.2f;
-
-float surface_area(const Eng::bvh_node_t &n) {
-    const Ren::Vec3f d = n.bbox_max - n.bbox_min;
-    return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
-}
-
-float surface_area_of_union(const Eng::bvh_node_t &n1, const Eng::bvh_node_t &n2) {
-    const Ren::Vec3f d = Max(n1.bbox_max, n2.bbox_max) - Min(n1.bbox_min, n2.bbox_max);
-    return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
-}
-
-struct insert_candidate_t {
-    uint32_t node_index;
-    float direct_cost;
-};
-
-bool insert_candidate_compare(insert_candidate_t c1, insert_candidate_t c2) { return c1.direct_cost > c2.direct_cost; }
-
-void sort_children(const Eng::bvh_node_t *nodes, Eng::bvh_node_t &node) {
-    const uint32_t ch0 = node.left_child, ch1 = node.right_child;
-
-    uint32_t sep_axis = 0;
-    const Ren::Vec3f c_left = (nodes[ch0].bbox_min + nodes[ch0].bbox_max) / 2,
-                     c_right = (nodes[ch1].bbox_min + nodes[ch1].bbox_max) / 2;
-
-    const Ren::Vec3f dist = Abs(c_left - c_right);
-
-    if (dist[0] > dist[1] && dist[0] > dist[2]) {
-        sep_axis = 0;
-    } else if (dist[1] > dist[0] && dist[1] > dist[2]) {
-        sep_axis = 1;
-    } else {
-        sep_axis = 2;
-    }
-
-    node.sep_axis = sep_axis;
-
-    if (c_left[sep_axis] > c_right[sep_axis]) {
-        const uint32_t temp = node.left_child;
-        node.left_child = node.right_child;
-        node.right_child = temp;
-    }
-}
-
-void update_bbox(const Eng::bvh_node_t *nodes, Eng::bvh_node_t &node) {
-    node.bbox_min = Min(nodes[node.left_child].bbox_min, nodes[node.right_child].bbox_min);
-    node.bbox_max = Max(nodes[node.left_child].bbox_max, nodes[node.right_child].bbox_max);
-}
 
 uint16_t encode_snorm_u16(const float f) {
     return uint16_t(std::round(Ren::Clamp((f + 1) / 2.0f, 0.0f, 1.0f) * 65535.0f));
@@ -157,113 +108,31 @@ void Eng::SceneManager::RebuildSceneBVH() {
 
     auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
-    std::vector<Phy::prim_t> primitives;
+    std::vector<Phy::dyn_bvh_prim_t> primitives;
     primitives.reserve(scene_data_.objects.size());
 
-    for (const SceneObject &obj : scene_data_.objects) {
+    for (uint32_t i = 0; i < uint32_t(scene_data_.objects.size()); i++) {
+        const SceneObject &obj = scene_data_.objects[i];
         if (obj.comp_mask & CompTransformBit) {
             const Transform &tr = transforms[obj.components[CompTransform]];
-            const Ren::Vec3f d = tr.bbox_max_ws - tr.bbox_min_ws;
-            primitives.push_back(
-                {0, 0, 0, adapt(tr.bbox_min_ws - BoundsMargin * d), adapt(tr.bbox_max_ws + BoundsMargin * d)});
+            // prim_id stays object index: churn inserts and the renderer rely on it
+            primitives.push_back({adapt(tr.bbox_min_ws), adapt(tr.bbox_max_ws), i});
         }
     }
 
-    scene_data_.nodes.clear();
-    scene_data_.root_node = 0xffffffff;
+    Phy::dyn_bvh_settings_t s;
+    s.bounds_margin = BoundsMargin;
+    s.split.oversplit_threshold = std::numeric_limits<float>::max();
+    s.split.min_primitives_in_leaf = 1;
 
-    if (primitives.empty()) {
-        return;
-    }
+    scene_data_.bvh.Build(primitives, s);
 
-    struct prims_coll_t {
-        uint32_t parent_index = 0xffffffff;
-        std::vector<uint32_t> indices;
-        Phy::Vec3f min = Phy::Vec3f{std::numeric_limits<float>::max()},
-                   max = Phy::Vec3f{std::numeric_limits<float>::lowest()};
-        prims_coll_t() = default;
-        prims_coll_t(const uint32_t _parent_index, std::vector<uint32_t> &&_indices, const Phy::Vec3f &_min,
-                     const Phy::Vec3f &_max)
-            : parent_index(_parent_index), indices(std::move(_indices)), min(_min), max(_max) {}
-    };
-
-    std::deque<prims_coll_t> prim_lists;
-    prim_lists.emplace_back();
-
-    size_t nodes_count = scene_data_.nodes.size();
-    scene_data_.root_node = uint32_t(nodes_count);
-
-    for (size_t i = 0; i < primitives.size(); i++) {
-        prim_lists.back().indices.push_back(uint32_t(i));
-        prim_lists.back().min = Min(prim_lists.back().min, primitives[i].bbox_min);
-        prim_lists.back().max = Max(prim_lists.back().max, primitives[i].bbox_max);
-    }
-
-    Phy::split_settings_t s;
-    s.oversplit_threshold = std::numeric_limits<float>::max();
-    s.min_primitives_in_leaf = 1;
-
-    while (!prim_lists.empty()) {
-        const uint32_t parent_index = prim_lists.back().parent_index;
-        Phy::split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices,
-                                                           prim_lists.back().min, prim_lists.back().max, s);
-        prim_lists.pop_back();
-
-        const auto leaf_index = uint32_t(scene_data_.nodes.size());
-
-        if (split_data.right_indices.empty()) {
-            const Phy::Vec3f bbox_min = split_data.left_bounds[0], bbox_max = split_data.left_bounds[1];
-
-            const auto new_node_index = uint32_t(scene_data_.nodes.size());
-
-            for (const uint32_t i : split_data.left_indices) {
-                Transform &tr = transforms[scene_data_.objects[i].components[CompTransform]];
-                tr.node_index = new_node_index;
-            }
-
-            assert(split_data.left_indices.size() == 1 && "Wrong split!");
-
-            scene_data_.nodes.emplace_back();
-            bvh_node_t &n = scene_data_.nodes.back();
-
-            n.bbox_min = Ren::Vec3f{bbox_min[0], bbox_min[1], bbox_min[2]};
-            n.leaf_node = 1;
-            n.prim_index = split_data.left_indices[0];
-            n.bbox_max = Ren::Vec3f{bbox_max[0], bbox_max[1], bbox_max[2]};
-            n.sep_axis = 0;
-            n.prim_count = uint32_t(split_data.left_indices.size());
-            n.parent = parent_index;
-        } else {
-            auto index = uint32_t(nodes_count);
-
-            const Phy::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f,
-                             c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
-
-            const Phy::Vec3f dist = Abs(c_left - c_right);
-
-            const uint32_t sep_axis =
-                (dist[0] > dist[1] && dist[0] > dist[2]) ? 0 : ((dist[1] > dist[0] && dist[1] > dist[2]) ? 1 : 2);
-
-            const Phy::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
-                             bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
-
-            scene_data_.nodes.emplace_back();
-            bvh_node_t &n = scene_data_.nodes.back();
-
-            n.bbox_min = Ren::Vec3f{bbox_min[0], bbox_min[1], bbox_min[2]};
-            n.leaf_node = 0;
-            n.left_child = index + 1;
-            n.bbox_max = Ren::Vec3f{bbox_max[0], bbox_max[1], bbox_max[2]};
-            n.sep_axis = sep_axis;
-            n.right_child = index + 2;
-            n.parent = parent_index;
-
-            prim_lists.emplace_front(leaf_index, std::move(split_data.left_indices), split_data.left_bounds[0],
-                                     split_data.left_bounds[1]);
-            prim_lists.emplace_front(leaf_index, std::move(split_data.right_indices), split_data.right_bounds[0],
-                                     split_data.right_bounds[1]);
-
-            nodes_count += 2;
+    // Link tree leaves back to object transforms
+    const auto nodes = scene_data_.bvh.nodes();
+    for (uint32_t i = 0; i < uint32_t(nodes.size()); i++) {
+        if (Phy::bvh_is_leaf(nodes[i])) {
+            const uint32_t obj_index = Phy::bvh_prim_id(nodes[i]);
+            transforms[scene_data_.objects[obj_index].components[CompTransform]].node_index = i;
         }
     }
 
@@ -276,8 +145,6 @@ void Eng::SceneManager::UpdateWorldScrolling(const Ren::Vec3d &new_origin) {
     ren_ctx_.log()->Info("SceneManager: UpdateWorldScrolling!");
 
     auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
-
-    bvh_node_t *nodes = scene_data_.nodes.data();
 
     const Ren::Vec3f origin_diff = Ren::Vec3f(new_origin - scene_data_.origin);
 
@@ -297,24 +164,7 @@ void Eng::SceneManager::UpdateWorldScrolling(const Ren::Vec3d &new_origin) {
             tr.world_from_object_prev[3][2] += origin_diff[2];
 
             if (tr.node_index != 0xffffffff) {
-                bvh_node_t &node = nodes[tr.node_index];
-
-                const Ren::Vec3f d = tr.bbox_max_ws - tr.bbox_min_ws;
-                node.bbox_min = tr.bbox_min_ws - BoundsMargin * d;
-                node.bbox_max = tr.bbox_max_ws + BoundsMargin * d;
-
-                // update hierarchy boxes
-                uint32_t up_parent = node.parent;
-                while (up_parent != 0xffffffff) {
-                    const uint32_t ch0 = nodes[up_parent].left_child, ch1 = nodes[up_parent].right_child;
-
-                    nodes[up_parent].bbox_min = Min(nodes[ch0].bbox_min, nodes[ch1].bbox_min);
-                    nodes[up_parent].bbox_max = Max(nodes[ch0].bbox_max, nodes[ch1].bbox_max);
-
-                    // NOTE: children sorting is unnecessary here
-
-                    up_parent = nodes[up_parent].parent;
-                }
+                scene_data_.bvh.RefitFromLeaf(tr.node_index, adapt(tr.bbox_min_ws), adapt(tr.bbox_max_ws));
             }
 
             instance_data_to_update_.push_back(i);
@@ -322,50 +172,6 @@ void Eng::SceneManager::UpdateWorldScrolling(const Ren::Vec3d &new_origin) {
     }
 
     scene_data_.origin = new_origin;
-}
-
-void Eng::SceneManager::RemoveNode(const uint32_t node_index) {
-    using namespace SceneManagerInternal;
-
-    bvh_node_t *nodes = scene_data_.nodes.data();
-    bvh_node_t &node = nodes[node_index];
-
-    if (node.parent != 0xffffffff) {
-        bvh_node_t &parent = nodes[node.parent];
-
-        const uint32_t other_child = (parent.left_child == node_index) ? parent.right_child : parent.left_child;
-        uint32_t up_parent = parent.parent;
-
-        if (up_parent != 0xffffffff) {
-            // upper parent if not a root
-            if (nodes[up_parent].left_child == node.parent) {
-                nodes[up_parent].left_child = other_child;
-            } else {
-                nodes[up_parent].right_child = other_child;
-            }
-            nodes[other_child].parent = up_parent;
-
-            // update hierarchy boxes
-            while (up_parent != 0xffffffff) {
-                const uint32_t ch0 = nodes[up_parent].left_child, ch1 = nodes[up_parent].right_child;
-
-                nodes[up_parent].bbox_min = Min(nodes[ch0].bbox_min, nodes[ch1].bbox_min);
-                nodes[up_parent].bbox_max = Max(nodes[ch0].bbox_max, nodes[ch1].bbox_max);
-
-                sort_children(nodes, nodes[up_parent]);
-
-                up_parent = nodes[up_parent].parent;
-            }
-        } else {
-            // upper parent is root
-            nodes[other_child].parent = 0xffffffff;
-            scene_data_.root_node = other_child;
-        }
-
-        scene_data_.free_nodes.push_back(node.parent);
-    }
-
-    scene_data_.free_nodes.push_back(node_index);
 }
 
 void Eng::SceneManager::UpdateObjects() {
@@ -380,8 +186,6 @@ void Eng::SceneManager::UpdateObjects() {
     scene_data_.update_counter++;
 
     // instance_data_to_update_.clear();
-
-    bvh_node_t *nodes = scene_data_.nodes.data();
 
     for (const uint32_t obj_index : last_changed_objects_) {
         SceneObject &obj = scene_data_.objects[obj_index];
@@ -423,20 +227,14 @@ void Eng::SceneManager::UpdateObjects() {
             Transform &tr = transforms[obj.components[CompTransform]];
             tr.UpdateTemporaryData();
             if (tr.node_index != 0xffffffff) {
-                assert(tr.node_index < scene_data_.nodes.size());
-                const bvh_node_t &node = nodes[tr.node_index];
+                assert(tr.node_index < scene_data_.bvh.node_capacity());
 
-                const bool is_fully_inside =
-                    tr.bbox_min_ws[0] >= node.bbox_min[0] && tr.bbox_min_ws[1] >= node.bbox_min[1] &&
-                    tr.bbox_min_ws[2] >= node.bbox_min[2] && tr.bbox_max_ws[0] <= node.bbox_max[0] &&
-                    tr.bbox_max_ws[1] <= node.bbox_max[1] && tr.bbox_max_ws[2] <= node.bbox_max[2];
-
-                if (is_fully_inside) {
+                if (scene_data_.bvh.LeafFits(tr.node_index, adapt(tr.bbox_min_ws), adapt(tr.bbox_max_ws))) {
                     // Update is not needed (object is still inside of node bounds)
                     obj.change_mask ^= CompTransformBit;
                 } else {
                     // Object is out of node bounds, remove node and re-insert it later
-                    RemoveNode(tr.node_index);
+                    scene_data_.bvh.RemoveLeaf(tr.node_index);
                     tr.node_index = 0xffffffff;
                 }
             }
@@ -445,194 +243,17 @@ void Eng::SceneManager::UpdateObjects() {
         }
     }
 
-    uint32_t *free_nodes = scene_data_.free_nodes.data();
-    uint32_t free_nodes_pos = 0;
-
-    // temporary buffer used to optimize memory allocation
-    temp_buf.resize(scene_data_.nodes.size() * 24);
-
     for (const uint32_t obj_index : changed_objects_) {
         SceneObject &obj = scene_data_.objects[obj_index];
 
         if (obj.change_mask & CompTransformBit) {
             Transform &tr = transforms[obj.components[CompTransform]];
-            tr.node_index = free_nodes[free_nodes_pos++];
-
-            bvh_node_t &new_node = nodes[tr.node_index];
-
-            const Ren::Vec3f d = tr.bbox_max_ws - tr.bbox_min_ws;
-            new_node.bbox_min = tr.bbox_min_ws - BoundsMargin * d;
-            new_node.leaf_node = 1;
-            new_node.prim_index = obj_index;
-            new_node.bbox_max = tr.bbox_max_ws + BoundsMargin * d;
-            new_node.sep_axis = 0;
-            new_node.prim_count = 1;
-
-            Sys::MonoAlloc<insert_candidate_t> m_alloc(temp_buf.data(), temp_buf.size());
-            Sys::BinaryTree<insert_candidate_t, decltype(&insert_candidate_compare), Sys::MonoAlloc<insert_candidate_t>>
-                candidates(insert_candidate_compare, m_alloc);
-
-            const float node_cost = surface_area(new_node);
-
-            uint32_t best_candidate = scene_data_.root_node;
-            float best_cost = surface_area_of_union(new_node, nodes[best_candidate]);
-            candidates.push({best_candidate, best_cost});
-
-            while (!candidates.empty()) {
-                insert_candidate_t c; // NOLINT
-                candidates.extract_top(c);
-
-                float inherited_cost = 0.0f;
-                uint32_t parent = nodes[c.node_index].parent;
-
-                while (parent != 0xffffffff) {
-                    // add change in surface area
-                    inherited_cost += surface_area_of_union(nodes[parent], new_node) - surface_area(nodes[parent]);
-                    parent = nodes[parent].parent;
-                }
-
-                const float total_cost = c.direct_cost + inherited_cost;
-                if (total_cost < best_cost) {
-                    best_candidate = c.node_index;
-                    best_cost = total_cost;
-                }
-
-                // consider children next
-                if (!nodes[c.node_index].prim_count) {
-                    const float candidate_cost = surface_area(nodes[c.node_index]);
-                    const float lower_cost_bound = node_cost + inherited_cost +
-                                                   surface_area_of_union(nodes[c.node_index], new_node) -
-                                                   candidate_cost;
-
-                    if (lower_cost_bound < best_cost) {
-                        const uint32_t ch0 = nodes[c.node_index].left_child, ch1 = nodes[c.node_index].right_child;
-                        candidates.push({ch0, surface_area_of_union(nodes[ch0], new_node)});
-                        candidates.push({ch1, surface_area_of_union(nodes[ch1], new_node)});
-                    }
-                }
-            }
-
-            const uint32_t old_parent = nodes[best_candidate].parent;
-            const uint32_t new_parent = free_nodes[free_nodes_pos++];
-
-            nodes[new_parent].leaf_node = 0;
-            nodes[new_parent].prim_count = 0;
-            nodes[new_parent].parent = old_parent;
-
-            if (old_parent != 0xffffffff) {
-                // sibling candidate is not root
-                if (nodes[old_parent].left_child == best_candidate) {
-                    nodes[old_parent].left_child = new_parent;
-                } else {
-                    nodes[old_parent].right_child = new_parent;
-                }
-
-                nodes[new_parent].left_child = best_candidate;
-                nodes[new_parent].right_child = tr.node_index;
-                nodes[best_candidate].parent = new_parent;
-                nodes[tr.node_index].parent = new_parent;
-            } else {
-                // sibling candidate is root
-                nodes[new_parent].left_child = best_candidate;
-                nodes[new_parent].right_child = tr.node_index;
-                nodes[new_parent].parent = 0xffffffff;
-                nodes[best_candidate].parent = new_parent;
-                nodes[tr.node_index].parent = new_parent;
-                scene_data_.root_node = new_parent;
-            }
-
-#define left_child_of(x) nodes[x.left_child]
-#define right_child_of(x) nodes[x.right_child]
-
-            // update hierarchy boxes
-            uint32_t parent = new_parent;
-            while (parent != 0xffffffff) {
-                bvh_node_t &par_node = nodes[parent];
-
-                par_node.bbox_min = Min(left_child_of(par_node).bbox_min, right_child_of(par_node).bbox_min);
-                par_node.bbox_max = Max(left_child_of(par_node).bbox_max, right_child_of(par_node).bbox_max);
-
-                // rotate left_child with children of right_child
-                if (!right_child_of(par_node).prim_count) {
-                    const float cost_before = surface_area(nodes[par_node.right_child]);
-
-                    const float rotation_costs[2] = {
-                        surface_area_of_union(left_child_of(par_node), right_child_of(right_child_of(par_node))),
-                        surface_area_of_union(left_child_of(par_node), left_child_of(right_child_of(par_node)))};
-
-                    const int best_rot = rotation_costs[0] < rotation_costs[1] ? 0 : 1;
-                    if (rotation_costs[best_rot] < cost_before) {
-                        left_child_of(par_node).parent = par_node.right_child;
-
-                        if (best_rot == 0) {
-                            left_child_of(right_child_of(par_node)).parent = parent;
-
-                            const uint32_t temp = par_node.left_child;
-                            par_node.left_child = right_child_of(par_node).left_child;
-                            right_child_of(par_node).left_child = temp;
-                        } else {
-                            right_child_of(right_child_of(par_node)).parent = parent;
-
-                            const uint32_t temp = par_node.left_child;
-                            par_node.left_child = right_child_of(par_node).right_child;
-                            right_child_of(par_node).right_child = temp;
-                        }
-
-                        update_bbox(nodes, nodes[par_node.right_child]);
-                        update_bbox(nodes, nodes[parent]);
-
-                        sort_children(nodes, nodes[par_node.right_child]);
-                        // parent children will be sorted below
-                    }
-                }
-
-                // rotate right_child with children of left_child
-                if (!left_child_of(par_node).prim_count) {
-                    const float cost_before = surface_area(left_child_of(par_node));
-
-                    const float rotation_costs[2] = {
-                        surface_area_of_union(right_child_of(par_node), right_child_of(left_child_of(par_node))),
-                        surface_area_of_union(right_child_of(par_node), left_child_of(left_child_of(par_node)))};
-
-                    const int best_rot = rotation_costs[0] < rotation_costs[1] ? 0 : 1;
-                    if (rotation_costs[best_rot] < cost_before) {
-                        right_child_of(par_node).parent = par_node.left_child;
-
-                        if (best_rot == 0) {
-                            left_child_of(left_child_of(par_node)).parent = parent;
-
-                            const uint32_t temp = par_node.right_child;
-                            par_node.right_child = left_child_of(par_node).left_child;
-                            left_child_of(par_node).left_child = temp;
-                        } else {
-                            right_child_of(left_child_of(par_node)).parent = parent;
-
-                            const uint32_t temp = par_node.right_child;
-                            par_node.right_child = left_child_of(par_node).right_child;
-                            left_child_of(par_node).right_child = temp;
-                        }
-
-                        update_bbox(nodes, nodes[par_node.left_child]);
-                        update_bbox(nodes, nodes[parent]);
-
-                        sort_children(nodes, nodes[par_node.left_child]);
-                        // parent children will be sorted below
-                    }
-                }
-
-                sort_children(nodes, par_node);
-
-                parent = par_node.parent;
-            }
-
-#undef left_child_of
-#undef right_child_of
+            tr.node_index = scene_data_.bvh.InsertPrim(adapt(tr.bbox_min_ws), adapt(tr.bbox_max_ws), obj_index);
 
             obj.change_mask ^= CompTransformBit;
         }
     }
 
-    scene_data_.free_nodes.erase(scene_data_.free_nodes.begin(), scene_data_.free_nodes.begin() + free_nodes_pos);
     last_changed_objects_ = std::move(changed_objects_);
 
     __itt_task_end(__g_itt_domain);

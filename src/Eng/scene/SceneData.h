@@ -4,6 +4,7 @@
 
 #include <atomic>
 
+#include <Phy/DynBVH.h>
 #include <Ren/ImageAtlas.h>
 #include <Ren/Mesh.h>
 #include <Ren/Pipeline.h>
@@ -73,33 +74,6 @@ struct SceneObject {
     SceneObject &operator=(SceneObject &&rhs) = default;
 };
 // static_assert(sizeof(SceneObject) == 156 + 4);
-
-struct bvh_node_t { // NOLINT
-    Ren::Vec3f bbox_min;
-    union {
-        struct {
-            uint32_t leaf_node : 1;
-            uint32_t prim_index : 31;
-        };
-        struct {
-            uint32_t _leaf_node : 1;
-            uint32_t left_child : 31;
-        };
-    };
-    Ren::Vec3f bbox_max;
-    union {
-        struct {
-            uint32_t sep_axis : 2;
-            uint32_t prim_count : 30;
-        };
-        struct {
-            uint32_t _space_axis : 2;
-            uint32_t right_child : 30;
-        };
-    };
-    uint32_t parent;
-};
-static_assert(sizeof(bvh_node_t) == 36);
 
 struct mesh_t {
     uint32_t node_index, node_count;
@@ -310,9 +284,7 @@ struct SceneData {
     Ren::HashMap32<Ren::String, uint32_t> name_to_object;
     Ren::HashMap32<uint32_t, uint32_t> object_counts;
 
-    std::vector<bvh_node_t> nodes;
-    std::vector<uint32_t> free_nodes;
-    uint32_t root_node = 0xffffffff;
+    Phy::DynBVH bvh;
 
     uint32_t update_counter = 0;
 };
