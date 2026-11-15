@@ -244,10 +244,11 @@ void Eng::Renderer::InitPipelines() {
     blit_bilateral_prog_ =
         sh_.FindOrCreateProgram("internal/blit_bilateral.vert.glsl", "internal/blit_bilateral.frag.glsl");
     blit_tsr_prog_[0] = sh_.FindOrCreateProgram(
-        "internal/blit_tsr.vert.glsl", "internal/blit_tsr@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg.frag.glsl");
+        "internal/blit_tsr.vert.glsl",
+        "internal/blit_tsr@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;VARIANCE_BOX.frag.glsl");
     blit_tsr_prog_[1] =
         sh_.FindOrCreateProgram("internal/blit_tsr.vert.glsl",
-                                "internal/blit_tsr@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;LOCKING.frag.glsl");
+                                "internal/blit_tsr@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;LOCKING;VARIANCE_BOX.frag.glsl");
     blit_tsr_static_prog_ =
         sh_.FindOrCreateProgram("internal/blit_tsr.vert.glsl", "internal/blit_tsr@STATIC_ACCUMULATION.frag.glsl");
     blit_ssr_prog_ = sh_.FindOrCreateProgram("internal/blit_ssr.vert.glsl", "internal/blit_ssr.frag.glsl");

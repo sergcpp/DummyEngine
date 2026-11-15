@@ -11,8 +11,12 @@
 #pragma multi_compile _ YCoCg
 #pragma multi_compile _ LOCKING
 #pragma multi_compile _ STATIC_ACCUMULATION
+#pragma multi_compile _ VARIANCE_BOX
 
 #if defined(STATIC_ACCUMULATION) && (defined(CATMULL_ROM) || defined(ROUNDED_NEIBOURHOOD) || defined(TONEMAP) || defined(YCoCg) || defined(MOTION_BLUR) || defined(LOCKING))
+    #pragma dont_compile
+#endif
+#if defined(STATIC_ACCUMULATION) && defined(VARIANCE_BOX)
     #pragma dont_compile
 #endif
 #if defined(ROUNDED_NEIBOURHOOD) && !defined(YCoCg)
@@ -118,6 +122,15 @@ float GetUpsampleLanczosWeight(const vec2 sample_off, const float kernel_weight)
     return Lanczos2ApproxSq(dot(sample_off_biased, sample_off_biased));
 }
 
+// Rectification box: distance-weighted first/second moments on top of the min/max AABB
+void AddBoxSample(const vec3 col, const vec2 sample_off, const float curve_bias, inout vec3 box_center,
+    inout vec3 box_sq_sum, inout float box_weight_sum) {
+    const float w = exp(curve_bias * dot(sample_off, sample_off));
+    box_center += col * w;
+    box_sq_sum += col * col * w;
+    box_weight_sum += w;
+}
+
 void main() {
     const ivec2 uvs_px = ivec2(g_vtx_uvs);
     const vec2 norm_uvs = g_vtx_uvs * g_params.texel_size.zw;
@@ -155,6 +168,14 @@ void main() {
 
     const vec2 disocclusion = textureLod(g_disocclusion_mask, base_uv, 0.0).xy;
 
+    const vec2 closest_vel = textureLod(g_dilated_velocity, norm_uvs, 0.0).xy;
+    const float hr_velocity = length(closest_vel) / g_params.downscale_factor;
+    const float curve_bias = mix(-2.0, -3.0, saturate(hr_velocity / 50.0));
+
+    vec3 box_center = vec3(0.0);
+    vec3 box_sq_sum = vec3(0.0);
+    float box_weight_sum = 0.0;
+
     // Load 3x3 neighborhood
     const vec3 col_tl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv, 0.0, ivec2(-1, -1)).xyz));
     const vec3 col_tc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv, 0.0, ivec2(+0, -1)).xyz));
@@ -180,24 +201,33 @@ void main() {
     float weight;
     weight = GetUpsampleLanczosWeight(base_sample_off + vec2(-1.0, -1.0), kernel_bias);
     color_weight += vec4(col_tl * weight, weight);
+    AddBoxSample(col_tl, base_sample_off + vec2(-1.0, -1.0), curve_bias, box_center, box_sq_sum, box_weight_sum);
     weight = GetUpsampleLanczosWeight(base_sample_off + vec2(+0.0, -1.0), kernel_bias);
     color_weight += vec4(col_tc * weight, weight);
+    AddBoxSample(col_tc, base_sample_off + vec2(+0.0, -1.0), curve_bias, box_center, box_sq_sum, box_weight_sum);
     weight = GetUpsampleLanczosWeight(base_sample_off + vec2(+1.0, -1.0), kernel_bias);
     color_weight += vec4(col_tr * weight, weight);
+    AddBoxSample(col_tr, base_sample_off + vec2(+1.0, -1.0), curve_bias, box_center, box_sq_sum, box_weight_sum);
 
     weight = GetUpsampleLanczosWeight(base_sample_off + vec2(-1.0, +0.0), kernel_bias);
     color_weight += vec4(col_ml * weight, weight);
+    AddBoxSample(col_ml, base_sample_off + vec2(-1.0, +0.0), curve_bias, box_center, box_sq_sum, box_weight_sum);
     weight = GetUpsampleLanczosWeight(base_sample_off + vec2(+0.0, +0.0), kernel_bias);
     color_weight += vec4(col_mc * weight, weight);
+    AddBoxSample(col_mc, base_sample_off + vec2(+0.0, +0.0), curve_bias, box_center, box_sq_sum, box_weight_sum);
     weight = GetUpsampleLanczosWeight(base_sample_off + vec2(+1.0, +0.0), kernel_bias);
     color_weight += vec4(col_mr * weight, weight);
+    AddBoxSample(col_mr, base_sample_off + vec2(+1.0, +0.0), curve_bias, box_center, box_sq_sum, box_weight_sum);
 
     weight = GetUpsampleLanczosWeight(base_sample_off + vec2(-1.0, +1.0), kernel_bias);
     color_weight += vec4(col_bl * weight, weight);
+    AddBoxSample(col_bl, base_sample_off + vec2(-1.0, +1.0), curve_bias, box_center, box_sq_sum, box_weight_sum);
     weight = GetUpsampleLanczosWeight(base_sample_off + vec2(+0.0, +1.0), kernel_bias);
     color_weight += vec4(col_bc * weight, weight);
+    AddBoxSample(col_bc, base_sample_off + vec2(+0.0, +1.0), curve_bias, box_center, box_sq_sum, box_weight_sum);
     weight = GetUpsampleLanczosWeight(base_sample_off + vec2(+1.0, +1.0), kernel_bias);
     color_weight += vec4(col_br * weight, weight);
+    AddBoxSample(col_br, base_sample_off + vec2(+1.0, +1.0), curve_bias, box_center, box_sq_sum, box_weight_sum);
 
     vec3 col_min = min3(min3(col_tl, col_tc, col_tr),
                         min3(col_ml, col_mc, col_mr),
@@ -206,15 +236,11 @@ void main() {
                         max3(col_ml, col_mc, col_mr),
                         max3(col_bl, col_bc, col_br));
 
-    vec3 col_avg = (col_tl + col_tc + col_tr + col_ml + col_mc + col_mr + col_bl + col_bc + col_br) / 9.0;
-
     #if defined(ROUNDED_NEIBOURHOOD)
         const vec3 col_min5 = min(col_tc, min(col_ml, min(col_mc, min(col_mr, col_bc))));
         const vec3 col_max5 = max(col_tc, max(col_ml, max(col_mc, max(col_mr, col_bc))));
-        const vec3 col_avg5 = (col_tc + col_ml + col_mc + col_mr + col_bc) / 5.0;
         col_min = 0.5 * (col_min + col_min5);
         col_max = 0.5 * (col_max + col_max5);
-        col_avg = 0.5 * (col_avg + col_avg5);
     #endif
 
     #if defined(YCoCg) && 0
@@ -222,7 +248,6 @@ void main() {
         const vec2 chroma_center = 0.5 * (col_min.yz + col_max.yz);//col_curr.yz;
         col_min.yz = chroma_center - chroma_extent;
         col_max.yz = chroma_center + chroma_extent;
-        col_avg.yz = chroma_center;
     #endif
 
     color_weight.w *= float(color_weight.w > 0.001);
@@ -290,7 +315,6 @@ void main() {
     }
 #endif // LOCKING
 
-    vec2 closest_vel = textureLod(g_dilated_velocity, norm_uvs, 0.0).xy;
     const vec2 hist_uvs = norm_uvs - (closest_vel * g_params.texel_size.xy);
     vec4 col_hist = vec4(col_curr.xyz, 0.0);
     if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
@@ -313,16 +337,13 @@ void main() {
         lock_status = 0.0;
     }
 
-    const float lum_diff = 1.0 - max(lum_curr, lum_hist) / min(lum_curr, lum_hist);
+    const float lum_diff = 1.0 - max(lum_curr, lum_hist) / max(min(lum_curr, lum_hist), 1e-4);
     if (lum_diff > 0.1) {
         lock_status = 0.0;
     }
 
-    const float reactive_factor = saturate((lum_diff - 0.1) * 1.0);
-    lock_status *= (1.0 - reactive_factor);
-
-    // Specular luminance
-    lock_status *= saturate(1.0 - 2.0 * (col_curr.w / col_curr.x));
+    // Color alpha carries OIT coverage / 1.0 sky; the 2.0 emissive tag was stripped above
+    lock_status *= saturate(1.0 - 2.0 * (col_curr.w / max(col_curr.x, 1e-4)));
 
     // Depth disocclusion
     lock_status *= float(disocclusion.x < 0.1);
@@ -331,10 +352,27 @@ void main() {
     lock_status *= float(g_params.significant_change < 0.5);
 #endif // LOCKING
 
+#if defined(VARIANCE_BOX)
+    const float history_contribution = saturate(8.0 * lock_status);
+    // Variance-box history clamp: intersect the AABB with a box around the weighted mean that is
+    // AABB-sized at rest and tightens to +/-1 sigma with motion; blend the clamp back by lock
+    const float ds = g_params.downscale_factor;
+    const float scale_influence = min(20.0, pow(1.0 / (ds * ds), 3.0));
+    box_weight_sum = abs(box_weight_sum) > 1e-6 ? box_weight_sum : 1.0;
+    const vec3 var_center = box_center / box_weight_sum;
+    const vec3 var_sigma = sqrt(abs(box_sq_sum / box_weight_sum - var_center * var_center));
+    const float box_scale = mix(scale_influence, 1.0, max(disocclusion.x, saturate(hr_velocity / 20.0)));
+    const vec3 var_min = max(col_min, var_center - var_sigma * box_scale);
+    const vec3 var_max = min(col_max, var_center + var_sigma * box_scale);
+    const vec3 rectified_hist = clamp(col_hist.xyz, var_min, var_max);
+    const float keep = saturate(history_contribution * (1.0 - sqrt(disocclusion.y)));
+    col_hist.xyz = mix(rectified_hist, col_hist.xyz, keep);
+#else
     const vec3 clamped_hist = ClipAABB(col_min, col_max, col_hist.xyz);
 
     const float history_contribution = saturate(8.0 * lock_status);
     col_hist.xyz = mix(clamped_hist, col_hist.xyz, history_contribution);
+#endif
 
     const float HistoryWeightMin = 0.88;
     const float HistoryWeightMax = 0.93;

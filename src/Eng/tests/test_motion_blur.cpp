@@ -13,7 +13,7 @@ void test_motion_blur(Sys::ThreadPool &threads) {
     run_image_test(ren_ctx, threads, "motion_blur_dyn",
                    std::vector<double>{23.75, 24.55, 24.50, 24.45, 24.40, 24.20, 24.15, 24.00, 23.85, 23.75, //
                                        23.45, 23.30, 23.20, 22.60, 22.95, 22.50, 22.50, 22.95, 22.60, 22.70,
-                                       23.40, 23.00, 23.60, 23.25, 23.25, 24.00, 23.70, 24.50, 24.75, 24.95,
+                                       23.40, 23.00, 23.60, 23.25, 23.25, 23.95, 23.70, 24.45, 24.75, 24.95,
                                        25.15, 25.20, 24.55},
                    MedDiffGI_Dynamic, 1.5f);
     run_image_test(ren_ctx, threads, "motion_blur_dyn",
