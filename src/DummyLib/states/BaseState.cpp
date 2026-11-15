@@ -309,6 +309,22 @@ void BaseState::Enter() {
         return true;
     });
 
+    cmdline_ui_->RegisterCommand("r_bvh_validate", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        if (args.size() > 1) {
+            scene_manager_->set_bvh_validate(args[1].num > 0.5);
+        } else {
+            scene_manager_->set_bvh_validate(!scene_manager_->bvh_validate());
+        }
+        return true;
+    });
+
+    cmdline_ui_->RegisterCommand("r_bvh_rebuild", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        if (args.size() > 1) {
+            scene_manager_->set_bvh_rebuild_frac(float(args[1].num));
+        }
+        return true;
+    });
+
     cmdline_ui_->RegisterCommand("r_shadows", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
             if (args[1].num > 1.5) {

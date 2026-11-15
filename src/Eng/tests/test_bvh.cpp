@@ -178,8 +178,10 @@ bool run_bvh_glue_tests(Sys::ThreadPool &threads) {
         }
     }
 
+    size_t nodes_at_load = 0;
     { // E1: post-load tree structure and leaf <-> object bijection
         SceneData &sd = scene_manager.scene_data();
+        nodes_at_load = sd.bvh.node_capacity();
         require(sd.bvh.ValidateBVH());
         require(check_leaf_mapping(sd));
         require(sd.bvh.insertions_since_build() == 0);
@@ -331,8 +333,8 @@ bool run_bvh_glue_tests(Sys::ThreadPool &threads) {
         require(check_leaf_mapping(sd));
     }
 
-    // Runs last: the physics path intentionally leaves Transform::position desynced from the matrix
-    // (bodies are never origin-shifted), which the scrolling case above cannot tolerate
+    // Runs after E4: the physics path intentionally leaves Transform::position desynced from the
+    // matrix (bodies are never origin-shifted), which the scrolling case above cannot tolerate
     { // E3: CompPhysicsBit invalidation copies the body pose into the transform matrix
         SceneData &sd = scene_manager.scene_data();
         auto *transforms = scene_transforms(sd);
@@ -380,6 +382,77 @@ bool run_bvh_glue_tests(Sys::ThreadPool &threads) {
                 require(tr.world_from_object[j][i] == float(ph_rot[j][i]) * tr.scale[j]);
             }
         }
+        require(sd.bvh.ValidateBVH());
+        require(check_leaf_mapping(sd));
+    }
+
+    { // E5: churn-triggered rebuild policy (insertions_since_build > node_capacity * frac)
+        SceneData &sd = scene_manager.scene_data();
+        auto *transforms = scene_transforms(sd);
+
+        require(scene_manager.bvh_rebuild_frac() == 0.5f);
+
+        uint32_t obj_index = 0xffffffff;
+        float best_ext = -1.0f;
+        for (uint32_t i = 0; i < uint32_t(sd.objects.size()); i++) {
+            if (!(sd.objects[i].comp_mask & CompTransformBit)) {
+                continue;
+            }
+            const Transform &tr = transforms[sd.objects[i].components[CompTransform]];
+            const float ext = Ren::Length(tr.bbox_max_ws - tr.bbox_min_ws);
+            if (ext > best_ext) {
+                best_ext = ext;
+                obj_index = i;
+            }
+        }
+        if (!require(obj_index != 0xffffffff)) {
+            return false;
+        }
+        Transform &tr = transforms[sd.objects[obj_index].components[CompTransform]];
+
+        const Phy::dyn_bvh_node_t &root = sd.bvh.nodes()[sd.bvh.root()];
+        const Ren::Vec3f pos_a{root.bbox_max[0] + 50.0f, root.bbox_max[1] + 50.0f, root.bbox_max[2] + 50.0f};
+        const Ren::Vec3f pos_b{root.bbox_min[0] - 50.0f, root.bbox_min[1] - 50.0f, root.bbox_min[2] - 50.0f};
+
+        bool rebuilt = false;
+        bool parked_at_b = false;
+        int steps_to_rebuild = 0;
+        for (int step = 0; step < 64 && !rebuilt; step++) {
+            parked_at_b = (step & 1) != 0;
+            const Ren::Vec3f &np = parked_at_b ? pos_b : pos_a;
+            for (int a = 0; a < 3; a++) {
+                tr.world_from_object[3][a] = np[a];
+                tr.position[a] = double(np[a]);
+            }
+            scene_manager.InvalidateObjects({&obj_index, 1}, CompTransformBit);
+            scene_manager.UpdateObjects();
+            rebuilt = sd.bvh.insertions_since_build() == 0 && sd.bvh.node_capacity() <= nodes_at_load;
+            steps_to_rebuild = step + 1;
+        }
+        require(rebuilt);
+        // Churn stays under the node_capacity * frac budget for several frames before paying for
+        // a bulk rebuild instead of degrading the tree indefinitely. Measured: 7 churn frames on
+        // complex_mat2 (17 nodes, frac 0.5), capacity back to 17 after the rebuild.
+        require(steps_to_rebuild > 1);
+        // Fresh bulk rebuild from the surviving objects: back to the load-time node array size
+        require(sd.bvh.node_capacity() == nodes_at_load);
+        require(sd.bvh.free_count() == 0);
+        require(sd.bvh.ValidateBVH());
+        require(check_leaf_mapping(sd));
+
+        // frac = 0 disables the policy: churn accumulates without a rebuild (move to the far
+        // side from wherever the last loop step parked the object, else LeafFits absorbs it)
+        scene_manager.set_bvh_rebuild_frac(0.0f);
+        const Ren::Vec3f &far_np = parked_at_b ? pos_a : pos_b;
+        for (int a = 0; a < 3; a++) {
+            tr.world_from_object[3][a] = far_np[a];
+            tr.position[a] = double(far_np[a]);
+        }
+        scene_manager.InvalidateObjects({&obj_index, 1}, CompTransformBit);
+        scene_manager.UpdateObjects();
+        require(sd.bvh.insertions_since_build() == 1);
+        // Remove + re-insert reuses the freed leaf/parent slots, so only the churn counter grows
+        require(sd.bvh.node_capacity() == nodes_at_load);
         require(sd.bvh.ValidateBVH());
         require(check_leaf_mapping(sd));
     }

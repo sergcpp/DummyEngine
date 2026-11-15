@@ -109,6 +109,13 @@ class SceneManager {
     }
     void InvalidateTexture(Ren::ImageHandle handle);
 
+    // Churn-triggered BVH rebuild: insertions_since_build() > node_capacity() * frac (0 = off)
+    void set_bvh_rebuild_frac(const float frac) { bvh_rebuild_frac_ = frac; }
+    float bvh_rebuild_frac() const { return bvh_rebuild_frac_; }
+    // ValidateBVH() after every UpdateObjects (Debug builds default on; r_bvh_validate)
+    void set_bvh_validate(const bool enable) { validate_bvh_ = enable; }
+    bool bvh_validate() const { return validate_bvh_; }
+
     void LoadScene(const Sys::JsObjectP &js_scene, Ren::Bitmask<eSceneLoadFlags> load_flags = SceneLoadAll);
     void SaveScene(Sys::JsObjectP &js_scene);
     void ClearScene();
@@ -221,6 +228,13 @@ class SceneManager {
     void Alloc_SWRT_TLAS();
 
     void RebuildSceneBVH();
+
+    float bvh_rebuild_frac_ = 0.5f;
+#ifndef NDEBUG
+    bool validate_bvh_ = true;
+#else
+    bool validate_bvh_ = false;
+#endif
 
     Ren::Context &ren_ctx_;
     ShaderLoader &sh_;

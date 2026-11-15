@@ -350,6 +350,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             }
 
             if (!Phy::bvh_is_leaf(*n)) {
+                assert(stack_size + 2 <= MAX_STACK_SIZE);
                 stack[stack_size++] = skip_frustum_check | Phy::bvh_left_child(*n);
                 stack[stack_size++] = skip_frustum_check | Phy::bvh_right_child(*n);
             } else {
@@ -1574,6 +1575,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     }
 
                     if (!Phy::bvh_is_leaf(*n)) {
+                        assert(stack_size + 2 <= MAX_STACK_SIZE);
                         stack[stack_size++] = skip_check | Phy::bvh_left_child(*n);
                         stack[stack_size++] = skip_check | Phy::bvh_right_child(*n);
                     } else {
@@ -2119,6 +2121,7 @@ void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, cons
         }
 
         if (!Phy::bvh_is_leaf(*n)) {
+            assert(stack_size + 2 <= MAX_STACK_SIZE);
             stack[stack_size++] = skip_frustum_check | Phy::bvh_left_child(*n);
             stack[stack_size++] = skip_frustum_check | Phy::bvh_right_child(*n);
         } else {

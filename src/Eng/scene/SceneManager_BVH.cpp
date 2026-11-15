@@ -256,6 +256,18 @@ void Eng::SceneManager::UpdateObjects() {
 
     last_changed_objects_ = std::move(changed_objects_);
 
+    if (validate_bvh_ && !scene_data_.bvh.ValidateBVH()) {
+        ren_ctx_.log()->Error("SceneManager: scene BVH validation failed");
+        assert(false);
+    }
+
+    if (bvh_rebuild_frac_ > 0.0f) {
+        const double churn = double(scene_data_.bvh.insertions_since_build());
+        if (churn > double(scene_data_.bvh.node_capacity()) * double(bvh_rebuild_frac_)) {
+            RebuildSceneBVH();
+        }
+    }
+
     __itt_task_end(__g_itt_domain);
 }
 
