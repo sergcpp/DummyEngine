@@ -127,6 +127,10 @@ struct DrawList {
     DynArray<item_data_t> items, rt_items;
     mutable Ren::BufferHandle items_stage, rt_items_stage;
 
+    // Culling BVH tree snapshot for the debug draw (debug_bvh); nodes are owned by SceneManager
+    const Phy::dyn_bvh_node_t *culling_bvh_nodes = nullptr;
+    uint32_t culling_bvh_count = 0, culling_bvh_root = Phy::BVH_NO_NODE, culling_bvh_depth = 0;
+
     DynArray<rt_geo_instance_t> rt_geo_instances[int(eTLASIndex::_Count)];
     mutable Ren::BufferHandle rt_geo_instances_stage[int(eTLASIndex::_Count)];
     DynArray<rt_obj_instance_t> rt_obj_instances[int(eTLASIndex::_Count)];

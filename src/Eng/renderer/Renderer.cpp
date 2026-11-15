@@ -500,6 +500,11 @@ Eng::Renderer::~Renderer() {
     ctx_.ReleaseSampler(nearest_sampler_);
     ctx_.ReleaseSampler(linear_sampler_);
 
+    if (dbg_bvh_nodes_stage_) {
+        ctx_.ReleaseBuffer(dbg_bvh_nodes_stage_, true /* immediately */);
+        dbg_bvh_nodes_stage_ = {};
+    }
+
     Ren::ResizableBuffer &vtx_buf1 = ctx_.default_vertex_buf1();
     vtx_buf1.FreeSubRegion(skinned_buf1_vtx_);
 
@@ -512,6 +517,19 @@ Eng::Renderer::~Renderer() {
 void Eng::Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam,
                                     DrawList &list) {
     GatherDrawables(scene, cam, ext_cam, list);
+
+    if (list.render_settings.debug_bvh) {
+        const auto nodes = scene.bvh.nodes();
+        list.culling_bvh_nodes = nodes.data();
+        list.culling_bvh_count = uint32_t(nodes.size());
+        list.culling_bvh_root = scene.bvh.root();
+        list.culling_bvh_depth = scene.bvh.max_depth();
+    } else {
+        list.culling_bvh_nodes = nullptr;
+        list.culling_bvh_count = 0;
+        list.culling_bvh_root = Phy::BVH_NO_NODE;
+        list.culling_bvh_depth = 0;
+    }
 }
 
 void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
@@ -1472,6 +1490,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.color = data->output = debug_rt.AddStorageImageOutput(frame_textures.color, stage);
 
             debug_rt.make_executor<ExDebugRT>(sh_, &view_state_, &bindless_tex, data);
+        }
+
+        if (list.render_settings.debug_bvh) {
+            AddDebugBVHPass(common_buffers, frame_textures);
         }
 
         FgImgRWHandle resolved_color;

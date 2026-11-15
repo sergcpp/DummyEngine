@@ -522,6 +522,42 @@ void test_dyn_bvh() {
             require(leaf.bbox_max[2] == (p.bbox_max + shift)[2] + d[2]);
         }
     }
+    { // max_depth: empty tree, root leaf, balanced bulk build, degenerate cluster, churn bound
+        DynBVH empty;
+        require(empty.max_depth() == 0);
+
+        DynBVH single;
+        const auto one_prim = make_coincident_prims(1, Vec3f{0.0f, 0.0f, 0.0f}, Vec3f{1.0f, 1.0f, 1.0f});
+        single.Build(one_prim, force_split_settings());
+        require(single.max_depth() == 1);
+
+        const auto grid = make_grid_scene(4);  // 64 well-separated prims
+        DynBVH grid_tree;
+        grid_tree.Build(grid, force_split_settings());
+        require(grid_tree.ValidateBVH());
+
+        const auto degenerate = make_coincident_prims(64, Vec3f{0.0f, 0.0f, 0.0f}, Vec3f{1.0f, 1.0f, 1.0f});
+        DynBVH deg_tree;
+        deg_tree.Build(degenerate, force_split_settings());
+        require(deg_tree.ValidateBVH());
+
+        // Measured: 64 separated prims -> 7 levels (ideal 6); 64 coincident prims -> 39 (the
+        // degenerate-cluster fallback path, still far below the 64-level linear chain)
+        require(grid_tree.max_depth() >= 6 && grid_tree.max_depth() <= 10);
+        require(deg_tree.max_depth() >= 6 && deg_tree.max_depth() < uint32_t(degenerate.size()));
+
+        // Churn can lengthen the longest path by at most one level per insertion
+        const uint32_t grid_depth0 = grid_tree.max_depth();
+        const auto gmap = leaf_map(grid_tree, int(grid.size()));
+        for (int i = 0; i < 8; i++) {
+            const dyn_bvh_prim_t &p = grid[size_t(i)];
+            grid_tree.RemoveLeaf(gmap[p.prim_id]);
+            grid_tree.InsertPrim(p.bbox_max + Vec3f{500.0f, 0.0f, 0.0f}, p.bbox_max + Vec3f{501.0f, 1.0f, 1.0f},
+                                 p.prim_id);
+        }
+        require(grid_tree.ValidateBVH());
+        require(grid_tree.max_depth() <= grid_depth0 + 8);
+    }
     { // lifecycle fuzz: seeded moves, full validation after every step
         uint32_t seed = 0x1234ABCDu;
         const int n = 256;

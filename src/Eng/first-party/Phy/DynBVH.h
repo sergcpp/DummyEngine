@@ -90,6 +90,9 @@ class DynBVH {
     uint32_t bnb_expansions() const { return bnb_expansions_; }
     uint32_t rotations_applied() const { return rotations_applied_; }
 
+    // Longest root-to-leaf path in levels: 1 for a root leaf, 0 for an empty tree
+    uint32_t max_depth() const;
+
     // All bbox arguments are raw (unpadded) prim bounds; the tree stores and compares padded ones
     bool LeafFits(uint32_t leaf_index, const Vec3f &bbox_min, const Vec3f &bbox_max) const;
     void RefitFromLeaf(uint32_t leaf_index, const Vec3f &bbox_min, const Vec3f &bbox_max);

@@ -23,6 +23,7 @@
 #include "shaders/prepare_disocclusion_interface.h"
 #include "shaders/reconstruct_depth_interface.h"
 
+#include "shaders/debug_bvh_interface.h"
 #include "shaders/debug_gbuffer_interface.h"
 #include "shaders/debug_image_interface.h"
 #include "shaders/debug_rad_cache_interface.h"
@@ -232,6 +233,7 @@ void Eng::Renderer::InitPipelines() {
     pi_debug_gbuffer_[3] = sh_.FindOrCreatePipeline("internal/debug_gbuffer@METALLIC.comp.glsl");
     pi_debug_image_ = sh_.FindOrCreatePipeline("internal/debug_image.comp.glsl");
     pi_debug_rad_cache_ = sh_.FindOrCreatePipeline("internal/debug_rad_cache.comp.glsl");
+    pi_debug_bvh_ = sh_.FindOrCreatePipeline("internal/debug_bvh.comp.glsl");
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1452,4 +1454,80 @@ Eng::FgImgRWHandle Eng::Renderer::AddDebugImagePass(const FgImgROHandle img, con
     });
 
     return output;
+}
+
+void Eng::Renderer::AddDebugBVHPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
+    using Stg = Ren::eStage;
+
+    // Fixed node cap keeps the upload chunk and the buffer size constant while the tree churns
+    // between graph rebuilds; snapshots beyond it are clamped
+    const uint32_t max_nodes = 65536;
+    const uint32_t nodes_chunk_size = max_nodes * uint32_t(sizeof(Phy::dyn_bvh_node_t));
+
+    if (!dbg_bvh_nodes_stage_) {
+        dbg_bvh_nodes_stage_ = ctx_.CreateBuffer(Ren::String{"Debug BVH nodes (Upload)"}, Ren::eBufType::Upload,
+                                                 nodes_chunk_size * Ren::MaxFramesInFlight);
+    }
+
+    auto &upload_bvh = fg_builder_.AddNode("UPLOAD DEBUG BVH");
+
+    FgBufDesc nodes_desc = {};
+    nodes_desc.type = Ren::eBufType::Texture;
+    nodes_desc.size = nodes_chunk_size;
+    nodes_desc.views.push_back(Ren::eFormat::R32UI);
+    const FgBufRWHandle nodes_buf = upload_bvh.AddTransferOutput("Culling BVH nodes", nodes_desc);
+
+    upload_bvh.set_execute_cb([this, nodes_buf, nodes_chunk_size, max_nodes](const FgContext &fg) {
+        const Ren::BufferHandle nodes_dst = fg.AccessRWBuffer(nodes_buf);
+
+        const uint32_t node_count = p_list_->culling_bvh_nodes ? std::min(p_list_->culling_bvh_count, max_nodes) : 0u;
+        static const Phy::dyn_bvh_node_t empty_node = {};
+
+        UpdateBuffer(fg.ren_ctx().api(), fg.storages(), nodes_dst, 0,
+                     uint32_t((node_count ? node_count : 1) * sizeof(Phy::dyn_bvh_node_t)),
+                     node_count ? p_list_->culling_bvh_nodes : &empty_node, dbg_bvh_nodes_stage_,
+                     fg.backend_frame() * nodes_chunk_size, nodes_chunk_size, fg.cmd_buf());
+    });
+
+    auto &debug_bvh = fg_builder_.AddNode("DEBUG BVH");
+
+    struct PassData {
+        FgBufROHandle in_shared;
+        FgBufROHandle in_nodes;
+        FgImgROHandle in_depth;
+        FgImgRWHandle out_color;
+    };
+
+    auto *data = fg_builder_.AllocTempData<PassData>();
+    data->in_shared = debug_bvh.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+    data->in_nodes = debug_bvh.AddStorageReadonlyInput(nodes_buf, Stg::ComputeShader);
+    data->in_depth = debug_bvh.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+
+    data->out_color = debug_bvh.AddStorageImageOutput(frame_textures.color, Stg::ComputeShader);
+    frame_textures.color = data->out_color;
+
+    debug_bvh.set_execute_cb([this, data, max_nodes](const FgContext &fg) {
+        const Ren::BufferROHandle shared_data = fg.AccessROBuffer(data->in_shared);
+        const Ren::BufferROHandle nodes = fg.AccessROBuffer(data->in_nodes);
+        const Ren::ImageROHandle depth = fg.AccessROImage(data->in_depth);
+        const Ren::ImageRWHandle output = fg.AccessRWImage(data->out_color);
+
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, shared_data},
+                                         {Ren::eBindTarget::UTBuf, DebugBVH::NODES_BUF_SLOT, nodes},
+                                         {Ren::eBindTarget::TexSampled, DebugBVH::DEPTH_TEX_SLOT, {depth, 1}},
+                                         {Ren::eBindTarget::ImageRW, DebugBVH::OUT_IMG_SLOT, output}};
+
+        const auto grp_count = Ren::Vec3u{Ren::DivCeil<uint32_t>(view_state_.ren_res[0], DebugBVH::GRP_SIZE_X),
+                                          Ren::DivCeil<uint32_t>(view_state_.ren_res[1], DebugBVH::GRP_SIZE_Y), 1u};
+
+        DebugBVH::Params uniform_params;
+        uniform_params.img_size[0] = view_state_.ren_res[0];
+        uniform_params.img_size[1] = view_state_.ren_res[1];
+        uniform_params.root_node = p_list_->culling_bvh_root;
+        uniform_params.node_count = std::min(p_list_->culling_bvh_count, max_nodes);
+        uniform_params.tree_depth = p_list_->culling_bvh_depth;
+
+        DispatchCompute(fg.cmd_buf(), pi_debug_bvh_, fg.storages(), grp_count, bindings, &uniform_params,
+                        sizeof(uniform_params), fg.descr_alloc(), fg.log());
+    });
 }

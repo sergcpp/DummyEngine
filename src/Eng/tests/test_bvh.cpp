@@ -183,6 +183,17 @@ bool run_bvh_glue_tests(Sys::ThreadPool &threads) {
         SceneData &sd = scene_manager.scene_data();
         nodes_at_load = sd.bvh.node_capacity();
         require(sd.bvh.ValidateBVH());
+
+        // Depth feeds the debug BVH view's normalization; keep it inside the combinatorial band
+        // for a full binary tree (a chain of leaves would fail the upper bound)
+        const uint32_t leaf_count = uint32_t((nodes_at_load + 1) / 2);
+        uint32_t ideal_levels = 0, pow2 = 1;
+        while (pow2 < leaf_count) {
+            pow2 *= 2;
+            ideal_levels++;
+        }
+        const uint32_t tree_depth = sd.bvh.max_depth();
+        require(tree_depth >= ideal_levels && tree_depth <= 2 * ideal_levels);
         require(check_leaf_mapping(sd));
         require(sd.bvh.insertions_since_build() == 0);
         if (!require(sd.bvh.root() != Phy::BVH_NO_NODE)) {

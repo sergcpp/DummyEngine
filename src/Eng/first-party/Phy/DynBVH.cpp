@@ -409,6 +409,35 @@ uint32_t DynBVH::InsertPrim(const Vec3f &bbox_min, const Vec3f &bbox_max, const 
     return leaf_index;
 }
 
+uint32_t DynBVH::max_depth() const {
+    if (root_ == BVH_NO_NODE) {
+        return 0;
+    }
+
+    struct dfs_item_t {
+        uint32_t index, level;
+    };
+
+    std::vector<dfs_item_t> stack;
+    stack.reserve(64);
+    stack.push_back({root_, 1});
+
+    uint32_t max_level = 1;
+    while (!stack.empty()) {
+        const dfs_item_t item = stack.back();
+        stack.pop_back();
+        max_level = std::max(max_level, item.level);
+
+        const dyn_bvh_node_t &node = nodes_[item.index];
+        if (!bvh_is_leaf(node)) {
+            stack.push_back({bvh_left_child(node), item.level + 1});
+            stack.push_back({bvh_right_child(node), item.level + 1});
+        }
+    }
+
+    return max_level;
+}
+
 bool DynBVH::ValidateBVH() const {
     if (root_ == BVH_NO_NODE) {
         // Empty tree: every slot must sit in the free list (stale nodes are allowed)

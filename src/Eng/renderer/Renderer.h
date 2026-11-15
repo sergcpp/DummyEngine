@@ -222,7 +222,8 @@ class Renderer {
     Ren::PipelineHandle pi_dof_presort_[2];
     Ren::PipelineHandle pi_dof_filter_[2];
     // Debug
-    Ren::PipelineHandle pi_debug_velocity_, pi_debug_gbuffer_[4], pi_debug_image_, pi_debug_rad_cache_;
+    Ren::PipelineHandle pi_debug_velocity_, pi_debug_gbuffer_[4], pi_debug_image_, pi_debug_rad_cache_, pi_debug_bvh_;
+    Ren::BufferHandle dbg_bvh_nodes_stage_;
 
     Ren::ProgramHandle blit_static_vel_prog_, blit_gauss_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_tsr_prog_[2],
         blit_tsr_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down_prog_,
@@ -388,6 +389,8 @@ class Renderer {
     FgImgRWHandle AddDebugGBufferPass(const FrameTextures &frame_textures, int pi_index);
     FgImgRWHandle AddDebugRadCachePass(const FrameTextures &frame_textures, const CommonBuffers &common_buffers);
     FgImgRWHandle AddDebugImagePass(FgImgROHandle img, int channel);
+    // Draws the CPU culling BVH over the scene color (in-place, debug_bvh only)
+    void AddDebugBVHPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures);
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);
 
