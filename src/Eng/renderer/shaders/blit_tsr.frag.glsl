@@ -12,6 +12,7 @@
 #pragma multi_compile _ LOCKING
 #pragma multi_compile _ STATIC_ACCUMULATION
 #pragma multi_compile _ VARIANCE_BOX
+#pragma multi_compile _ LUMA_INSTABILITY
 
 #if defined(STATIC_ACCUMULATION) && (defined(CATMULL_ROM) || defined(ROUNDED_NEIBOURHOOD) || defined(TONEMAP) || defined(YCoCg) || defined(MOTION_BLUR) || defined(LOCKING))
     #pragma dont_compile
@@ -25,10 +26,17 @@
 #if defined(LOCKING) && !defined(YCoCg)
     #pragma dont_compile
 #endif
+#if defined(LUMA_INSTABILITY) && !defined(VARIANCE_BOX)
+    #pragma dont_compile
+#endif
+#if defined(LUMA_INSTABILITY) && !defined(LOCKING)
+    #pragma dont_compile
+#endif
 
 layout(binding = CURR_NEAREST_TEX_SLOT) uniform sampler2D g_color_curr_nearest;
 layout(binding = CURR_LINEAR_TEX_SLOT) uniform sampler2D g_color_curr_linear;
 layout(binding = HIST_TEX_SLOT) uniform sampler2D g_color_hist;
+layout(binding = LUMA_HIST_TEX_SLOT) uniform sampler2D g_luma_hist;
 
 layout(binding = DILATED_DEPTH_TEX_SLOT) uniform sampler2D g_dilated_depth;
 layout(binding = DILATED_VELOCITY_TEX_SLOT) uniform sampler2D g_dilated_velocity;
@@ -42,6 +50,7 @@ layout(location = 0) in vec2 g_vtx_uvs;
 
 layout(location = 0) out vec4 g_out_color;
 layout(location = 1) out vec4 g_out_history;
+layout(location = 2) out vec4 g_out_luma_hist;
 
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
 vec3 MaybeTonemap(vec3 c) {
@@ -131,9 +140,37 @@ void AddBoxSample(const vec3 col, const vec2 sample_off, const float curve_bias,
     box_weight_sum += w;
 }
 
+#if defined(VARIANCE_BOX)
+// Flicker detector over a 4-slot luma ring (x newest): flags pixels whose luma deviates from the
+// freshest slot yet recurs against an older slot on the same side, i.e. persistent oscillation.
+// Gated by local luma sigma and reactive factor; out_ring is the shifted state to store.
+float ComputeLumaInstability(const float luma_curr, const float luma_sigma, const vec4 luma_hist,
+    const bool sample_hist, const float reactive, out vec4 out_ring) {
+    const float luma_q = round(luma_curr * 255.0) / 255.0;
+    const vec4 hist = sample_hist ? luma_hist : vec4(0.0);
+    const vec4 d = vec4(luma_q) - hist;
+    const vec4 sd = vec4(abs(d.x), abs(d.y), abs(d.z), abs(d.w));
+
+    float instability = 0.0;
+    if (sd.x >= 1.0 / 255.0) {
+        float dmin = sd.x;
+        if (d.y * d.x > 0.0) { dmin = min(dmin, sd.y); }
+        if (d.z * d.x > 0.0) { dmin = min(dmin, sd.z); }
+        if (d.w * d.x > 0.0) { dmin = min(dmin, sd.w); }
+        const float contrast = pow(saturate(luma_sigma / 0.1), 6.0);
+        instability = float(dmin < sd.x && contrast > 1.0 / 255.0);
+        instability *= 1.0 - pow(reactive, 1.0 / 6.0);
+    }
+
+    out_ring = vec4(luma_q, hist.xyz);
+    return instability * float(out_ring.w != 0.0);
+}
+#endif  // VARIANCE_BOX
+
 void main() {
     const ivec2 uvs_px = ivec2(g_vtx_uvs);
     const vec2 norm_uvs = g_vtx_uvs * g_params.texel_size.zw;
+    g_out_luma_hist = vec4(0.0);
 
 #if defined(STATIC_ACCUMULATION)
     vec4 col_curr = textureLod(g_color_curr_nearest, norm_uvs, 0.0);
@@ -316,8 +353,9 @@ void main() {
 #endif // LOCKING
 
     const vec2 hist_uvs = norm_uvs - (closest_vel * g_params.texel_size.xy);
+    const bool on_screen = all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)));
     vec4 col_hist = vec4(col_curr.xyz, 0.0);
-    if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
+    if (on_screen) {
         col_hist = SampleColorHistory(g_color_hist, hist_uvs);
     }
 
@@ -353,7 +391,6 @@ void main() {
 #endif // LOCKING
 
 #if defined(VARIANCE_BOX)
-    const float history_contribution = saturate(8.0 * lock_status);
     // Variance-box history clamp: intersect the AABB with a box around the weighted mean that is
     // AABB-sized at rest and tightens to +/-1 sigma with motion; blend the clamp back by lock
     const float ds = g_params.downscale_factor;
@@ -361,6 +398,17 @@ void main() {
     box_weight_sum = abs(box_weight_sum) > 1e-6 ? box_weight_sum : 1.0;
     const vec3 var_center = box_center / box_weight_sum;
     const vec3 var_sigma = sqrt(abs(box_sq_sum / box_weight_sum - var_center * var_center));
+#if defined(LUMA_INSTABILITY)
+    // A flickering pixel escapes the clamp just like a locked one does
+    vec4 luma_ring;
+    const float luma_instability = ComputeLumaInstability(var_center.x, var_sigma.x,
+        textureLod(g_luma_hist, hist_uvs, 0.0), on_screen && max(disocclusion.x, lum_diff) < 0.1, disocclusion.y,
+        luma_ring);
+    g_out_luma_hist = luma_ring;
+    const float history_contribution = max(saturate(8.0 * lock_status), luma_instability);
+#else
+    const float history_contribution = saturate(8.0 * lock_status);
+#endif
     const float box_scale = mix(scale_influence, 1.0, max(disocclusion.x, saturate(hr_velocity / 20.0)));
     const vec3 var_min = max(col_min, var_center - var_sigma * box_scale);
     const vec3 var_max = min(col_max, var_center + var_sigma * box_scale);
@@ -368,9 +416,9 @@ void main() {
     const float keep = saturate(history_contribution * (1.0 - sqrt(disocclusion.y)));
     col_hist.xyz = mix(rectified_hist, col_hist.xyz, keep);
 #else
+    const float history_contribution = saturate(8.0 * lock_status);
     const vec3 clamped_hist = ClipAABB(col_min, col_max, col_hist.xyz);
 
-    const float history_contribution = saturate(8.0 * lock_status);
     col_hist.xyz = mix(clamped_hist, col_hist.xyz, history_contribution);
 #endif
 

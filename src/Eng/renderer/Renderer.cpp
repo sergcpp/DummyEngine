@@ -1554,6 +1554,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             resolved_color = AddDebugImagePass(raw_resolved_color, 3);
             bloom = {};
         }
+        if (list.render_settings.debug_luma_hist) {
+            resolved_color = AddDebugImagePass(tsr_luma_hist_, 4);
+            bloom = {};
+        }
         if (list.render_settings.debug_ssao) {
             resolved_color = frame_textures.ssao;
             bloom = {};

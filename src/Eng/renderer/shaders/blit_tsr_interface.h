@@ -23,6 +23,7 @@ const uint HIST_TEX_SLOT = 2;
 const uint DILATED_DEPTH_TEX_SLOT = 4;
 const uint DILATED_VELOCITY_TEX_SLOT = 5;
 const uint DISOCCLUSION_MASK_TEX_SLOT = 6;
+const uint LUMA_HIST_TEX_SLOT = 7;
 
 INTERFACE_END
 

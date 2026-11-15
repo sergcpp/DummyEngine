@@ -249,6 +249,8 @@ void Eng::Renderer::InitPipelines() {
     blit_tsr_prog_[1] =
         sh_.FindOrCreateProgram("internal/blit_tsr.vert.glsl",
                                 "internal/blit_tsr@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;LOCKING;VARIANCE_BOX.frag.glsl");
+    blit_tsr_prog_[2] = sh_.FindOrCreateProgram(
+        "internal/blit_tsr.vert.glsl", "internal/blit_tsr@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;LOCKING;VARIANCE_BOX;LUMA_INSTABILITY.frag.glsl");
     blit_tsr_static_prog_ =
         sh_.FindOrCreateProgram("internal/blit_tsr.vert.glsl", "internal/blit_tsr@STATIC_ACCUMULATION.frag.glsl");
     blit_ssr_prog_ = sh_.FindOrCreateProgram("internal/blit_ssr.vert.glsl", "internal/blit_ssr.frag.glsl");
@@ -1113,12 +1115,14 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPass(const FrameTextures &frame_textures
         struct PassData {
             FgImgROHandle color;
             FgImgROHandle history;
+            FgImgROHandle luma_hist;
             FgImgROHandle dilated_depth;
             FgImgROHandle dilated_velocity;
             FgImgROHandle disocclusion_mask;
 
             FgImgRWHandle output;
             FgImgRWHandle output_history;
+            FgImgRWHandle output_luma_hist;
         };
 
         auto *data = fg_builder_.AllocTempData<PassData>();
@@ -1138,7 +1142,19 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPass(const FrameTextures &frame_textures
             resolved_color = data->output = taa.AddColorOutput("Resolved Color", desc);
             data->output_history = taa.AddColorOutput("Color History", desc);
         }
+        { // RGBA8 luma ring (4 quantized luma slots per texel) for the flicker-release path
+            FgImgDesc luma_desc;
+            luma_desc.w = view_state_.out_res[0];
+            luma_desc.h = view_state_.out_res[1];
+            luma_desc.format = Ren::eFormat::RGBA8;
+            luma_desc.sampling.filter = Ren::eFilter::Bilinear;
+            luma_desc.sampling.wrap = Ren::eWrap::ClampToBorder;
+
+            data->output_luma_hist = taa.AddColorOutput("Luma History", luma_desc);
+            tsr_luma_hist_ = data->output_luma_hist;
+        }
         data->history = taa.AddHistoryTextureInput(data->output_history, Stg::FragmentShader);
+        data->luma_hist = taa.AddHistoryTextureInput(data->output_luma_hist, Stg::FragmentShader);
 
         const bool static_accumulation = (taa_mode == eTAAMode::Static);
         taa.set_execute_cb([this, data, static_accumulation](const FgContext &fg) {
@@ -1150,6 +1166,8 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPass(const FrameTextures &frame_textures
 
             const Ren::ImageRWHandle output = fg.AccessRWImage(data->output);
             const Ren::ImageRWHandle output_history = fg.AccessRWImage(data->output_history);
+            const Ren::ImageROHandle luma_hist = fg.AccessROImage(data->luma_hist);
+            const Ren::ImageRWHandle output_luma_hist = fg.AccessRWImage(data->output_luma_hist);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1158,7 +1176,8 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPass(const FrameTextures &frame_textures
             rast_state.viewport[3] = view_state_.out_res[1];
 
             const Ren::RenderTarget render_targets[] = {{output, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
-                                                        {output_history, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+                                                        {output_history, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
+                                                        {output_luma_hist, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::TexSampled, TSR::CURR_NEAREST_TEX_SLOT, {color, nearest_sampler_}},
@@ -1166,7 +1185,10 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPass(const FrameTextures &frame_textures
                 {Ren::eBindTarget::TexSampled, TSR::HIST_TEX_SLOT, history},
                 {Ren::eBindTarget::TexSampled, TSR::DILATED_DEPTH_TEX_SLOT, dilated_depth},
                 {Ren::eBindTarget::TexSampled, TSR::DILATED_VELOCITY_TEX_SLOT, dilated_velocity},
-                {Ren::eBindTarget::TexSampled, TSR::DISOCCLUSION_MASK_TEX_SLOT, disocclusion_mask}};
+                {Ren::eBindTarget::TexSampled, TSR::DISOCCLUSION_MASK_TEX_SLOT, disocclusion_mask},
+                {Ren::eBindTarget::TexSampled, TSR::LUMA_HIST_TEX_SLOT, luma_hist}};
+
+            const bool luma_instability = !static_accumulation && settings.enable_luma_instability;
 
             TSR::Params uniform_params;
             uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.out_res[0], view_state_.out_res[1]};
@@ -1187,8 +1209,11 @@ Eng::FgImgRWHandle Eng::Renderer::AddTSRPass(const FrameTextures &frame_textures
             uniform_params.downscale_factor = 1.0f / p_list_->render_settings.resolution_scale;
             ++accumulated_frames_;
 
+            const int prog_idx = static_accumulation ? -1
+                                  : (settings.enable_locking && luma_instability) ? 2
+                                  : int(settings.enable_locking);
             prim_draw_.DrawPrim(fg.cmd_buf(), PrimDraw::ePrim::Quad,
-                                static_accumulation ? blit_tsr_static_prog_ : blit_tsr_prog_[settings.enable_locking],
+                                static_accumulation ? blit_tsr_static_prog_ : blit_tsr_prog_[prog_idx],
                                 {}, render_targets, rast_state, fg.rast_state(), bindings, &uniform_params,
                                 sizeof(TSR::Params), 0, fg.framebuffers());
         });

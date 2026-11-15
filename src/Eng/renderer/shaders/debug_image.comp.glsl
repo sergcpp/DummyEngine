@@ -21,6 +21,14 @@ void main() {
 
     const vec4 in_color = texelFetch(g_input_tex, ivec2(px_coords), 0);
 
-    const vec4 out_color = vec4(vec3(in_color[g_params.channel]), 1.0);
+    vec4 out_color;
+    if (g_params.channel == 4u) {
+        // TSR luma ring (rgb: quantized luma slots, x newest; w: oldest). Heatmap of the
+        // current-vs-history deviation that drives the flicker detector.
+        const vec3 dev = in_color.xxx - in_color.yzw;
+        out_color = vec4(vec3(saturate(16.0 * max(abs(dev.x), max(abs(dev.y), abs(dev.z))))), 1.0);
+    } else {
+        out_color = vec4(vec3(in_color[g_params.channel]), 1.0);
+    }
     imageStore(g_out_img, ivec2(px_coords), out_color);
 }

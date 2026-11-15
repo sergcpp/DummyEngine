@@ -170,6 +170,7 @@ class Renderer {
     FgBuilder fg_builder_;
     std::optional<render_settings_t> cached_settings_;
     int cached_rp_index_ = 0;
+    FgImgRWHandle tsr_luma_hist_; // graph-build scoped, for the debug view
     Ren::ImageROHandle env_map_;
     const DrawList *p_list_;
     Ren::SmallVector<std::variant<FgBufRWHandle, FgImgRWHandle>, 8> backbuffer_sources_;
@@ -225,7 +226,7 @@ class Renderer {
     Ren::PipelineHandle pi_debug_velocity_, pi_debug_gbuffer_[4], pi_debug_image_, pi_debug_rad_cache_, pi_debug_bvh_;
     Ren::BufferHandle dbg_bvh_nodes_stage_;
 
-    Ren::ProgramHandle blit_static_vel_prog_, blit_gauss_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_tsr_prog_[2],
+    Ren::ProgramHandle blit_static_vel_prog_, blit_gauss_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_tsr_prog_[3],
         blit_tsr_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down_prog_,
         blit_down_depth_prog_, blit_ssr_compose_prog_, blit_fxaa_prog_, blit_vol_compose_prog_;
 

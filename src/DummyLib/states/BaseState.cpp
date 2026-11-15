@@ -371,6 +371,11 @@ void BaseState::Enter() {
         return true;
     });
 
+    cmdline_ui_->RegisterCommand("r_luma_instability", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.enable_luma_instability = !renderer_->settings.enable_luma_instability;
+        return true;
+    });
+
     cmdline_ui_->RegisterCommand("r_tonemap", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
             if (args[1].num > 3.5) {
@@ -783,6 +788,11 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_showLocking", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         renderer_->settings.debug_locking = !renderer_->settings.debug_locking;
+        return true;
+    });
+
+    cmdline_ui_->RegisterCommand("r_showLumaHistory", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.debug_luma_hist = !renderer_->settings.debug_luma_hist;
         return true;
     });
 

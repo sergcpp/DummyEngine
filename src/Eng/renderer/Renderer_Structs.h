@@ -272,6 +272,7 @@ struct render_settings_t {
             bool enable_purkinje : 1;
             bool enable_sharpen : 1;
             bool enable_locking : 1;
+            bool enable_luma_instability : 1;
         };
         uint32_t flags = 0xffffffff;
     };
@@ -297,6 +298,7 @@ struct render_settings_t {
             bool debug_roughness : 1;
             bool debug_metallic : 1;
             bool debug_rad_cache : 1;
+            bool debug_luma_hist : 1;
         };
         uint32_t debug_flags = 0;
     };
