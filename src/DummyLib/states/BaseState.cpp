@@ -371,11 +371,6 @@ void BaseState::Enter() {
         return true;
     });
 
-    cmdline_ui_->RegisterCommand("r_luma_instability", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
-        renderer_->settings.enable_luma_instability = !renderer_->settings.enable_luma_instability;
-        return true;
-    });
-
     cmdline_ui_->RegisterCommand("r_tonemap", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
             if (args[1].num > 3.5) {

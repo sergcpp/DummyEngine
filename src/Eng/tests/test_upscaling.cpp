@@ -14,7 +14,7 @@ void test_upscaling(Sys::ThreadPool &threads) {
                    std::vector<double>{24.10, 24.00, 23.85, 23.60, 23.50, 23.15, 23.05, 22.75, 22.60, 22.50, //
                                        21.75, 21.75, 21.65, 21.55, 21.40, 21.40, 21.60, 21.45, 21.50, 21.50,
                                        21.70, 21.55, 21.60, 21.50, 21.60, 21.85, 21.75, 21.90, 22.05, 22.15,
-                                       22.25, 22.10, 22.50},
+                                       22.25, 22.55, 22.50},
                    MedDiffGI, 2.0f);
     run_image_test(ren_ctx, threads, "upscaling_dyn",
                    std::vector<double>{22.85, 22.80, 22.75, 22.60, 22.55, 22.40, 22.40, 22.30, 22.30, 21.95, //
@@ -24,13 +24,13 @@ void test_upscaling(Sys::ThreadPool &threads) {
                    Full, 1.5f);
     run_image_test(ren_ctx, threads, "upscaling_dyn",
                    std::vector<double>{23.35, 23.30, 23.20, 23.00, 22.90, 22.70, 22.65, 22.55, 22.50, 22.55, //
-                                       22.05, 22.00, 21.90, 21.85, 21.75, 21.75, 21.95, 21.95, 21.85, 21.90,
+                                       22.05, 22.00, 22.35, 21.85, 21.75, 22.20, 21.95, 21.95, 21.85, 21.90,
                                        22.05, 21.95, 21.95, 21.85, 21.85, 22.00, 22.00, 22.10, 22.25, 22.35,
                                        22.50, 22.45, 22.75},
                    Full_Ultra, 1.5f);
     ///
     run_image_test(ren_ctx, threads, "upscaling_dyn_exposure",
-                   std::vector<double>{40.10, 39.35, 38.55, 37.55, 36.10, 35.05, 34.10, 33.00, 31.60, 30.30, //
+                   std::vector<double>{40.10, 39.25, 38.45, 37.55, 36.10, 35.05, 34.10, 33.00, 31.60, 30.30, //
                                        28.65, 27.05, 25.55, 23.95, 22.35, 20.70, 19.10, 20.10, 21.35, 22.20,
                                        22.90, 23.30, 23.95, 24.95, 24.80, 25.75, 26.75, 27.20, 27.85, 29.55,
                                        30.60, 31.75, 32.95},
@@ -47,4 +47,10 @@ void test_upscaling(Sys::ThreadPool &threads) {
                                        23.05, 23.50, 24.20, 24.65, 25.35, 26.00, 26.70, 27.60, 28.35, 29.45,
                                        30.70, 32.15, 33.10},
                    Full_Ultra, 1.5f);
+    // Static camera repeated over the path: locking must not flatten the dark thin floor detail - PSNR prefers
+    // the flattened frames, so the signed Flattening + Detail guards catch it; Fireflies is a gross guard only.
+    run_image_test(ren_ctx, threads, "upscaling_dyn_stability",
+                   std::vector<double>{23.85, 23.85, 23.85, 23.90, 23.90, 23.90, 23.90, 23.95, 23.95, 23.95, //
+                                       23.95, 23.95, 24.00, 24.00, 24.00, 24.00},
+                   MedDiffGI, 1.0f, 9.95, 0.715, 20000);
 }

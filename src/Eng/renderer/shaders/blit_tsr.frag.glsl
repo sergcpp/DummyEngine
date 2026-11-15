@@ -32,6 +32,9 @@
 #if defined(LUMA_INSTABILITY) && !defined(LOCKING)
     #pragma dont_compile
 #endif
+#if defined(LOCKING) && !defined(LUMA_INSTABILITY)
+    #pragma dont_compile
+#endif
 
 layout(binding = CURR_NEAREST_TEX_SLOT) uniform sampler2D g_color_curr_nearest;
 layout(binding = CURR_LINEAR_TEX_SLOT) uniform sampler2D g_color_curr_linear;
@@ -308,6 +311,8 @@ void main() {
         const float diff_bc = max(col_bc.x, col_mc.x) / min(col_bc.x, col_mc.x);
         const float diff_br = max(col_br.x, col_mc.x) / min(col_br.x, col_mc.x);
 
+        // Detection runs on noisy per-pixel output-res luma where the ratio flickers - a tighter
+        // band (~1.05) collapses lock maturation on dyn cold-start frames (measured -0.8..-1.5 dB)
         const float DissimilarThreshold = 1.75;
 
         float dissimilar_min = HALF_MAX, dissimilar_max = 0.0;
@@ -362,8 +367,13 @@ void main() {
     const float lum_curr = Luma(col_curr.xyz);
     const float lum_hist = Luma(col_hist.xyz);
 
-    float lock_status = col_hist.w;
+    // Raw tonemapped [0,1] luma ratio: reject on more than ~2x luma change
+    const float LumRejectThreshold = 0.5;
+
+    float lock_status = 0.0;
+    float lock_contribution = 0.0;
 #if defined(LOCKING)
+    lock_status = col_hist.w;
     if (set_lock) {
         lock_status = (lock_status != 0.0 ? 2.0 : 1.0);
     } else {
@@ -375,9 +385,14 @@ void main() {
         lock_status = 0.0;
     }
 
-    const float lum_diff = 1.0 - max(lum_curr, lum_hist) / max(min(lum_curr, lum_hist), 1e-4);
-    if (lum_diff > 0.1) {
-        lock_status = 0.0;
+    const float lum_diff = 1.0 - min(lum_curr, lum_hist) / max(max(lum_curr, lum_hist), 1e-4);
+    // Lock-chain sensitivity band: only luma changes beyond ~2x ratio register as rejection;
+    // sub-2x is jitter-phase noise on thin features and must not erode locks or damping
+    const float lum_reject = saturate(2.0 * max(lum_diff - LumRejectThreshold, 0.0));
+    // Grace period: only non-re-detected locks erode on luma diff, proportionally -
+    // full ratio wipe, moderate changes just age the lock (keeps re-detect stickiness)
+    if (!set_lock) {
+        lock_status *= 1.0 - lum_reject;
     }
 
     // Color alpha carries OIT coverage / 1.0 sky; the 2.0 emissive tag was stripped above
@@ -388,6 +403,10 @@ void main() {
     // Motion divergence
     lock_status *= (1.0 - disocclusion.y);
     lock_status *= float(g_params.significant_change < 0.5);
+
+    // Contribution ramps up over the first fraction of a lock lifetime: a lock starts protecting almost
+    // immediately, a plain age gate (only sustained locks contribute) flattens thin dark detail
+    lock_contribution = saturate(8.0 * lock_status);
 #endif // LOCKING
 
 #if defined(VARIANCE_BOX)
@@ -399,15 +418,17 @@ void main() {
     const vec3 var_center = box_center / box_weight_sum;
     const vec3 var_sigma = sqrt(abs(box_sq_sum / box_weight_sum - var_center * var_center));
 #if defined(LUMA_INSTABILITY)
-    // A flickering pixel escapes the clamp just like a locked one does
+    // A flickering pixel escapes the clamp just like a locked one does. Ring gate is validity-only:
+    // the recurrence test inside is the stability filter - the history-relative luma ratio must
+    // not close it, or sub-pixel features under jitter phase cycling lose this protection entirely
     vec4 luma_ring;
     const float luma_instability = ComputeLumaInstability(var_center.x, var_sigma.x,
-        textureLod(g_luma_hist, hist_uvs, 0.0), on_screen && max(disocclusion.x, lum_diff) < 0.1, disocclusion.y,
-        luma_ring);
+        textureLod(g_luma_hist, hist_uvs, 0.0), on_screen && disocclusion.x < 0.1,
+        disocclusion.y, luma_ring);
     g_out_luma_hist = luma_ring;
-    const float history_contribution = max(saturate(8.0 * lock_status), luma_instability);
+    const float history_contribution = max(lock_contribution, luma_instability);
 #else
-    const float history_contribution = saturate(8.0 * lock_status);
+    const float history_contribution = lock_contribution;
 #endif
     const float box_scale = mix(scale_influence, 1.0, max(disocclusion.x, saturate(hr_velocity / 20.0)));
     const vec3 var_min = max(col_min, var_center - var_sigma * box_scale);
@@ -416,7 +437,7 @@ void main() {
     const float keep = saturate(history_contribution * (1.0 - sqrt(disocclusion.y)));
     col_hist.xyz = mix(rectified_hist, col_hist.xyz, keep);
 #else
-    const float history_contribution = saturate(8.0 * lock_status);
+    const float history_contribution = lock_contribution;
     const vec3 clamped_hist = ClipAABB(col_min, col_max, col_hist.xyz);
 
     col_hist.xyz = mix(clamped_hist, col_hist.xyz, history_contribution);

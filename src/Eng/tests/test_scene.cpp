@@ -1,6 +1,7 @@
 #include "test_scene.h"
 
 #include <chrono>
+#include <cmath>
 
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
@@ -40,7 +41,8 @@ extern bool g_nohwrt, g_nosubgroup;
 
 void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_view test_name,
                     const std::variant<Ren::Span<const double>, Ren::Span<const int>> &thresholds,
-                    const eImgTest img_test, const float res_scale) {
+                    const eImgTest img_test, const float res_scale, const double max_flattening,
+                    const double min_detail_ratio, const int max_fireflies) {
     const auto *min_psnr = std::get_if<Ren::Span<const double>>(&thresholds);
     const auto *fireflies_max = std::get_if<Ren::Span<const int>>(&thresholds);
     using namespace std::chrono;
@@ -572,6 +574,7 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
             uint8_t *ref_img = stbi_load(ref_name.c_str(), &_ref_w, &_ref_h, &_ref_channels, 4);
             SCOPE_EXIT({ stbi_image_free(ref_img); })
 
+            require_return(ref_img != nullptr);
             assert(_ref_w == ref_w);
             assert(_ref_h == ref_h);
 
@@ -600,6 +603,65 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
                 }
             }
 
+            // Guards for temporal flattening of high-frequency detail, which lowers error against any reference
+            // and therefore improves PSNR and the firefly count. Selected on reference extrema of either polarity.
+            double flattening = 0.0;  // mean shift of extrema toward their surroundings, + = detail relaxed away
+            double detail_ratio = 0.0;  // local contrast energy of the render vs the reference over the same pixels
+            if (max_flattening >= 0.0 || min_detail_ratio >= 0.0) {
+                std::vector<float> ref_luma(size_t(ref_w) * ref_h), img_luma(size_t(ref_w) * ref_h);
+                for (int j = 0; j < ref_h; ++j) {
+                    const int y = flip_y ? (ref_h - 1 - j) : j;
+                    for (int i = 0; i < ref_w; ++i) {
+                        const uint8_t *pr = &ref_img[4 * (j * ref_w + i)];
+                        const uint8_t *pi = &img_data[4 * (y * ref_w + i)];
+                        ref_luma[size_t(j) * ref_w + i] = 0.299f * pr[0] + 0.587f * pr[1] + 0.114f * pr[2];
+                        img_luma[size_t(j) * ref_w + i] = 0.299f * pi[0] + 0.587f * pi[1] + 0.114f * pi[2];
+                    }
+                }
+
+                double sum_flat = 0.0, ref_energy = 0.0, img_energy = 0.0;
+                int cnt = 0;
+                for (int j = 0; j < ref_h; ++j) {
+                    const int j0 = std::max(j - 1, 0), j1 = std::min(j + 1, ref_h - 1);
+                    for (int i = 0; i < ref_w; ++i) {
+                        const int i0 = std::max(i - 1, 0), i1 = std::min(i + 1, ref_w - 1);
+
+                        float mean = 0.0f;
+                        for (int jj = j0; jj <= j1; ++jj) {
+                            for (int ii = i0; ii <= i1; ++ii) {
+                                mean += ref_luma[size_t(jj) * ref_w + ii];
+                            }
+                        }
+                        mean /= float((j1 - j0 + 1) * (i1 - i0 + 1));
+
+                        const float c = ref_luma[size_t(j) * ref_w + i];
+                        const float gx = 0.5f * (ref_luma[size_t(j) * ref_w + i1] - ref_luma[size_t(j) * ref_w + i0]);
+                        const float gy = 0.5f * (ref_luma[size_t(j1) * ref_w + i] - ref_luma[size_t(j0) * ref_w + i]);
+
+                        // Extrema of the local surround: dark pits and bright ridges alike
+                        if (std::sqrt(gx * gx + gy * gy) <= 6.0f || std::abs(c - mean) <= 4.0f) {
+                            continue;
+                        }
+
+                        // A: measured against the surround offset, so both polarities count positive when relaxed:
+                        // a dark pit contributes its brightening, a bright ridge its darkening
+                        const float shift = img_luma[size_t(j) * ref_w + i] - c;
+                        sum_flat += (c > mean) ? -shift : shift;
+
+                        // B: the same stencil on the render, compared as an energy ratio
+                        const float rx = 0.5f * (img_luma[size_t(j) * ref_w + i1] - img_luma[size_t(j) * ref_w + i0]);
+                        const float ry = 0.5f * (img_luma[size_t(j1) * ref_w + i] - img_luma[size_t(j0) * ref_w + i]);
+
+                        ref_energy += std::sqrt(gx * gx + gy * gy);
+                        img_energy += std::sqrt(rx * rx + ry * ry);
+                        ++cnt;
+                    }
+                }
+
+                flattening = cnt ? sum_flat / cnt : 0.0;
+                detail_ratio = ref_energy > 0.0 ? img_energy / ref_energy : 1.0;
+            }
+
             mse /= 3.0;
             mse /= (ref_w * ref_h);
 
@@ -616,10 +678,31 @@ void run_image_test(TestContext &ren_ctx, Sys::ThreadPool &threads, std::string_
                 fflush(stdout);
                 require(fireflies_cnt <= (*fireflies_max)[std::max(frame_index, 0)]);
             } else {
-                printf("Test %-36s (PSNR: %.2f/%.2f dB, Time: %.2fms)\n", combined_test_name.c_str(), psnr,
-                       (*min_psnr)[std::max(frame_index, 0)], test_duration_ms);
+                // PSNR is the base check; Flattening / Detail / Fireflies are optional extra guards
+                const double psnr_thres = (*min_psnr)[std::max(frame_index, 0)];
+                printf("Test %-36s (PSNR: %.2f/%.2f dB", combined_test_name.c_str(), psnr, psnr_thres);
+                if (max_flattening >= 0.0) {
+                    printf(", Flattening: %+.2f/%.2f", flattening, max_flattening);
+                }
+                if (min_detail_ratio >= 0.0) {
+                    printf(", Detail: %.3f/%.3f", detail_ratio, min_detail_ratio);
+                }
+                if (max_fireflies >= 0) {
+                    printf(", Fireflies: %d/%d", fireflies_cnt, max_fireflies);
+                }
+                printf(", Time: %.2fms)\n", test_duration_ms);
                 fflush(stdout);
-                require(psnr >= (*min_psnr)[std::max(frame_index, 0)]);
+
+                require(psnr >= psnr_thres);
+                if (max_flattening >= 0.0) {
+                    require(flattening <= max_flattening);
+                }
+                if (min_detail_ratio >= 0.0) {
+                    require(detail_ratio >= min_detail_ratio);
+                }
+                if (max_fireflies >= 0) {
+                    require(fireflies_cnt <= max_fireflies);
+                }
             }
 
             const std::string out_name =

@@ -1498,10 +1498,17 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         FgImgRWHandle resolved_color;
 
+        // Debug views that replace the screen must show raw pass data, untouched by postprocess chains
+        const bool debug_screen = list.render_settings.debug_motion || list.render_settings.debug_disocclusion ||
+            list.render_settings.debug_locking || list.render_settings.debug_luma_hist ||
+            list.render_settings.debug_ssao || list.render_settings.debug_depth || list.render_settings.debug_albedo ||
+            list.render_settings.debug_normals || list.render_settings.debug_roughness ||
+            list.render_settings.debug_metallic || list.render_settings.debug_rad_cache;
+
         //
         // Depth of field (before the temporal resolve, at render res; TSR or the postprocess blit upscales it)
         //
-        if (cur_dof_enabled && !list.render_settings.debug_wireframe) {
+        if (cur_dof_enabled && !list.render_settings.debug_wireframe && !debug_screen) {
             frame_textures.color = AddDOFPasses(frame_textures.color, common_buffers, frame_textures);
         }
 
@@ -1520,14 +1527,14 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         // Sharpening
         //
-        if (list.render_settings.enable_sharpen) {
+        if (list.render_settings.enable_sharpen && !debug_screen) {
             resolved_color = AddSharpenPass(resolved_color, frame_textures.exposure, true);
         }
 
         //
         // Motion blur
         //
-        if (list.render_settings.enable_motion_blur) {
+        if (list.render_settings.enable_motion_blur && !debug_screen) {
             resolved_color = AddMotionBlurPasses(resolved_color, frame_textures);
         }
 
@@ -1535,7 +1542,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // Bloom
         //
         FgImgRWHandle bloom;
-        if (list.render_settings.enable_bloom && !list.render_settings.debug_wireframe) {
+        if (list.render_settings.enable_bloom && !list.render_settings.debug_wireframe && !debug_screen) {
             bloom = AddBloomPasses(resolved_color, frame_textures.exposure, true);
         }
 
@@ -1555,7 +1562,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             bloom = {};
         }
         if (list.render_settings.debug_luma_hist) {
-            resolved_color = AddDebugImagePass(tsr_luma_hist_, 4);
+            resolved_color = AddDebugImagePass(frame_textures.tsr_luma_hist, 4);
             bloom = {};
         }
         if (list.render_settings.debug_ssao) {
@@ -1649,11 +1656,15 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 ex_postprocess_args_.output = postprocess.AddColorOutput(backbuffer_ref);
             }
             ex_postprocess_args_.linear_sampler = linear_sampler_;
-            ex_postprocess_args_.tonemap_mode = int(list.render_settings.tonemap_mode);
-            ex_postprocess_args_.inv_gamma = 1.0f / list.draw_cam.gamma;
+            // Debug views bypass tonemap/gamma/color effects; the exposure multiply is a
+            // self-cancelling no-op (pre_exposure already mirrors the readback exposure).
+            // The rad cache view dumps numeric values, it stays colour-mapped to remain comparable
+            const bool raw_debug_output = debug_screen && !list.render_settings.debug_rad_cache;
+            ex_postprocess_args_.tonemap_mode = raw_debug_output ? 0 : int(list.render_settings.tonemap_mode);
+            ex_postprocess_args_.inv_gamma = raw_debug_output ? 1.0f : 1.0f / list.draw_cam.gamma;
             ex_postprocess_args_.fade = list.draw_cam.fade;
-            ex_postprocess_args_.aberration = list.render_settings.enable_aberration ? 1.0f : 0.0f;
-            ex_postprocess_args_.purkinje = list.render_settings.enable_purkinje ? 1.0f : 0.0f;
+            ex_postprocess_args_.aberration = (list.render_settings.enable_aberration && !debug_screen) ? 1.0f : 0.0f;
+            ex_postprocess_args_.purkinje = (list.render_settings.enable_purkinje && !debug_screen) ? 1.0f : 0.0f;
 
             backbuffer_sources_.push_back(ex_postprocess_args_.output);
 
