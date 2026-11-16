@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = dyn_bvh
-	commit = f0101f2389ab18a6d7b0265d204c060608466b35
+	branch = tsr_update
+	commit = 69720f7c45b683d73902acee85748361258ffc29
 	method = merge
 	cmdver = 0.4.9
-	parent = b64ee8660ae24d79ab32a38a9c29f674da25c0bd
+	parent = 2c8fe8b7e1d4e8fa01364dd1929363cee9aa2370
