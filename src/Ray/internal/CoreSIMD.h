@@ -168,7 +168,7 @@ template <int S> struct ray_data_t {
     fvec<S> ior[4];
     // ray cone params
     fvec<S> cone_width, cone_spread;
-    // feature throughput (mirrors Ref::ray_data_t.fw)
+    // feature throughput
     fvec<S> fw[3];
     // 16-bit pixel coordinates of rays in packet ((x << 16) | y)
     uvec<S> xy;
@@ -272,14 +272,16 @@ void SampleMeshInTextureSpace(int iteration, int obj_index, int uv_layer, const 
                               const uint32_t rand_seq[], aligned_vector<ray_data_t<DimX * DimY>> &out_rays,
                               aligned_vector<hit_data_t<DimX * DimY>> &out_inters);
 
-// Sorting rays
+// Applies the index map: lane l of out packet i is ray perm[i*S + l]; returns the active packet count
+template <int S> int GatherRays(Span<const ray_data_t<S>> rays, const uint32_t perm[], Span<ray_data_t<S>> out_rays);
+// Sorting rays: produces the index map scan_values[dest] = source ray index, rays are never reordered in place
 template <int S>
-int SortRays_CPU(Span<ray_data_t<S>> rays, const float root_min[3], const float cell_size[3], ivec<S> *hash_values,
-                 uint32_t *scan_values, ray_chunk_t *chunks, ray_chunk_t *chunks_temp);
+int SortRays_CPU(Span<const ray_data_t<S>> rays, const float root_min[3], const float cell_size[3],
+                 uvec<S> hash_values[], uint32_t scan_values[], ray_chunk_t chunks[], ray_chunk_t chunks_temp[]);
 template <int S>
-int SortRays_GPU(Span<ray_data_t<S>> rays, const float root_min[3], const float cell_size[3], ivec<S> *hash_values,
-                 int *head_flags, uint32_t *scan_values, ray_chunk_t *chunks, ray_chunk_t *chunks_temp,
-                 uint32_t *skeleton);
+int SortRays_GPU(Span<const ray_data_t<S>> rays, const float root_min[3], const float cell_size[3],
+                 uvec<S> hash_values[], int head_flags[], uint32_t scan_values[], ray_chunk_t chunks[],
+                 ray_chunk_t chunks_temp[], uint32_t skeleton[]);
 
 // Intersect primitives
 template <int S>
@@ -521,33 +523,32 @@ void Evaluate_LightColor(const fvec<S> P[3], const ray_data_t<S> &ray, const ive
 template <int S>
 ivec<S> Evaluate_DiffuseNode(const light_sample_t<S> &ls, const ray_data_t<S> &ray, const ivec<S> &mask,
                              const surface_t<S> &surf, const fvec<S> base_color[3], const fvec<S> &roughness,
-                             const fvec<S> &mix_weight, const ivec<S> &mis_mask, fvec<S> out_col[3],
-                             shadow_ray_t<S> &sh_r);
+                             const ivec<S> &mis_mask, fvec<S> out_col[3], shadow_ray_t<S> &sh_r);
 template <int S>
 void Sample_DiffuseNode(const ray_data_t<S> &ray, const ivec<S> &mask, const surface_t<S> &surf,
                         const fvec<S> base_color[3], const fvec<S> &roughness, const fvec<S> &rand_u,
-                        const fvec<S> &rand_v, const fvec<S> &mix_weight, ray_data_t<S> &new_ray);
+                        const fvec<S> &rand_v, ray_data_t<S> &new_ray);
 
 template <int S>
 ivec<S> Evaluate_GlossyNode(const light_sample_t<S> &ls, const ray_data_t<S> &ray, ivec<S> mask,
                             const surface_t<S> &surf, const fvec<S> base_color[3], const fvec<S> &roughness,
-                            const fvec<S> &regularize_alpha, const fvec<S> &mix_weight, const ivec<S> &mis_mask,
-                            fvec<S> out_col[3], shadow_ray_t<S> &sh_r);
+                            const fvec<S> &regularize_alpha, const ivec<S> &mis_mask, fvec<S> out_col[3],
+                            shadow_ray_t<S> &sh_r);
 template <int S>
 void Sample_GlossyNode(const ray_data_t<S> &ray, const ivec<S> &mask, const surface_t<S> &surf,
                        const fvec<S> base_color[3], const fvec<S> &roughness, const fvec<S> &regularize_alpha,
-                       const fvec<S> rand[2], const fvec<S> &mix_weight, ray_data_t<S> &new_ray);
+                       const fvec<S> rand[2], ray_data_t<S> &new_ray);
 
 template <int S>
 ivec<S> Evaluate_RefractiveNode(const light_sample_t<S> &ls, const ray_data_t<S> &ray, const ivec<S> &mask,
                                 const surface_t<S> &surf, const fvec<S> base_color[3], const fvec<S> &roughness,
-                                const fvec<S> &regularize_alpha, const fvec<S> &eta, const fvec<S> &mix_weight,
-                                const ivec<S> &mis_mask, fvec<S> out_col[3], shadow_ray_t<S> &sh_r);
+                                const fvec<S> &regularize_alpha, const fvec<S> &eta, const ivec<S> &mis_mask,
+                                fvec<S> out_col[3], shadow_ray_t<S> &sh_r);
 template <int S>
 void Sample_RefractiveNode(const ray_data_t<S> &ray, const ivec<S> &mask, const surface_t<S> &surf,
                            const fvec<S> base_color[3], const fvec<S> &roughness, const fvec<S> &regularize_alpha,
                            const ivec<S> &is_backfacing, const fvec<S> &int_ior, const fvec<S> &ext_ior,
-                           const fvec<S> rand[2], const fvec<S> &mix_weight, ray_data_t<S> &new_ray);
+                           const fvec<S> rand[2], ray_data_t<S> &new_ray);
 
 template <int S> struct diff_params_t {
     fvec<S> base_color[3];
@@ -590,15 +591,15 @@ ivec<S> Evaluate_PrincipledNode(const light_sample_t<S> &ls, const ray_data_t<S>
                                 const diff_params_t<S> &diff, const spec_params_t<S> &spec,
                                 const coat_params_t<S> &coat, const transmission_params_t<S> &trans,
                                 const fvec<S> &metallic, float transmission, const fvec<S> &N_dot_L,
-                                const fvec<S> &mix_weight, const ivec<S> &mis_mask, const fvec<S> &regularize_alpha,
-                                fvec<S> out_col[3], shadow_ray_t<S> &sh_r);
+                                const ivec<S> &mis_mask, const fvec<S> &regularize_alpha, fvec<S> out_col[3],
+                                shadow_ray_t<S> &sh_r);
 template <int S>
 void Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<S> &ray, const ivec<S> &mask,
                            const surface_t<S> &surf, const lobe_weights_t<S> &lobe_weights,
                            const diff_params_t<S> &diff, const spec_params_t<S> &spec, const coat_params_t<S> &coat,
                            const transmission_params_t<S> &trans, const fvec<S> &metallic, float transmission,
-                           const fvec<S> rand[2], fvec<S> mix_rand, const fvec<S> &mix_weight,
-                           const fvec<S> &regularize_alpha, ivec<S> &secondary_mask, ray_data_t<S> &new_ray);
+                           const fvec<S> rand[2], fvec<S> lobe_rand, const fvec<S> &regularize_alpha,
+                           ivec<S> &secondary_mask, ray_data_t<S> &new_ray);
 
 // Shade
 template <int S>
@@ -642,7 +643,7 @@ class SIMDPolicyBase {
     using RayDataType = ray_data_t<RPSize>;
     using ShadowRayType = shadow_ray_t<RPSize>;
     using HitDataType = hit_data_t<RPSize>;
-    using RayHashType = ivec<RPSize>;
+    using RayHashType = uvec<RPSize>;
     // UNet tensor storage: f16 on aarch64 NEON + AVX512-FP16 (GPU-parity f16 conv); plain x86
     // stays fp32 - F16C is convert-only, f16 walks measured 3-21% slower than fp32 on SKX.
 #if defined(RAY_ENABLE_ASM_CONV) && defined(USE_NEON) && (defined(__aarch64__) || defined(_M_ARM64))
@@ -701,10 +702,23 @@ class SIMDPolicyBase {
                                     textures, img_w, out_color);
     }
 
-    static force_inline int SortRays_CPU(Span<RayDataType> rays, const float root_min[3], const float cell_size[3],
-                                         RayHashType *hash_values, uint32_t *scan_values, ray_chunk_t *chunks,
-                                         ray_chunk_t *chunks_temp) {
+    static force_inline int GatherRays(Span<const RayDataType> rays, const uint32_t perm[],
+                                       Span<RayDataType> out_rays) {
+        return NS::GatherRays<RPSize>(rays, perm, out_rays);
+    }
+
+    static force_inline int SortRays_CPU(Span<const RayDataType> rays, const float root_min[3],
+                                         const float cell_size[3], RayHashType hash_values[], uint32_t scan_values[],
+                                         ray_chunk_t chunks[], ray_chunk_t chunks_temp[]) {
         return NS::SortRays_CPU<RPSize>(rays, root_min, cell_size, hash_values, scan_values, chunks, chunks_temp);
+    }
+
+    static force_inline int SortRays_GPU(Span<const RayDataType> rays, const float root_min[3],
+                                         const float cell_size[3], RayHashType hash_values[], int head_flags[],
+                                         uint32_t scan_values[], ray_chunk_t chunks[], ray_chunk_t chunks_temp[],
+                                         uint32_t skeleton[]) {
+        return NS::SortRays_GPU<RPSize>(rays, root_min, cell_size, hash_values, head_flags, scan_values, chunks,
+                                        chunks_temp, skeleton);
     }
 
     static force_inline void ShadePrimary(const pass_settings_t &ps, Span<const HitDataType> inters,
@@ -1066,13 +1080,6 @@ template <int S> force_inline void safe_normalize(fvec<S> v[3]) {
 template <int S> force_inline fvec<S> safe_sqrtf(const fvec<S> &f) { return sqrt(max(f, 0.0f)); }
 
 #define sqr(x) ((x) * (x))
-
-template <typename T, int S>
-force_inline void swap_elements(fixed_size_simd<T, S> &v1, const int i1, fixed_size_simd<T, S> &v2, const int i2) {
-    const T temp = v1[i1];
-    v1.set(i1, v2[i2]);
-    v2.set(i2, temp);
-}
 
 #define _dot(x, y) ((x)[0] * (y)[0] + (x)[1] * (y)[1] + (x)[2] * (y)[2])
 
@@ -2422,7 +2429,7 @@ force_inline void TransformDirection(const float d[3], const float *xform, float
 
 template <int S> force_inline fvec<S> pow5(const fvec<S> &v) { return (v * v) * (v * v) * v; }
 
-template <int S> ivec<S> get_ray_hash(const ray_data_t<S> &r, const float root_min[3], const float cell_size[3]) {
+template <int S> uvec<S> get_ray_hash(const ray_data_t<S> &r, const float root_min[3], const float cell_size[3]) {
     ivec<S> x = clamp(ivec<S>((r.o[0] - root_min[0]) / cell_size[0]), 0, 255),
             y = clamp(ivec<S>((r.o[1] - root_min[1]) / cell_size[1]), 0, 255),
             z = clamp(ivec<S>((r.o[2] - root_min[2]) / cell_size[2]), 0, 255);
@@ -2431,26 +2438,23 @@ template <int S> ivec<S> get_ray_hash(const ray_data_t<S> &r, const float root_m
             phi_index_i = clamp(ivec<S>((1.0f + r.d[1]) / phi_step), 0, 16),
             phi_index_j = clamp(ivec<S>((1.0f + r.d[0]) / phi_step), 0, 16);
 
-    ivec<S> o, p;
+    // Masked gather feeds the 256-entry tables: the inactive lanes must keep ~0 (they sort last), and
+    // masking also keeps them from reading the table with indeterminate indices. Live indices are 0..255 by the clamps.
+    const ivec<S> ones{-1};
+    ivec<S> ux = gather(ones, morton_table_256, r.mask, x), uy = gather(ones, morton_table_256, r.mask, y),
+            uz = gather(ones, morton_table_256, r.mask, z);
 
+    ivec<S> o{-1}, p{-1};
     UNROLLED_FOR_S(i, S, {
         if (r.mask[i]) {
-            x.template set<i>(morton_table_256[x.template get<i>()]);
-            y.template set<i>(morton_table_256[y.template get<i>()]);
-            z.template set<i>(morton_table_256[z.template get<i>()]);
             o.template set<i>(morton_table_16[int(omega_table[omega_index.template get<i>()])]);
             p.template set<i>(
                 morton_table_16[int(phi_table[phi_index_i.template get<i>()][phi_index_j.template get<i>()])]);
-        } else {
-            o.template set<i>(0xFFFFFFFF);
-            p.template set<i>(0xFFFFFFFF);
-            x.template set<i>(0xFFFFFFFF);
-            y.template set<i>(0xFFFFFFFF);
-            z.template set<i>(0xFFFFFFFF);
         }
     })
 
-    return (o << 25) | (p << 24) | (y << 2) | (z << 1) | (x << 0);
+    // simd operators are not defined across int/unsigned vectors, so the composition is done in ivec and reinterpreted
+    return static_cast<uvec<S>>((o << 25) | (p << 24) | (uy << 2) | (uz << 1) | (ux << 0));
 }
 
 void _radix_sort_lsb(ray_chunk_t *begin, ray_chunk_t *end, ray_chunk_t *begin1, unsigned maxshift) {
@@ -3103,7 +3107,7 @@ fvec<S> GGX_VNDF_Reflection_Bounded_PDF(const fvec<S> &D, const fvec<S> view_dir
     return ret;
 }
 
-// Smith shadowing function. Takes already-squared alpha (mirrors Ref::G1_lambda)
+// Smith shadowing function. Takes already-squared alpha
 template <int S> force_inline fvec<S> G1_lambda(const fvec<S> Ve[3], const fvec<S> &alpha2_x, const fvec<S> &alpha2_y) {
     return (-1.0f +
             safe_sqrt(1.0f + (alpha2_x * Ve[0] * Ve[0] + alpha2_y * Ve[1] * Ve[1]) / max(Ve[2] * Ve[2], FLT_EPS))) /
@@ -4079,11 +4083,66 @@ void Ray::NS::SampleMeshInTextureSpace(int iteration, int obj_index, int uv_laye
     }
 }
 
+// Applies the index map produced by SortRays_CPU: lane l of out packet i is ray perm[i*S + l]
 template <int S>
-int Ray::NS::SortRays_CPU(Span<ray_data_t<S>> rays, const float root_min[3], const float cell_size[3],
-                          ivec<S> *hash_values, uint32_t *scan_values, ray_chunk_t *chunks, ray_chunk_t *chunks_temp) {
+int Ray::NS::GatherRays(Span<const ray_data_t<S>> rays, const uint32_t perm[], Span<ray_data_t<S>> out_rays) {
+    const int rays_count = int(out_rays.size());
+    assert(rays_count <= int(rays.size()));
+
+    // Every ray_data_t field is an array of 4-byte lanes, so a single word-offset index vector feeds all
+    // gathers: word(ray) = (ray >> log2(S)) * struct_words + (ray & (S-1)); the field picks the base address.
+    // gather() is the hardware instruction on AVX2/AVX512 and the portable per-lane form elsewhere.
+    constexpr int struct_words = int(sizeof(ray_data_t<S>) / 4);
+    constexpr int lane_bits = (S == 4 ? 2 : (S == 8 ? 3 : (S == 16 ? 4 : 0)));
+    static_assert((1 << lane_bits) == S, "ray packet size must be a power of two");
+
+    const char *const rb = reinterpret_cast<const char *>(rays.data());
+    const int *const f_mask = reinterpret_cast<const int *>(rb + offsetof(ray_data_t<S>, mask));
+    const float *const f_o = reinterpret_cast<const float *>(rb + offsetof(ray_data_t<S>, o));
+    const float *const f_d = reinterpret_cast<const float *>(rb + offsetof(ray_data_t<S>, d));
+    const float *const f_c = reinterpret_cast<const float *>(rb + offsetof(ray_data_t<S>, c));
+    const float *const f_fw = reinterpret_cast<const float *>(rb + offsetof(ray_data_t<S>, fw));
+    const float *const f_ior = reinterpret_cast<const float *>(rb + offsetof(ray_data_t<S>, ior));
+    const float *const f_pdf = reinterpret_cast<const float *>(rb + offsetof(ray_data_t<S>, pdf));
+    const float *const f_cw = reinterpret_cast<const float *>(rb + offsetof(ray_data_t<S>, cone_width));
+    const float *const f_cs = reinterpret_cast<const float *>(rb + offsetof(ray_data_t<S>, cone_spread));
+    const unsigned *const f_xy = reinterpret_cast<const unsigned *>(rb + offsetof(ray_data_t<S>, xy));
+    const unsigned *const f_depth = reinterpret_cast<const unsigned *>(rb + offsetof(ray_data_t<S>, depth));
+
+    for (int i = 0; i < rays_count; i++) {
+        const ivec<S> src{reinterpret_cast<const int *>(&perm[i * S])};
+        const ivec<S> idx = ((src >> lane_bits) * struct_words) + (src & (S - 1));
+
+        ray_data_t<S> &dst = out_rays[i];
+        dst.mask = gather(f_mask, idx);
+        // Inactive lanes hash to ~0 (get_ray_hash), so they sort last: the first fully-inactive
+        // output packet ends the sorted array and the gather loop with it.
+        if (dst.mask.all_zeros()) {
+            return i;
+        }
+
+        UNROLLED_FOR(k, 3, { dst.o[k] = gather(f_o + k * S, idx); })
+        UNROLLED_FOR(k, 3, { dst.d[k] = gather(f_d + k * S, idx); })
+        UNROLLED_FOR(k, 3, { dst.c[k] = gather(f_c + k * S, idx); })
+        UNROLLED_FOR(k, 3, { dst.fw[k] = gather(f_fw + k * S, idx); })
+        UNROLLED_FOR(k, 4, { dst.ior[k] = gather(f_ior + k * S, idx); })
+
+        dst.pdf = gather(f_pdf, idx);
+        dst.cone_width = gather(f_cw, idx);
+        dst.cone_spread = gather(f_cs, idx);
+        dst.xy = gather(f_xy, idx);
+        dst.depth = gather(f_depth, idx);
+    }
+
+    return rays_count;
+}
+
+template <int S>
+int Ray::NS::SortRays_CPU(Span<const ray_data_t<S>> rays, const float root_min[3], const float cell_size[3],
+                          uvec<S> hash_values[], uint32_t scan_values[], ray_chunk_t chunks[],
+                          ray_chunk_t chunks_temp[]) {
     // From "Fast Ray Sorting and Breadth-First Packet Traversal for GPU Ray Tracing" [2010]
-    int rays_count = int(rays.size());
+    const int rays_count = int(rays.size());
 
     // compute ray hash values
     for (int i = 0; i < rays_count; i++) {
@@ -4093,7 +4152,7 @@ int Ray::NS::SortRays_CPU(Span<ray_data_t<S>> rays, const float root_min[3], con
     size_t chunks_count = 0;
 
     // compress codes into spans of indentical values (makes sorting stage faster)
-    int *flat_hash_values = value_ptr(hash_values[0]);
+    unsigned *flat_hash_values = value_ptr(hash_values[0]);
     for (int start = 0, end = 1; end <= rays_count * S; end++) {
         if (end == (rays_count * S) || (flat_hash_values[start] != flat_hash_values[end])) {
             chunks[chunks_count].hash = flat_hash_values[start];
@@ -4105,7 +4164,8 @@ int Ray::NS::SortRays_CPU(Span<ray_data_t<S>> rays, const float root_min[3], con
 
     radix_sort(&chunks[0], &chunks[0] + chunks_count, &chunks_temp[0]);
 
-    // decompress sorted spans
+    // decompress sorted spans into the index map: scan_values[dest] = source ray index. Rays are never
+    // reordered here - GatherRays applies the map - so hash_values keep their unsorted order.
     size_t counter = 0;
     for (uint32_t i = 0; i < chunks_count; i++) {
         for (uint32_t j = 0; j < chunks[i].size; j++) {
@@ -4113,67 +4173,19 @@ int Ray::NS::SortRays_CPU(Span<ray_data_t<S>> rays, const float root_min[3], con
         }
     }
 
-    { // reorder rays
-        for (int i = 0; i < rays_count * S; i++) {
-            int j;
-            while (i != (j = int(scan_values[i]))) {
-                const int k = int(scan_values[j]);
-
-                {
-                    const int jj = j / S, _jj = j % S, kk = k / S, _kk = k % S;
-
-                    swap_elements(rays[jj].mask, _jj, rays[kk].mask, _kk);
-
-                    swap_elements(rays[jj].o[0], _jj, rays[kk].o[0], _kk);
-                    swap_elements(rays[jj].o[1], _jj, rays[kk].o[1], _kk);
-                    swap_elements(rays[jj].o[2], _jj, rays[kk].o[2], _kk);
-
-                    swap_elements(rays[jj].d[0], _jj, rays[kk].d[0], _kk);
-                    swap_elements(rays[jj].d[1], _jj, rays[kk].d[1], _kk);
-                    swap_elements(rays[jj].d[2], _jj, rays[kk].d[2], _kk);
-
-                    swap_elements(rays[jj].pdf, _jj, rays[kk].pdf, _kk);
-
-                    swap_elements(rays[jj].c[0], _jj, rays[kk].c[0], _kk);
-                    swap_elements(rays[jj].c[1], _jj, rays[kk].c[1], _kk);
-                    swap_elements(rays[jj].c[2], _jj, rays[kk].c[2], _kk);
-
-                    swap_elements(rays[jj].fw[0], _jj, rays[kk].fw[0], _kk);
-                    swap_elements(rays[jj].fw[1], _jj, rays[kk].fw[1], _kk);
-                    swap_elements(rays[jj].fw[2], _jj, rays[kk].fw[2], _kk);
-
-                    swap_elements(rays[jj].ior[0], _jj, rays[kk].ior[0], _kk);
-                    swap_elements(rays[jj].ior[1], _jj, rays[kk].ior[1], _kk);
-                    swap_elements(rays[jj].ior[2], _jj, rays[kk].ior[2], _kk);
-                    swap_elements(rays[jj].ior[3], _jj, rays[kk].ior[3], _kk);
-
-                    swap_elements(rays[jj].cone_width, _jj, rays[kk].cone_width, _kk);
-                    swap_elements(rays[jj].cone_spread, _jj, rays[kk].cone_spread, _kk);
-
-                    swap_elements(rays[jj].xy, _jj, rays[kk].xy, _kk);
-                    swap_elements(rays[jj].depth, _jj, rays[kk].depth, _kk);
-                }
-
-                std::swap(flat_hash_values[i], flat_hash_values[j]);
-                std::swap(scan_values[i], scan_values[j]);
-            }
-        }
-    }
-
-    // remove non-active rays
-    while (rays_count && rays[rays_count - 1].mask.all_zeros()) {
-        rays_count--;
-    }
-
+    assert(counter == size_t(rays_count) * S);
     return rays_count;
 }
 
 template <int S>
-int Ray::NS::SortRays_GPU(Span<ray_data_t<S>> rays, const float root_min[3], const float cell_size[3],
-                          ivec<S> *hash_values, int *head_flags, uint32_t *scan_values, ray_chunk_t *chunks,
-                          ray_chunk_t *chunks_temp, uint32_t *skeleton) {
+int Ray::NS::SortRays_GPU(Span<const ray_data_t<S>> rays, const float root_min[3], const float cell_size[3],
+                          uvec<S> hash_values[], int head_flags[], uint32_t scan_values[], ray_chunk_t chunks[],
+                          ray_chunk_t chunks_temp[], uint32_t skeleton[]) {
     // From "Fast Ray Sorting and Breadth-First Packet Traversal for GPU Ray Tracing" [2010]
-    int rays_count = int(rays.size());
+    const int rays_count = int(rays.size());
+    if (rays_count == 0) {
+        return 0;
+    }
 
     // compute ray hash values
     for (int i = 0; i < rays_count; i++) {
@@ -4200,7 +4212,7 @@ int Ray::NS::SortRays_GPU(Span<ray_data_t<S>> rays, const float root_min[3], con
     // init ray chunks hash and base index
     for (int i = 0; i < rays_count * S; i++) {
         if (head_flags[i]) {
-            chunks[scan_values[i]].hash = uint32_t(hash_values[i / S][i % S]);
+            chunks[scan_values[i]].hash = hash_values[i / S][i % S];
             chunks[scan_values[i]].base = uint32_t(i);
         }
     }
@@ -4222,7 +4234,7 @@ int Ray::NS::SortRays_GPU(Span<ray_data_t<S>> rays, const float root_min[3], con
     }
 
     std::fill(skeleton, skeleton + rays_count * S, 1);
-    memset(head_flags, 0, rays_count * S);
+    std::fill(head_flags, head_flags + rays_count * S, 0);
 
     // init skeleton and head flags array
     for (int i = 0; i < chunks_count; i++) {
@@ -4230,7 +4242,8 @@ int Ray::NS::SortRays_GPU(Span<ray_data_t<S>> rays, const float root_min[3], con
         head_flags[scan_values[i]] = 1;
     }
 
-    { // perform a segmented scan on skeleton array
+    { // segmented scan of the skeleton array yields the index map: scan_values[dest] = source ray index
+      // (chunk heads seed the sum with the source base, the rest count up by 1) - GatherRays applies it
         uint32_t cur_sum = 0;
         for (int i = 0; i < rays_count * S; i++) {
             if (head_flags[i]) {
@@ -4241,53 +4254,7 @@ int Ray::NS::SortRays_GPU(Span<ray_data_t<S>> rays, const float root_min[3], con
         }
     }
 
-    { // reorder rays
-        for (int i = 0; i < rays_count * S; i++) {
-            int j;
-            while (i != (j = scan_values[i])) {
-                const int k = scan_values[j];
-
-                {
-                    const int jj = j / S, _jj = j % S, kk = k / S, _kk = k % S;
-
-                    swap_elements(hash_values[jj], _jj, hash_values[kk], _kk);
-
-                    swap_elements(rays[jj].mask, _jj, rays[kk].mask, _kk);
-
-                    swap_elements(rays[jj].o[0], _jj, rays[kk].o[0], _kk);
-                    swap_elements(rays[jj].o[1], _jj, rays[kk].o[1], _kk);
-                    swap_elements(rays[jj].o[2], _jj, rays[kk].o[2], _kk);
-
-                    swap_elements(rays[jj].d[0], _jj, rays[kk].d[0], _kk);
-                    swap_elements(rays[jj].d[1], _jj, rays[kk].d[1], _kk);
-                    swap_elements(rays[jj].d[2], _jj, rays[kk].d[2], _kk);
-
-                    swap_elements(rays[jj].pdf, _jj, rays[kk].pdf, _kk);
-
-                    swap_elements(rays[jj].c[0], _jj, rays[kk].c[0], _kk);
-                    swap_elements(rays[jj].c[1], _jj, rays[kk].c[1], _kk);
-                    swap_elements(rays[jj].c[2], _jj, rays[kk].c[2], _kk);
-
-                    swap_elements(rays[jj].fw[0], _jj, rays[kk].fw[0], _kk);
-                    swap_elements(rays[jj].fw[1], _jj, rays[kk].fw[1], _kk);
-                    swap_elements(rays[jj].fw[2], _jj, rays[kk].fw[2], _kk);
-
-                    swap_elements(rays[jj].cone_width, _jj, rays[kk].cone_width, _kk);
-                    swap_elements(rays[jj].cone_spread, _jj, rays[kk].cone_spread, _kk);
-
-                    swap_elements(rays[jj].xy, _jj, rays[kk].xy, _kk);
-                }
-
-                std::swap(scan_values[i], scan_values[j]);
-            }
-        }
-    }
-
-    // remove non-active rays
-    while (rays_count && rays[rays_count - 1].mask.all_zeros()) {
-        rays_count--;
-    }
-
+    // trailing inactive packets are dropped by GatherRays, not here
     return rays_count;
 }
 
@@ -6300,11 +6267,13 @@ void Ray::NS::IntersectScene(ray_data_t<S> &r, const int min_transp_depth, const
             })
         }
 
-        std::array<fvec<S>, 2> mix_term_rand =
-            get_scrambled_2d_rand(rand_dim + unsigned(RAND_DIM_BSDF_PICK), rand_hash, iteration - 1, rand_seq);
+        const std::array<fvec<S>, 2> mix_term_rand =
+            get_scrambled_2d_rand(rand_dim + unsigned(RAND_DIM_MIX_PICK), rand_hash, iteration - 1, rand_seq);
 
         const std::array<fvec<S>, 2> tex_rand =
             get_scrambled_2d_rand(rand_dim + RAND_DIM_TEX, rand_hash, iteration - 1, rand_seq);
+
+        fvec<S> trans_r = mix_term_rand[0];
 
         { // resolve material
             ivec<S> ray_queue[S];
@@ -6354,12 +6323,12 @@ void Ray::NS::IntersectScene(ray_data_t<S> &r, const int min_transp_depth, const
 
                             float mix_val = _mix_val[i];
 
-                            if (mix_term_rand[0][i] > mix_val) {
+                            if (trans_r[i] > mix_val) {
                                 mat_index.set(i, mat->textures[MIX_MAT1]);
-                                mix_term_rand[0].set(i, (mix_term_rand[0][i] - mix_val) / (1.0f - mix_val));
+                                trans_r.set(i, (trans_r[i] - mix_val) / (1.0f - mix_val));
                             } else {
                                 mat_index.set(i, mat->textures[MIX_MAT2]);
-                                mix_term_rand[0].set(i, mix_term_rand[0][i] / mix_val);
+                                trans_r.set(i, trans_r[i] / mix_val);
                             }
 
                             if (first_mi == 0xffff) {
@@ -8035,8 +8004,7 @@ template <int S>
 Ray::NS::ivec<S> Ray::NS::Evaluate_DiffuseNode(const light_sample_t<S> &ls, const ray_data_t<S> &ray,
                                                const ivec<S> &mask, const surface_t<S> &surf,
                                                const fvec<S> base_color[3], const fvec<S> &roughness,
-                                               const fvec<S> &mix_weight, const ivec<S> &mis_mask, fvec<S> out_col[3],
-                                               shadow_ray_t<S> &sh_r) {
+                                               const ivec<S> &mis_mask, fvec<S> out_col[3], shadow_ray_t<S> &sh_r) {
     const fvec<S> nI[3] = {-ray.d[0], -ray.d[1], -ray.d[2]};
 
     fvec<S> diff_col[4];
@@ -8051,7 +8019,7 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_DiffuseNode(const light_sample_t<S> &ls, cons
 
     UNROLLED_FOR(i, 3, { where(mask, sh_r.o[i]) = P_biased[i]; })
     UNROLLED_FOR(i, 3, {
-        const fvec<S> temp = ls.col[i] * diff_col[i] * ((mix_weight * mis_weight) / max(ls.pdf, FLT_EPS));
+        const fvec<S> temp = ls.col[i] * diff_col[i] * (mis_weight / max(ls.pdf, FLT_EPS));
         where(mask, sh_r.c[i]) = temp;
         where(mask & ~ls.cast_shadow, out_col[i]) += temp;
     })
@@ -8062,7 +8030,7 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_DiffuseNode(const light_sample_t<S> &ls, cons
 template <int S>
 void Ray::NS::Sample_DiffuseNode(const ray_data_t<S> &ray, const ivec<S> &mask, const surface_t<S> &surf,
                                  const fvec<S> base_color[3], const fvec<S> &roughness, const fvec<S> &rand_u,
-                                 const fvec<S> &rand_v, const fvec<S> &mix_weight, ray_data_t<S> &new_ray) {
+                                 const fvec<S> &rand_v, ray_data_t<S> &new_ray) {
     fvec<S> V[3], F[4];
     Sample_OrenDiffuse_BSDF(surf.T, surf.B, surf.N, ray.d, roughness, base_color, rand_u, rand_v, V, F);
 
@@ -8076,7 +8044,7 @@ void Ray::NS::Sample_DiffuseNode(const ray_data_t<S> &ray, const ivec<S> &mask, 
     UNROLLED_FOR(i, 3, {
         where(mask, new_ray.o[i]) = P_biased[i];
         where(mask, new_ray.d[i]) = V[i];
-        where(mask, new_ray.c[i]) = F[i] * mix_weight / F[3];
+        where(mask, new_ray.c[i]) = F[i] / F[3];
     })
     where(mask, new_ray.pdf) = F[3];
     where(mask, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT;
@@ -8086,8 +8054,7 @@ template <int S>
 Ray::NS::ivec<S> Ray::NS::Evaluate_GlossyNode(const light_sample_t<S> &ls, const ray_data_t<S> &ray, ivec<S> mask,
                                               const surface_t<S> &surf, const fvec<S> base_color[3],
                                               const fvec<S> &roughness, const fvec<S> &regularize_alpha,
-                                              const fvec<S> &mix_weight, const ivec<S> &mis_mask, fvec<S> out_col[3],
-                                              shadow_ray_t<S> &sh_r) {
+                                              const ivec<S> &mis_mask, fvec<S> out_col[3], shadow_ray_t<S> &sh_r) {
     const fvec<S> nI[3] = {-ray.d[0], -ray.d[1], -ray.d[2]};
     fvec<S> H[3] = {ls.L[0] - ray.d[0], ls.L[1] - ray.d[1], ls.L[2] - ray.d[2]};
     safe_normalize(H);
@@ -8113,7 +8080,7 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_GlossyNode(const light_sample_t<S> &ls, const
 
     UNROLLED_FOR(i, 3, { where(mask, sh_r.o[i]) = P_biased[i]; })
     UNROLLED_FOR(i, 3, {
-        const fvec<S> temp = ls.col[i] * spec_col[i] * ((mix_weight * mis_weight) / max(ls.pdf, FLT_EPS));
+        const fvec<S> temp = ls.col[i] * spec_col[i] * (mis_weight / max(ls.pdf, FLT_EPS));
         where(mask, sh_r.c[i]) = temp;
         where(mask & ~ls.cast_shadow, out_col[i]) += temp;
     })
@@ -8124,7 +8091,7 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_GlossyNode(const light_sample_t<S> &ls, const
 template <int S>
 void Ray::NS::Sample_GlossyNode(const ray_data_t<S> &ray, const ivec<S> &mask, const surface_t<S> &surf,
                                 const fvec<S> base_color[3], const fvec<S> &roughness, const fvec<S> &regularize_alpha,
-                                const fvec<S> rand[2], const fvec<S> &mix_weight, ray_data_t<S> &new_ray) {
+                                const fvec<S> rand[2], ray_data_t<S> &new_ray) {
     const std::array<fvec<S>, 2> alpha = calc_alpha(roughness, fvec<S>{0.0f}, regularize_alpha);
 
     fvec<S> V[3], F[4];
@@ -8141,18 +8108,18 @@ void Ray::NS::Sample_GlossyNode(const ray_data_t<S> &ray, const ivec<S> &mask, c
     UNROLLED_FOR(i, 3, {
         where(mask, new_ray.o[i]) = P_biased[i];
         where(mask, new_ray.d[i]) = V[i];
-        where(mask, new_ray.c[i]) = F[i] * (mix_weight / max(F[3], FLT_EPS));
+        where(mask, new_ray.c[i]) = F[i] * (1.0f / max(F[3], FLT_EPS));
     })
     where(mask, new_ray.pdf) = F[3];
     where(mask, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT * min(alpha[0], alpha[1]);
 }
 
 template <int S>
-Ray::NS::ivec<S>
-Ray::NS::Evaluate_RefractiveNode(const light_sample_t<S> &ls, const ray_data_t<S> &ray, const ivec<S> &mask,
-                                 const surface_t<S> &surf, const fvec<S> base_color[3], const fvec<S> &roughness,
-                                 const fvec<S> &regularize_alpha, const fvec<S> &eta, const fvec<S> &mix_weight,
-                                 const ivec<S> &mis_mask, fvec<S> out_col[3], shadow_ray_t<S> &sh_r) {
+Ray::NS::ivec<S> Ray::NS::Evaluate_RefractiveNode(const light_sample_t<S> &ls, const ray_data_t<S> &ray,
+                                                  const ivec<S> &mask, const surface_t<S> &surf,
+                                                  const fvec<S> base_color[3], const fvec<S> &roughness,
+                                                  const fvec<S> &regularize_alpha, const fvec<S> &eta,
+                                                  const ivec<S> &mis_mask, fvec<S> out_col[3], shadow_ray_t<S> &sh_r) {
     const fvec<S> nI[3] = {-ray.d[0], -ray.d[1], -ray.d[2]};
     fvec<S> H[3] = {ls.L[0] - ray.d[0] * eta, ls.L[1] - ray.d[1] * eta, ls.L[2] - ray.d[2] * eta};
     safe_normalize(H);
@@ -8177,7 +8144,7 @@ Ray::NS::Evaluate_RefractiveNode(const light_sample_t<S> &ls, const ray_data_t<S
 
     UNROLLED_FOR(i, 3, { where(mask, sh_r.o[i]) = P_biased[i]; })
     UNROLLED_FOR(i, 3, {
-        const fvec<S> temp = ls.col[i] * refr_col[i] * ((mix_weight * mis_weight) / max(ls.pdf, FLT_EPS));
+        const fvec<S> temp = ls.col[i] * refr_col[i] * (mis_weight / max(ls.pdf, FLT_EPS));
         where(mask, sh_r.c[i]) = temp;
         where(mask & ~ls.cast_shadow, out_col[i]) += temp;
     })
@@ -8190,7 +8157,7 @@ void Ray::NS::Sample_RefractiveNode(const ray_data_t<S> &ray, const ivec<S> &mas
                                     const fvec<S> base_color[3], const fvec<S> &roughness,
                                     const fvec<S> &regularize_alpha, const ivec<S> &is_backfacing,
                                     const fvec<S> &int_ior, const fvec<S> &ext_ior, const fvec<S> rand[2],
-                                    const fvec<S> &mix_weight, ray_data_t<S> &new_ray) {
+                                    ray_data_t<S> &new_ray) {
     const fvec<S> eta = select(is_backfacing, (int_ior / ext_ior), (ext_ior / int_ior));
 
     fvec<S> V[4], F[4];
@@ -8209,7 +8176,7 @@ void Ray::NS::Sample_RefractiveNode(const ray_data_t<S> &ray, const ivec<S> &mas
     UNROLLED_FOR(i, 3, {
         where(mask, new_ray.o[i]) = P_biased[i];
         where(mask, new_ray.d[i]) = V[i];
-        where(mask, new_ray.c[i]) = F[i] * (mix_weight / max(F[3], FLT_EPS));
+        where(mask, new_ray.c[i]) = F[i] * (1.0f / max(F[3], FLT_EPS));
     })
 
     pop_ior_stack(is_backfacing & mask, new_ray.ior);
@@ -8220,12 +8187,14 @@ void Ray::NS::Sample_RefractiveNode(const ray_data_t<S> &ray, const ivec<S> &mas
 }
 
 template <int S>
-Ray::NS::ivec<S> Ray::NS::Evaluate_PrincipledNode(
-    const light_sample_t<S> &ls, const ray_data_t<S> &ray, const ivec<S> &mask, const surface_t<S> &surf,
-    const lobe_weights_t<S> &lobe_weights, const diff_params_t<S> &diff, const spec_params_t<S> &spec,
-    const coat_params_t<S> &coat, const transmission_params_t<S> &trans, const fvec<S> &metallic,
-    const float transmission, const fvec<S> &N_dot_L, const fvec<S> &mix_weight, const ivec<S> &mis_mask,
-    const fvec<S> &regularize_alpha, fvec<S> out_col[3], shadow_ray_t<S> &sh_r) {
+Ray::NS::ivec<S> Ray::NS::Evaluate_PrincipledNode(const light_sample_t<S> &ls, const ray_data_t<S> &ray,
+                                                  const ivec<S> &mask, const surface_t<S> &surf,
+                                                  const lobe_weights_t<S> &lobe_weights, const diff_params_t<S> &diff,
+                                                  const spec_params_t<S> &spec, const coat_params_t<S> &coat,
+                                                  const transmission_params_t<S> &trans, const fvec<S> &metallic,
+                                                  const float transmission, const fvec<S> &N_dot_L,
+                                                  const ivec<S> &mis_mask, const fvec<S> &regularize_alpha,
+                                                  fvec<S> out_col[3], shadow_ray_t<S> &sh_r) {
     const fvec<S> nI[3] = {-ray.d[0], -ray.d[1], -ray.d[2]};
 
     const ivec<S> _is_backfacing = simd_cast(N_dot_L < 0.0f);
@@ -8345,7 +8314,7 @@ Ray::NS::ivec<S> Ray::NS::Evaluate_PrincipledNode(
 
     const fvec<S> mis_weight =
         select(mis_mask & simd_cast(ls.area > 0.0f), power_heuristic(ls.pdf, bsdf_pdf), fvec<S>{1.0f});
-    UNROLLED_FOR(i, 3, { where(mask, lcol[i]) *= mix_weight * mis_weight; })
+    UNROLLED_FOR(i, 3, { where(mask, lcol[i]) *= mis_weight; })
 
     ///
     fvec<S> P_biased[3];
@@ -8373,8 +8342,8 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
                                     const diff_params_t<S> &diff, const spec_params_t<S> &spec,
                                     const coat_params_t<S> &coat, const transmission_params_t<S> &trans,
                                     const fvec<S> &metallic, const float transmission, const fvec<S> rand[2],
-                                    fvec<S> mix_rand, const fvec<S> &mix_weight, const fvec<S> &regularize_alpha,
-                                    ivec<S> &secondary_mask, ray_data_t<S> &new_ray) {
+                                    fvec<S> lobe_rand, const fvec<S> &regularize_alpha, ivec<S> &secondary_mask,
+                                    ray_data_t<S> &new_ray) {
     const ivec<S> diff_depth = get_diff_depth(ray.depth), spec_depth = get_spec_depth(ray.depth),
                   refr_depth = get_refr_depth(ray.depth);
     // NOTE: transparency depth is not accounted here
@@ -8383,7 +8352,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
     const fvec<S> spec_col_90[3] = {1.0f, 1.0f, 1.0f};
 
     const ivec<S> sample_diff_lobe = (diff_depth < ps.max_diff_depth) & (total_depth < ps.max_total_depth) &
-                                     simd_cast(mix_rand < lobe_weights.diffuse) & mask;
+                                     simd_cast(lobe_rand < lobe_weights.diffuse) & mask;
     if (sample_diff_lobe.not_all_zeros()) {
         fvec<S> V[3], F[4];
         Sample_OrenDiffuse_BSDF(surf.T, surf.B, surf.N, ray.d, diff.roughness, diff.base_color, rand[0], rand[1], V, F);
@@ -8423,7 +8392,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
         UNROLLED_FOR(i, 3, {
             where(sample_diff_lobe, new_ray.o[i]) = new_p[i];
             where(sample_diff_lobe, new_ray.d[i]) = V[i];
-            where(sample_diff_lobe, new_ray.c[i]) = (F[i] * mix_weight) / max(F[3], FLT_EPS);
+            where(sample_diff_lobe, new_ray.c[i]) = F[i] / max(F[3], FLT_EPS);
         })
         where(sample_diff_lobe, new_ray.pdf) = F[3];
         where(sample_diff_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT;
@@ -8433,8 +8402,8 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
     }
 
     const ivec<S> sample_sheen_lobe = (diff_depth < ps.max_diff_depth) & (total_depth < ps.max_total_depth) &
-                                      simd_cast(mix_rand >= lobe_weights.diffuse) &
-                                      simd_cast(mix_rand < lobe_weights.diffuse + lobe_weights.sheen) & mask;
+                                      simd_cast(lobe_rand >= lobe_weights.diffuse) &
+                                      simd_cast(lobe_rand < lobe_weights.diffuse + lobe_weights.sheen) & mask;
     if (sample_sheen_lobe.not_all_zeros()) {
         fvec<S> V[3], F[4];
         Sample_PrincipledSheen_BSDF(surf.N, ray.d, diff.sheen_roughness, rand, V, F);
@@ -8452,7 +8421,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
         UNROLLED_FOR(i, 3, {
             where(sample_sheen_lobe, new_ray.o[i]) = new_p[i];
             where(sample_sheen_lobe, new_ray.d[i]) = V[i];
-            where(sample_sheen_lobe, new_ray.c[i]) = (F[i] * mix_weight) / max(F[3], FLT_EPS);
+            where(sample_sheen_lobe, new_ray.c[i]) = F[i] / max(F[3], FLT_EPS);
         })
         where(sample_sheen_lobe, new_ray.pdf) = F[3];
         where(sample_sheen_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT;
@@ -8463,8 +8432,8 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
 
     const ivec<S> sample_spec_lobe =
         (spec_depth < ps.max_spec_depth) & (total_depth < ps.max_total_depth) &
-        simd_cast(mix_rand >= lobe_weights.diffuse + lobe_weights.sheen) &
-        simd_cast(mix_rand < lobe_weights.diffuse + lobe_weights.sheen + lobe_weights.specular) & mask;
+        simd_cast(lobe_rand >= lobe_weights.diffuse + lobe_weights.sheen) &
+        simd_cast(lobe_rand < lobe_weights.diffuse + lobe_weights.sheen + lobe_weights.specular) & mask;
     if (sample_spec_lobe.not_all_zeros()) {
         fvec<S> V[3], F[4];
         const std::array<fvec<S>, 2> alpha = calc_alpha(spec.roughness, spec.anisotropy, regularize_alpha);
@@ -8482,7 +8451,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
         UNROLLED_FOR(i, 3, {
             where(sample_spec_lobe, new_ray.o[i]) = new_p[i];
             where(sample_spec_lobe, new_ray.d[i]) = V[i];
-            where(sample_spec_lobe, new_ray.c[i]) = (F[i] * mix_weight) / max(F[3], FLT_EPS);
+            where(sample_spec_lobe, new_ray.c[i]) = F[i] / max(F[3], FLT_EPS);
         })
         where(sample_spec_lobe, new_ray.pdf) = F[3];
         where(sample_spec_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT * min(alpha[0], alpha[1]);
@@ -8494,8 +8463,8 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
 
     const ivec<S> sample_coat_lobe =
         (spec_depth < ps.max_spec_depth) & (total_depth < ps.max_total_depth) &
-        simd_cast(mix_rand >= lobe_weights.diffuse + lobe_weights.sheen + lobe_weights.specular) &
-        simd_cast(mix_rand <
+        simd_cast(lobe_rand >= lobe_weights.diffuse + lobe_weights.sheen + lobe_weights.specular) &
+        simd_cast(lobe_rand <
                   lobe_weights.diffuse + lobe_weights.sheen + lobe_weights.specular + lobe_weights.clearcoat) &
         mask;
     if (sample_coat_lobe.not_all_zeros()) {
@@ -8514,7 +8483,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
         UNROLLED_FOR(i, 3, {
             where(sample_coat_lobe, new_ray.o[i]) = new_p[i];
             where(sample_coat_lobe, new_ray.d[i]) = V[i];
-            where(sample_coat_lobe, new_ray.c[i]) = coat.weight * F[i] * (mix_weight / max(F[3], FLT_EPS));
+            where(sample_coat_lobe, new_ray.c[i]) = coat.weight * F[i] * (1.0f / max(F[3], FLT_EPS));
         })
         where(sample_coat_lobe, new_ray.pdf) = F[3];
         where(sample_coat_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT * min(alpha[0], alpha[1]);
@@ -8523,8 +8492,8 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
         secondary_mask |= sample_coat_lobe;
     }
 
-    ivec<S> sample_trans_lobe = simd_cast(mix_rand >= lobe_weights.diffuse + lobe_weights.sheen +
-                                                          lobe_weights.specular + lobe_weights.clearcoat) &
+    ivec<S> sample_trans_lobe = simd_cast(lobe_rand >= lobe_weights.diffuse + lobe_weights.sheen +
+                                                           lobe_weights.specular + lobe_weights.clearcoat) &
                                 (total_depth < ps.max_total_depth) & mask;
     if (sample_trans_lobe.not_all_zeros()) {
         const std::array<fvec<S>, 2> alpha = calc_alpha(spec.roughness, fvec<S>{0.0f}, regularize_alpha);
@@ -8542,10 +8511,10 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
         }
         const fvec<S> trans_fresnel = fresnel_dielectric_cos(dot3(view_dir_ts, sampled_normal_ts), 1.0f / trans.eta);
 
-        mix_rand -= lobe_weights.diffuse + lobe_weights.sheen + lobe_weights.specular + lobe_weights.clearcoat;
-        mix_rand = mix_rand / max(lobe_weights.refraction, FLT_EPS);
+        lobe_rand -= lobe_weights.diffuse + lobe_weights.sheen + lobe_weights.specular + lobe_weights.clearcoat;
+        lobe_rand = lobe_rand / max(lobe_weights.refraction, FLT_EPS);
 
-        const ivec<S> spec_branch = simd_cast(mix_rand < trans_fresnel);
+        const ivec<S> spec_branch = simd_cast(lobe_rand < trans_fresnel);
         sample_trans_lobe &=
             ((~spec_branch & (refr_depth < ps.max_refr_depth)) | (spec_branch & (spec_depth < ps.max_spec_depth)));
 
@@ -8606,7 +8575,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
 
         UNROLLED_FOR(i, 3, {
             where(sample_trans_lobe, new_ray.d[i]) = V[i];
-            where(sample_trans_lobe, new_ray.c[i]) = (F[i] * mix_weight) / max(F[3], FLT_EPS);
+            where(sample_trans_lobe, new_ray.c[i]) = F[i] / max(F[3], FLT_EPS);
         })
         where(sample_trans_lobe, new_ray.pdf) = F[3];
 
@@ -8820,7 +8789,8 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
     const std::array<fvec<S>, 2> mix_term_rand =
         get_scrambled_2d_rand(rand_dim + unsigned(RAND_DIM_BSDF_PICK), rand_hash, iteration - 1, rand_seq);
 
-    fvec<S> mix_rand = mix_term_rand[0];
+    fvec<S> chain_rand =
+        get_scrambled_2d_rand(rand_dim + unsigned(RAND_DIM_MIX_PICK), rand_hash, iteration - 1, rand_seq)[0];
     fvec<S> mix_weight = 1.0f;
 
     // resolve mix material
@@ -8877,7 +8847,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
 
         mix_val *= saturate(RR);
 
-        const ivec<S> use_mat1 = simd_cast(mix_rand > mix_val) & is_mix_mat;
+        const ivec<S> use_mat1 = simd_cast(chain_rand > mix_val) & is_mix_mat;
         const ivec<S> use_mat2 = ~use_mat1 & is_mix_mat;
 
         const int *all_mat_flags = reinterpret_cast<const int *>(&sc.materials[0].flags);
@@ -8889,11 +8859,11 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
 
         where(is_add & use_mat1, mix_weight) = mix_weight / max(1.0f - mix_val, FLT_EPS);
         where(use_mat1, mat_index) = mat1_index;
-        where(use_mat1, mix_rand) = (mix_rand - mix_val) / max(1.0f - mix_val, FLT_EPS);
+        where(use_mat1, chain_rand) = (chain_rand - mix_val) / max(1.0f - mix_val, FLT_EPS);
 
         where(is_add & use_mat2, mix_weight) = mix_weight / max(mix_val, FLT_EPS);
         where(use_mat2, mat_index) = mat2_index;
-        where(use_mat2, mix_rand) = mix_rand / max(mix_val, FLT_EPS);
+        where(use_mat2, chain_rand) = chain_rand / max(mix_val, FLT_EPS);
 
         mat_type =
             gather(reinterpret_cast<const int *>(&sc.materials[0].type), mat_index * sizeof(material_t) / sizeof(int)) &
@@ -9009,7 +8979,8 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
                     if (unpacked.sample_count > RAD_CACHE_SAMPLE_COUNT_THRESHOLD) {
                         fvec4 color = fvec4{unpacked.radiance[0], unpacked.radiance[1], unpacked.radiance[2], 0.0f};
                         color /= sc.spatial_cache_grid.exposure;
-                        color *= fvec4{ray.c[0][i], ray.c[1][i], ray.c[2][i], 0.0f};
+                        color *= fvec4{ray.c[0][i] * mix_weight[i], ray.c[1][i] * mix_weight[i],
+                                       ray.c[2][i] * mix_weight[i], 0.0f};
 
                         out_rgba[0].set(i, color[0]);
                         out_rgba[1].set(i, color[1]);
@@ -9169,8 +9140,8 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
     fvec<S> regularize_alpha = 0.0f;
     where(get_diff_depth(ray.depth) > 0, regularize_alpha) = ps.regularize_alpha;
 
-    // guide-feature blend state, mirrors Ref::ShadeSurface continuous blend: material
-    // chunks overwrite via where() below; default is a fully-diffuse hit deferring base_color
+    // guide-feature blend state: material chunks overwrite via where() below; default is a
+    // fully-diffuse hit deferring base_color
     fvec<S> feature_w = {1.0f};
     fvec<S> feat_defer_col[3];
     UNROLLED_FOR(i, 3, { feat_defer_col[i] = base_color[i]; })
@@ -9204,15 +9175,14 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
                                            simd_cast(N_dot_L > 0.0f) & ray_queue[index];
                 if (eval_light.not_all_zeros()) {
                     assert((shadow_mask & eval_light).all_zeros());
-                    shadow_mask |= Evaluate_DiffuseNode(ls, ray, eval_light, surf, base_color, roughness, mix_weight,
+                    shadow_mask |= Evaluate_DiffuseNode(ls, ray, eval_light, surf, base_color, roughness,
                                                         (total_depth < ps.max_total_depth), col, sh_r);
                 }
 #endif
                 const ivec<S> gen_ray =
                     (diff_depth < ps.max_diff_depth) & (total_depth < ps.max_total_depth) & ray_queue[index];
                 if (gen_ray.not_all_zeros()) {
-                    Sample_DiffuseNode(ray, gen_ray, surf, base_color, roughness, rand_uv[0], rand_uv[1], mix_weight,
-                                       new_ray);
+                    Sample_DiffuseNode(ray, gen_ray, surf, base_color, roughness, rand_uv[0], rand_uv[1], new_ray);
                     assert((secondary_mask & gen_ray).all_zeros());
                     secondary_mask |= gen_ray;
                 }
@@ -9225,9 +9195,8 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
                                            simd_cast(N_dot_L > 0.0f) & ray_queue[index];
                 if (eval_light.not_all_zeros()) {
                     assert((shadow_mask & eval_light).all_zeros());
-                    shadow_mask |=
-                        Evaluate_GlossyNode(ls, ray, eval_light, surf, base_color, roughness, regularize_alpha,
-                                            mix_weight, (total_depth < ps.max_total_depth), col, sh_r);
+                    shadow_mask |= Evaluate_GlossyNode(ls, ray, eval_light, surf, base_color, roughness,
+                                                       regularize_alpha, (total_depth < ps.max_total_depth), col, sh_r);
                 };
 #endif
 
@@ -9235,7 +9204,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
                     (spec_depth < ps.max_spec_depth) & (total_depth < ps.max_total_depth) & ray_queue[index];
                 if (gen_ray.not_all_zeros()) {
                     Sample_GlossyNode(ray, gen_ray, surf, base_color, roughness, regularize_alpha, rand_uv.data(),
-                                      mix_weight, new_ray);
+                                      new_ray);
                     assert((secondary_mask & gen_ray).all_zeros());
                     secondary_mask |= gen_ray;
                 }
@@ -9250,14 +9219,14 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
                     const fvec<S> eta = select(is_backfacing, mat->ior / ext_ior, ext_ior / mat->ior);
                     shadow_mask |=
                         Evaluate_RefractiveNode(ls, ray, eval_light, surf, base_color, roughness, regularize_alpha, eta,
-                                                mix_weight, (total_depth < ps.max_total_depth), col, sh_r);
+                                                (total_depth < ps.max_total_depth), col, sh_r);
                 }
 #endif
                 const ivec<S> gen_ray =
                     (refr_depth < ps.max_refr_depth) & (total_depth < ps.max_total_depth) & ray_queue[index];
                 if (gen_ray.not_all_zeros()) {
                     Sample_RefractiveNode(ray, gen_ray, surf, base_color, roughness, regularize_alpha, is_backfacing,
-                                          fvec<S>{mat->ior}, ext_ior, rand_uv.data(), mix_weight, new_ray);
+                                          fvec<S>{mat->ior}, ext_ior, rand_uv.data(), new_ray);
                     assert((secondary_mask & gen_ray).all_zeros());
                     secondary_mask |= gen_ray;
                 }
@@ -9298,9 +9267,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
                     }
                 }
 #endif // USE_NEE
-                UNROLLED_FOR(i, 3, {
-                    where(ray_queue[index], col[i]) += mix_weight * mis_weight * mat->strength * base_color[i];
-                })
+                UNROLLED_FOR(i, 3, { where(ray_queue[index], col[i]) += mis_weight * mat->strength * base_color[i]; })
             } else if (mat->type == eShadingNode::Principled) {
                 fvec<S> metallic = unpack_unorm_16(mat->metallic_unorm);
                 if (mat->textures[METALLIC_TEXTURE] != 0xffffffff) {
@@ -9409,12 +9376,12 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
                     assert((shadow_mask & eval_light).all_zeros());
                     shadow_mask |= Evaluate_PrincipledNode(
                         ls, ray, eval_light, surf, lobe_weights, diff, spec, coat, trans, metallic, transmission,
-                        N_dot_L, mix_weight, (total_depth < ps.max_total_depth), regularize_alpha, col, sh_r);
+                        N_dot_L, (total_depth < ps.max_total_depth), regularize_alpha, col, sh_r);
                 }
 #endif
                 Sample_PrincipledNode(ps, ray, ray_queue[index], surf, lobe_weights, diff, spec, coat, trans, metallic,
-                                      transmission, rand_uv.data(), mix_rand, mix_weight, regularize_alpha,
-                                      secondary_mask, new_ray);
+                                      transmission, rand_uv.data(), mix_term_rand[0], regularize_alpha, secondary_mask,
+                                      new_ray);
             } /*else if (mat->type == TransparentNode) {
                 assert(false);
             }*/
@@ -9461,7 +9428,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
 #endif
 
     if (cache_mode != eSpatialCacheMode::Update) {
-        UNROLLED_FOR(i, 3, { new_ray.c[i] *= ray.c[i]; })
+        UNROLLED_FOR(i, 3, { new_ray.c[i] *= ray.c[i] * mix_weight; })
     }
     const fvec<S> lum = max(new_ray.c[0], max(new_ray.c[1], new_ray.c[2]));
     const fvec<S> &p = mix_term_rand[1];
@@ -9484,7 +9451,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
 #if USE_NEE
     if (shadow_mask.not_all_zeros()) {
         if (cache_mode != eSpatialCacheMode::Update) {
-            UNROLLED_FOR(i, 3, { sh_r.c[i] *= ray.c[i]; })
+            UNROLLED_FOR(i, 3, { sh_r.c[i] *= ray.c[i] * mix_weight; })
         }
         // actual ray direction accouning for bias from both ends
         fvec<S> to_light[3];
@@ -9501,7 +9468,10 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
 #endif
 
     if (cache_mode != eSpatialCacheMode::Update) {
-        UNROLLED_FOR(i, 3, { where(is_active_lane, col[i]) *= ray.c[i]; })
+        UNROLLED_FOR(i, 3, { where(is_active_lane, col[i]) *= ray.c[i] * mix_weight; })
+    } else {
+        // the cache store excludes throughput, so it keeps the chain selection weight explicitly
+        UNROLLED_FOR(i, 3, { where(is_active_lane, col[i]) *= mix_weight; })
     }
 
     const fvec<S> sum = col[0] + col[1] + col[2];
