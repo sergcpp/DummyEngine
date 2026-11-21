@@ -7,8 +7,6 @@
 
 #define _ENDIANNESS_ LITTLE_ENDIAN
 
-#pragma warning(disable : 4996)
-
 //#undef TEST_BE
 
 namespace Net {
@@ -89,16 +87,19 @@ namespace Net {
 }
 #endif
 
-struct StrParam {
-    char str[64];
+namespace Net {
+    struct StrParam {
+        char str[64];
 
-    StrParam() {
-        memset(str, 0, sizeof(str));
-    }
+        StrParam() {
+            memset(str, 0, sizeof(str));
+        }
 
-    StrParam(const char *s) {
-        strncpy(str, s, sizeof(str) - 1);
-        str[sizeof(str) - 1] = '\0';
-    }
-};
+        StrParam(const char *s) {
+            const size_t n = strlen(s) < sizeof(str) - 1 ? strlen(s) : sizeof(str) - 1;
+            memcpy(str, s, n);
+            str[n] = '\0';
+        }
+    };
+}
 

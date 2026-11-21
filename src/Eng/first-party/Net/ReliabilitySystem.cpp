@@ -129,13 +129,6 @@ void Net::ReliabilitySystem::UpdateStats() {
     acked_bandwidth_ = float(acked_bytes_per_second) * (8 / 1000.0f);
 }
 
-void Net::ReliabilitySystem::GetAcks(unsigned int **acks, int &count) {
-    if (!acks_.empty()) {
-        *acks = &acks_[0];
-    }
-    count = int(acks_.size());
-}
-
 unsigned int
 Net::ReliabilitySystem::bit_index_for_sequence(unsigned int sequence, unsigned int ack, unsigned int max_sequence) {
     assert(sequence != ack);

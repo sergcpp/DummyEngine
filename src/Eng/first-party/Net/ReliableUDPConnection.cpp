@@ -14,11 +14,15 @@ Net::ReliableUDPConnection::~ReliableUDPConnection() {
 }
 
 bool Net::ReliableUDPConnection::SendPacket(const unsigned char data[], int size) {
+    const int header_size = 12;
+    // the 12-byte reliable header plus the base 4-byte CRC header must fit the fixed buffers
+    if (size < 0 || size + header_size + 4 > MAX_PACKET_SIZE) {
+        return false;
+    }
     if (reliability_system_.local_sequence() & packet_loss_mask_) {
         reliability_system_.PacketSent(nullptr, size);
         return true;
     }
-    const int header_size = 12;
     unsigned char packet[MAX_PACKET_SIZE];
 
     unsigned int seq = reliability_system_.local_sequence();
@@ -38,6 +42,9 @@ int Net::ReliableUDPConnection::ReceivePacket(unsigned char data[], int size) {
     const int header_size = 12;
     if (size <= header_size) {
         return 0;
+    }
+    if (size + header_size + 4 > MAX_PACKET_SIZE) {
+        size = MAX_PACKET_SIZE - header_size - 4;
     }
     unsigned char packet[MAX_PACKET_SIZE];
     int received_bytes = UDPConnection::ReceivePacket(packet, size + header_size);

@@ -39,7 +39,7 @@ void test_pmp() {
                 sender == Address(127, 0, 0, 1, s1.local_addr().port())) {
                 PMPUnsupportedVersionResponse resp(ePMPOpCode::ExternalIPRequest);
                 resp.set_res_code(ePMPResCode::Refused);
-                fake_gateway.Send(s1.local_addr(), &resp, sizeof(PMPUnsupportedVersionResponse));
+                fake_gateway.Send(sender, &resp, sizeof(PMPUnsupportedVersionResponse));
             }
 
             s1.Update(16);
@@ -75,7 +75,7 @@ void test_pmp() {
                 resp.set_ip(12345);
                 resp.set_res_code(1);
                 resp.set_time(1000);
-                fake_gateway.Send(s1.local_addr(), &resp, sizeof(PMPExternalIPResponse));
+                fake_gateway.Send(sender, &resp, sizeof(PMPExternalIPResponse));
             }
 
             s1.Update(16);
@@ -111,7 +111,7 @@ void test_pmp() {
                 resp.set_ip(12345);
                 resp.set_res_code(0);
                 resp.set_time(1000);
-                fake_gateway.Send(s1.local_addr(), &resp, sizeof(PMPExternalIPResponse));
+                fake_gateway.Send(sender, &resp, sizeof(PMPExternalIPResponse));
             }
 
             s1.Update(16);
@@ -153,7 +153,7 @@ void test_pmp() {
                 resp.set_ip(12345);
                 resp.set_res_code(0);
                 resp.set_time(1000);
-                fake_gateway.Send(s1.local_addr(), &resp, sizeof(PMPExternalIPResponse));
+                fake_gateway.Send(sender, &resp, sizeof(PMPExternalIPResponse));
             }
 
             s1.Update(16);
@@ -178,7 +178,7 @@ void test_pmp() {
                 PMPMappingResponse resp(ePMPProto::UDP);
                 resp.set_res_code(ePMPResCode::Failure);
 
-                fake_gateway.Send(s1.local_addr(), &resp, sizeof(PMPMappingResponse));
+                fake_gateway.Send(sender, &resp, sizeof(PMPMappingResponse));
             }
 
             s1.Update(16);
@@ -214,7 +214,7 @@ void test_pmp() {
                 resp.set_ip(12345);
                 resp.set_res_code(0);
                 resp.set_time(1000);
-                fake_gateway.Send(s1.local_addr(), &resp, sizeof(PMPExternalIPResponse));
+                fake_gateway.Send(sender, &resp, sizeof(PMPExternalIPResponse));
             }
 
             s1.Update(16);
@@ -243,7 +243,7 @@ void test_pmp() {
                 resp.set_time(1000);
                 resp.set_lifetime(7200);
 
-                fake_gateway.Send(s1.local_addr(), &resp, sizeof(PMPMappingResponse));
+                fake_gateway.Send(sender, &resp, sizeof(PMPMappingResponse));
             }
 
             s1.Update(16);
@@ -265,7 +265,9 @@ void test_pmp() {
             resp.set_res_code(0);
             resp.set_time(0);
 
-            fake_gateway.Send(Address(224, 0, 0, 1, 5350), &resp, sizeof(PMPExternalIPResponse));
+            // PMPSession binds multicast_listen_sock_ to :5350 but never joins the group,
+            // so deliver the NAT-restart announcement via unicast loopback instead
+            fake_gateway.Send(Address(127, 0, 0, 1, 5350), &resp, sizeof(PMPExternalIPResponse));
 
             s1.Update(16);
 

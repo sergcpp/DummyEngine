@@ -17,9 +17,12 @@ template<>
 bool Net::VarContainer::LoadVar<Net::VarContainer>(Var<VarContainer> &v) const {
     for (unsigned int i = 0; i < header_.size(); i += 2) {
         if (header_[i] == (int_type) v.hash_.hash) {
-            size_t len = i < header_.size() - 2 ? (header_[(i + 2) + 1] - header_[i + 1]) : (data_bytes_.size() -
-                                                                                             header_[i + 1]);
-            v.UnPack(&data_bytes_[header_[i + 1]], len);
+            const size_t off = uint16_t(header_[i + 1]);
+            const size_t end = i + 2 < header_.size() ? size_t(uint16_t(header_[(i + 2) + 1])) : data_bytes_.size();
+            if (off > data_bytes_.size() || end < off || end > data_bytes_.size()) {
+                return false;
+            }
+            v.UnPack(&data_bytes_[off], end - off);
             return true;
         }
     }
@@ -40,9 +43,13 @@ template<>
 bool Net::VarContainer::LoadVar<std::string>(Var<std::string> &v) const {
     for (unsigned int i = 0; i < header_.size(); i += 2) {
         if (header_[i] == (int_type) v.hash_.hash) {
-            const char *beg = (const char *) &data_bytes_[header_[i + 1]];
-            size_t n = (i + 2 < header_.size()) ? header_[i + 2 + 1] : (data_bytes_.size() - header_[i + 1]);
-            v = std::string(beg, n);
+            const size_t off = uint16_t(header_[i + 1]);
+            // length = next entry's offset minus this one's, never the raw next offset
+            const size_t end = i + 2 < header_.size() ? size_t(uint16_t(header_[i + 2 + 1])) : data_bytes_.size();
+            if (off > data_bytes_.size() || end < off || end > data_bytes_.size()) {
+                return false;
+            }
+            v = std::string((const char *) &data_bytes_[off], end - off);
             return true;
         }
     }
@@ -76,24 +83,37 @@ bool Net::VarContainer::UnPack(const Packet &pack) {
 }
 
 bool Net::VarContainer::UnPack(const unsigned char *pack, size_t len) {
-    if (len < 8) return false;
+    if (pack == nullptr || len < 2 * sizeof(int_type)) {
+        return false;
+    }
 
     int_type num_vars, data_size;
-    int_type num_vars_beg = 0;
     memcpy(&num_vars, &pack[0], sizeof(int_type));
     memcpy(&data_size, &pack[sizeof(int_type)], sizeof(int_type));
 
-    auto header_beg = (int_type) (num_vars_beg + sizeof(int_type) * 2);
-    auto header_size = (int_type) (2 * num_vars * sizeof(int_type));
-    if (header_size + 8 > len || header_beg > header_size) {
+    // num_vars and data_size are attacker-controlled: validate every region
+    // against len with wraparound-safe arithmetic before copying anything
+    const size_t num_vars_v = uint16_t(num_vars);
+    const size_t data_size_v = uint16_t(data_size);
+    const size_t header_beg = 2 * sizeof(int_type);
+    const size_t header_size = size_t(2) * num_vars_v * sizeof(int_type);
+    if (header_beg + header_size > len) {
         return false;
     }
-    header_.resize(2 * num_vars);
-    memcpy(&header_[0], &pack[header_beg], header_size);
+    const size_t data_beg = header_beg + header_size;
+    if (data_beg + data_size_v > len) {
+        return false;
+    }
 
-    auto data_beg = (int_type) (header_beg + header_size);
-    data_bytes_.resize(data_beg + data_size);
-    memcpy(&data_bytes_[0], &pack[data_beg], data_size);
+    header_.resize(size_t(2) * num_vars_v);
+    if (header_size != 0) {
+        memcpy(&header_[0], &pack[header_beg], header_size);
+    }
+
+    data_bytes_.resize(data_size_v);
+    if (data_size_v != 0) {
+        memcpy(&data_bytes_[0], &pack[data_beg], data_size_v);
+    }
 
     return true;
 }

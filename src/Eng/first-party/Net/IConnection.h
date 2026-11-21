@@ -5,6 +5,8 @@
 namespace Net {
     class IConnection {
     public:
+        virtual ~IConnection() = default;
+
         virtual void Connect(const Address &address) = 0;
 
         virtual void Update(float dt_s) = 0;

@@ -3,11 +3,13 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 
 #include <netinet/in.h>
 
 #endif
+
+#include <random>
 
 #include "HTTPRequest.h"
 #include "HTTPResponse.h"
@@ -84,14 +86,33 @@ int Net::WsConnection::Receive(void *data, int size) {
     void *payload = (void *)(uintptr_t(data) + sizeof(WsHeader));
     int payload_len = header->payload_len;
     if (payload_len == 126) {
+        if (received < int(sizeof(WsHeader) + 2)) {
+            return 0;
+        }
         uint16_t len = *(uint16_t *)(uintptr_t(data) + sizeof(WsHeader));
         payload_len = ntohs(len);
-        payload = (void *)(uintptr_t(data) + 4);
+        payload = (void *)(uintptr_t(data) + sizeof(WsHeader) + 2);
     } else if (payload_len == 127) {
-        fprintf(stderr, "64-bit payload length not supported\n");
-        fragment_buf_.clear();
+        if (received < int(sizeof(WsHeader) + 8)) {
+            return 0;
+        }
+        const uint64_t big = (uint64_t(ntohl(*(uint32_t *)(uintptr_t(data) + sizeof(WsHeader)))) << 32) |
+                             ntohl(*(uint32_t *)(uintptr_t(data) + sizeof(WsHeader) + 4));
+        if (big > 0x7FFFFFFFull) {
+            fprintf(stderr, "payload too large\n");
+            fragment_buf_.clear();
+            return 0;
+        }
+        payload_len = int(big);
+        payload = (void *)(uintptr_t(data) + sizeof(WsHeader) + 8);
+    }
+
+    // WsConnection cannot reassemble a frame split across raw stream reads
+    const int frame_head = int(uintptr_t(payload) - uintptr_t(data)) + (header->mask ? 4 : 0);
+    if (received < frame_head + payload_len) {
         return 0;
     }
+
     if (header->mask) {
         uint32_t mask = *(uint32_t *)payload;
         payload = (void *)(uintptr_t(payload) + 4);
@@ -136,32 +157,48 @@ int Net::WsConnection::Receive(void *data, int size) {
 }
 
 bool Net::WsConnection::Send(const void *data, int size) {
-    uint8_t buf[2048];
-    uint8_t *payload = buf + sizeof(WsHeader);
-    auto *header = (WsHeader *)buf;
+    if (size < 0) {
+        return false;
+    }
+
+    // RFC6455 framing: 7-bit length, or 126 + 16-bit, or 127 + 64-bit
+    const size_t len_bytes = size < 126 ? 0 : size <= 0xFFFF ? 2 : 8;
+    const size_t header_bytes = sizeof(WsHeader) + len_bytes + (should_mask_ ? 4 : 0);
+    std::vector<uint8_t> buf(header_bytes + (size_t) size);
+    auto *header = (WsHeader *) buf.data();
     header->opcode = uint8_t(eOpCode::WS_BINARY_MESSAGE);
     header->reserved = 0;
     header->fin = 1;
-    if (size < 126) {
-        header->payload_len = (uint8_t)size;
-    } else {
-        header->payload_len = 126;
-        *(uint16_t *)(uintptr_t(buf) + sizeof(WsHeader)) = htons((uint16_t)size);
-        payload += 2;
-    }
-    header->mask = (uint8_t)should_mask_;
-    uint32_t mask = 0;
+    header->mask = (uint8_t) should_mask_;
 
+    uint8_t *payload = buf.data() + sizeof(WsHeader);
+    if (len_bytes == 2) {
+        header->payload_len = 126;
+        *(uint16_t *)(uintptr_t(payload)) = htons((uint16_t) size);
+        payload += 2;
+    } else if (len_bytes == 8) {
+        header->payload_len = 127;
+        *(uint32_t *)(uintptr_t(payload)) = htonl(uint32_t((uint64_t) size >> 32));
+        *(uint32_t *)(uintptr_t(payload) + 4) = htonl(uint32_t(size));
+        payload += 8;
+    } else {
+        header->payload_len = (uint8_t) size;
+    }
+
+    uint32_t mask = 0;
     if (should_mask_) {
-        mask = uint32_t(rand()); // NOLINT
+        static thread_local std::mt19937 gen{std::random_device{}()};
+        mask = gen();
         *(uint32_t *)payload = mask;
         payload += 4;
     }
 
-    memcpy(payload, data, (size_t)size);
+    if (size > 0) {
+        memcpy(payload, data, (size_t) size);
+    }
     ApplyMask(mask, payload, size);
 
-    return conn_.Send(buf, int(uintptr_t(payload - buf) + size));
+    return conn_.SendAll(buf.data(), buf.size());
 }
 
 void Net::WsConnection::ApplyMask(uint32_t mask, uint8_t *data, int size) {

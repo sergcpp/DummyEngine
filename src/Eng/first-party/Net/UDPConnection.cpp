@@ -46,7 +46,6 @@ void Net::UDPConnection::Listen() {
 }
 
 void Net::UDPConnection::Connect(const Address &address) {
-    printf("client connecting to %d.%d.%d.%d:%d\n", address.a(), address.b(), address.c(), address.d(), address.port());
     bool conn = connected();
     ClearData();
     if (conn) {
@@ -62,12 +61,10 @@ void Net::UDPConnection::Update(float dt_s) {
     timeout_acc_ += dt_s;
     if (timeout_acc_ > timeout_s_) {
         if (state_ == eState::Connecting) {
-            printf("connect timed out\n");
             ClearData();
             state_ = eState::ConnectFailed;
             OnDisconnect();
         } else if (state_ == eState::Connected) {
-            printf("connection timed out\n");
             ClearData();
             OnDisconnect();
         }
@@ -77,6 +74,9 @@ void Net::UDPConnection::Update(float dt_s) {
 bool Net::UDPConnection::SendPacket(const unsigned char data[], int size) {
     assert(running_);
     assert(MAX_PACKET_SIZE >= size + 4);
+    if (size < 0 || size + 4 > MAX_PACKET_SIZE) {
+        return false;
+    }
     if (address_.address() == 0) {
         return false;
     }
@@ -104,12 +104,19 @@ int Net::UDPConnection::ReceivePacket(unsigned char data[], int size) {
     assert(running_);
 
     assert(size + 4 <= MAX_PACKET_SIZE);
+    if (size < 0 || size + 4 > MAX_PACKET_SIZE) {
+        return 0;
+    }
     unsigned char packet[MAX_PACKET_SIZE];
     int bytes_read = socket_.Receive(sender, packet, size + 4);
     if (bytes_read <= 4) {
         return 0;
     }
 
+    // wire format: 4-byte big-endian CRC32 over the whole packet, where the CRC field
+    // itself is replaced by the protocol id before hashing; the receiver restores the
+    // protocol id, re-computes and compares - so the id check and the integrity check
+    // are one operation (and a wrong protocol id simply fails the CRC)
     { // check protocol id hashsum
         uint32_t crc = (((unsigned int)packet[0] << 24u) | ((unsigned int)packet[1] << 16u) |
                         ((unsigned int)packet[2] << 8u) | ((unsigned int)packet[3]));

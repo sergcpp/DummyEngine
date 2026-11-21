@@ -5,6 +5,9 @@
 #include <string>
 
 namespace Net {
+    // IPv4 address+port; address() is HOST byte order: a() is the first dotted octet.
+    // Convert with htonl()/ntohl() at every syscall boundary (the one exception is the
+    // (unsigned, ushort) ctor, which takes the value already in host order).
     class Address {
     public:
         Address() {

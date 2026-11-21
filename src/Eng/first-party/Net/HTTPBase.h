@@ -1,9 +1,8 @@
 #pragma once
 
-#pragma warning(disable : 4996)
-
 #include <cstring>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace Net {
@@ -28,12 +27,8 @@ namespace Net {
 
         struct StrType {
             eType t;
-            char ext[8], str[32];
-
-            StrType(eType t, const char *e, const char *s) : t(t) {
-                strcpy(ext, e);
-                strcpy(str, s);
-            }
+            std::string_view ext;
+            std::string_view str;
         };
 
         enum class Charset {
@@ -45,13 +40,9 @@ namespace Net {
         ContentType() : HTTPField("Content-Type"), type(eType::TextHTML), charset(Charset::UTF_8) {}
 
         [[nodiscard]] std::string str() const override {
-            std::string ret;
-            ret += TypeString(type) + "; ";
+            std::string ret{TypeString(type)};
             if (type == eType::TextHTML && charset == Charset::UTF_8) {
-                ret += "charset=UTF-8";
-            } else {
-                ret += "charset=ISO-8859-4\r\n";
-                ret += "Content-Transfer-Encoding: binary;";
+                ret += "; charset=UTF-8";
             }
             return ret;
         }

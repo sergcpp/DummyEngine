@@ -41,6 +41,11 @@ void test_address() {
         std::string s = x.str();
         require(s == "100.110.0.1:50000");
     }
+    { // address() is host-order: the (unsigned, ushort) ctor takes it verbatim
+        const Address x(0x0A000001u, 80);
+        require(x.a() == 10 && x.b() == 0 && x.c() == 0 && x.d() == 1);
+        require(x == Address(10, 0, 0, 1, 80));
+    }
 
     printf("OK\n");
 }

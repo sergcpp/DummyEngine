@@ -2,6 +2,8 @@ name: 'Test'
 inputs:
   bin-dir:
     required: true
+  exe:
+    required: true
 runs:
   using: 'composite'
   steps:
@@ -11,8 +13,10 @@ runs:
         path: ${{ inputs.bin-dir }}/
     - run: |
         export ASAN_OPTIONS="windows_hook_legacy_allocators=false"
-        chmod +x ./${{ inputs.bin-dir }}/test_Net*
+        # explicit file name: a test_Net* glob would expand to several arguments
+        # whenever more than one config ends up in the same directory
+        chmod +x ./${{ inputs.bin-dir }}/${{ inputs.exe }}
         WORK_DIR=`pwd`
         cd ../../builds/Net
-        $WORK_DIR/${{ inputs.bin-dir }}/test_Net*
+        $WORK_DIR/${{ inputs.bin-dir }}/${{ inputs.exe }}
       shell: bash

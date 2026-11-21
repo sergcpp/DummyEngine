@@ -38,7 +38,8 @@ namespace Net {
         [[nodiscard]] float sent_bandwidth() const { return sent_bandwidth_; }
         [[nodiscard]] float acked_bandwidth() const { return acked_bandwidth_; }
 
-        void GetAcks(unsigned int **acks, int &count);
+        // valid until the next Update()/PacketSent() cycle; internal storage, do not free
+        const std::vector<unsigned int> &GetAcks() const { return acks_; }
 
         static unsigned int bit_index_for_sequence(unsigned int sequence, unsigned int ack, unsigned int max_sequence);
 

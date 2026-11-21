@@ -46,6 +46,16 @@
   #endif
 #endif
 
+// comparing two undefined macros is 0 == 0, so the byte-order tests below would pick the
+// big-endian path on platforms whose sys/param.h stopped exposing them (macOS)
+#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__)
+  #define CRC32_BIG_ENDIAN (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+#elif defined(__BYTE_ORDER) && defined(__BIG_ENDIAN)
+  #define CRC32_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
+#else
+  #define CRC32_BIG_ENDIAN 0
+#endif
+
 
 /// zlib's CRC32 polynomial
 const uint32_t Polynomial = 0xEDB88320;
@@ -239,7 +249,7 @@ uint32_t crc32_4bytes(const void* data, size_t length, uint32_t previousCrc32)
   // process four bytes at once (Slicing-by-4)
   while (length >= 4)
   {
-#if __BYTE_ORDER == __BIG_ENDIAN
+#if CRC32_BIG_ENDIAN
     uint32_t one = *current++ ^ swap(crc);
     crc = Crc32Lookup[0][ one      & 0xFF] ^
           Crc32Lookup[1][(one>> 8) & 0xFF] ^
@@ -276,7 +286,7 @@ uint32_t crc32_8bytes(const void* data, size_t length, uint32_t previousCrc32)
   // process eight bytes at once (Slicing-by-8)
   while (length >= 8)
   {
-#if __BYTE_ORDER == __BIG_ENDIAN
+#if CRC32_BIG_ENDIAN
     uint32_t one = *current++ ^ swap(crc);
     uint32_t two = *current++;
     crc = Crc32Lookup[0][ two      & 0xFF] ^
@@ -327,7 +337,7 @@ uint32_t crc32_4x8bytes(const void* data, size_t length, uint32_t previousCrc32)
   {
     for (size_t unrolling = 0; unrolling < Unroll; unrolling++)
     {
-#if __BYTE_ORDER == __BIG_ENDIAN
+#if CRC32_BIG_ENDIAN
       uint32_t one = *current++ ^ swap(crc);
       uint32_t two = *current++;
       crc = Crc32Lookup[0][ two      & 0xFF] ^
@@ -381,7 +391,7 @@ uint32_t crc32_16bytes(const void* data, size_t length, uint32_t previousCrc32)
   {
     for (size_t unrolling = 0; unrolling < Unroll; unrolling++)
     {
-#if __BYTE_ORDER == __BIG_ENDIAN
+#if CRC32_BIG_ENDIAN
     uint32_t one   = *current++ ^ swap(crc);
     uint32_t two   = *current++;
     uint32_t three = *current++;
@@ -457,7 +467,7 @@ uint32_t crc32_16bytes_prefetch(const void* data, size_t length, uint32_t previo
 
     for (size_t unrolling = 0; unrolling < Unroll; unrolling++)
     {
-#if __BYTE_ORDER == __BIG_ENDIAN
+#if CRC32_BIG_ENDIAN
     uint32_t one   = *current++ ^ swap(crc);
     uint32_t two   = *current++;
     uint32_t three = *current++;

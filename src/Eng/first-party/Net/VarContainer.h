@@ -31,7 +31,11 @@ namespace Net {
         bool LoadVar(Var<T> &v) const {
             for (unsigned int i = 0; i < header_.size(); i += 2) {
                 if (header_[i] == (int_type) v.hash_.hash) {
-                    memcpy(v.p_val(), &data_bytes_[header_[i + 1]], sizeof(T));
+                    const size_t off = uint16_t(header_[i + 1]);
+                    if (off + sizeof(T) > data_bytes_.size()) {
+                        return false;
+                    }
+                    memcpy(v.p_val(), &data_bytes_[off], sizeof(T));
                     return true;
                 }
             }
@@ -43,7 +47,11 @@ namespace Net {
             static_assert(!std::is_same<T, VarContainer>::value, "Cannot update VarContainer");
             for (unsigned int i = 0; i < header_.size(); i += 2) {
                 if (header_[i] == (int_type) v.hash_.hash) {
-                    memcpy(&data_bytes_[header_[i + 1]], v.p_val(), sizeof(T));
+                    const size_t off = uint16_t(header_[i + 1]);
+                    if (off + sizeof(T) > data_bytes_.size()) {
+                        return;
+                    }
+                    memcpy(&data_bytes_[off], v.p_val(), sizeof(T));
                     return;
                 }
             }

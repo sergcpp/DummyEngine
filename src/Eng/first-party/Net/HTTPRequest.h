@@ -28,6 +28,11 @@ namespace Net {
         [[nodiscard]] Address host_addr() const { return host_addr_; }
         [[nodiscard]] std::string field(const std::string &name) const;
 
+        // the NUL-terminated form copies the buffer length with strlen; a network
+        // buffer that is only NUL-terminated by convention must use the (buf, len) form
         bool Parse(const char *buf);
+
+        // parses only [buf, buf + len); requires a complete header block (\r\n\r\n)
+        bool Parse(const char *buf, size_t len);
     };
 }

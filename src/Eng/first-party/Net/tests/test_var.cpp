@@ -210,15 +210,15 @@ void test_var() {
             char data[5000];
             int number;
         };
-        SomeLargeGameState state;
+        static SomeLargeGameState state;
         state.number = 178;
 
         VarContainer cnt;
-        Var<SomeLargeGameState> s1 = {"Variable", state};
+        static Var<SomeLargeGameState> s1 = {"Variable", state};
         require(s1.number == state.number);
         cnt.SaveVar(s1);
 
-        Var<SomeLargeGameState> s2 = {"Variable", state};
+        static Var<SomeLargeGameState> s2 = {"Variable", state};
         cnt.LoadVar(s2);
         require(s2.number == state.number);
     }
@@ -233,6 +233,70 @@ void test_var() {
         cnt.LoadVar(s2);
 
         require(s1 == s2);
+    }
+
+    { // malformed packed containers must be rejected, never read past the buffer
+        auto append16 = [](Packet &p, uint16_t v) {
+            p.push_back((unsigned char) (v & 0xFFu));
+            p.push_back((unsigned char) (v >> 8u));
+        };
+        {
+            Packet bad;
+            append16(bad, 1);
+            append16(bad, 0xFFFF); // data_size runs past the buffer
+            append16(bad, 0x1234);
+            append16(bad, 0);
+            VarContainer cnt;
+            require(!cnt.UnPack(bad));
+        }
+        {
+            Packet bad;
+            append16(bad, 0xFFFF); // header claiming 128 KiB the buffer does not have
+            append16(bad, 0);
+            VarContainer cnt;
+            require(!cnt.UnPack(bad));
+        }
+        {
+            Packet bad;
+            append16(bad, 1);
+            append16(bad, 2);
+            append16(bad, 5); // truncated: the hash/offset pair is incomplete
+            VarContainer cnt;
+            require(!cnt.UnPack(bad));
+        }
+        { // structurally valid, but the entry offset points past the data
+            Var<std::string> s1 = {"String", "hello world"};
+            VarContainer src;
+            src.SaveVar(s1);
+            Packet bad = src.Pack();
+            bad[2] = 0;
+            bad[3] = 0;      // data_size = 0
+            bad[6] = 0xF0;
+            bad[7] = 0xFF;   // offset 0xFFF0
+            VarContainer cnt;
+            require(cnt.UnPack(bad));
+            Var<std::string> s2 = {"String"};
+            require(!cnt.LoadVar(s2));
+        }
+        { // string after a fixed-size var: the old length math used the next
+          // entry's absolute offset instead of the difference between offsets
+            Var<int> v1 = {"V1", 42};
+            Var<std::string> s1 = {"String", "hello world"};
+            Var<std::string> s2 = {"Other", "12345"};
+            VarContainer src;
+            src.SaveVar(v1);
+            src.SaveVar(s1);
+            src.SaveVar(s2);
+
+            VarContainer cnt;
+            require(cnt.UnPack(src.Pack()));
+            Var<std::string> r1 = {"String"};
+            Var<std::string> r2 = {"Other"};
+            require(cnt.LoadVar(r1));
+            require(cnt.LoadVar(r2));
+            require(r1 == s1);
+            require(r2 == s2);
+        }
     }
 
     printf("OK\n");

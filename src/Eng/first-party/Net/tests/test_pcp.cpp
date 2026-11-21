@@ -144,19 +144,32 @@ void test_pcp() {
         PCPSession ses(ePCPProto::UDP, fake_pcp_address, 30000, 30001, 7200);
         require(ses.state() == PCPSession::eState::RequestMapping);
 
-        ses.Update(16);
+        // loopback delivery is not synchronous: waiting for the datagram keeps a late one
+        // from being mistaken for the next Update's retransmission
+        auto wait_for_packet = [&](Address &from) {
+            for (int i = 0; i < 100; ++i) {
+                const int size = fake_pcp_srv.Receive(from, buf, sizeof(buf));
+                if (size != -1) {
+                    return size;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+            return -1;
+        };
 
         Address sender;
-        require(fake_pcp_srv.Receive(sender, buf, sizeof(buf)));
 
         ses.Update(16);
-        require(!fake_pcp_srv.Receive(sender, buf, sizeof(buf)));
+        require(wait_for_packet(sender) > 0); // the first request went out
+
+        ses.Update(16);
+        require(fake_pcp_srv.Receive(sender, buf, sizeof(buf)) == -1); // far below the retransmit timeout
 
         ses.Update(4000);
-        require(fake_pcp_srv.Receive(sender, buf, sizeof(buf)));
+        require(wait_for_packet(sender) > 0); // retransmitted
 
         ses.Update(16);
-        require(!fake_pcp_srv.Receive(sender, buf, sizeof(buf)));
+        require(fake_pcp_srv.Receive(sender, buf, sizeof(buf)) == -1); // next timeout is already doubled
     }
     {
         char recv_buf[128];
@@ -181,7 +194,9 @@ void test_pcp() {
                                      req.nonce());
 
                 size = resp.Write(recv_buf, sizeof(recv_buf));
-                pcp_server.Send(s1.local_addr(), &resp, size);
+                // answer the recvfrom sender with the serialized bytes: s1.local_addr() is the LAN IP,
+                // which the local firewall drops, and PCPResponse is not a wire type
+                pcp_server.Send(sender, recv_buf, size);
             }
 
             s1.Update(16);

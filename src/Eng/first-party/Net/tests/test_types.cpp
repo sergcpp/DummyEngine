@@ -1,5 +1,7 @@
 #include "test_common.h"
 
+// this TU changes the definition of Net::le_* typedefs: it is compiled by no target on purpose
+// (ODR clash with the rest of test_Net); to run these checks, compile it with main.cpp into a throwaway exe
 #define TEST_BE
 #include "../Types.h"
 
