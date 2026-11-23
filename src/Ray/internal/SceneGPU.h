@@ -152,6 +152,12 @@ class Scene : public SceneCommon {
     void PrepareEnvMapQTree_nolock(const std::function<void(int, int, ParallelForFunction &&)> &parallel_for);
     void GenerateTextureMips_nolock();
     void PrepareBindlessTextures_nolock();
+    // per-backend pieces of PrepareBindlessTextures_nolock: the descriptor/argument mechanism
+    bool InitBindlessArray_nolock(); // false = skip the whole setup (e.g. backend in atlas mode)
+    void SetBindlessTextureSlot_nolock(uint32_t index, const Image &tex);
+    void ClearBindlessTextureSlot_nolock(uint32_t index);
+    void TransitionBindlessTextures_nolock();
+    void FinalizeBindlessTextures_nolock(Buffer &tex_sizes_stage);
     std::pair<uint32_t, uint32_t> Build_HWRT_BLAS_nolock(uint32_t vert_index, uint32_t vert_count,
                                                          eBVHBuildQuality quality);
     void Rebuild_HWRT_TLAS_nolock();
@@ -183,6 +189,9 @@ class Scene : public SceneCommon {
     void RemoveTexture(const TextureHandle t) override {
         std::unique_lock<std::shared_timed_mutex> lock(mtx_);
         if (use_bindless_) {
+            // drop the table entry first: the descriptor/arg slot and any cached native handle
+            // would otherwise outlive the Image and be sampled as a dangling reference
+            ClearBindlessTextureSlot_nolock(t._index & 0x00ffffff);
             bindless_textures_.Erase(t._block);
         } else {
             atlas_textures_.Erase(t._block);
@@ -583,7 +592,9 @@ inline Ray::TextureHandle Ray::NS::Scene::AddBindlessTexture_nolock(const tex_de
                     CompressImage_BC3<true /* Is_YCoCg */>(temp_YCoCg.get(), _t.w, _t.h, stage_data,
                                                            GetRequiredMemory_BC3(_t.w, 1, ImageDataPitchAlignment));
                 }
-            } else if (ctx_->rgb8_unorm_is_supported()) {
+            } else if (ctx_->rgb8_unorm_is_supported() || ctx_->rgb8_promoted_internally()) {
+                // Metal has no RGB8 format: with rgb8_promoted_internally the Image backend
+                // itself stores RGB8 sources as RGBA8, so stage logical RGB8 rows here
                 src_fmt = fmt = eFormat::RGB8;
                 data_size[0] = round_up(_t.w * 3, ImageDataPitchAlignment) * _t.h;
 
@@ -806,6 +817,43 @@ inline Ray::TextureHandle Ray::NS::Scene::AddBindlessTexture_nolock(const tex_de
     }
 
     return TextureHandle{ret.first, ret.second};
+}
+
+inline void Ray::NS::Scene::PrepareBindlessTextures_nolock() {
+    if (!InitBindlessArray_nolock()) {
+        if (use_bindless_) {
+            log_->Error("Bindless texture array setup failed, the bindless table will not be usable!");
+        }
+        return;
+    }
+
+    { // Init shared sampler
+        SamplingParams params;
+        params.filter = eFilter::Nearest;
+        params.wrap = eWrap::Repeat;
+
+        bindless_tex_data_.shared_sampler.Init(ctx_, params);
+    }
+
+    bindless_tex_data_.tex_sizes = Buffer{"Texture sizes", ctx_, eBufType::Storage,
+                                          uint32_t(std::max(1u, bindless_textures_.capacity()) * sizeof(uint32_t))};
+    Buffer tex_sizes_stage = Buffer{"Texture sizes Stage", ctx_, eBufType::Upload,
+                                    uint32_t(std::max(1u, bindless_textures_.capacity()) * sizeof(uint32_t))};
+
+    TransitionBindlessTextures_nolock();
+
+    uint32_t *p_tex_sizes = reinterpret_cast<uint32_t *>(tex_sizes_stage.Map());
+    memset(p_tex_sizes, 0, bindless_tex_data_.tex_sizes.size());
+
+    for (auto it = bindless_textures_.begin(); it != bindless_textures_.end(); ++it) {
+        const Image &tex = bindless_textures_[it.index()];
+        SetBindlessTextureSlot_nolock(it.index(), tex);
+        p_tex_sizes[it.index()] = (uint32_t(tex.params.w) << 16) | tex.params.h;
+    }
+
+    tex_sizes_stage.Unmap();
+
+    FinalizeBindlessTextures_nolock(tex_sizes_stage);
 }
 
 template <typename T, int N>

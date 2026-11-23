@@ -121,10 +121,11 @@ bool g_stop_on_fail = false;
 std::atomic_bool g_tests_success{true};
 std::atomic_bool g_log_contains_errors{false};
 bool g_catch_flt_exceptions = false;
-bool g_determine_sample_count = true;
+bool g_determine_sample_count = false;
 bool g_minimal_output = false;
 bool g_nohwrt = false;
 bool g_nodx = false;
+bool g_nobindless = false;
 bool g_sort_rays_gpu = false;
 int g_validation_level = 1;
 
@@ -185,6 +186,8 @@ int main(int argc, char *argv[]) {
             g_validation_level = atoi(argv[i]);
         } else if (strcmp(argv[i], "--no-hwrt") == 0) {
             g_nohwrt = true;
+        } else if (strcmp(argv[i], "--no-bindless") == 0) {
+            g_nobindless = true;
         } else if (strcmp(argv[i], "--sort-gpu") == 0) {
             g_sort_rays_gpu = true;
         }
@@ -229,8 +232,8 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    static const char *ArchListFull[] = {"REF",         "SSE41", "AVX", "AVX2", "AVX512",
-                                         "AVX512_FP16", "NEON",  "VK",  "DX",   nullptr};
+    static const char *ArchListFull[] = {"REF",  "SSE41", "AVX", "AVX2", "AVX512", "AVX512_FP16",
+                                         "NEON", "VK",    "DX",  "MTL",  nullptr};
     static const char *ArchListFullNoGPU[] = {"REF", "SSE41", "AVX", "AVX2", "AVX512", "AVX512_FP16", "NEON", nullptr};
     static const char *ArchListDefault[] = {"AVX2", "NEON", "VK", "DX", nullptr};
 #ifndef __APPLE__
@@ -239,7 +242,7 @@ int main(int argc, char *argv[]) {
     // NOTE: Rosetta doesn't support AVX, so we test SSE4.1 here
     static const char *ArchListDefaultNoGPU[] = {"SSE41", "NEON", nullptr};
 #endif
-    static const char *ArchListGPUOnly[] = {"DX", "VK", nullptr};
+    static const char *ArchListGPUOnly[] = {"DX", "VK", "MTL", nullptr};
 
     bool detailed_material_tests_needed = full_tests;
     bool tests_success_final = g_tests_success;
