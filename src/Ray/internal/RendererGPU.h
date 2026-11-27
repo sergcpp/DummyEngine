@@ -60,58 +60,57 @@ class Renderer : public RendererBase {
 
     struct {
         Shader prim_rays_gen_simple, prim_rays_gen_adaptive;
-        Shader intersect_scene, intersect_scene_indirect, intersect_area_lights;
+        Shader intersect_scene_indirect, intersect_scene_primary, intersect_area_lights;
         Shader shade_primary, shade_primary_sky, shade_primary_cache_update, shade_primary_cache_query,
             shade_primary_cache_query_sky, shade_secondary, shade_secondary_sky, shade_secondary_cache_update,
             shade_secondary_cache_query, shade_secondary_cache_query_sky;
-        Shader shade_sky;
+        Shader shade_sky, shade_sky_primary;
         Shader intersect_scene_shadow, prepare_indir_args, mix_incremental, postprocess, filter_variance, nlm_filter,
             debug_rt;
-        Shader sort_hash_rays, sort_init_count_table, sort_reduce, sort_scan, sort_scan_add, sort_scatter,
-            sort_reorder_rays;
-        Shader intersect_scene_rgen, intersect_scene_rchit, intersect_scene_rmiss, intersect_scene_indirect_rgen;
+        Shader sort_local;
+        Shader intersect_scene_rchit, intersect_scene_rmiss, intersect_scene_indirect_rgen,
+            intersect_scene_indirect_rgen_primary;
         Shader convolution_Img_9_32, convolution_32_32_Downsample, convolution_32_48_Downsample,
             convolution_48_64_Downsample, convolution_64_80_Downsample, convolution_64_64, convolution_64_32,
             convolution_80_96, convolution_96_96, convolution_112_112, convolution_concat_96_64_112,
             convolution_concat_112_48_96, convolution_concat_96_32_64, convolution_concat_64_9_64, convolution_32_3_img;
-        Shader spatial_cache_update, spatial_cache_resolve;
+        Shader spatial_cache_update, spatial_cache_update_perm, spatial_cache_resolve;
     } sh_;
 
     struct {
         Program prim_rays_gen_simple, prim_rays_gen_adaptive;
-        Program intersect_scene, intersect_scene_indirect, intersect_area_lights;
+        Program intersect_scene_indirect, intersect_scene_primary, intersect_area_lights;
         Program shade_primary, shade_primary_sky, shade_primary_cache_update, shade_primary_cache_query,
             shade_primary_cache_query_sky, shade_secondary, shade_secondary_sky, shade_secondary_cache_update,
             shade_secondary_cache_query, shade_secondary_cache_query_sky;
-        Program shade_sky;
+        Program shade_sky, shade_sky_primary;
         Program intersect_scene_shadow, prepare_indir_args, mix_incremental, postprocess, filter_variance, nlm_filter,
             debug_rt;
-        Program sort_hash_rays, sort_init_count_table, sort_reduce, sort_scan, sort_scan_add, sort_scatter,
-            sort_reorder_rays;
-        Program intersect_scene_rtpipe, intersect_scene_indirect_rtpipe;
+        Program sort_local;
+        Program intersect_scene_indirect_rtpipe, intersect_scene_indirect_rtpipe_primary;
         Program convolution_Img_9_32, convolution_32_32_Downsample, convolution_32_48_Downsample,
             convolution_48_64_Downsample, convolution_64_80_Downsample, convolution_64_64, convolution_64_32,
             convolution_80_96, convolution_96_96, convolution_112_112, convolution_concat_96_64_112,
             convolution_concat_112_48_96, convolution_concat_96_32_64, convolution_concat_64_9_64, convolution_32_3_img;
-        Program spatial_cache_update, spatial_cache_resolve;
+        Program spatial_cache_update, spatial_cache_update_perm, spatial_cache_resolve;
     } prog_;
 
     struct {
         Pipeline prim_rays_gen_simple, prim_rays_gen_adaptive;
-        Pipeline intersect_scene, intersect_scene_indirect, intersect_area_lights;
+        Pipeline intersect_scene_indirect, intersect_scene_primary, intersect_area_lights;
         Pipeline shade_primary, shade_primary_sky, shade_primary_cache_update, shade_primary_cache_query,
             shade_primary_cache_query_sky, shade_secondary, shade_secondary_sky, shade_secondary_cache_update,
             shade_secondary_cache_query, shade_secondary_cache_query_sky;
-        Pipeline shade_sky;
+        Pipeline shade_sky, shade_sky_primary;
         Pipeline intersect_scene_shadow, prepare_indir_args, mix_incremental, postprocess, filter_variance, nlm_filter,
             debug_rt;
-        Pipeline sort_hash_rays, sort_init_count_table, sort_reduce, sort_scan, sort_scan_add, sort_scatter,
-            sort_reorder_rays, intersect_scene_rtpipe, intersect_scene_indirect_rtpipe;
+        Pipeline sort_local;
+        Pipeline intersect_scene_indirect_rtpipe, intersect_scene_indirect_rtpipe_primary;
         Pipeline convolution_Img_9_32, convolution_32_32_Downsample, convolution_32_48_Downsample,
             convolution_48_64_Downsample, convolution_64_80_Downsample, convolution_64_64, convolution_64_32,
             convolution_80_96, convolution_96_96, convolution_112_112, convolution_concat_96_64_112,
             convolution_concat_112_48_96, convolution_concat_96_32_64, convolution_concat_64_9_64, convolution_32_3_img;
-        Pipeline spatial_cache_update, spatial_cache_resolve;
+        Pipeline spatial_cache_update, spatial_cache_update_perm, spatial_cache_resolve;
     } pi_;
 
     bool InitPipelines(ILog *log, const std::function<void(int, int, ParallelForFunction &&)> &parallel_for);
@@ -120,19 +119,14 @@ class Renderer : public RendererBase {
     bool DecideBindless_(const settings_t &s) const { return s.use_bindless && ctx_->max_sampled_images() >= 16384u; }
 
     // The same blob-selection rule was duplicated in every backend's InitPipelines table;
-    // the (bindless, atlas) overload is for programs without a subgroup variant
-    Span<const uint8_t> PickShader(Span<const uint8_t> bindless_shader, Span<const uint8_t> bindless_subgroup_shader,
-                                   Span<const uint8_t> atlas_shader, Span<const uint8_t> atlas_subgroup_shader) const {
-        return use_bindless_ ? (use_subgroup_ ? bindless_subgroup_shader : bindless_shader)
-                             : (use_subgroup_ ? atlas_subgroup_shader : atlas_shader);
-    }
+    // subgroup-only since the GPU renderer constructor requires subgroups
     Span<const uint8_t> PickShader(Span<const uint8_t> bindless_shader, Span<const uint8_t> atlas_shader) const {
         return use_bindless_ ? bindless_shader : atlas_shader;
     }
 
     int w_ = 0, h_ = 0;
     bool use_hwrt_ = false, use_bindless_ = false, use_tex_compression_ = false, use_fp16_ = false,
-         use_coop_matrix_ = false, use_subgroup_ = false, use_spatial_cache_ = false;
+         use_coop_matrix_ = false, use_spatial_cache_ = false;
 
     ePixelFilter filter_table_filter_ = ePixelFilter(-1);
     float filter_table_width_ = 0.0f;
@@ -153,8 +147,7 @@ class Renderer : public RendererBase {
     Image sheen_ltc_lut_, ggx_e_lut_, ggx_eavg_lut_, ggx_e_glass_lut_, ggx_e_glass_inv_lut_, ggx_eavg_glass_lut_,
         ggx_eavg_glass_inv_lut_;
 
-    Buffer random_seq_buf_, prim_rays_buf_, secondary_rays_buf_, shadow_rays_buf_, prim_hits_buf_, ray_hashes_bufs_[2],
-        count_table_buf_, reduce_table_buf_;
+    Buffer random_seq_buf_, prim_rays_buf_, secondary_rays_buf_, shadow_rays_buf_, prim_hits_buf_, ray_hashes_bufs_[2];
     Buffer counters_buf_, indir_args_buf_[2];
 
     Buffer temp_cache_data_buf_, temp_lock_buf_;
@@ -203,33 +196,26 @@ class Renderer : public RendererBase {
                                     int img_w, int img_h, const Buffer &rand_seq, const Buffer &filter_table,
                                     int iteration, bool adaptive, const Image &req_samples_img,
                                     const Buffer &inout_counters, const Buffer &out_rays);
-    void kernel_IntersectScene(CommandBuffer cmd_buf, const pass_settings_t &ps, const scene_data_t &sc_data,
-                               const Buffer &rand_seq, uint32_t rand_seed, int iteration, const rect_t &rect,
-                               uint32_t node_index, const float cam_fwd[3], float clip_dist,
-                               Span<const ImageAtlas> tex_atlases, const BindlessTexData &bindless_tex,
-                               const Buffer &rays, const Buffer &out_hits);
-    void kernel_IntersectScene_RTPipe(CommandBuffer cmd_buf, const pass_settings_t &ps, const scene_data_t &sc_data,
-                                      const Buffer &rand_seq, uint32_t rand_seed, int iteration, const rect_t &rect,
-                                      uint32_t node_index, const float cam_fwd[3], float clip_dist,
-                                      Span<const ImageAtlas> tex_atlases, const BindlessTexData &bindless_tex,
-                                      const Buffer &rays, const Buffer &out_hits);
     void kernel_IntersectScene(CommandBuffer cmd_buf, const Buffer &indir_args, int indir_args_index,
                                const Buffer &counters, const pass_settings_t &ps, const scene_data_t &sc_data,
                                const Buffer &rand_seq, uint32_t rand_seed, int iteration, uint32_t node_index,
                                const float cam_fwd[3], float clip_dist, Span<const ImageAtlas> tex_atlases,
-                               const BindlessTexData &bindless_tex, const Buffer &rays, const Buffer &out_hits);
+                               const BindlessTexData &bindless_tex, const Buffer &rays, const Buffer *sort_perm,
+                               const Buffer &out_hits);
     void kernel_IntersectScene_RTPipe(CommandBuffer cmd_buf, const Buffer &indir_args, int indir_args_index,
                                       const pass_settings_t &ps, const scene_data_t &sc_data, const Buffer &rand_seq,
                                       uint32_t rand_seed, int iteration, uint32_t node_index, const float cam_fwd[3],
                                       float clip_dist, Span<const ImageAtlas> tex_atlases,
-                                      const BindlessTexData &bindless_tex, const Buffer &rays, const Buffer &out_hits);
+                                      const BindlessTexData &bindless_tex, const Buffer &rays, const Buffer *sort_perm,
+                                      const Buffer &out_hits);
     void kernel_IntersectSceneShadow(CommandBuffer cmd_buf, const pass_settings_t &ps, const Buffer &indir_args,
                                      int indir_args_index, const Buffer &counters, const scene_data_t &sc_data,
                                      const Buffer &rand_seq, uint32_t rand_seed, int iteration, uint32_t node_index,
                                      float clamp_val, Span<const ImageAtlas> tex_atlases,
                                      const BindlessTexData &bindless_tex, const Buffer &sh_rays, const Image &out_img);
     void kernel_IntersectAreaLights(CommandBuffer cmd_buf, const scene_data_t &sc_data, const Buffer &indir_args,
-                                    const Buffer &counters, const Buffer &rays, const Buffer &inout_hits);
+                                    const Buffer &counters, const Buffer &rays, const Buffer &sort_perm,
+                                    const Buffer &inout_hits);
     void kernel_ShadePrimaryHits(CommandBuffer cmd_buf, const pass_settings_t &ps, eSpatialCacheMode cache,
                                  const environment_t &env, const Buffer &indir_args, int indir_args_index,
                                  const Buffer &hits, const Buffer &rays, const scene_data_t &sc_data,
@@ -244,12 +230,13 @@ class Renderer : public RendererBase {
                                    const scene_data_t &sc_data, const Buffer &rand_seq, uint32_t rand_seed,
                                    int iteration, Span<const ImageAtlas> tex_atlases,
                                    const BindlessTexData &bindless_tex, const Image &out_img, const Buffer &out_rays,
-                                   const Buffer &out_sh_rays, const Buffer &out_sky_rays, const Buffer &inout_counters,
-                                   const Image &out_base_color, const Image &out_depth_normals);
+                                   const Buffer &out_sh_rays, const Buffer &out_sky_rays, const Buffer &sort_perm,
+                                   const Buffer &inout_counters, const Image &out_base_color,
+                                   const Image &out_depth_normals);
     void kernel_ShadeSky(CommandBuffer cmd_buf, const pass_settings_t &ps, float limit, const environment_t &env,
                          const Buffer &indir_args, int indir_args_index, const Buffer &hits, const Buffer &rays,
-                         const Buffer &ray_indices, const Buffer &counters, const scene_data_t &sc_data, int iteration,
-                         const Image &out_img);
+                         const Buffer &ray_indices, const Buffer *sort_perm, const Buffer &counters,
+                         const scene_data_t &sc_data, int iteration, const Image &out_img);
     void kernel_ShadeSkyPrimary(CommandBuffer cmd_buf, const pass_settings_t &ps, const environment_t &env,
                                 const Buffer &indir_args, int indir_args_index, const Buffer &hits, const Buffer &rays,
                                 const Buffer &ray_indices, const Buffer &counters, const scene_data_t &sc_data,
@@ -257,8 +244,8 @@ class Renderer : public RendererBase {
     void kernel_ShadeSkySecondary(CommandBuffer cmd_buf, const pass_settings_t &ps, float clamp_direct,
                                   const environment_t &env, const Buffer &indir_args, int indir_args_index,
                                   const Buffer &hits, const Buffer &rays, const Buffer &ray_indices,
-                                  const Buffer &counters, const scene_data_t &sc_data, int iteration,
-                                  const Image &out_img);
+                                  const Buffer &sort_perm, const Buffer &counters, const scene_data_t &sc_data,
+                                  int iteration, const Image &out_img);
     void kernel_PrepareIndirArgs(CommandBuffer cmd_buf, const Buffer &inout_counters, const Buffer &out_indir_args);
     void kernel_MixIncremental(CommandBuffer cmd_buf, float mix_factor, float half_mix_factor, const rect_t &rect,
                                int iteration, float exposure, const Image &temp_img, const Image &temp_base_color,
@@ -300,31 +287,15 @@ class Renderer : public RendererBase {
                                   const Sampler &sampler, const rect_t &rect, int w, int h, const Buffer &weights,
                                   uint32_t weights_offset, uint32_t biases_offset, const Buffer &out_buf,
                                   uint32_t output_offset, int output_stride, const Image &out_debug_img = {});
-    void kernel_SortHashRays(CommandBuffer cmd_buf, const Buffer &indir_args, const Buffer &rays,
-                             const Buffer &counters, const float root_min[3], const float cell_size[3],
-                             const Buffer &out_hashes);
-    void kernel_SortInitCountTable(CommandBuffer cmd_buf, int shift, const Buffer &indir_args, int indir_args_index,
-                                   const Buffer &hashes, const Buffer &counters, int counter_index,
-                                   const Buffer &out_count_table);
-    void kernel_SortReduce(CommandBuffer cmd_buf, const Buffer &indir_args, int indir_args_index, const Buffer &input,
-                           const Buffer &counters, int counter_index, const Buffer &out_reduce_table);
-    void kernel_SortScan(CommandBuffer cmd_buf, const Buffer &input, const Buffer &counters, int counter_index,
-                         const Buffer &out_scan_values);
-    void kernel_SortScanAdd(CommandBuffer cmd_buf, const Buffer &indir_args, int indir_args_index, const Buffer &input,
-                            const Buffer &scratch, const Buffer &counters, int counter_index,
-                            const Buffer &out_scan_values);
-    void kernel_SortScatter(CommandBuffer cmd_buf, int shift, const Buffer &indir_args, int indir_args_index,
-                            const Buffer &hashes, const Buffer &sum_table, const Buffer &counters, int counter_index,
-                            const Buffer &out_chunks);
-    void kernel_SortReorderRays(CommandBuffer cmd_buf, const Buffer &indir_args, int indir_args_index,
-                                const Buffer &in_rays, const Buffer &indices, const Buffer &counters, int counter_index,
-                                const Buffer &out_rays);
+    void kernel_SortLocal(CommandBuffer cmd_buf, const Buffer &indir_args, int indir_args_index, const Buffer &rays,
+                          const float root_min[3], const float cell_size[3], const Buffer &counters, int counter_index,
+                          const Buffer &out_hashes);
     void kernel_DebugRT(CommandBuffer cmd_buf, const scene_data_t &sc_data, uint32_t node_index, const Buffer &rays,
                         const Image &out_pixels);
     void kernel_SpatialCacheUpdate(CommandBuffer cmd_buf, const cache_grid_params_t &params, const Buffer &indir_args,
                                    int indir_args_index, const Buffer &counters, int counter_index,
-                                   const Buffer &inters, const Buffer &rays, const Buffer &cache_data,
-                                   const Image &radiance_img, const Image &depth_normals_img,
+                                   const Buffer &inters, const Buffer &rays, const Buffer *sort_perm,
+                                   const Buffer &cache_data, const Image &radiance_img, const Image &depth_normals_img,
                                    const Buffer &inout_entries, const Buffer &inout_voxels_curr,
                                    const Buffer &inout_lock_buf);
     void kernel_SpatialCacheResolve(CommandBuffer cmd_buf, const cache_grid_params_t &params,
@@ -333,8 +304,8 @@ class Renderer : public RendererBase {
 
     void TransitionSceneResources(CommandBuffer cmd_buf, const scene_data_t &sc_data) const;
 
-    void RadixSort(CommandBuffer cmd_buf, const Buffer &indir_args, Buffer hashes[2], Buffer &count_table,
-                   const Buffer &counters, const Buffer &reduce_table);
+    int RadixSort(CommandBuffer cmd_buf, const Buffer &indir_args, Buffer hashes[2], const Buffer &rays,
+                  const float root_min[3], const float cell_size[3]);
 
     color_data_rgba_t get_pixels_ref(bool tonemap) const;
 
@@ -481,19 +452,9 @@ inline void Ray::NS::Renderer::Resize(const int w, const int h) {
         Buffer{"Primary Hits", ctx_.get(), eBufType::Storage, uint32_t(sizeof(Types::hit_data_t) * num_pixels)};
 
     ray_hashes_bufs_[0] =
-        Buffer{"Ray Hashes #0", ctx_.get(), eBufType::Storage, uint32_t(sizeof(Types::ray_hash_t) * num_pixels)};
+        Buffer{"Sort Indices #0", ctx_.get(), eBufType::Storage, uint32_t(sizeof(uint32_t) * num_pixels)};
     ray_hashes_bufs_[1] =
-        Buffer{"Ray Hashes #1", ctx_.get(), eBufType::Storage, uint32_t(sizeof(Types::ray_hash_t) * num_pixels)};
-
-    const int BlockSize = SORT_ELEMENTS_PER_THREAD * SORT_THREADGROUP_SIZE;
-    const int blocks_count = (num_pixels + BlockSize - 1) / BlockSize;
-
-    count_table_buf_ = Buffer{"Count Table", ctx_.get(), eBufType::Storage,
-                              uint32_t(sizeof(uint32_t) * SORT_BINS_COUNT * blocks_count)};
-
-    const int reduce_blocks_count = (blocks_count + BlockSize - 1) / BlockSize;
-    reduce_table_buf_ = Buffer{"Reduce Table", ctx_.get(), eBufType::Storage,
-                               uint32_t(sizeof(uint32_t) * SORT_BINS_COUNT * reduce_blocks_count)};
+        Buffer{"Sort Indices #1", ctx_.get(), eBufType::Storage, uint32_t(sizeof(uint32_t) * num_pixels)};
 
     if (use_spatial_cache_) {
         const int cache_w = w / RAD_CACHE_DOWNSAMPLING_FACTOR, cache_h = h / RAD_CACHE_DOWNSAMPLING_FACTOR;
@@ -835,30 +796,11 @@ inline void Ray::NS::Renderer::InitEnergyCompensationLUTs() {
     upload_lut(ggx_eavg_glass_inv_lut_, "GGX Eavg Glass Inv LUT", &ggx_Eavg_glass_inv[0][0], 16, 16, 1, eFormat::R32F);
 }
 
-inline void Ray::NS::Renderer::RadixSort(CommandBuffer cmd_buf, const Buffer &indir_args, Buffer _hashes[2],
-                                         Buffer &count_table, const Buffer &counters, const Buffer &reduce_table) {
+inline int Ray::NS::Renderer::RadixSort(CommandBuffer cmd_buf, const Buffer &indir_args, Buffer _hashes[2],
+                                        const Buffer &rays, const float root_min[3], const float cell_size[3]) {
     DebugMarker _0(ctx_.get(), cmd_buf, "Radix Sort");
 
-    static std::string_view MarkerStrings[] = {"Radix Sort Iter #0 [Bits   0-4]", "Radix Sort Iter #1 [Bits   4-8]",
-                                               "Radix Sort Iter #2 [Bits  8-12]", "Radix Sort Iter #3 [Bits 12-16]",
-                                               "Radix Sort Iter #4 [Bits 16-20]", "Radix Sort Iter #5 [Bits 20-24]",
-                                               "Radix Sort Iter #6 [Bits 24-28]", "Radix Sort Iter #7 [Bits 28-32]"};
-
-    Buffer *hashes[] = {&_hashes[0], &_hashes[1]};
-    for (int shift = 0; shift < 32; shift += 4) {
-        DebugMarker _1(ctx_.get(), cmd_buf, MarkerStrings[shift / 4]);
-
-        kernel_SortInitCountTable(cmd_buf, shift, indir_args, 6, *hashes[0], counters, 6, count_table);
-
-        kernel_SortReduce(cmd_buf, indir_args, 7, count_table, counters, 7, reduce_table);
-
-        kernel_SortScan(cmd_buf, reduce_table, counters, 7, reduce_table);
-
-        kernel_SortScanAdd(cmd_buf, indir_args, 7, count_table, reduce_table, counters, 7, count_table);
-
-        kernel_SortScatter(cmd_buf, shift, indir_args, 6, *hashes[0], count_table, counters, 6, *hashes[1]);
-
-        std::swap(hashes[0], hashes[1]);
-    }
-    assert(hashes[0] == &_hashes[0]);
+    // Block-local sort: one dispatch, no cross-block coordination; result lands in _hashes[1].
+    kernel_SortLocal(cmd_buf, indir_args, 6, rays, root_min, cell_size, counters_buf_, 6, _hashes[1]);
+    return 1;
 }
